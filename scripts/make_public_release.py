@@ -6,6 +6,11 @@ with one commit, ready to push.
 
     python scripts/make_public_release.py D:/HAYAT-public-2026-10-25
 
+To update the published repository afterwards (one normal commit, no history rewrite):
+
+    python scripts/make_public_release.py .test-runs/public-build-N --update D:/HAYAT-github --message "..."
+    git -C D:/HAYAT-github push
+
 What it does, in order:
 1. exports the committed tree (never uncommitted files, never data/ that git ignores);
 2. removes the build history listed below;
@@ -133,10 +138,36 @@ def commit(target: Path) -> str:
     return git("rev-parse", "--short", "HEAD").strip()
 
 
+def sync_into(build: Path, repo: Path, message: str) -> str:
+    """Make an existing public clone match a fresh build, as one ordinary commit (no history rewrite)."""
+    def git(*args: str) -> str:
+        return subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True).stdout
+    if git("status", "--porcelain").strip():
+        raise SystemExit(f"{repo} has uncommitted changes; commit or discard them first.")
+    wanted = {path.relative_to(build).as_posix() for path in build.rglob("*")
+              if path.is_file() and ".git" not in path.relative_to(build).parts}
+    tracked = set(git("ls-files").splitlines())
+    gone = sorted(tracked - wanted)
+    for start in range(0, len(gone), 100):
+        git("rm", "-q", "--", *gone[start:start + 100])
+    for name in sorted(wanted):
+        destination = repo / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(build / name, destination)
+    git("add", "-A")
+    if not git("status", "--porcelain").strip():
+        return "nothing changed"
+    git("-c", "user.name=AI Agent", "-c", "user.email=ai-agent@local", "commit", "-q", "-m", message)
+    return git("rev-parse", "--short", "HEAD").strip()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("target", type=Path, help="a folder that does not exist yet")
     parser.add_argument("--no-commit", action="store_true", help="build the files only")
+    parser.add_argument("--update", type=Path, metavar="PUBLIC_CLONE",
+                        help="after building into TARGET, commit the result into this existing public clone")
+    parser.add_argument("--message", default="Update from the HAYAT source", help="commit message for --update")
     args = parser.parse_args(argv)
     target = args.target.resolve()
     if target.exists():
@@ -153,7 +184,9 @@ def main(argv: list[str] | None = None) -> int:
     copy_public(target)
     flattened = unlink_removed(target)
     print(f"Removed {len(removed)} private paths; flattened links in {flattened} documents.")
-    if not args.no_commit:
+    if args.update:
+        print(f"Public clone: {sync_into(target, args.update.resolve(), args.message)}")
+    elif not args.no_commit:
         print(f"Committed {commit(target)} in {target}")
     return 0
 

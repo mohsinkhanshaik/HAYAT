@@ -130,7 +130,7 @@ def test_chosen_icons_survive_hayats_app_wide_icon_pass(shared_tk):
         assert str(icon_image(button, 'history', Palette.ROYAL_SOFT)) in str(button.cget('image'))
         # Labels that fell back to the generic "tool" icon now have their own.
         assert [icon_kind(text) for text in ('Add watch', 'Open source', 'Copy location', 'Weather here', 'Generate brief',
-                                             'Full raw evidence', 'Near selected event', 'Analyze with HAYAT', 'Load snapshot')] == [
+                                             'Full evidence', 'Near selected event', 'Analyze with HAYAT', 'Load snapshot')] == [
             'eye', 'link', 'copy', 'cloud', 'file', 'code', 'pin', 'brain', 'image']
     finally:
         close_window(parent)

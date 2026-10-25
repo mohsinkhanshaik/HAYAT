@@ -126,7 +126,8 @@ def test_failed_search_preserves_provider_errors_and_does_not_claim_findings(mon
     assert all('connection_refused; route=direct' in error for error in chain.last_errors)
     job = ResearchJob('id', 'NIST AI', '', 'normal', 'now', status='failed', error='; '.join(chain.last_errors))
     text = ResearchJobs(lambda: None).result_text(job)
-    assert 'duckduckgo_html' in text and 'bing_rss' in text
+    # Each failed provider is still named, as the owner knows it (not its internal id).
+    assert 'DuckDuckGo' in text and 'Bing' in text and 'duckduckgo_html' not in text
     assert 'finished looking up' not in text
 
 

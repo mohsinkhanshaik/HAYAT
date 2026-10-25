@@ -25,6 +25,15 @@ def plain_error(error: str) -> str:
         return "The model service did not answer in time; it may be loading a model. Wait a moment and press Refresh models."
     return text
 
+
+def _plain(value):
+    """A status value said in plain words: Colibri returns {'detail': ...} dictionaries."""
+    if isinstance(value, dict) and isinstance(value.get('detail'), str):
+        return value['detail']
+    from app.plain_output import describe
+
+    return value if isinstance(value, str) else describe(value)
+
 class VoiceFocus(NeuralWorkspace):
     VOICE_SIZE_LIMIT = 120
 
@@ -145,7 +154,9 @@ class ControlStudio(tk.Toplevel):
         def complete(value):
             self.self_result.configure(state="normal")
             self.self_result.delete("1.0", "end")
-            self.self_result.insert("end", str(value))
+            from app.plain_output import describe
+
+            self.self_result.insert("end", value if isinstance(value, str) else describe(value))
             self.self_result.configure(state="disabled")
             self.set_status("Check complete · this is an observed snapshot.", "self")
         self.run_job("Reading " + kind, work, complete)
@@ -219,17 +230,17 @@ class ControlStudio(tk.Toplevel):
             ticket = self.gui.runtime.registry.interlock.ticket()
             self.gui.runtime.registry.interlock.check(ticket)
             return work()
-        self.run_job(title, guarded, lambda value: self.colibri_status.set(str(value)))
+        self.run_job(title, guarded, lambda value: self.colibri_status.set(_plain(value)))
 
     def start_colibri(self):
         backend = self.colibri_backend.get()
         self._colibri_job('Starting Colibri', lambda: self.colibri.start(backend))
 
     def check_colibri(self):
-        self.run_job('Checking Colibri', self.colibri.status, lambda value: self.colibri_status.set(str(value)))
+        self.run_job('Checking Colibri', self.colibri.status, lambda value: self.colibri_status.set(_plain(value)))
 
     def stop_colibri(self):
-        self.run_job('Stopping owned Colibri', self.colibri.stop, lambda value: self.colibri_status.set(str(value)))
+        self.run_job('Stopping owned Colibri', self.colibri.stop, lambda value: self.colibri_status.set(_plain(value)))
 
     def test_colibri(self):
         prompt = self.colibri_prompt.get()
@@ -290,6 +301,13 @@ class ControlStudio(tk.Toplevel):
         footer = tk.Frame(page, bg=self.palette.BLACK)
         footer.pack(side="bottom", fill="x", pady=(8, 0))
         self.source_result.pack(fill="both", expand=True)
+        # A blank pane gave no hint of what Inspect source produces.
+        self.source_result.configure(state="normal")
+        self.source_result.insert("1.0", "Paste a public page, a GitHub repository (owner/repo) or a paper's URL above, then "
+                                  "choose Inspect source, GitHub repo or Research paper.\n\nThe article's text, who "
+                                  "published it, when, and where each part came from appear here. Nothing is posted or "
+                                  "signed in to.")
+        self.source_result.configure(state="disabled")
         from app.research.osint import toolkit_status
         status = toolkit_status()
         self.label(footer, f"Trafilatura {status['version']} · public pages, GitHub and papers · sources retain their provenance")

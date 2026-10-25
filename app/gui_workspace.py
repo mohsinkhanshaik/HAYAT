@@ -208,7 +208,7 @@ class StreamingPreview(tk.Frame):
         tk.Label(self, textvariable=self.caption, bg=palette.PANEL_2, fg=palette.MUTED,
                  anchor="w").pack(fill="x")
         self.text = tk.Text(self, height=4, wrap="word", state="disabled",
-                            bg=palette.PANEL_2, fg=palette.WHITE, relief="flat")
+                            bg=palette.PANEL_2, fg=palette.WHITE, relief="flat", font=("Segoe UI", 10))
         self.text.pack(fill="x")
         self._updates = queue.Queue(maxsize=1)
         self._content = ""

@@ -132,3 +132,36 @@ def test_the_user_guide_matches_the_capability_catalog():
 
     guide = TARGET.read_text(encoding="utf-8")
     assert all(f"### {capability.title}" in guide for capability in CATALOG)
+
+
+def test_a_tools_input_contract_is_a_readable_list_not_a_json_schema():
+    from app.plain_output import describe_schema
+
+    schema = {"type": "object", "required": ["input_path"], "properties": {
+        "input_path": {"type": "string", "minLength": 1},
+        "format": {"enum": ["directory", "asar"]},
+        "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10, "description": "How many results."}}}
+    text = describe_schema(schema)
+    assert "• input_path (text, required)" in text
+    assert "format (optional): one of directory, asar" in text
+    assert "limit (whole number, optional, 1 to 50); default 10 — How many results." in text
+    assert "{" not in text and '"type"' not in text
+    assert describe_schema({"type": "object", "properties": {}}) == "No inputs needed."
+
+
+def test_status_lines_say_the_detail_not_the_dictionary():
+    from app.gui_studio import _plain
+
+    assert _plain({"detail": "GUI-owned Colibri stopped."}) == "GUI-owned Colibri stopped."
+    assert "{" not in _plain({"running": True, "port": 8080}) and "Running: yes" in _plain({"running": True})
+    assert _plain("already text") == "already text"
+
+
+def test_intelligence_source_details_end_with_a_readable_full_record():
+    from app.gui_intelligence import source_detail as source_details
+
+    text = source_details({"title": "USGS earthquakes", "key": "usgs", "status": "ok", "stale": False,
+                           "interval_seconds": 600, "license": "Public domain", "change": {"added_count": 2},
+                           "count": 41, "enabled": True})
+    assert "Full record" in text and "Enabled: yes" in text
+    assert "Raw record" not in text and '"enabled": true' not in text

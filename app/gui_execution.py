@@ -89,7 +89,8 @@ class ChatRewind(tk.Toplevel):
         for row in self.rows:
             self.tree.insert('', 'end', iid=str(row['id']), values=(row['role'], ' '.join(row['content'].split())[:220]))
         show_empty(self.tree, 'This conversation has no messages yet, so there is nothing to continue from.', gui)
-        self.preview = DarkScrolledText(self, height=5, wrap='word', bg=gui.PANEL, fg=gui.WHITE, state='disabled')
+        self.preview = DarkScrolledText(self, height=5, wrap='word', bg=gui.PANEL, fg=gui.WHITE, state='disabled',
+                                        font=('Segoe UI', 10))
         self.preview.pack(fill='both', expand=True, padx=12, pady=8)
         self.tree.bind('<<TreeviewSelect>>', self.select)
         bar = tk.Frame(self, bg=gui.BLACK)

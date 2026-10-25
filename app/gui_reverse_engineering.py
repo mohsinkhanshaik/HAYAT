@@ -407,7 +407,9 @@ class ReverseEngineeringStudio(tk.Toplevel):
             form_values = {}
         self.guided.build(schema, form_values if isinstance(form_values, dict) else {})
         self.guided.load_raw(self.session.field_drafts.get(name, {}))
-        self._replace(self.reference, row.get('description', '') + '\n\nInput schema\n' + json.dumps(schema, indent=2))
+        from app.plain_output import describe_schema
+
+        self._replace(self.reference, row.get('description', '') + '\n\nWhat it needs\n' + describe_schema(schema))
         self.run_button.configure(text='Prepare action' if row['writes'] else 'Run analysis',
                                   state='disabled' if self._busy else 'normal')
         if self.target.get() and draft is None:

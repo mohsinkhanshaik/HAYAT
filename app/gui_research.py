@@ -189,9 +189,11 @@ class ResearchStudio(tk.Toplevel):
             height = 5 if self.search_kind.get() == 'Topic' else 3
         if int(self.tree['height']) != height:
             self.tree.configure(height=height)
-        heading = tkfont.Font(root=self, font=ttk.Style(self).lookup('Treeview.Heading', 'font') or 'TkHeadingFont')
+        # Measure with the font the headings are drawn in (bold Segoe UI), plus their 8-pixel padding on each
+        # side: the TkHeadingFont fallback measured narrower and clipped "Sources" and "Confidence".
+        heading = tkfont.Font(root=self, font=ttk.Style(self).lookup('Treeview.Heading', 'font') or ('Segoe UI Semibold', 10))
         for column in self.tree['columns']:
-            minimum = max(50, heading.measure(self.tree.heading(column, 'text')) + 18)
+            minimum = max(50, heading.measure(self.tree.heading(column, 'text')) + 28)
             self.tree.column(column, minwidth=minimum, width=max(minimum, int(self.tree.column(column, 'width'))))
 
     def _poll(self) -> None:

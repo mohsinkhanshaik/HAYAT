@@ -69,11 +69,13 @@ class RevenueIntake(tk.Toplevel):
         ttk.Label(advanced, text='Record key').pack(side='left')
         ttk.Entry(advanced, textvariable=self.key).pack(side='left', fill='x', expand=True, padx=6)
         ttk.Label(self, text='Manual data (JSON object; numbers, client, prices, URLs or file path)').pack(anchor='w', padx=16)
-        self.data_text = tk.Text(self, height=4, bg=p.BLACK, fg=p.WHITE, insertbackground=p.WHITE, wrap='word')
+        self.data_text = tk.Text(self, height=4, bg=p.BLACK, fg=p.WHITE, insertbackground=p.WHITE, wrap='word',
+                                 font=('Consolas', 10))  # typed as JSON
         self.data_text.pack(fill='x', padx=16)
         self.data_text.insert('1.0', '{}')
         ttk.Label(self, text='Notes / supplied evidence').pack(anchor='w', padx=16, pady=(6, 0))
-        self.context_text = tk.Text(self, height=3, bg=p.BLACK, fg=p.WHITE, insertbackground=p.WHITE, wrap='word')
+        self.context_text = tk.Text(self, height=3, bg=p.BLACK, fg=p.WHITE, insertbackground=p.WHITE, wrap='word',
+                                    font=('Segoe UI', 10))
         self.context_text.pack(fill='x', padx=16)
         attach = ttk.Frame(self)
         attach.pack(fill='x', padx=16, pady=8)
@@ -84,7 +86,7 @@ class RevenueIntake(tk.Toplevel):
         self.status = StringVar(self, 'Enter your real inputs. Results and errors appear below.')
         ttk.Label(self, textvariable=self.status, wraplength=670).pack(fill='x', padx=16)
         from app.gui_theme import DarkScrolledText
-        self.output = DarkScrolledText(self, height=7, wrap='word', bg=p.BLACK, fg=p.WHITE)
+        self.output = DarkScrolledText(self, height=7, wrap='word', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI', 10))
         self.output.pack(fill='both', expand=True, padx=16, pady=8)
         place_over(self, owner, (740, 850))
         self.deiconify()

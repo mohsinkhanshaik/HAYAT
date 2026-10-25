@@ -487,8 +487,12 @@ class PersonResearchStudio(tk.Toplevel):
             if not result.success:
                 raise RuntimeError(result.error)
             return result.output
-        self.work('Waiting for Windows Hello…', run,
-                  lambda value: self.status.set('Signed-in owner presence only; no researched person identity is verified. ' + str(value)))
+        def show(value):
+            from app.plain_output import describe
+
+            self.status.set('Signed-in owner presence only; no researched person identity is verified. '
+                            + describe(value).replace('\n', ' · '))
+        self.work('Waiting for Windows Hello…', run, show)
 
     def cancel(self):
         self.generation += 1
@@ -567,7 +571,8 @@ class RecordLibrary(tk.Toplevel):
         for title, command in (('Save report', self.save), ('Import document', self.import_document),
                                ('Authorize & open', self.open), ('Revoke access', self.revoke), ('Delete selected', self.delete)):
             bar.add(ttk.Button(bar, text=title, command=command))
-        self.preview = DarkScrolledText(self.body, bg=p.PANEL, fg=p.WHITE, height=6, wrap='word', state='disabled')
+        self.preview = DarkScrolledText(self.body, bg=p.PANEL, fg=p.WHITE, height=6, wrap='word', state='disabled',
+                                        font=('Segoe UI', 10))
         self.body.add(records, height=150, minsize=100)
         self.body.add(self.preview.frame, minsize=90)
         self.status = tk.Label(bottom, text='Describe authorization, check consent, then choose an action.',

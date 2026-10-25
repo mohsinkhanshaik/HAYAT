@@ -176,6 +176,48 @@ def describe_full(value: Any) -> str:
     return "\n".join(_lines(value, 0, "", _FULL)) or "Nothing to report."
 
 
+_SCHEMA_TYPES = {"string": "text", "integer": "whole number", "number": "number", "boolean": "yes/no",
+                 "array": "list", "object": "group of settings", "null": "nothing"}
+
+
+def describe_schema(schema: Any) -> str:
+    """A tool's input contract as a list a person can read, instead of its JSON schema.
+
+    "input_path (text, required)", "format: one of directory, asar", "limit (whole number, 1 to 50)".
+    """
+    if not isinstance(schema, dict):
+        return describe(schema)
+    properties = schema.get("properties") or {}
+    if not properties:
+        return "No inputs needed."
+    required = set(schema.get("required") or ())
+    lines = []
+    for name, spec in properties.items():
+        spec = spec if isinstance(spec, dict) else {}
+        kind = spec.get("type")
+        kinds = kind if isinstance(kind, list) else [kind] if kind else []
+        words = [_SCHEMA_TYPES.get(str(item), str(item)) for item in kinds]
+        if "required" not in words:
+            words.append("required" if name in required else "optional")
+        if "minimum" in spec and "maximum" in spec:
+            words.append(f"{spec['minimum']} to {spec['maximum']}")
+        elif "minimum" in spec:
+            words.append(f"at least {spec['minimum']}")
+        elif "maximum" in spec:
+            words.append(f"at most {spec['maximum']}")
+        if spec.get("maxLength"):
+            words.append(f"up to {spec['maxLength']} characters")
+        line = f"• {name} ({', '.join(words)})"
+        if spec.get("enum"):
+            line += ": one of " + ", ".join(str(item) for item in spec["enum"])
+        if spec.get("default") is not None:
+            line += f"; default {scalar(spec['default'])}"
+        if spec.get("description"):
+            line += " — " + " ".join(str(spec["description"]).split())
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def _parse(text: str) -> Any:
     """A JSON or Python-literal dictionary/list that reached us as text, or None for ordinary prose."""
     stripped = text.strip()

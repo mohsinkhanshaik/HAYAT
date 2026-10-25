@@ -290,23 +290,23 @@ class ResearchJobs:
             guidance = failed_search_guidance(job.error, tor_required=job.onion or job.tor_web)
             if guidance:
                 return (f'I could not retrieve search evidence for "{job.query}".\n\n'
-                        + guidance + '\n\nObserved issues: ' + job.error)
+                        + guidance + '\n\nWhat went wrong: ' + plain_errors(job.error))
         if job.onion:
             return (f'No supported onion answer was retrieved for "{job.query}".\n\n'
                     + (job.answer or 'The configured providers returned no usable evidence.')
                     + '\n\nTry a specific service/organization or a known public v3 URL in Onion pages. '
                     'For a general topic such as AI, choose Tor web (public internet) in Searches; '
                     'it researches ordinary websites through Tor. Browse search opens the user-operated index. '
-                    'Provider failure is not proof that no matching service exists.\nObserved issues: ' + job.error)
+                    'Provider failure is not proof that no matching service exists.\nWhat went wrong: ' + plain_errors(job.error))
         if job.tor_web:
             return (f'No supported public-web answer through Tor was retrieved for "{job.query}".\n'
-                    + (job.answer or job.error) + '\nNo direct-network fallback was used. Try a more specific question or Browse search.')
+                    + (job.answer or plain_errors(job.error)) + '\nNo direct-network fallback was used. Try a more specific question or Browse search.')
         if job.sources and job.result is not None:
             pages = ['- ' + str(source.final_url) + ' (retrieved ' + str(getattr(source, 'retrieved_at', 'unknown')) + ')'
                      for source in getattr(job.result, 'sources', [])[:8] if getattr(source, 'final_url', None)]
             return (f'I read {job.sources} source page(s) for "{job.query}", but could not establish a supported answer.\n\n'
                     + job.answer + ('\n\nPages actually read:\n' + '\n'.join(pages) if pages else '')
-                    + '\n\nRetrieval is not a verified finding. Narrow the question or use search again.\nObserved issues: ' + job.error)
+                    + '\n\nRetrieval is not a verified finding. Narrow the question or use search again.\nWhat went wrong: ' + plain_errors(job.error))
         return (f"I couldn't find a reliable answer for \"{job.query}\". {plain_errors(job.error)} "
                 "Tell me more about what you're after, or say \"search again\" and I'll try different sources.")
 

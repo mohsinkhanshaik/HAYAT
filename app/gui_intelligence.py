@@ -140,7 +140,7 @@ def sources_summary(sources):
 
 
 def source_detail(source):
-    """One feed in words, with the raw record after it."""
+    """One feed in words, with the full record after it (as plain lines, not JSON)."""
     rows = [('Feed', f"{source['title']} ({source['key']})"),
             ('State', source['status'] + (' · stale' if source['stale'] else '')),
             ('Items', source.get('count', 0)),
@@ -156,7 +156,9 @@ def source_detail(source):
         rows.append(('Last change', f"{change.get('added_count', 0)} added, {change.get('changed_count', 0)} revised, "
                                     f"{change.get('missing_count', 0)} no longer in the feed"))
     text = '\n'.join(f"{label}: {value}" for label, value in rows if value not in ('', None))
-    return text + '\n\nRaw record\n' + json.dumps(source, ensure_ascii=False, indent=2)
+    from app.plain_output import describe_full
+
+    return text + '\n\nFull record\n' + describe_full(source)
 
 
 def nice_distance(km):
@@ -316,7 +318,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
              'Clear filters': 'refresh', 'Zoom +': 'zoom_in', 'Zoom −': 'zoom_out', 'Reset': 'refresh', 'Fit region': 'globe', 'Watch view': 'eye',
              'Save view': 'file', 'Saved views…': 'file', 'Customize': 'settings', 'World atlas': 'globe', 'Weather here': 'cloud',
              'Focus on map': 'pin', 'Open source': 'link', 'Generate brief': 'file', 'Ask Hayat in chat': 'chat',
-             'Full raw evidence': 'code', 'Copy location': 'copy', 'Add watch': 'eye', 'Analyze with HAYAT': 'brain',
+             'Full evidence': 'code', 'Copy location': 'copy', 'Add watch': 'eye', 'Analyze with HAYAT': 'brain',
              'Refresh feeds': 'refresh', 'Pause monitor': 'stop', 'Start monitor': 'play', 'Load cameras': 'refresh',
              'Load snapshot': 'image', 'Open in atlas': 'globe', 'Open publisher page': 'link', 'Near selected event': 'pin',
              'Watch video': 'play', 'Find streams': 'eye',
@@ -516,7 +518,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.source_button = ttk.Button(actions, text='Open source', command=self.open_source, state='disabled', style='Compact.Hayat.TButton')
         self.brief_button = ttk.Button(actions, text='Generate brief', command=self.brief, style='Compact.Hayat.TButton')
         self.ask_button = ttk.Button(actions, text='Ask Hayat in chat', command=self.ask_hayat, state='disabled', style='Compact.Hayat.TButton')
-        self.raw_button = ttk.Button(actions, text='Full raw evidence', command=self.details, style='Compact.Hayat.TButton')
+        self.raw_button = ttk.Button(actions, text='Full evidence', command=self.details, style='Compact.Hayat.TButton')
         self.copy_button = ttk.Button(actions, text='Copy location', command=self.copy_location, state='disabled', style='Compact.Hayat.TButton')
         for button in (self.focus_button, self.source_button, self.brief_button, self.ask_button, self.raw_button, self.copy_button):
             actions.add(button)
@@ -1541,7 +1543,9 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
 
     def details(self):
         if self.selected_record:
-            return self.show_text('Full event evidence, revisions and source metadata', json.dumps(self.selected_record, ensure_ascii=False, indent=2))
+            from app.plain_output import describe_full
+
+            return self.show_text('Full event evidence, revisions and source metadata', describe_full(self.selected_record))
         self.feedback.set('Select an event and wait for its evidence to load.')
 
     def show_alerts(self):
@@ -1750,7 +1754,8 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         window.title('HAYAT · ' + title)
         window.configure(bg=self.palette.BLACK, padx=14, pady=12)
         ttk.Label(window, text='Edit local rule fields. Save validates the complete rule; source text is never executable.', wraplength=520).pack(fill='x')
-        editor = tk.Text(window, height=17, width=65, bg=self.palette.PANEL, fg=self.palette.WHITE, insertbackground=self.palette.WHITE)
+        editor = tk.Text(window, height=17, width=65, bg=self.palette.PANEL, fg=self.palette.WHITE,
+                         insertbackground=self.palette.WHITE, font=('Consolas', 10))  # a JSON rule editor
         editor.pack(fill='both', expand=True, pady=8)
         editor.insert('1.0', json.dumps(data, indent=2))
         error = StringVar(window)

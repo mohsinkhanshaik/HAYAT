@@ -49,8 +49,12 @@ class WorkspaceTools(tk.Toplevel):
         self.tabs.add(frame, text=title)
         return frame
 
-    def text(self, parent, height=12):
-        box = DarkScrolledText(parent, height=height, wrap="word", bg=self.p.PANEL, fg=self.p.WHITE, relief="flat", padx=10, pady=8)
+    def text(self, parent, height=12, *, code=False):
+        # Results are plain sentences now; only the Raw result tab is code. Unset, Tk used its Courier
+        # default and every result read like a typewriter printout.
+        font = ("Consolas", 10) if code else ("Segoe UI", 10)
+        box = DarkScrolledText(parent, height=height, wrap="word", bg=self.p.PANEL, fg=self.p.WHITE, relief="flat",
+                               padx=10, pady=8, font=font)
         box.pack(fill="both", expand=True, pady=6)
         return box
 
@@ -162,7 +166,7 @@ class WorkspaceTools(tk.Toplevel):
         results.add(overview, text='Detection explanation')
         results.add(raw, text='Raw result')
         self.people_text = self.text(overview, 7)
-        self.people_raw = self.text(raw, 7)
+        self.people_raw = self.text(raw, 7, code=True)
         self.show(self.people_text, "Choose an image or explicitly read your camera. Detection runs on this machine.")
 
     def detect_people(self, *, camera=False):

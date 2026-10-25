@@ -76,7 +76,8 @@ def style_controls(root, palette):
               lightcolor=[("selected", palette.GOLD)])
     # Compact tabs for narrow side panels (the Trade Center's six tabs in about 350 px).
     style.configure("Side.TNotebook", background=palette.BLACK, borderwidth=0, tabmargins=(0, 0, 0, 4))
-    style.configure("Side.TNotebook.Tab", padding=(6, 6), font=("Segoe UI Semibold", 8))
+    # 3-pixel sides: at 6 the Trade Center's six side tabs overflowed and clipped "Scenarios" and "Calendar".
+    style.configure("Side.TNotebook.Tab", padding=(3, 6), font=("Segoe UI Semibold", 8))
     # Segmented choices and chips. They were styled only once Global Intelligence had opened, so a Trade
     # Center opened first showed every segment as a plain light box.
     for name, padding in (("Chip.Toolbutton", (9, 3)), ("Segment.Toolbutton", (12, 5))):

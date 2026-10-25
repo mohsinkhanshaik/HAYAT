@@ -213,7 +213,10 @@ class FeaturesWindow(tk.Toplevel):
         if row and row.capability:
             content += '\n\nHow to start\n' + row.capability.how + '\n\nExamples\n' + '\n'.join(row.capability.examples)
         if row and row.tool:
-            content += f'\n\nTool: {row.tool.name}\nPermission scope: {row.tool.permission}\nRisk: {row.tool.risk}\n\nArgument contract\n' + json.dumps(row.tool.input_schema, indent=2)
+            from app.plain_output import describe_schema
+
+            content += (f'\n\nTool: {row.tool.name}\nPermission scope: {row.tool.permission}\nRisk: {row.tool.risk}'
+                        '\n\nWhat it needs\n' + describe_schema(row.tool.input_schema))
         self.description.configure(state='normal')
         self.description.delete('1.0', 'end')
         self.description.insert('1.0', content)

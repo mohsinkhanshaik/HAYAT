@@ -59,3 +59,28 @@ def test_the_home_row_and_composer_after_the_pass():
     assert "('Find jobs', self._open_jobs), ('Markets', self._open_markets)" in source
     assert "Enter sends · Shift+Enter: new line" in source
     assert "media_tools.add(tk.Label(media_tools, text='Enter to send" not in source
+
+
+def test_every_text_area_chooses_its_font():
+    """Unset, a Tk text area falls back to Courier and plain-language results read like a printout.
+
+    Prose uses Segoe UI; a box where the owner types JSON or code says so with Consolas.
+    """
+    import ast
+    from pathlib import Path
+
+    from app.config import PROJECT_ROOT
+
+    missing = []
+    for path in sorted((PROJECT_ROOT / "app").glob("gui*.py")):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", "")
+            owner = getattr(getattr(func, "value", None), "id", "")
+            if name == "DarkScrolledText" or (name == "Text" and owner == "tk"):
+                keywords = {keyword.arg for keyword in node.keywords}
+                if "font" not in keywords and None not in keywords:
+                    missing.append(f"{Path(path).name}:{node.lineno}")
+    assert not missing, missing
