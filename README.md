@@ -15,7 +15,8 @@ video, track markets and jobs, and remember what matters — with a local langua
 [![Model on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20model-HAYAT--35B-yellow)](https://huggingface.co/Mohsinkhanshaik/HAYAT-35B-A3B-Uncensored-GGUF)
 
 [Quick start](#quick-start) · [What it can do](#what-it-can-do) · [How to use it](docs/how-to-use-hayat.md) ·
-[Contributing](CONTRIBUTING.md) · [Models](#models)
+[Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) ·
+[Discussions](https://github.com/mohsinkhanshaik/HAYAT/discussions) · [Models](#models)
 
 <img src="docs/images/home.png" alt="HAYAT's home screen: a chat box, quick actions and a live neural workspace" width="860">
 
@@ -111,12 +112,29 @@ HAYAT works with any Ollama model; see [models](docs/models.md).
 - Every tool is registered with a permission class; every action is checked against its result before HAYAT claims it.
 - Start reading at [architecture](docs/architecture.md) and the [technical tour](docs/technical-tour.md).
 
-## Contributing
+## Help make it more powerful
 
-Contributions of every size are welcome — bug reports, docs, tests, new tools and new windows. Read
-**[CONTRIBUTING.md](CONTRIBUTING.md)**: it explains the layout, how to run the tests, and the few rules every change
-follows (code + tests + docs, honest results, no paid services). Good first issues are labelled
-`good first issue`. Security problems: see [SECURITY.md](SECURITY.md).
+HAYAT is built in the open, and the next steps are clear. The [roadmap](ROADMAP.md) lists them, each with an open issue:
+
+- **More honest, more uncensored answers** — measure false refusals and unrequested disclaimers, and evaluate
+  newer uncensored local models ([#1](https://github.com/mohsinkhanshaik/HAYAT/issues/1),
+  [#2](https://github.com/mohsinkhanshaik/HAYAT/issues/2)).
+- **Deeper reasoning** — verify multi-step answers before replying
+  ([#3](https://github.com/mohsinkhanshaik/HAYAT/issues/3)).
+- **Faster and broader** — quicker start, more free research sources, Linux support, a good default for small
+  machines ([#5](https://github.com/mohsinkhanshaik/HAYAT/issues/5)–[#7](https://github.com/mohsinkhanshaik/HAYAT/issues/7),
+  [#10](https://github.com/mohsinkhanshaik/HAYAT/issues/10)).
+- **First contribution?** Start with a
+  [good first issue](https://github.com/mohsinkhanshaik/HAYAT/labels/good%20first%20issue).
+
+Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for the layout, how to run the tests, and the few rules every change
+follows (code + tests + docs, honest results, no paid services). Security problems: see [SECURITY.md](SECURITY.md).
+
+## Talk to the creator
+
+Questions, ideas, show-and-tell, or want to work on HAYAT together? Start a thread in
+**[Discussions](https://github.com/mohsinkhanshaik/HAYAT/discussions)** — that is the best way to reach me.
+Bugs go in [Issues](https://github.com/mohsinkhanshaik/HAYAT/issues).
 
 ## Free, forever, and yours to run
 
