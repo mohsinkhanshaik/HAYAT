@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-10-10T04:54:21.412086+00:00",
+  "iterations": 20,
+  "passed": true,
+  "benchmarks": {
+    "intent": {
+      "mean_ms": 0.548,
+      "p95_ms": 0.637,
+      "min_ms": 0.496,
+      "max_ms": 0.699,
+      "cold_first_ms": 0.699,
+      "warm_mean_ms": 0.541
+    },
+    "model_router": {
+      "mean_ms": 39.393,
+      "p95_ms": 2.048,
+      "min_ms": 1.215,
+      "max_ms": 761.364,
+      "cold_first_ms": 761.364,
+      "warm_mean_ms": 1.394
+    },
+    "memory_health": {
+      "mean_ms": 70.035,
+      "p95_ms": 73.16,
+      "min_ms": 66.588,
+      "max_ms": 74.123,
+      "cold_first_ms": 72.403,
+      "warm_mean_ms": 69.911
+    },
+    "tool_inventory": {
+      "mean_ms": 0.048,
+      "p95_ms": 0.049,
+      "min_ms": 0.042,
+      "max_ms": 0.104,
+      "cold_first_ms": 0.045,
+      "warm_mean_ms": 0.048
+    },
+    "team_contract": {
+      "mean_ms": 0.079,
+      "p95_ms": 0.102,
+      "min_ms": 0.058,
+      "max_ms": 0.165,
+      "cold_first_ms": 0.079,
+      "warm_mean_ms": 0.079
+    }
+  },
+  "independent_passed": true,
+  "team_passed": true,
+  "critical_failures": [],
+  "scope": "routing and coordination only; no generation quality claim"
+}

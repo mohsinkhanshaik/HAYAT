@@ -1,0 +1,158 @@
+{
+  "captured_at": "2026-08-13T20:18:48.991299+00:00",
+  "git_baseline": "c472e42",
+  "tools": 82,
+  "tool_registration": "model-independent (use_model=False)",
+  "cost": {
+    "mode": "ZERO-COST",
+    "paid_api_allowed": false,
+    "cloud_inference_allowed": false,
+    "paid_search_allowed": false,
+    "cloud_embeddings_allowed": false,
+    "cloud_tts_allowed": false,
+    "cloud_stt_allowed": false,
+    "estimated_api_cost_usd": 0.0,
+    "paid_provider_fallback": "disabled",
+    "note": "API cost excludes electricity, hardware, internet service, and disk usage."
+  },
+  "camera": {
+    "state": "OFF",
+    "active": false,
+    "device_index": null,
+    "devices_detected": 1,
+    "raw_retention": false,
+    "background_recording": false,
+    "last_error": null,
+    "last_observation": null,
+    "ocr": {
+      "provider": "tesseract",
+      "available": false,
+      "executable": null,
+      "cloud": false
+    }
+  },
+  "displays": {
+    "count": 2,
+    "displays": [
+      {
+        "index": 1,
+        "handle": 65639,
+        "primary": true,
+        "left": 0,
+        "top": 0,
+        "right": 1920,
+        "bottom": 1200,
+        "width": 1920,
+        "height": 1200,
+        "work_area": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1140
+        }
+      },
+      {
+        "index": 2,
+        "handle": 131073,
+        "primary": false,
+        "left": 1920,
+        "top": 0,
+        "right": 5760,
+        "bottom": 2160,
+        "width": 3840,
+        "height": 2160,
+        "work_area": {
+          "left": 1920,
+          "top": 0,
+          "right": 5760,
+          "bottom": 2088
+        }
+      }
+    ],
+    "active_window": {
+      "available": true,
+      "handle": 461696,
+      "title": "README.md - AI - Visual Studio Code",
+      "left": 1911,
+      "top": -9,
+      "right": 5769,
+      "bottom": 2097
+    }
+  },
+  "clipboard": {
+    "type": "text",
+    "characters": 16499,
+    "content_persisted": false,
+    "sensitive_possible": true
+  },
+  "system": {
+    "observed_at": "2026-08-13T20:18:43.416220+00:00",
+    "cpu_percent": 4.08,
+    "ram": {
+      "total_bytes": 42603331584,
+      "available_bytes": 20435722240,
+      "used_percent": 52.0
+    },
+    "disk": {
+      "total_bytes": 4000768323584,
+      "free_bytes": 3712781869056,
+      "project_budget": 3000000000000,
+      "reserve_bytes": 300000000000
+    },
+    "gpu": [
+      {
+        "name": "NVIDIA GeForce RTX 5060 Laptop GPU",
+        "vram_total_mb": 8151,
+        "vram_used_mb": 480,
+        "vram_free_mb": 7420,
+        "utilization_percent": 18,
+        "temperature_c": 51
+      }
+    ],
+    "paid_telemetry": false
+  },
+  "incident_scope": "system",
+  "routes": {
+    "What cameras do I have?": {
+      "intent": "SYSTEM_STATE",
+      "entities": {},
+      "requires_tools": false
+    },
+    "Screenshot the second monitor.": {
+      "intent": "COMPUTER_CONTROL",
+      "entities": {
+        "modality": "display"
+      },
+      "requires_tools": true
+    },
+    "Explain what I copied.": {
+      "intent": "COMPUTER_CONTROL",
+      "entities": {
+        "modality": "clipboard"
+      },
+      "requires_tools": true
+    },
+    "My Ollama service is down. Diagnose it.": {
+      "intent": "ACTION",
+      "entities": {
+        "mode": "incident"
+      },
+      "requires_tools": true
+    }
+  },
+  "durable_event": 55,
+  "latency_ms": {
+    "cost": 0.02,
+    "displays": 0.19,
+    "camera_status": 1485.05,
+    "clipboard_status": 646.53,
+    "system": 1670.73,
+    "incident_system": 3856.22
+  },
+  "privacy_assertions": {
+    "camera_background_recording": false,
+    "camera_raw_retention": false,
+    "clipboard_content_persisted": false,
+    "paid_api_cost_usd": 0.0
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "microphone_captured": true,
+  "duration_seconds": 6.5,
+  "peak": 0.705078,
+  "transcription": "Create a text file called voice-test.txt containing hello from my AI",
+  "stt_duration_ms": 3410,
+  "task_id": "task-20260820-110125-943e022a",
+  "task_complete": true,
+  "spoken_response": "Done. The file was created successfully.",
+  "written_paths": [
+    "D:\\AI\\voice-test.txt"
+  ],
+  "file_exists": true,
+  "file_content": "hello from my ai",
+  "passed": true,
+  "note": "This is a real speaker-to-air-to-microphone voice-command loop, not direct audio injection.",
+  "verified_at": "2026-08-20T15:01:29.313253+00:00"
+}

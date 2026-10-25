@@ -1,0 +1,98 @@
+{
+  "id": "eval-20260813-155059",
+  "level": "full",
+  "created_at": "2026-08-13T15:50:59.691537+00:00",
+  "passed": true,
+  "golden_gate_passed": true,
+  "duration_ms": 179236.347,
+  "hallucination_metrics": {
+    "runtime_state": 0.0,
+    "fake_action_success": 0.0,
+    "memory": null,
+    "citation": null,
+    "note": "Unknown metrics are not treated as zero."
+  },
+  "false_action_rate": 0.0,
+  "rows": [
+    {
+      "category": "tests",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 12924.815,
+      "stdout_tail": "........................................................................ [ 67%]\n..................................                                       [100%]\n106 passed in 12.31s\n",
+      "stderr_tail": ""
+    },
+    {
+      "category": "intent_routing",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 81.061,
+      "stdout_tail": "{\n  \"cases\": 100,\n  \"intent_accuracy\": 1.0,\n  \"false_action_rate\": 0.0,\n  \"unnecessary_planner_rate\": 0.0,\n  \"wrong_or_missing_tool_rate\": 0.0\n}\nD:\\AI\\data\\benchmarks\\intent_routing\\after.json\n",
+      "stderr_tail": ""
+    },
+    {
+      "category": "tool_selection",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 1963.248,
+      "stdout_tail": "{\n  \"cases\": 12,\n  \"correct_tool_rate\": 1.0,\n  \"wrong_tool_rate\": 0.0,\n  \"missing_tool_rate\": 0.0\n}\nD:\\AI\\data\\benchmarks\\tool_selection\\after.json\n",
+      "stderr_tail": ""
+    },
+    {
+      "category": "verification",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 203.756,
+      "stdout_tail": "{\n  \"cases\": 6,\n  \"failure_detection_accuracy\": 1.0\n}\nD:\\AI\\data\\benchmarks\\verification\\after.json\n",
+      "stderr_tail": ""
+    },
+    {
+      "category": "self_state",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 7336.979,
+      "stdout_tail": "{\n  \"cases\": 13,\n  \"accuracy\": 1.0,\n  \"metrics\": {\n    \"hallucination\": 1.0,\n    \"self_state\": 1.0\n  },\n  \"hallucination_rate\": 0.0\n}\nD:\\AI\\data\\benchmarks\\self_state\\after.json\n",
+      "stderr_tail": ""
+    },
+    {
+      "category": "retrieval",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 152562.068,
+      "stdout_tail": "sion\": 384,\n    \"max_input\": 512,\n    \"locality\": \"local\",\n    \"latency_ms\": 201.03,\n    \"ram_bytes\": 0,\n    \"vram_bytes\": 26738687,\n    \"benchmark_quality\": 0.8941666666666667,\n    \"available\": true,\n    \"version\": \"2026-08-13T11:09:17.5988893-04:00\",\n    \"privacy\": \"local_only\",\n    \"fallback\": \"hashed semantic + lexical + entity + recency\"\n  },\n  \"reindex\": {\n    \"available\": true,\n    \"provider\": \"ollama/all-minilm:latest\",\n    \"dimension\": 384,\n    \"indexed\": 25,\n    \"skipped\": 0,\n    \"total\": 25,\n    \"force\": false\n  },\n  \"strategies\": {\n    \"lexical_only\": {\n      \"cases\": 100,\n      \"precision_at_1\": 0.32,\n      \"precision_at_3\": 0.13333333333333333,\n      \"recall_at_5\": 0.41,\n      \"mrr\": 0.36083333333333334,\n      \"ndcg_at_5\": 0.373471848330736,\n      \"false_memory_retrieval_rate\": 0.68,\n      \"mean_latency_ms\": 5.866,\n      \"p95_latency_ms\": 7.019\n    },\n    \"semantic_only\": {\n      \"cases\": 100,\n      \"precision_at_1\": 0.82,\n      \"precision_at_3\": 0.3133333333333333,\n      \"recall_at_5\": 0.95,\n      \"mrr\": 0.8758333333333332,\n      \"ndcg_at_5\": 0.8947811458664505,\n      \"false_memory_retrieval_rate\": 0.18,\n      \"mean_latency_ms\": 512.649,\n      \"p95_latency_ms\": 564.53\n    },\n    \"hybrid_default\": {\n      \"cases\": 100,\n      \"precision_at_1\": 0.85,\n      \"precision_at_3\": 0.3133333333333333,\n      \"recall_at_5\": 0.95,\n      \"mrr\": 0.8941666666666667,\n      \"ndcg_at_5\": 0.908471848330736,\n      \"false_memory_retrieval_rate\": 0.15,\n      \"mean_latency_ms\": 513.092,\n      \"p95_latency_ms\": 555.592\n    },\n    \"hybrid_semantic_heavy\": {\n      \"cases\": 100,\n      \"precision_at_1\": 0.85,\n      \"precision_at_3\": 0.3133333333333333,\n      \"recall_at_5\": 0.95,\n      \"mrr\": 0.8941666666666667,\n      \"ndcg_at_5\": 0.908471848330736,\n      \"false_memory_retrieval_rate\": 0.15,\n      \"mean_latency_ms\": 478.453,\n      \"p95_latency_ms\": 585.728\n    }\n  },\n  \"selected_default\": \"hybrid_semantic_heavy\",\n  \"destination\": \"D:\\\\AI\\\\data\\\\benchmarks\\\\retrieval\\\\after.json\"\n}\n",
+      "stderr_tail": ""
+    },
+    {
+      "category": "model_routing",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 1461.996,
+      "stdout_tail": "{\n  \"cases\": 200,\n  \"routing_accuracy\": 1.0,\n  \"wrong_model_rate\": 0.0,\n  \"mean_router_latency_ms\": 5.966,\n  \"fallback_coverage_rate\": 0.9,\n  \"adaptive_verified_outcome_check\": true,\n  \"fixed_qwen35\": {\n    \"expected_task_accuracy\": 0.9,\n    \"note\": \"Capability suitability proxy, not live generation quality.\"\n  },\n  \"static_capability_router\": {\n    \"routing_accuracy\": 1.0\n  },\n  \"adaptive_router\": {\n    \"coding_primary_after_verified_evidence\": \"llama3:latest\",\n    \"evidence_count\": 5\n  },\n  \"destination\": \"D:\\\\AI\\\\data\\\\benchmarks\\\\model_routing\\\\adaptive.json\"\n}\n",
+      "stderr_tail": ""
+    },
+    {
+      "category": "teaching",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 277.695,
+      "stdout_tail": "{\n  \"cases\": 50,\n  \"accuracy\": 1.0,\n  \"mean_latency_ms\": 2.142,\n  \"mastery_evidence\": {\n    \"mastery\": 0.5273749999999999,\n    \"confidence\": 0.36800000000000005,\n    \"correct_answers\": 2,\n    \"lab\": {\n      \"topic\": \"NCCL\",\n      \"score\": 0.9425,\n      \"duration_seconds\": 600,\n      \"hints_used\": 1,\n      \"errors\": 1,\n      \"recovered\": true,\n      \"verified\": true\n    },\n    \"next_review\": \"2026-08-24T15:50:57.251509+00:00\",\n    \"concepts\": [\n      \"collectives\",\n      \"rings and trees\",\n      \"topology\",\n      \"transport\",\n      \"failure diagnosis\"\n    ]\n  },\n  \"destination\": \"D:\\\\AI\\\\data\\\\benchmarks\\\\teaching\\\\after.json\"\n}\n",
+      "stderr_tail": ""
+    },
+    {
+      "category": "training",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 797.833,
+      "stdout_tail": "{\n  \"raw_created\": true,\n  \"validated_state\": \"VALIDATED\",\n  \"promoted_state\": \"TRAINING_READY\",\n  \"dedupe\": true,\n  \"redactions_first_record\": 1,\n  \"rejected\": 1,\n  \"splits\": [\n    {\n      \"category\": \"planning\",\n      \"state\": \"HELD_OUT\",\n      \"split\": \"test\",\n      \"count\": 5\n    },\n    {\n      \"category\": \"conversation\",\n      \"state\": \"REJECTED\",\n      \"split\": null,\n      \"count\": 1\n    },\n    {\n      \"category\": \"planning\",\n      \"state\": \"TRAINING_READY\",\n      \"split\": \"train\",\n      \"count\": 52\n    },\n    {\n      \"category\": \"planning\",\n      \"state\": \"TRAINING_READY\",\n      \"split\": \"validation\",\n      \"count\": 3\n    },\n    {\n      \"category\": \"routing\",\n      \"state\": \"TRAINING_READY\",\n      \"split\": \"validation\",\n      \"count\": 1\n    }\n  ],\n  \"validation\": {\n    \"passed\": true,\n    \"records\": 62,\n    \"cross_split_contamination\": [],\n    \"secret_leaks\": [],\n    \"duplicate_policy\": \"exact and normalized-semantic hash before split\"\n  },\n  \"training_execution_started\": false,\n  \"passed\": true,\n  \"destination\": \"D:\\\\AI\\\\data\\\\benchmarks\\\\training\\\\pipeline.json\"\n}\n",
+      "stderr_tail": ""
+    },
+    {
+      "category": "intelligence",
+      "passed": true,
+      "exit_code": 0,
+      "latency_ms": 1626.716,
+      "stdout_tail": "{\n  \"cases\": 10,\n  \"behavior_accuracy\": 1.0\n}\nD:\\AI\\data\\benchmarks\\intelligence\\after.json\n",
+      "stderr_tail": ""
+    }
+  ]
+}

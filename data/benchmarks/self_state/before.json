@@ -1,0 +1,10 @@
+{
+  "source": "Two verified real-runtime failures reproduced on 2026-08-13 before authoritative self-state routing.",
+  "cases": 2,
+  "accuracy": 0.0,
+  "hallucination_rate": 1.0,
+  "rows": [
+    {"input": "GREAT HOW ARE U WORKING AND WHAT ARE U WORKING ON", "actual": "I am doing my work and I am working on a project.", "grounded": false},
+    {"input": "ARE YOU USING OPENAI OR CHATGPT TO ANSWER MY QUESTIONS?", "actual": "Generated a denial and infrastructure narrative without consulting runtime state.", "grounded": false}
+  ]
+}

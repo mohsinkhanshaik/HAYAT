@@ -1,0 +1,46 @@
+{
+  "started_at": "2026-08-13T22:47:30.684702+00:00",
+  "devices": {
+    "devices": [
+      {
+        "name": "Integrated Camera",
+        "status": "OK",
+        "pnp_class": "Camera",
+        "index_hint": 0
+      }
+    ],
+    "count": 1,
+    "stream_opened": false
+  },
+  "privacy": {
+    "retention": false,
+    "background_recording": false
+  },
+  "passed": true,
+  "opened": {
+    "state": "ACTIVE",
+    "active": true,
+    "device_index": 0,
+    "width": 1280,
+    "height": 720,
+    "fps": 0.0,
+    "backend": "DSHOW",
+    "existing": false,
+    "privacy": "Camera is visibly active; no frames are retained automatically."
+  },
+  "frame": {
+    "width": 1280,
+    "height": 720,
+    "bytes": 57945,
+    "mean_luma": 19.455,
+    "stddev_luma": 3.241
+  },
+  "released": {
+    "state": "OFF",
+    "active": false,
+    "device_released": true
+  },
+  "latency_ms": 2911.924,
+  "raw_frame_exists_after_test": false,
+  "finished_at": "2026-08-13T22:47:34.178342+00:00"
+}

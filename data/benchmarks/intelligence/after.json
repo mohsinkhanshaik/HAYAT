@@ -1,0 +1,46 @@
+{
+  "cases": 10,
+  "behavior_accuracy": 1.0,
+  "details": [
+    {
+      "capability": "instruction_understanding",
+      "passed": true
+    },
+    {
+      "capability": "action_understanding",
+      "passed": true
+    },
+    {
+      "capability": "reference_resolution",
+      "passed": true
+    },
+    {
+      "capability": "planning",
+      "passed": true
+    },
+    {
+      "capability": "logical_consistency",
+      "passed": true
+    },
+    {
+      "capability": "error_correction",
+      "passed": true
+    },
+    {
+      "capability": "research_use",
+      "passed": true
+    },
+    {
+      "capability": "memory_use",
+      "passed": true
+    },
+    {
+      "capability": "tool_selection",
+      "passed": true
+    },
+    {
+      "capability": "verification",
+      "passed": true
+    }
+  ]
+}

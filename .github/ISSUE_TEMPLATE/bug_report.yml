@@ -1,0 +1,46 @@
+name: Bug report
+description: HAYAT did something wrong, crashed, or gave a misleading answer.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Clear steps make a fix fast. **Do not paste passwords, tokens or personal data.**
+        Security problems go to the private report instead (see SECURITY.md).
+  - type: textarea
+    id: asked
+    attributes:
+      label: What you asked or did
+      description: The exact message, button or command.
+      placeholder: 'I typed "how are you today ?" in chat.'
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What HAYAT did
+      description: Paste its reply, and the Activity details if you have them.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Commit hash (`git rev-parse --short HEAD`) or release.
+  - type: input
+    id: machine
+    attributes:
+      label: Machine
+      description: Windows version, GPU, RAM, and the model in use.
+      placeholder: Windows 11, RTX 4060 8 GB, 32 GB RAM, hayat:latest
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Logs (with private details removed), screenshots, how often it happens.

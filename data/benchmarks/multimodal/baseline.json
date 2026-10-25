@@ -1,0 +1,31 @@
+{
+  "captured_at": "2026-08-13",
+  "git_commit": "c472e42",
+  "source": "pre-change inspection and executed baseline commands",
+  "automated_tests": {
+    "passed": 106,
+    "failed": 0,
+    "duration_seconds": 11.79
+  },
+  "doctor": "passed",
+  "ollama_models": [
+    "all-minilm:latest",
+    "qwen:latest",
+    "gemma4:latest",
+    "llama3:latest",
+    "qwen3.5:latest"
+  ],
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "vram_total_mib": 8151,
+    "vram_free_mib": 7429
+  },
+  "ram_total_bytes": 42603331584,
+  "disk_d_free_bytes": 3713000000000,
+  "displays": 2,
+  "cameras": 1,
+  "cost_policy_module": false,
+  "camera_manager_module": false,
+  "multimodal_benchmark_module": false,
+  "notes": "The exact pre-change dynamic tool count was not captured; it is intentionally omitted rather than inferred."
+}

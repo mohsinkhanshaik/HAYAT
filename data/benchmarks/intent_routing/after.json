@@ -1,0 +1,824 @@
+{
+  "cases": 100,
+  "intent_accuracy": 0.95,
+  "false_action_rate": 0.0,
+  "unnecessary_planner_rate": 0.0,
+  "wrong_or_missing_tool_rate": 0.01,
+  "confusion": {
+    "BROWSER->BROWSER": 10,
+    "CODING->CODING": 9,
+    "CODING->QUESTION": 1,
+    "COMPUTER_CONTROL->COMPUTER_CONTROL": 10,
+    "CONTROL->CONTROL": 10,
+    "CONVERSATION->CONTROL": 1,
+    "CONVERSATION->CONVERSATION": 9,
+    "DIAGNOSTIC->CONVERSATION": 3,
+    "DIAGNOSTIC->DIAGNOSTIC": 7,
+    "MEMORY->MEMORY": 10,
+    "QUESTION->QUESTION": 10,
+    "RESEARCH->RESEARCH": 10,
+    "SAFE_NON_ACTION->CONVERSATION": 10
+  },
+  "rows": [
+    {
+      "input": "Hi",
+      "group": "CONVERSATION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Hello",
+      "group": "CONVERSATION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Hey AI",
+      "group": "CONVERSATION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Good morning",
+      "group": "CONVERSATION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Thanks",
+      "group": "CONVERSATION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Thank you",
+      "group": "CONVERSATION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Okay",
+      "group": "CONVERSATION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Who are you?",
+      "group": "CONVERSATION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "What can you do?",
+      "group": "CONVERSATION",
+      "actual": "CONTROL",
+      "correct": false,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Tell me about yourself.",
+      "group": "CONVERSATION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "What is a mutex?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "How does SQLite work?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Why is the sky blue?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Who invented Python?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "When was Git created?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Where is the config documented?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Is JSON text?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Are threads processes?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Does Python have a GIL?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Can you explain recursion?",
+      "group": "QUESTION",
+      "actual": "QUESTION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "That didn't work",
+      "group": "DIAGNOSTIC",
+      "actual": "DIAGNOSTIC",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "You misunderstood me",
+      "group": "DIAGNOSTIC",
+      "actual": "CONVERSATION",
+      "correct": false,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Why did you do that?",
+      "group": "DIAGNOSTIC",
+      "actual": "DIAGNOSTIC",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "It only opened Notepad",
+      "group": "DIAGNOSTIC",
+      "actual": "DIAGNOSTIC",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "That is not what I asked",
+      "group": "DIAGNOSTIC",
+      "actual": "CONVERSATION",
+      "correct": false,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "It's not working",
+      "group": "DIAGNOSTIC",
+      "actual": "DIAGNOSTIC",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "That's wrong",
+      "group": "DIAGNOSTIC",
+      "actual": "DIAGNOSTIC",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "It did nothing",
+      "group": "DIAGNOSTIC",
+      "actual": "DIAGNOSTIC",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "It just opened the app",
+      "group": "DIAGNOSTIC",
+      "actual": "DIAGNOSTIC",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "No, that's not what I meant",
+      "group": "DIAGNOSTIC",
+      "actual": "CONVERSATION",
+      "correct": false,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Research GPU scheduling",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Look this up: current HTTPX API",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Search the internet for AI news",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "What is the latest Python release?",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Use official sources for Kubernetes GPUs",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Find evidence about coffee hydration",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Is this still current?",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Research this deeply",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Find the current version of Playwright",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Check the latest Ollama release",
+      "group": "RESEARCH",
+      "actual": "RESEARCH",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Open Notepad",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Close Notepad",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Write hello in Notepad",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Type hello in Notepad",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Click the settings button",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Scroll down",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Press enter",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Open calculator",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Close this window",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Write a note in Notepad saying hello",
+      "group": "COMPUTER_CONTROL",
+      "actual": "COMPUTER_CONTROL",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Open Chrome",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Open Edge",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Navigate to https://example.com",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Open YouTube",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Search YouTube for GPU scheduling",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Go back in the browser",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Open GitHub in Chrome",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Download the public PDF",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Click the browser login link",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Open the website",
+      "group": "BROWSER",
+      "actual": "BROWSER",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Fix this Python bug",
+      "group": "CODING",
+      "actual": "CODING",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Run the tests",
+      "group": "CODING",
+      "actual": "CODING",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Create a Python script",
+      "group": "CODING",
+      "actual": "QUESTION",
+      "correct": false,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Edit the code",
+      "group": "CODING",
+      "actual": "CODING",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Debug this project",
+      "group": "CODING",
+      "actual": "CODING",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Install the project dependency",
+      "group": "CODING",
+      "actual": "CODING",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Compile the application",
+      "group": "CODING",
+      "actual": "CODING",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Fix the failing test",
+      "group": "CODING",
+      "actual": "CODING",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Run pytest",
+      "group": "CODING",
+      "actual": "CODING",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Open the repository and inspect code",
+      "group": "CODING",
+      "actual": "CODING",
+      "correct": true,
+      "requires_tools": true,
+      "false_action": false
+    },
+    {
+      "input": "Remember that Atlas is my project",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Remember this preference",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Recall Project Atlas",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "What do you remember about Atlas?",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Do you remember my project?",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Remember that I prefer concise replies",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Recall the last procedure",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Remember the server name",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "What do you remember?",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Remember that tests run with pytest",
+      "group": "MEMORY",
+      "actual": "MEMORY",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Stop",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Cancel",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Never mind",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Mute",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Unmute",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Voice on",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Voice off",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Voice mode activate",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Push-to-talk mode",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Wake mode",
+      "group": "CONTROL",
+      "actual": "CONTROL",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Notepad is frustrating",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "I used Chrome yesterday",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "The tests were interesting",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Maybe later",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "I am thinking about Python",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "This app seems useful",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Not sure",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "Interesting",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "The browser was slow",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    },
+    {
+      "input": "I like concise answers",
+      "group": "SAFE_NON_ACTION",
+      "actual": "CONVERSATION",
+      "correct": true,
+      "requires_tools": false,
+      "false_action": false
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "source": "Five verified failures captured from the pre-router application and reproduced planner outputs on 2026-08-13.",
+  "cases": 5,
+  "non_action_cases": 3,
+  "action_cases": 2,
+  "false_action_rate": 0.6667,
+  "unnecessary_planner_rate_for_non_actions": 1.0,
+  "correct_action_plan_rate": 0.0,
+  "rows": [
+    {"input": "HI", "expected": "CONVERSATION", "actual": "planner failure on empty steps", "false_action": false},
+    {"input": "WRITE A NOTE IN NOTEPAD", "expected": "edit and verify text", "actual": "launch_application only", "correct_plan": false},
+    {"input": "CLOSE NOTEPAD", "expected": "close and verify target window absent", "actual": "launch_application", "correct_plan": false},
+    {"input": "VOICE MODE ACTIVATE", "expected": "CONTROL", "actual": "unrelated system information", "false_action": true},
+    {"input": "IT NOT WORKING I JUST OPENS NOTEPAD", "expected": "DIAGNOSTIC", "actual": "application action", "false_action": true}
+  ]
+}

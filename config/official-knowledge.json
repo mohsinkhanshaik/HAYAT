@@ -1,0 +1,307 @@
+[
+  {
+    "topic": "Ollama tool calling and parallel tool calls",
+    "url": "https://docs.ollama.com/capabilities/tool-calling",
+    "facts": [
+      {
+        "claim": "Ollama supports tool calling, also known as function calling.",
+        "excerpt": "Ollama supports tool calling (also known as function calling)"
+      },
+      {
+        "claim": "Ollama: request multiple tool calls in parallel",
+        "excerpt": "Request multiple tool calls in parallel"
+      }
+    ]
+  },
+  {
+    "topic": "Ollama structured outputs JSON schema and deterministic completions",
+    "url": "https://docs.ollama.com/capabilities/structured-outputs",
+    "facts": [
+      {
+        "claim": "Responses: provide a JSON schema to the format field.",
+        "excerpt": "Provide a JSON schema to the format field."
+      },
+      {
+        "claim": "For deterministic completions, lower the temperature (e.g., set it to 0).",
+        "excerpt": "Lower the temperature (e.g., set it to 0 ) for more deterministic completions."
+      }
+    ]
+  },
+  {
+    "topic": "Ollama running models API ps memory inventory",
+    "url": "https://docs.ollama.com/api/ps",
+    "facts": [
+      {
+        "claim": "Retrieve currently running models as a list",
+        "excerpt": "Retrieve a list of models that are currently running"
+      }
+    ]
+  },
+  {
+    "topic": "SQLite WAL concurrency and network filesystem limitations",
+    "url": "https://sqlite.org/wal.html",
+    "facts": [
+      {
+        "claim": "WAL can have only one writer at a time.",
+        "excerpt": "there can only be one writer at a time."
+      },
+      {
+        "claim": "The write-ahead log implementation will not work on a network filesystem.",
+        "excerpt": "write-ahead log implementation will not work on a network filesystem."
+      }
+    ]
+  },
+  {
+    "topic": "Python sqlite3 Connection backup with concurrent clients",
+    "url": "https://docs.python.org/3/library/sqlite3.html",
+    "facts": [
+      {
+        "claim": "Connection backup works even if the database is being accessed by other clients or concurrently by the same connection.",
+        "excerpt": "Works even if the database is being accessed by other clients or concurrently by the same connection."
+      }
+    ]
+  },
+  {
+    "topic": "Faster Whisper transcription segments generator execution",
+    "url": "https://github.com/SYSTRAN/faster-whisper",
+    "facts": [
+      {
+        "claim": "Segments is a generator, so transcription only starts when you iterate over it.",
+        "excerpt": "segments is a generator so the transcription only starts when you iterate over it."
+      }
+    ]
+  },
+  {
+    "topic": "Python queue thread communication and priority ordering",
+    "url": "https://docs.python.org/3/library/queue.html",
+    "facts": [
+      {
+        "claim": "The queue module implements multi-producer, multi-consumer queues.",
+        "excerpt": "The queue module implements multi-producer, multi-consumer queues."
+      },
+      {
+        "claim": "Priority: the lowest valued entry is retrieved first.",
+        "excerpt": "the lowest valued entry is retrieved first."
+      }
+    ]
+  },
+  {
+    "topic": "Python concurrent futures executor submit Future result",
+    "url": "https://docs.python.org/3/library/concurrent.futures.html",
+    "facts": [
+      {
+        "claim": "Submitting returns a Future object representing callable execution",
+        "excerpt": "returns a Future object representing the execution of the callable"
+      }
+    ]
+  },
+  {
+    "topic": "Windows desktop application microphone access setting",
+    "url": "https://support.microsoft.com/en-us/windows/privacy/turn-on-app-permissions-for-your-microphone-in-windows",
+    "facts": [
+      {
+        "claim": "For desktop microphone access, ensure Let desktop apps access your microphone is turned on.",
+        "excerpt": "Let desktop apps access your microphone is turned on."
+      }
+    ]
+  },
+  {
+    "topic": "Python asyncio concurrent tasks and task group lifetime",
+    "url": "https://docs.python.org/3/library/asyncio-task.html",
+    "facts": [
+      {
+        "claim": "Asyncio tasks schedule coroutines concurrently.",
+        "excerpt": "Tasks are used to schedule coroutines concurrently."
+      },
+      {
+        "claim": "TaskGroup: all tasks are awaited when the context manager exits.",
+        "excerpt": "All tasks are awaited when the context manager exits."
+      }
+    ]
+  },
+  {
+    "topic": "Python monotonic clock for reliable elapsed time",
+    "url": "https://docs.python.org/3/library/time.html",
+    "facts": [
+      {
+        "claim": "A monotonic clock cannot go backwards.",
+        "excerpt": "a clock that cannot go backwards."
+      },
+      {
+        "claim": "The monotonic clock is not affected by system clock updates.",
+        "excerpt": "The clock is not affected by system clock updates."
+      }
+    ]
+  },
+  {
+    "topic": "Python JSON framing and bounded input parsing",
+    "url": "https://docs.python.org/3/library/json.html",
+    "facts": [
+      {
+        "claim": "JSON is not a framed protocol",
+        "excerpt": "JSON is not a framed protocol"
+      },
+      {
+        "claim": "JSON: limiting the size of data to be parsed is recommended.",
+        "excerpt": "Limiting the size of data to be parsed is recommended."
+      }
+    ]
+  },
+  {
+    "topic": "Python thread shutdown and join synchronization",
+    "url": "https://docs.python.org/3/library/threading.html",
+    "facts": [
+      {
+        "claim": "In Python, daemon threads are abruptly stopped at shutdown.",
+        "excerpt": "Daemon threads are abruptly stopped at shutdown."
+      },
+      {
+        "claim": "Thread join blocks the calling thread until the joined thread is terminated.",
+        "excerpt": "This blocks the calling thread until the thread whose join() method is called is terminated."
+      }
+    ]
+  },
+  {
+    "topic": "Python functools cache consistency with concurrent threads",
+    "url": "https://docs.python.org/3/library/functools.html",
+    "facts": [
+      {
+        "claim": "The functools cache is threadsafe and the wrapped function can be used in multiple threads.",
+        "excerpt": "The cache is threadsafe so that the wrapped function can be used in multiple threads."
+      }
+    ]
+  },
+  {
+    "topic": "Python pathlib resolve versus absolute path behavior",
+    "url": "https://docs.python.org/3/library/pathlib.html",
+    "facts": [
+      {
+        "claim": "Path.resolve: make the path absolute, resolving any symlinks.",
+        "excerpt": "Make the path absolute, resolving any symlinks.",
+        "scope": "Python pathlib Path.resolve"
+      },
+      {
+        "claim": "Path.absolute makes the path absolute, without normalization or resolving symlinks.",
+        "excerpt": "Make the path absolute, without normalization or resolving symlinks.",
+        "scope": "Python pathlib Path.absolute"
+      }
+    ]
+  },
+  {
+    "topic": "Python deque append and appendleft ordering",
+    "url": "https://docs.python.org/3/library/collections.html",
+    "facts": [
+      {
+        "claim": "Deque.append: add an item to the right side of the deque.",
+        "excerpt": "Add item to the right side of the deque."
+      },
+      {
+        "claim": "Deque.appendleft: add an item to the left side of the deque.",
+        "excerpt": "Add item to the left side of the deque."
+      }
+    ]
+  },
+  {
+    "topic": "Python subprocess run completion result",
+    "url": "https://docs.python.org/3/library/subprocess.html",
+    "facts": [
+      {
+        "claim": "Subprocess.run: wait for command to complete, then return a CompletedProcess instance.",
+        "excerpt": "Wait for command to complete, then return a CompletedProcess instance."
+      }
+    ]
+  },
+  {
+    "topic": "PEFT loading saved adapters for continued local training",
+    "url": "https://huggingface.co/docs/peft/main/en/package_reference/peft_model",
+    "facts": [
+      {
+        "claim": "If is_trainable is false, the adapter is frozen and can only be used for inference.",
+        "excerpt": "If False, the adapter will be frozen and can only be used for inference."
+      }
+    ]
+  },
+  {
+    "topic": "Transformers chat templates and role content dictionaries",
+    "url": "https://huggingface.co/docs/transformers/chat_templating",
+    "facts": [
+      {
+        "claim": "The input to apply_chat_template should be a list of dictionaries with role and content keys.",
+        "excerpt": "The input to apply_chat_template should be structured as a list of dictionaries with role and content keys."
+      }
+    ]
+  },
+  {
+    "topic": "Python statistics median sorting and middle value",
+    "url": "https://docs.python.org/3/library/statistics.html",
+    "facts": [
+      {
+        "claim": "Return the median (middle value) of numeric data",
+        "excerpt": "Return the median (middle value) of numeric data"
+      }
+    ]
+  },
+  {
+    "topic": "Python fractions rational number arithmetic",
+    "url": "https://docs.python.org/3/library/fractions.html",
+    "facts": [
+      {
+        "claim": "The fractions module provides support for rational number arithmetic.",
+        "excerpt": "The fractions module provides support for rational number arithmetic."
+      }
+    ]
+  },
+  {
+    "topic": "Python itertools memory efficient iteration",
+    "url": "https://docs.python.org/3/library/itertools.html",
+    "facts": [
+      {
+        "claim": "This module implements a number of iterator building blocks inspired by constructs from APL, Haskell, and SML.",
+        "excerpt": "This module implements a number of iterator building blocks inspired by constructs from APL, Haskell, and SML."
+      }
+    ]
+  },
+  {
+    "topic": "Python hashlib SHA256 hashes",
+    "url": "https://docs.python.org/3/library/hashlib.html",
+    "facts": [
+      {
+        "claim": "This module implements a common interface to many different hash algorithms.",
+        "excerpt": "This module implements a common interface to many different hash algorithms."
+      }
+    ]
+  },
+  {
+    "topic": "Earth planet position in the solar system",
+    "url": "https://science.nasa.gov/earth/facts/",
+    "refresh_days": 30,
+    "facts": [
+      {
+        "claim": "Earth is the third planet from the Sun",
+        "excerpt": "Earth formed when gravity pulled swirling gas and dust in to become the third planet from the Sun."
+      }
+    ]
+  },
+  {
+    "topic": "Mars planet position in the solar system",
+    "url": "https://science.nasa.gov/mars/facts/",
+    "refresh_days": 30,
+    "facts": [
+      {
+        "claim": "Mars is the fourth planet from the Sun",
+        "excerpt": "Mars \u2014 the fourth planet from the Sun \u2014 is a dusty, cold, desert world with a very thin atmosphere."
+      }
+    ]
+  },
+  {
+    "topic": "Moon Earth natural satellite",
+    "url": "https://science.nasa.gov/moon/facts/",
+    "refresh_days": 30,
+    "facts": [
+      {
+        "claim": "The Moon is Earth's only natural satellite.",
+        "excerpt": "The Moon is Earth's only natural satellite."
+      }
+    ]
+  }
+]

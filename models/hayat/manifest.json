@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "name": "hayat:latest",
+  "kind": "ollama_custom_identity_model",
+  "base_model": "qwen3.6-35b-a3b-uncensored:q4_k_m",
+  "weights": "inherited_foundation_weights",
+  "adapter": null,
+  "local_only": true,
+  "automatic_training": false,
+  "automatic_promotion": false,
+  "provenance_note": "HAYAT is a distinct local Ollama identity package derived from Qwen3.6-35B-A3B Uncensored foundation weights (qwen3.5 before 2026-10-04); it is not a from-scratch foundation model."
+}

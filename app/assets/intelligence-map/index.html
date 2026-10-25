@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>HAYAT World Atlas</title>
+  <link rel="icon" href="favicon.svg"><link rel="stylesheet" href="vendor/leaflet.css"><link rel="stylesheet" href="map.css">
+  <script defer src="vendor/leaflet.js"></script><script defer src="vendor/hls.js"></script><script defer src="map.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#query">Skip to search</a>
+  <header>
+    <div class="brand"><div class="orb" aria-hidden="true">H</div><div><strong>HAYAT <span>ATLAS</span></strong><small>A WORLD IN VIEW</small></div></div>
+    <nav aria-label="Atlas workspace"><button id="reports-button">Reports</button><button id="sources-button">Source health</button><button id="resources-button">Resources</button></nav>
+    <div class="header-actions"><button id="motion" aria-pressed="false">Pause motion</button><button id="refresh" class="primary">Refresh view</button></div>
+  </header>
+  <div id="progress" aria-hidden="true"></div>
+  <main>
+    <section class="explorer" aria-label="Explore the atlas">
+      <div class="explorer-heading"><div class="eyebrow">WORLD OBSERVATORY</div><h1>Closer to the world.</h1><p>Find a view. Follow an event.<br>Understand what is around you.</p></div>
+      <form id="filters">
+        <label for="query">Find a place or observation</label>
+        <div class="search-field"><input id="query" maxlength="500" placeholder="Place, road, event…" autocomplete="off"><button type="submit" aria-label="Apply search">→</button></div>
+        <div class="destinations" aria-label="Quick destinations"><button type="button" data-destination="world">World</button><button type="button" data-destination="india">India</button><button type="button" data-destination="makkah">Makkah</button></div>
+        <div class="filter-pair"><label>Layer<select id="feed"><option value="">All layers</option></select></label><label>Region<select id="region"></select></label></div>
+        <label>Camera media<select id="media"><option value="">All observations</option><option value="stream">HLS streams</option><option value="video">Video / clips</option><option value="image">Refreshing stills</option><option value="page">Publisher players</option></select></label>
+        <div class="filter-pair"><label>Event category<select id="category"><option value="">All categories</option></select></label><label>Severity<select id="severity"><option value="">Any severity</option><option value="high">High</option><option value="medium">Medium</option></select></label></div>
+        <label>Sort observations<select id="sort"><option value="priority">Priority</option><option value="nearest">Nearest map centre</option><option value="title">Name A–Z</option></select></label>
+        <div class="filter-actions"><button type="button" id="search-button">Search evidence</button><button type="button" id="reset-filters">Reset</button></div>
+        <div class="visibility"><label class="check"><input type="checkbox" id="cameras" checked> Cameras</label><label class="check"><input type="checkbox" id="events" checked> Events</label><label class="check"><input type="checkbox" id="fresh-only"> Current feeds only</label></div>
+      </form>
+      <details class="layer-menu"><summary>Map &amp; live layers</summary>
+        <fieldset id="layers"><legend>Basemap</legend><label class="check"><input type="checkbox" id="streets"> Street detail (online)</label><label class="check layer-satellite"><input type="checkbox" id="satellite"> Satellite · yesterday</label><label class="check layer-radar"><input type="checkbox" id="radar"> Weather radar · US</label><span class="layer-group-title">Moving observations</span><label class="check layer-aircraft"><input type="checkbox" id="aircraft"> Aircraft</label><label class="check layer-vessels"><input type="checkbox" id="vessels"> Ships</label><label class="check layer-transit"><input type="checkbox" id="transit"> Transit</label><label class="check layer-iss"><input type="checkbox" id="iss"> ISS orbit</label><label class="check layer-fires"><input type="checkbox" id="fires"> Fires · last 24 h</label><span class="layer-group-title">World trade</span><label class="check layer-trade"><input type="checkbox" id="trade"> Shipping chokepoints · events nearby</label></fieldset>
+      </details>
+      <section class="browse-section" aria-label="Observations in view"><div class="section-heading"><h2>In this view</h2><span id="visible-count">—</span></div><div id="browse-list"><p class="note">Loading observations…</p></div></section>
+      <div class="explorer-foot"><span id="loaded-count">Reading the atlas…</span><span><kbd>/</kbd> Search</span></div>
+    </section>
+    <section class="map-workspace" aria-label="Map workspace">
+      <div id="map" aria-label="Interactive world intelligence map"></div>
+      <section id="wall" hidden aria-label="Video wall"><div class="wall-head"><strong>Video wall</strong><span id="wall-note" role="status"></span><button id="wall-next">Next 6</button><button id="wall-close" aria-label="Close the video wall">×</button></div><div id="wall-grid"></div></section>
+      <div class="map-topline"><div class="view-label"><span class="status-dot" aria-hidden="true"></span><strong id="view-name">World view</strong><span id="view-coordinates">25.0° N · 0.0° E</span></div><div class="map-actions"><button id="view-back" disabled title="Previous view (Alt+←)">← Back</button><button id="locate">My location</button><button id="video-wall" aria-pressed="false" title="Play the live streams in view side by side">Video wall</button><button id="street-toggle" aria-pressed="false">Street detail</button><button id="fit-observations">Fit results</button><button id="around-centre">Explore here</button><button id="deep-centre" title="Every source for this spot, reasoned into findings">Deep look here</button><button id="toggle-details" aria-controls="details-panel" aria-expanded="false">Details</button></div></div>
+      <section class="telemetry" aria-label="Visible observations"><div><strong id="record-count">—</strong><span>In view</span></div><div><strong id="stream-count">—</strong><span>HLS streams</span></div><div><strong id="still-count">—</strong><span>Stills</span></div><div><strong id="source-count">—</strong><span>Feeds current</span></div></section>
+      <div class="map-bottomline"><div class="map-legend" aria-label="Map legend"><span><i class="legend-stream"></i>Stream</span><span><i class="legend-camera"></i>Still / player</span><span><i class="legend-event"></i>Event</span><span><i class="legend-stale"></i>Stale feed</span></div><span class="map-hint">Select a marker to explore</span></div>
+    </section>
+    <aside id="details-panel" hidden aria-label="Selected observation"><div class="details-toolbar"><span class="eyebrow">OBSERVATION DESK</span><button id="close-details" aria-label="Close observation details">×</button></div><div id="details"><div class="eyebrow">YOUR NEXT DISCOVERY</div><h1>One place.<br>A wider picture.</h1><p>Select a camera or event on the map, or choose an observation from the list.</p><div class="welcome-card"><span class="welcome-number">01</span><p>Watch public publisher views, with streams and stills clearly labelled.</p></div><div class="welcome-card"><span class="welcome-number">02</span><p>Explore nearby events and compare the evidence behind them.</p></div><p class="note">A current feed does not guarantee a live camera or a verified capture time.</p></div></aside>
+  </main>
+  <footer><p id="status" role="status">Loading cached public observations…</p><button id="about-map">Map information</button></footer>
+  <dialog id="map-information" aria-labelledby="map-information-title"><div class="dialog-heading"><h1 id="map-information-title">About this atlas</h1><button id="close-about" aria-label="Close map information">×</button></div><p>HAYAT brings public observations into one map. Each record retains its publisher and evidence. Coverage, playback, and capture times vary.</p><h2>Map credits</h2><p><a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener noreferrer">Natural Earth</a> land geometry · <a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet</a> · <a href="https://github.com/video-dev/hls.js" target="_blank" rel="noopener noreferrer">HLS.js</a>.</p><p class="note">Online street, satellite, and radar layers show their provider attribution on the map. Those layers connect to their publishers when selected.</p></dialog>
+</body>
+</html>

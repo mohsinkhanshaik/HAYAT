@@ -1,0 +1,7 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>HAYAT Browser Bridge</title>
+<style>body{font:15px system-ui;max-width:650px;margin:48px auto;padding:0 24px;background:#0b1118;color:#eef}input{width:100%;padding:10px;margin:8px 0;background:#111b27;color:#fff;border:1px solid #496}button{padding:10px 18px}</style></head>
+<body><h1>HAYAT Browser Bridge</h1><p>Paste the pairing token printed by <code>python main.py --browser-bridge-token</code>. It stays in this browser profile and authenticates only to localhost.</p>
+<label>Pairing token<input id="token" type="password" autocomplete="off"></label>
+<label><input id="enabled" type="checkbox"> Enable bridge</label><br><button id="save">Save</button><span id="status"></span>
+<script src="options.js"></script></body></html>

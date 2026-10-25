@@ -1,0 +1,959 @@
+{
+  "generated_at": "2026-08-21T04:47:30.275801+00:00",
+  "scope": "D:\\AI",
+  "release": {
+    "tests_passed": 1609,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "seconds": 411.47
+  },
+  "brain_mesh": {
+    "generated_at": "2026-08-21T04:47:08.619617+00:00",
+    "passed": true,
+    "mode": "deep",
+    "independent": {
+      "passed": true,
+      "critical_failures": [],
+      "nodes": {
+        "interface": {
+          "passed": true,
+          "detail": "one assistant boundary shared by text, GUI, and voice",
+          "evidence": {
+            "voice_available": true
+          },
+          "critical": true,
+          "latency_ms": 0.015
+        },
+        "intent": {
+          "passed": true,
+          "detail": "independent deterministic question classification",
+          "evidence": {
+            "intent": "QUESTION"
+          },
+          "critical": true,
+          "latency_ms": 1.881
+        },
+        "router": {
+          "passed": true,
+          "detail": "measured router is available with bounded fallbacks",
+          "evidence": {
+            "identity": "hayat:latest",
+            "max_fallbacks": 2,
+            "verified_outcomes": 103
+          },
+          "critical": false,
+          "latency_ms": 0.245
+        },
+        "planner": {
+          "passed": true,
+          "detail": "bounded planner is present",
+          "evidence": {
+            "max_steps": 20
+          },
+          "critical": true,
+          "latency_ms": 0.008
+        },
+        "authority": {
+          "passed": true,
+          "detail": "registry is governed by the same protected authority kernel",
+          "evidence": {
+            "protected_categories": 16,
+            "owner_mode": true
+          },
+          "critical": true,
+          "latency_ms": 0.024
+        },
+        "tools": {
+          "passed": true,
+          "detail": "agent and operator UI share one typed tool registry",
+          "evidence": {
+            "registered": 117,
+            "unique": true
+          },
+          "critical": true,
+          "latency_ms": 0.023
+        },
+        "verifier": {
+          "passed": true,
+          "detail": "final-state verifier is independently callable",
+          "evidence": {},
+          "critical": true,
+          "latency_ms": 0.005
+        },
+        "memory": {
+          "passed": true,
+          "detail": "SQLite, FTS, hashed vectors, and tamper digests agree",
+          "evidence": {
+            "memories": 603,
+            "checked": 603,
+            "mismatches": 0
+          },
+          "critical": true,
+          "latency_ms": 80.013
+        },
+        "dna": {
+          "passed": true,
+          "detail": "DNA associations use the same healthy indexed memory",
+          "evidence": {
+            "associations": 14,
+            "bounded": true,
+            "poisoning_resistant": true
+          },
+          "critical": true,
+          "latency_ms": 55.371
+        },
+        "research": {
+          "passed": true,
+          "detail": "claims remain source-backed and contradictions are explicit",
+          "evidence": {
+            "claims": 1093,
+            "evidence": 1128,
+            "unresolved_conflicts": 0
+          },
+          "critical": true,
+          "latency_ms": 1.884
+        },
+        "learning": {
+          "passed": true,
+          "detail": "learning layers are separate and permission-bounded",
+          "evidence": {
+            "alignment": "aligned_with_warnings",
+            "blockers": [],
+            "automatic_training": false
+          },
+          "critical": false,
+          "latency_ms": 88.532
+        },
+        "network": {
+          "passed": true,
+          "detail": "authorized public-network paths are present; content stays untrusted",
+          "evidence": {
+            "capabilities": [
+              "browser_navigate",
+              "mcp_servers",
+              "public_web_fetch",
+              "web_search"
+            ],
+            "antimalware": "microsoft_defender",
+            "arbitrary_remote_control": false
+          },
+          "critical": false,
+          "latency_ms": 0.124
+        },
+        "perception": {
+          "passed": true,
+          "detail": "sensor nodes expose live state and remain permissioned",
+          "evidence": {
+            "camera_state": "OFF",
+            "voice_state": "idle",
+            "raw_camera_retention": false
+          },
+          "critical": false,
+          "latency_ms": 652.099
+        },
+        "observability": {
+          "passed": true,
+          "detail": "events, failures, turns, and resource telemetry are connected",
+          "evidence": {},
+          "critical": true,
+          "latency_ms": 0.017
+        }
+      }
+    },
+    "team": {
+      "passed": true,
+      "checks": {
+        "single_tool_bus": true,
+        "authority_on_every_tool": true,
+        "shared_memory": true,
+        "state_reads_live_registry": true,
+        "document_learning_reuses_shared_memory": true,
+        "model_cannot_authorize": true,
+        "tool_success_requires_verification": true,
+        "network_content_untrusted": true,
+        "counterattack_disabled": true
+      },
+      "contract": "observe -> authorize -> act -> observe -> verify -> remember"
+    },
+    "nodes": 14,
+    "edges": 16,
+    "unsafe_capabilities": {
+      "software_cracking": false,
+      "unauthorized_access": false,
+      "satellite_control_without_authorized_api": false,
+      "counterattack": false
+    },
+    "elapsed_ms": 880.423,
+    "topology": {
+      "generated_at": "2026-08-21T04:47:08.619651+00:00",
+      "nodes": [
+        {
+          "node_id": "interface",
+          "label": "Interface",
+          "layer": "interaction",
+          "responsibility": "Shared GUI, CLI, and voice request boundary",
+          "critical": true
+        },
+        {
+          "node_id": "intent",
+          "label": "Intent",
+          "layer": "reasoning",
+          "responsibility": "Classify the request without granting authority",
+          "critical": true
+        },
+        {
+          "node_id": "router",
+          "label": "Model Router",
+          "layer": "reasoning",
+          "responsibility": "Choose deterministic, HAYAT, or specialist routes",
+          "critical": false
+        },
+        {
+          "node_id": "planner",
+          "label": "Planner",
+          "layer": "action",
+          "responsibility": "Create bounded steps and success criteria",
+          "critical": true
+        },
+        {
+          "node_id": "authority",
+          "label": "Authority",
+          "layer": "control",
+          "responsibility": "Make the final ALLOW, ASK, or DENY decision",
+          "critical": true
+        },
+        {
+          "node_id": "tools",
+          "label": "Tool Bus",
+          "layer": "action",
+          "responsibility": "Execute typed contracts and retain observations",
+          "critical": true
+        },
+        {
+          "node_id": "verifier",
+          "label": "Truth Gate",
+          "layer": "control",
+          "responsibility": "Check observed final state before success",
+          "critical": true
+        },
+        {
+          "node_id": "memory",
+          "label": "Memory",
+          "layer": "knowledge",
+          "responsibility": "Tamper-evident durable recall and indexes",
+          "critical": true
+        },
+        {
+          "node_id": "dna",
+          "label": "DNA Graph",
+          "layer": "knowledge",
+          "responsibility": "Bounded multi-seed associative traversal",
+          "critical": true
+        },
+        {
+          "node_id": "research",
+          "label": "Research",
+          "layer": "knowledge",
+          "responsibility": "Fresh, sourced, contradiction-aware public knowledge",
+          "critical": true
+        },
+        {
+          "node_id": "learning",
+          "label": "Learning",
+          "layer": "adaptation",
+          "responsibility": "Teaching, procedures, reflection, and gated training",
+          "critical": false
+        },
+        {
+          "node_id": "network",
+          "label": "Network",
+          "layer": "operator",
+          "responsibility": "Public web, browser bridge, MCP, and scoped connectors",
+          "critical": false
+        },
+        {
+          "node_id": "perception",
+          "label": "Perception",
+          "layer": "operator",
+          "responsibility": "Screen, camera, OCR, clipboard, and voice sensors",
+          "critical": false
+        },
+        {
+          "node_id": "observability",
+          "label": "Observability",
+          "layer": "control",
+          "responsibility": "Health, events, failures, timing, and audit evidence",
+          "critical": true
+        }
+      ],
+      "edges": [
+        {
+          "source": "interface",
+          "target": "intent",
+          "contract": "normalized request + session"
+        },
+        {
+          "source": "intent",
+          "target": "router",
+          "contract": "capability + complexity + modality"
+        },
+        {
+          "source": "intent",
+          "target": "planner",
+          "contract": "action intent + success criteria"
+        },
+        {
+          "source": "router",
+          "target": "planner",
+          "contract": "bounded local provider"
+        },
+        {
+          "source": "planner",
+          "target": "authority",
+          "contract": "proposed tool + exact arguments"
+        },
+        {
+          "source": "authority",
+          "target": "tools",
+          "contract": "scoped decision; model cannot grant it"
+        },
+        {
+          "source": "tools",
+          "target": "verifier",
+          "contract": "typed observation, never assumed success"
+        },
+        {
+          "source": "verifier",
+          "target": "memory",
+          "contract": "verified outcome + provenance"
+        },
+        {
+          "source": "memory",
+          "target": "dna",
+          "contract": "indexed seeds and trusted associations"
+        },
+        {
+          "source": "dna",
+          "target": "intent",
+          "contract": "bounded recalled context"
+        },
+        {
+          "source": "research",
+          "target": "verifier",
+          "contract": "claims + evidence + contradictions"
+        },
+        {
+          "source": "network",
+          "target": "research",
+          "contract": "untrusted public content"
+        },
+        {
+          "source": "perception",
+          "target": "verifier",
+          "contract": "multi-frame or live state evidence"
+        },
+        {
+          "source": "learning",
+          "target": "memory",
+          "contract": "validated learning records"
+        },
+        {
+          "source": "observability",
+          "target": "planner",
+          "contract": "failures and measured outcomes"
+        },
+        {
+          "source": "verifier",
+          "target": "interface",
+          "contract": "canonical complete/failed response"
+        }
+      ],
+      "truth_order": [
+        "live observation",
+        "verified sourced knowledge",
+        "durable memory",
+        "model inference"
+      ],
+      "authority_owner": "deterministic authority kernel",
+      "model_can_authorize": false,
+      "consciousness_claimed": false
+    }
+  },
+  "brain_benchmark": {
+    "generated_at": "2026-08-21T04:47:27.879523+00:00",
+    "iterations": 20,
+    "passed": true,
+    "benchmarks": {
+      "intent": {
+        "mean_ms": 0.113,
+        "p95_ms": 0.176,
+        "min_ms": 0.087,
+        "max_ms": 0.39,
+        "cold_first_ms": 0.104,
+        "warm_mean_ms": 0.114
+      },
+      "model_router": {
+        "mean_ms": 868.945,
+        "p95_ms": 1.478,
+        "min_ms": 0.833,
+        "max_ms": 17361.115,
+        "cold_first_ms": 17361.115,
+        "warm_mean_ms": 0.936
+      },
+      "memory_health": {
+        "mean_ms": 51.265,
+        "p95_ms": 55.57,
+        "min_ms": 48.74,
+        "max_ms": 65.609,
+        "cold_first_ms": 65.609,
+        "warm_mean_ms": 50.51
+      },
+      "tool_inventory": {
+        "mean_ms": 0.019,
+        "p95_ms": 0.026,
+        "min_ms": 0.015,
+        "max_ms": 0.051,
+        "cold_first_ms": 0.051,
+        "warm_mean_ms": 0.017
+      },
+      "team_contract": {
+        "mean_ms": 0.141,
+        "p95_ms": 0.239,
+        "min_ms": 0.093,
+        "max_ms": 0.42,
+        "cold_first_ms": 0.42,
+        "warm_mean_ms": 0.126
+      }
+    },
+    "independent_passed": true,
+    "team_passed": true,
+    "critical_failures": [],
+    "scope": "routing and coordination only; no generation quality claim",
+    "artifact": "D:\\AI\\data\\benchmarks\\brain_mesh\\latest.json"
+  },
+  "learning": {
+    "layers": {
+      "durable_memory": {
+        "purpose": "conversation, task, semantic, reflection, and association recall",
+        "records": 603,
+        "by_type": {
+          "episodic": 281,
+          "learning": 10,
+          "reflection": 283,
+          "semantic": 29
+        },
+        "tasks": 283,
+        "conversations": 5614,
+        "dna_associations": 14,
+        "trust_boundary": "tamper-checked local rows; transient state is session-scoped"
+      },
+      "researched_knowledge": {
+        "purpose": "source-backed external facts and contradiction-aware claims",
+        "runs": 119,
+        "sources": 392,
+        "knowledge": 113,
+        "claims": 1093,
+        "evidence": 1128,
+        "entities": 1834,
+        "relationships": 838,
+        "stale": 14,
+        "superseded": 10,
+        "disputed_claims": 7,
+        "unresolved_conflicts": 0,
+        "monitored_sources": 1,
+        "trust_boundary": "public evidence, provenance, freshness, and claim status"
+      },
+      "teaching_progress": {
+        "purpose": "measured mastery, prerequisites, quizzes, labs, and spaced review",
+        "topics": 39,
+        "weak_topics": 0,
+        "reviews_due": 1,
+        "recent_events": 3,
+        "trust_boundary": "scores are evidence of practice, not general factual truth"
+      },
+      "background_learning": {
+        "purpose": "bounded idle-time research with fresh-result reuse",
+        "enabled": true,
+        "research_level": "deep",
+        "queue": {
+          "learned": 60,
+          "pending": 6
+        },
+        "principal": "BACKGROUND_LEARNER",
+        "allowed_writes": [
+          "knowledge_research"
+        ],
+        "trust_boundary": "public reads and validated knowledge writes only"
+      },
+      "procedural_learning": {
+        "purpose": "promoted, repeatable local procedures that bypass model inference",
+        "patterns_watched": 0,
+        "ready_to_learn": 0,
+        "learned_patterns": 0,
+        "trusted_procedures": 5,
+        "registered_skills": 5,
+        "trust_boundary": "repetition proposes; verification and promotion authorize"
+      },
+      "model_training": {
+        "purpose": "verified, split-isolated examples for optional local adapters",
+        "records": 4,
+        "eligible": 4,
+        "private_local_records": 0,
+        "states": {
+          "HELD_OUT": 0,
+          "RAW": 0,
+          "REJECTED": 0,
+          "TRAINING_READY": 4,
+          "VALIDATED": 0
+        },
+        "validation_passed": true,
+        "automatic_training": false,
+        "trust_boundary": "explicit validation; private data requires consent and stays local"
+      }
+    },
+    "research_alignment": {
+      "claims": 1093,
+      "claims_with_evidence": 1091,
+      "claim_evidence_coverage": 0.9982,
+      "summaries": 113,
+      "summaries_with_sources": 113,
+      "summary_source_coverage": 1.0,
+      "active_summaries": 100,
+      "stale_active_summaries": 12,
+      "disputed_claims": 7,
+      "unresolved_conflicts": 0
+    },
+    "recall_health": {
+      "healthy": true,
+      "integrity": "ok",
+      "memories": 603,
+      "hashed_vectors": 603,
+      "neural_vectors": 463,
+      "dna_associations": 14,
+      "contradiction_links": 0,
+      "fts_available": true,
+      "fts_rows": 603,
+      "missing_hashed_vectors": 0,
+      "missing_fts_rows": 0
+    },
+    "databases": {
+      "memory": {
+        "path": "D:\\AI\\data\\memory\\agent.db",
+        "exists": true,
+        "bytes": 56381440,
+        "page_size": 4096,
+        "pages": 13765,
+        "free_pages": 355,
+        "reclaimable_bytes": 1454080,
+        "journal_mode": "wal"
+      },
+      "knowledge": {
+        "path": "D:\\AI\\data\\knowledge\\knowledge.db",
+        "exists": true,
+        "bytes": 26832896,
+        "page_size": 4096,
+        "pages": 6551,
+        "free_pages": 516,
+        "reclaimable_bytes": 2113536,
+        "journal_mode": "wal"
+      },
+      "teaching": {
+        "path": "D:\\AI\\data\\memory\\learning.db",
+        "exists": true,
+        "bytes": 45056,
+        "page_size": 4096,
+        "pages": 11,
+        "free_pages": 0,
+        "reclaimable_bytes": 0,
+        "journal_mode": "delete"
+      },
+      "background_queue": {
+        "path": "D:\\AI\\data\\learning\\learning.db",
+        "exists": true,
+        "bytes": 65536,
+        "page_size": 4096,
+        "pages": 16,
+        "free_pages": 0,
+        "reclaimable_bytes": 0,
+        "journal_mode": "wal"
+      },
+      "training": {
+        "path": "D:\\AI\\data\\training\\registry.db",
+        "exists": true,
+        "bytes": 32768,
+        "page_size": 4096,
+        "pages": 8,
+        "free_pages": 0,
+        "reclaimable_bytes": 0,
+        "journal_mode": "delete"
+      }
+    },
+    "alignment": {
+      "aligned": true,
+      "status": "aligned_with_warnings",
+      "checks": [
+        {
+          "name": "memory_integrity",
+          "passed": true,
+          "severity": "blocker",
+          "evidence": "SQLite integrity: ok"
+        },
+        {
+          "name": "recall_indexes",
+          "passed": true,
+          "severity": "blocker",
+          "evidence": "hashed missing=0, FTS missing=0"
+        },
+        {
+          "name": "claim_provenance",
+          "passed": true,
+          "severity": "blocker",
+          "evidence": "99.8% of claims have evidence"
+        },
+        {
+          "name": "summary_provenance",
+          "passed": true,
+          "severity": "blocker",
+          "evidence": "100.0% of summaries have a source"
+        },
+        {
+          "name": "contradictions_resolved",
+          "passed": true,
+          "severity": "blocker",
+          "evidence": "0 unresolved conflict(s)"
+        },
+        {
+          "name": "freshness",
+          "passed": false,
+          "severity": "warning",
+          "evidence": "12 active summary/summaries require refresh"
+        },
+        {
+          "name": "training_dataset",
+          "passed": true,
+          "severity": "blocker",
+          "evidence": "no leakage, split contamination, or invalid private consent"
+        },
+        {
+          "name": "automatic_training_disabled",
+          "passed": true,
+          "severity": "blocker",
+          "evidence": "learning cannot silently change model weights"
+        },
+        {
+          "name": "background_least_authority",
+          "passed": true,
+          "severity": "blocker",
+          "evidence": "background writes are restricted to validated research knowledge"
+        },
+        {
+          "name": "background_learning_approved",
+          "passed": true,
+          "severity": "warning",
+          "evidence": "owner configuration enables bounded continuous learning"
+        }
+      ],
+      "blockers": [],
+      "warnings": [
+        "freshness"
+      ],
+      "policy": {
+        "public_learning": "approved within budgets and robots/site rules",
+        "local_storage": "approved for validated provenance-bearing knowledge",
+        "private_training": "requires per-dataset owner consent and remains local-only",
+        "self_permission_changes": "not approved"
+      },
+      "inventory_generated_at": "2026-08-21T04:47:27.960723+00:00"
+    }
+  },
+  "memory_integrity": {
+    "checked": 603,
+    "valid": 603,
+    "mismatches": [],
+    "tamper_evident": true
+  },
+  "knowledge": {
+    "database": "D:\\AI\\data\\knowledge\\knowledge.db",
+    "runs": 119,
+    "sources": 392,
+    "knowledge": 113,
+    "claims": 1093,
+    "evidence": 1128,
+    "entities": 1834,
+    "relationships": 838,
+    "stale": 14,
+    "superseded": 10,
+    "disputed_claims": 7,
+    "unresolved_conflicts": 0,
+    "query_cache": 113,
+    "source_cache": 293,
+    "failures": 178,
+    "monitored_sources": 1,
+    "provider_performance": [
+      {
+        "provider": "duckduckgo_html",
+        "searches": 147,
+        "successes": 147,
+        "failures": 0,
+        "total_latency_ms": 156375,
+        "results_total": 890,
+        "duplicate_total": 0,
+        "quality_total": 74.52729523809523,
+        "updated_at": "2026-08-20T21:30:53.388703+00:00"
+      },
+      {
+        "provider": "bing_rss",
+        "searches": 55,
+        "successes": 55,
+        "failures": 0,
+        "total_latency_ms": 43010,
+        "results_total": 427,
+        "duplicate_total": 0,
+        "quality_total": 17.962557142857136,
+        "updated_at": "2026-08-21T01:29:59.479760+00:00"
+      }
+    ],
+    "source_performance": [
+      {
+        "domain": "docs.python.org",
+        "requests": 60,
+        "successes": 58,
+        "failures": 2,
+        "total_latency_ms": 21733,
+        "quality_total": 50.12899999999995,
+        "rate_limits": 0,
+        "last_failure": null,
+        "updated_at": "2026-08-17T20:51:14.510693+00:00"
+      },
+      {
+        "domain": "github.com",
+        "requests": 26,
+        "successes": 25,
+        "failures": 1,
+        "total_latency_ms": 21700,
+        "quality_total": 14.83,
+        "rate_limits": 0,
+        "last_failure": null,
+        "updated_at": "2026-08-20T17:27:18.169692+00:00"
+      },
+      {
+        "domain": "www.linkedin.com",
+        "requests": 21,
+        "successes": 0,
+        "failures": 21,
+        "total_latency_ms": 2837,
+        "quality_total": 0.0,
+        "rate_limits": 0,
+        "last_failure": "PermissionError",
+        "updated_at": "2026-08-20T17:32:15.366192+00:00"
+      },
+      {
+        "domain": "www.researchgate.net",
+        "requests": 16,
+        "successes": 0,
+        "failures": 16,
+        "total_latency_ms": 3444,
+        "quality_total": 0.0,
+        "rate_limits": 0,
+        "last_failure": "HTTPStatusError",
+        "updated_at": "2026-08-20T20:44:37.304171+00:00"
+      },
+      {
+        "domain": "en.wikipedia.org",
+        "requests": 14,
+        "successes": 0,
+        "failures": 14,
+        "total_latency_ms": 4365,
+        "quality_total": 0.0,
+        "rate_limits": 0,
+        "last_failure": "HTTPStatusError",
+        "updated_at": "2026-08-20T20:29:29.206373+00:00"
+      },
+      {
+        "domain": "www.python.org",
+        "requests": 14,
+        "successes": 14,
+        "failures": 0,
+        "total_latency_ms": 3745,
+        "quality_total": 8.286000000000001,
+        "rate_limits": 0,
+        "last_failure": null,
+        "updated_at": "2026-08-17T20:51:17.268281+00:00"
+      },
+      {
+        "domain": "www.merriam-webster.com",
+        "requests": 11,
+        "successes": 0,
+        "failures": 11,
+        "total_latency_ms": 3714,
+        "quality_total": 0.0,
+        "rate_limits": 0,
+        "last_failure": "HTTPStatusError",
+        "updated_at": "2026-08-21T01:29:59.807462+00:00"
+      },
+      {
+        "domain": "arxiv.org",
+        "requests": 7,
+        "successes": 7,
+        "failures": 0,
+        "total_latency_ms": 3778,
+        "quality_total": 4.056,
+        "rate_limits": 0,
+        "last_failure": null,
+        "updated_at": "2026-08-20T17:27:15.534227+00:00"
+      },
+      {
+        "domain": "dictionary.cambridge.org",
+        "requests": 7,
+        "successes": 7,
+        "failures": 0,
+        "total_latency_ms": 2709,
+        "quality_total": 2.2889999999999997,
+        "rate_limits": 0,
+        "last_failure": null,
+        "updated_at": "2026-08-21T01:30:00.417667+00:00"
+      },
+      {
+        "domain": "pmc.ncbi.nlm.nih.gov",
+        "requests": 7,
+        "successes": 7,
+        "failures": 0,
+        "total_latency_ms": 3521,
+        "quality_total": 5.062,
+        "rate_limits": 0,
+        "last_failure": null,
+        "updated_at": "2026-08-20T17:27:17.590743+00:00"
+      }
+    ]
+  },
+  "security": {
+    "passed": true,
+    "pip_check": {
+      "passed": true,
+      "output": "No broken requirements found."
+    },
+    "secret_scan": {
+      "passed": true,
+      "findings": [],
+      "scanned": "Git-tracked and untracked non-ignored text files; .env excluded"
+    },
+    "download_defense": {
+      "available": true,
+      "provider": "microsoft_defender",
+      "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26070.9-0\\MpCmdRun.exe",
+      "custom_scan": true,
+      "exclusions_ignored": true,
+      "fail_closed": true,
+      "automatic_execution": false,
+      "counterattack": false,
+      "response": "block, quarantine, preserve evidence, and alert"
+    },
+    "prohibited_capabilities": [
+      "credential theft",
+      "malware deployment",
+      "stealth persistence",
+      "covert surveillance",
+      "unauthorized intrusion"
+    ]
+  },
+  "runtime": {
+    "tools": 117,
+    "models": {
+      "ollama": [
+        "hayat:latest",
+        "all-minilm:latest",
+        "qwen:latest",
+        "gemma4:latest",
+        "llama3:latest",
+        "qwen3.5:latest"
+      ],
+      "lm_studio": []
+    },
+    "zero_cost": {
+      "mode": "ZERO-COST",
+      "paid_api_allowed": false,
+      "cloud_inference_allowed": false,
+      "paid_search_allowed": false,
+      "cloud_embeddings_allowed": false,
+      "cloud_tts_allowed": false,
+      "cloud_stt_allowed": false,
+      "estimated_api_cost_usd": 0.0,
+      "paid_provider_fallback": "disabled",
+      "note": "API cost excludes electricity, hardware, internet service, and disk usage."
+    },
+    "voice": {
+      "version": 2,
+      "enabled": false,
+      "mode": "push_to_talk",
+      "state": "idle",
+      "muted": false,
+      "push_to_talk_key": "ctrl+space",
+      "stt_provider": "faster_whisper",
+      "tts_provider": "piper",
+      "session_id": "session-34067301805b",
+      "task_running": false,
+      "approval_pending": false,
+      "privacy_blocked": false,
+      "supervised": true,
+      "desired_running": false,
+      "started_at": null,
+      "uptime_seconds": 0.0,
+      "last_heartbeat_at": null,
+      "heartbeat_age_seconds": null,
+      "restart_count": 0,
+      "recovery_count": 0,
+      "consecutive_failures": 0,
+      "last_error": null,
+      "input_available": null,
+      "last_capture": {
+        "captured": false,
+        "reason": "not_started"
+      },
+      "capabilities": [
+        "barge_in",
+        "echo_rejection",
+        "continuous_conversation",
+        "scoped_voice_approvals",
+        "shared_context",
+        "local_stt",
+        "local_tts",
+        "watchdog_recovery",
+        "device_reprobe",
+        "daily_log_rollover"
+      ]
+    },
+    "camera": {
+      "state": "OFF",
+      "active": false,
+      "device_index": null,
+      "devices_detected": 1,
+      "raw_retention": false,
+      "background_recording": false,
+      "last_error": null,
+      "last_observation": null,
+      "ocr": {
+        "provider": "windows_media_ocr",
+        "available": true,
+        "language": "English (United States)",
+        "cloud": false,
+        "reason": null,
+        "active_backend": "windows_media_ocr",
+        "backends": {
+          "windows_media_ocr": {
+            "provider": "windows_media_ocr",
+            "available": true,
+            "language": "English (United States)",
+            "cloud": false,
+            "reason": null
+          },
+          "tesseract": {
+            "provider": "tesseract",
+            "available": true,
+            "executable": "C:\\Users\\mohsin khan\\AppData\\Local\\Programs\\Tesseract-OCR\\tesseract.exe",
+            "cloud": false
+          }
+        }
+      }
+    }
+  }
+}

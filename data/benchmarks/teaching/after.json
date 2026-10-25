@@ -1,0 +1,379 @@
+{
+  "cases": 50,
+  "accuracy": 1.0,
+  "mean_latency_ms": 2.142,
+  "mastery_evidence": {
+    "mastery": 0.5273749999999999,
+    "confidence": 0.36800000000000005,
+    "correct_answers": 2,
+    "lab": {
+      "topic": "NCCL",
+      "score": 0.9425,
+      "duration_seconds": 600,
+      "hints_used": 1,
+      "errors": 1,
+      "recovered": true,
+      "verified": true
+    },
+    "next_review": "2026-08-24T15:50:57.251509+00:00",
+    "concepts": [
+      "collectives",
+      "rings and trees",
+      "topology",
+      "transport",
+      "failure diagnosis"
+    ]
+  },
+  "rows": [
+    {
+      "topic": "CUDA streams",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 6.447,
+      "response": "We'll learn CUDA streams actively. Prerequisites needing diagnosis: CUDA. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "CUDA streams",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 5.17,
+      "response": "Prerequisites needing diagnosis: CUDA. Before I explain CUDA streams, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "CUDA streams",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.156,
+      "response": "When can operations in two CUDA streams overlap safely? Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "CUDA streams",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.003,
+      "response": "Interview scenario: a production CUDA streams workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "CUDA streams",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.558,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    },
+    {
+      "topic": "NCCL",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 4.795,
+      "response": "We'll learn NCCL actively. Prerequisites needing diagnosis: CUDA, Networking. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "NCCL",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 5.445,
+      "response": "Prerequisites needing diagnosis: CUDA, Networking. Before I explain NCCL, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "NCCL",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.012,
+      "response": "What does NCCL optimize, and which collective combines gradients? Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "NCCL",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.002,
+      "response": "Interview scenario: a production NCCL workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "NCCL",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.454,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    },
+    {
+      "topic": "GPU scheduling",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 5.291,
+      "response": "We'll learn GPU scheduling actively. Prerequisites needing diagnosis: Kubernetes, GPU architecture. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "GPU scheduling",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 4.614,
+      "response": "Prerequisites needing diagnosis: Kubernetes, GPU architecture. Before I explain GPU scheduling, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "GPU scheduling",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.01,
+      "response": "Why can a pod request nvidia.com/gpu only after a device plugin is installed? Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "GPU scheduling",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.001,
+      "response": "Interview scenario: a production GPU scheduling workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "GPU scheduling",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.452,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    },
+    {
+      "topic": "Kubernetes",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 4.528,
+      "response": "We'll learn Kubernetes actively. Prerequisites needing diagnosis: Docker, Networking. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "Kubernetes",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 4.554,
+      "response": "Prerequisites needing diagnosis: Docker, Networking. Before I explain Kubernetes, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "Kubernetes",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.009,
+      "response": "What must a Kubernetes cluster expose before a pod can request a GPU? Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "Kubernetes",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.001,
+      "response": "Interview scenario: a production Kubernetes workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "Kubernetes",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.456,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    },
+    {
+      "topic": "Docker",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 4.697,
+      "response": "We'll learn Docker actively. Prerequisites needing diagnosis: Linux, Networking. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "Docker",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 4.942,
+      "response": "Prerequisites needing diagnosis: Linux, Networking. Before I explain Docker, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "Docker",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.01,
+      "response": "Why can two containers on the same user-defined bridge resolve each other by name? Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "Docker",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.001,
+      "response": "Interview scenario: a production Docker workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "Docker",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.472,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    },
+    {
+      "topic": "Networking",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 4.855,
+      "response": "We'll learn Networking actively. Prerequisites needing diagnosis: Linux. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "Networking",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 4.786,
+      "response": "Prerequisites needing diagnosis: Linux. Before I explain Networking, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "Networking",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.009,
+      "response": "Explain one core idea in Networking and one failure mode you would investigate. Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "Networking",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.001,
+      "response": "Interview scenario: a production Networking workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "Networking",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.478,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    },
+    {
+      "topic": "PyTorch Distributed",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 5.57,
+      "response": "We'll learn PyTorch Distributed actively. Prerequisites needing diagnosis: Python, CUDA, Networking. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "PyTorch Distributed",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 5.398,
+      "response": "Prerequisites needing diagnosis: Python, CUDA, Networking. Before I explain PyTorch Distributed, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "PyTorch Distributed",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.019,
+      "response": "Explain one core idea in PyTorch Distributed and one failure mode you would investigate. Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "PyTorch Distributed",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.002,
+      "response": "Interview scenario: a production PyTorch Distributed workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "PyTorch Distributed",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.583,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    },
+    {
+      "topic": "model serving",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 5.293,
+      "response": "We'll learn model serving actively. Prerequisites needing diagnosis: Networking, Docker, GPU architecture. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "model serving",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 5.055,
+      "response": "Prerequisites needing diagnosis: Networking, Docker, GPU architecture. Before I explain model serving, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "model serving",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.012,
+      "response": "Explain one core idea in model serving and one failure mode you would investigate. Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "model serving",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.001,
+      "response": "Interview scenario: a production model serving workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "model serving",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.51,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    },
+    {
+      "topic": "distributed systems",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 4.675,
+      "response": "We'll learn distributed systems actively. Prerequisites needing diagnosis: Networking. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "distributed systems",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 5.148,
+      "response": "Prerequisites needing diagnosis: Networking. Before I explain distributed systems, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "distributed systems",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.011,
+      "response": "Explain one core idea in distributed systems and one failure mode you would investigate. Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "distributed systems",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.001,
+      "response": "Interview scenario: a production distributed systems workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "distributed systems",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.465,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    },
+    {
+      "topic": "SRE",
+      "scenario": "prerequisite_adaptation",
+      "passed": true,
+      "latency_ms": 5.287,
+      "response": "We'll learn SRE actively. Prerequisites needing diagnosis: Linux, Networking, Prometheus. First, tell me what you already know; I'll choose the first explanation and exercise from that evidence."
+    },
+    {
+      "topic": "SRE",
+      "scenario": "socratic",
+      "passed": true,
+      "latency_ms": 5.396,
+      "response": "Prerequisites needing diagnosis: Linux, Networking, Prometheus. Before I explain SRE, what problem do you think it solves, and what prerequisite would fail first?"
+    },
+    {
+      "topic": "SRE",
+      "scenario": "exam",
+      "passed": true,
+      "latency_ms": 0.01,
+      "response": "Explain one core idea in SRE and one failure mode you would investigate. Exam mode: no hints unless explicitly requested."
+    },
+    {
+      "topic": "SRE",
+      "scenario": "interview",
+      "passed": true,
+      "latency_ms": 0.001,
+      "response": "Interview scenario: a production SRE workload has rising latency but normal CPU use. Ask clarifying questions, form hypotheses, and describe the first safe observations."
+    },
+    {
+      "topic": "SRE",
+      "scenario": "weakness_state",
+      "passed": true,
+      "latency_ms": 0.43,
+      "response": "I don't have measured weaknesses yet. Complete a quiz or lab first."
+    }
+  ]
+}

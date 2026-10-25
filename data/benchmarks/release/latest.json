@@ -1,0 +1,123 @@
+{
+  "created_at": "2026-10-14T16:36:26.033502+00:00",
+  "source": {
+    "head": "b73c9f05c1750ab006cf54b6d3f97c2ab1101a11",
+    "tree": "1632ba7fb301b1d1900fd58d58fb239446826cbd",
+    "dirty": true,
+    "changed_files": 63
+  },
+  "source_after": {
+    "head": "b73c9f05c1750ab006cf54b6d3f97c2ab1101a11",
+    "tree": "1632ba7fb301b1d1900fd58d58fb239446826cbd",
+    "dirty": true,
+    "changed_files": 63
+  },
+  "passed": true,
+  "promotion": "eligible",
+  "problems": [],
+  "checks": [
+    {
+      "name": "compile",
+      "command": [
+        "D:\\AI\\.venv\\Scripts\\python.exe",
+        "-m",
+        "compileall",
+        "-q",
+        "app",
+        "scripts",
+        "tests"
+      ],
+      "return_code": 0,
+      "started_at": "2026-10-14T16:22:00.777671+00:00",
+      "duration_s": 0.308,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_tail": "",
+      "artifacts": {},
+      "passed": true
+    },
+    {
+      "name": "tests",
+      "command": [
+        "D:\\AI\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--basetemp=D:\\AI\\.test-runs\\release-pytest",
+        "--junitxml=D:\\AI\\data\\benchmarks\\release\\runs\\release-20261014-162200\\pytest.xml"
+      ],
+      "return_code": 0,
+      "started_at": "2026-10-14T16:22:01.085750+00:00",
+      "duration_s": 834.609,
+      "output_sha256": "309afb289fa1b6aa68425521dfb93f8563bc7c11a67821efff7c000b84b97e6f",
+      "output_tail": "  D:\\AI\\app\\anpr\\detector.py:124: DeprecationWarning: LicensePlateDetector is deprecated; use create_detector instead.\r\n    self._model = LicensePlateDetector(detection_model=YOLO_MODEL, conf_thresh=self.confidence, providers=providers)\r\n\r\ntests/test_anpr.py::test_real_models_read_the_synthetic_plates\r\n  D:\\AI\\.venv\\Lib\\site-packages\\easyocr\\detection.py:81: DeprecationWarning: torch.ao.quantization is deprecated and will be removed in 2.10. \r\n  For migrations of users: \r\n  1. Eager mode quantization (torch.ao.quantization.quantize, torch.ao.quantization.quantize_dynamic), please migrate to use torchao eager mode quantize_ API instead \r\n  2. FX graph mode quantization (torch.ao.quantization.quantize_fx.prepare_fx,torch.ao.quantization.quantize_fx.convert_fx, please migrate to use torchao pt2e quantization API instead (prepare_pt2e, convert_pt2e) \r\n  3. pt2e quantization has been migrated to torchao (https://github.com/pytorch/ao/tree/main/torchao/quantization/pt2e) \r\n  see https://github.com/pytorch/ao/issues/2259 for more details\r\n    torch.quantization.quantize_dynamic(net, dtype=torch.qint8, inplace=True)\r\n\r\ntests/test_anpr.py::test_real_models_read_the_synthetic_plates\r\ntests/test_anpr.py::test_real_models_read_the_synthetic_plates\r\n  D:\\AI\\.venv\\Lib\\site-packages\\torch\\ao\\quantization\\quantize.py:570: DeprecationWarning: torch.ao.quantization is deprecated and will be removed in 2.10. \r\n  For migrations of users: \r\n  1. Eager mode quantization (torch.ao.quantization.quantize, torch.ao.quantization.quantize_dynamic), please migrate to use torchao eager mode quantize_ API instead \r\n  2. FX graph mode quantization (torch.ao.quantization.quantize_fx.prepare_fx,torch.ao.quantization.quantize_fx.convert_fx, please migrate to use torchao pt2e quantization API instead (prepare_pt2e, convert_pt2e) \r\n  3. pt2e quantization has been migrated to torchao (https://github.com/pytorch/ao/tree/main/torchao/quantization/pt2e) \r\n  see https://github.com/pytorch/ao/issues/2259 for more details\r\n    convert(model, mapping, inplace=True)\r\n\r\ntests/test_anpr.py::test_real_models_read_the_synthetic_plates\r\n  D:\\AI\\.venv\\Lib\\site-packages\\easyocr\\recognition.py:177: DeprecationWarning: torch.ao.quantization is deprecated and will be removed in 2.10. \r\n  For migrations of users: \r\n  1. Eager mode quantization (torch.ao.quantization.quantize, torch.ao.quantization.quantize_dynamic), please migrate to use torchao eager mode quantize_ API instead \r\n  2. FX graph mode quantization (torch.ao.quantization.quantize_fx.prepare_fx,torch.ao.quantization.quantize_fx.convert_fx, please migrate to use torchao pt2e quantization API instead (prepare_pt2e, convert_pt2e) \r\n  3. pt2e quantization has been migrated to torchao (https://github.com/pytorch/ao/tree/main/torchao/quantization/pt2e) \r\n  see https://github.com/pytorch/ao/issues/2259 for more details\r\n    torch.quantization.quantize_dynamic(model, dtype=torch.qint8, inplace=True)\r\n\r\ntests/test_anpr.py::test_real_models_read_the_synthetic_plates\r\n  D:\\AI\\.venv\\Lib\\site-packages\\torch\\ao\\nn\\quantized\\dynamic\\modules\\rnn.py:162: UserWarning: torch.quantize_per_tensor, torch.quantize_per_channel and other quantized tensor creation functions that produce tensors with dtype torch.quint8, torch.qint8, and torch.qint32 are deprecated and will be removed in a future PyTorch release. Please see https://github.com/pytorch/pytorch/issues/184982 for more information. (Triggered internally at C:\\actions-runner\\_work\\pytorch\\pytorch\\aten\\src\\ATen\\quantized\\Quantizer.cpp:116.)\r\n    w_ih = torch.quantize_per_tensor(\r\n\r\ntests/test_anpr.py::test_real_models_read_the_synthetic_plates\r\n  D:\\AI\\.venv\\Lib\\site-packages\\torch\\utils\\data\\dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.\r\n    super().__init__(loader)\r\n\r\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\r\n4887 passed, 25 skipped, 7 warnings in 830.70s (0:13:50)",
+      "junit": {
+        "tests_passed": 4887,
+        "tests_failed": 0,
+        "tests_errors": 0,
+        "tests_skipped": 25,
+        "tests_total": 4912,
+        "seconds": 829.689,
+        "source": "D:\\AI\\data\\benchmarks\\release\\runs\\release-20261014-162200\\pytest.xml",
+        "sha256": "606ec00a47835358734663e208b38f1b34f9f957f6ad45a13c37ce2e158591f9",
+        "verified_from_junit": true
+      },
+      "artifacts": {
+        "D:\\AI\\data\\benchmarks\\release\\runs\\release-20261014-162200\\pytest.xml": "606ec00a47835358734663e208b38f1b34f9f957f6ad45a13c37ce2e158591f9"
+      },
+      "passed": true
+    },
+    {
+      "name": "generated_docs",
+      "command": [
+        "D:\\AI\\.venv\\Scripts\\python.exe",
+        "scripts/generate_reference.py",
+        "--check"
+      ],
+      "return_code": 0,
+      "started_at": "2026-10-14T16:35:55.716662+00:00",
+      "duration_s": 3.742,
+      "output_sha256": "4526a15372d33b0a9cf6d33c47bd7e971020efb1ef7c30ec2b4e6074c9a1117d",
+      "output_tail": "Generated documentation is current: D:\\AI\\docs\\generated\\runtime-reference.md\r\n[10/14/26 12:35:57] INFO     HTTP Request: POST                 _client.py:1025\r\n                             http://127.0.0.1:11435/api/show                   \r\n                             \"HTTP/1.1 200 OK\"",
+      "artifacts": {},
+      "passed": true
+    },
+    {
+      "name": "doctor",
+      "command": [
+        "D:\\AI\\.venv\\Scripts\\python.exe",
+        "scripts/doctor.py"
+      ],
+      "return_code": 0,
+      "started_at": "2026-10-14T16:35:59.459121+00:00",
+      "duration_s": 26.451,
+      "output_sha256": "c164590439f353ab5e35e2c60b72a3f262cc658df5acfb1f4286a7d24e7f478c",
+      "output_tail": "        \"QUESTION\"\r\n          ]\r\n        }\r\n      }\r\n    },\r\n    \"global_intelligence\": {\r\n      \"status\": \"ready\",\r\n      \"detail\": {\r\n        \"running\": false,\r\n        \"enabled\": true,\r\n        \"tick_seconds\": 60,\r\n        \"last_error\": null,\r\n        \"approval_required_per_cycle\": false,\r\n        \"osiris_service_required\": false,\r\n        \"scope\": \"Public feed reads, bounded local snapshots and local alerts.\"\r\n      }\r\n    },\r\n    \"image_generation\": {\r\n      \"status\": \"ready\",\r\n      \"detail\": {\r\n        \"available\": true,\r\n        \"engine\": \"D:\\\\AI\\\\data\\\\engines\\\\stable-diffusion.cpp-master-820-de298c2-vulkan-x64\\\\sd-cli.exe\",\r\n        \"model\": \"realvisxl-v5.0-Q4_K.gguf\",\r\n        \"model_gb\": 2.61,\r\n        \"placement\": \"GPU\",\r\n        \"expect\": \"fast\",\r\n        \"output_directory\": \"D:\\\\AI\\\\data\\\\artifacts\\\\images\",\r\n        \"manifest\": \"D:\\\\AI\\\\data\\\\artifacts\\\\images\\\\manifest.jsonl\",\r\n        \"video_directory\": \"D:\\\\AI\\\\data\\\\artifacts\\\\videos\",\r\n        \"video_manifest\": \"D:\\\\AI\\\\data\\\\artifacts\\\\videos\\\\manifest.jsonl\",\r\n        \"video_available\": true,\r\n        \"motion_module\": \"mm_sd_v15_v2.ckpt\",\r\n        \"upscaler\": \"RealESRGAN_x4plus.pth\",\r\n        \"ultra_upscales_to\": 2048,\r\n        \"quality_presets\": {\r\n          \"fast\": {\r\n            \"steps\": 12,\r\n            \"sampler\": \"euler_a\",\r\n            \"scheduler\": \"discrete\",\r\n            \"cfg\": 7.0,\r\n            \"size\": 512\r\n          },\r\n          \"balanced\": {\r\n            \"steps\": 24,\r\n            \"sampler\": \"dpm++2m\",\r\n            \"scheduler\": \"karras\",\r\n            \"cfg\": 7.0,\r\n            \"size\": 512\r\n          },\r\n          \"quality\": {\r\n            \"steps\": 36,\r\n            \"sampler\": \"dpm++2m\",\r\n            \"scheduler\": \"karras\",\r\n            \"cfg\": 7.5,\r\n            \"size\": 640\r\n          },\r\n          \"ultra\": {\r\n            \"steps\": 50,\r\n            \"sampler\": \"dpm++2m\",\r\n            \"scheduler\": \"karras\",\r\n            \"cfg\": 8.0,\r\n            \"size\": 768,\r\n            \"upscale\": 1080\r\n          }\r\n        },\r\n        \"provenance\": {\r\n          \"tag\": \"master-820-de298c2\",\r\n          \"sha256\": \"e9d3072e090eaa0dc91970034ebccee6fafd502c3226480b46bd12ac54f96889\",\r\n          \"backend\": \"vulkan\"\r\n        },\r\n        \"local_only\": true\r\n      }\r\n    },\r\n    \"automation\": {\r\n      \"status\": \"ready\",\r\n      \"detail\": {\r\n        \"configured\": true,\r\n        \"running\": false,\r\n        \"jobs\": 0,\r\n        \"enabled_jobs\": 0,\r\n        \"overlap_policy\": \"one execution per job\",\r\n        \"missed_runs\": \"coalesced\"\r\n      }\r\n    }\r\n  },\r\n  \"summary\": {\r\n    \"ready\": 26,\r\n    \"degraded\": 0,\r\n    \"error\": 0\r\n  },\r\n  \"attention\": [],\r\n  \"scope\": \"Configuration and component checks; live media, speech quality and model reasoning require their integration benchmarks.\"\r\n}\r\nDoctor passed with Python 3.14.2 at D:\\AI\r\n[10/14/26 12:36:03] INFO     HTTP Request: POST                 _client.py:1025\r\n                             http://127.0.0.1:11435/api/show                   \r\n                             \"HTTP/1.1 200 OK\"                                 \r\n                    INFO     HTTP Request: GET                  _client.py:1025\r\n                             http://127.0.0.1:11435/api/tags                   \r\n                             \"HTTP/1.1 200 OK\"                                 \r\n[10/14/26 12:36:06] INFO     HTTP Request: GET                  _client.py:1025\r\n                             http://127.0.0.1:11435/api/ps                     \r\n                             \"HTTP/1.1 200 OK\"                                 \r\n[10/14/26 12:36:18] INFO     HTTP Request: GET                  _client.py:1025\r\n                             http://127.0.0.1:11435/api/tags                   \r\n                             \"HTTP/1.1 200 OK\"                                 \r\n[10/14/26 12:36:25] INFO     HTTP Request: GET                  _client.py:1025\r\n                             http://127.0.0.1:11435/api/ps                     \r\n                             \"HTTP/1.1 200 OK\"",
+      "artifacts": {},
+      "passed": true
+    },
+    {
+      "name": "zero_cost",
+      "command": [
+        "in-process CostPolicy.assert_zero_cost()"
+      ],
+      "in_process_passed": true,
+      "passed": true,
+      "detail": {
+        "mode": "ZERO-COST",
+        "paid_api_allowed": false,
+        "cloud_inference_allowed": false,
+        "paid_search_allowed": false,
+        "cloud_embeddings_allowed": false,
+        "cloud_tts_allowed": false,
+        "cloud_stt_allowed": false,
+        "estimated_api_cost_usd": 0.0,
+        "paid_provider_fallback": "disabled",
+        "note": "API cost excludes electricity, hardware, internet service, and disk usage."
+      },
+      "error": ""
+    }
+  ],
+  "id": "release-20261014-162200"
+}

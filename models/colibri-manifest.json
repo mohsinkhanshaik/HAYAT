@@ -1,0 +1,260 @@
+{
+  "repo": "Kreuzzelg/qwen36-35b-a3b-colibri-i4-gs64",
+  "revision": "c619aa594ad1e70af82168fb6b4878427896e21c",
+  "files": [
+    {
+      "name": ".gitattributes",
+      "size": 1570,
+      "sha256": null
+    },
+    {
+      "name": "README.md",
+      "size": 2912,
+      "sha256": null
+    },
+    {
+      "name": "config.hf.json",
+      "size": 3686,
+      "sha256": null
+    },
+    {
+      "name": "config.json",
+      "size": 2081,
+      "sha256": null
+    },
+    {
+      "name": "model-00000.safetensors",
+      "size": 527831896,
+      "sha256": "96c003f9a1e2d0b9ee8211ea70c3f0ae3e22a8056b5e5b6c74cec672498a3350"
+    },
+    {
+      "name": "model-00001.safetensors",
+      "size": 527831896,
+      "sha256": "3015f861eb6410d5be254677406e9fd6c6a4112e367216207ed0608d1672ff4f"
+    },
+    {
+      "name": "model-00002.safetensors",
+      "size": 527831896,
+      "sha256": "e43270ea0473a38a2d519ea672f95c4dc86cf6a06958e98afaac06c1714070d5"
+    },
+    {
+      "name": "model-00003.safetensors",
+      "size": 514921584,
+      "sha256": "5503548569908203386969198610b45d75bbb2ae894833d3dfadf61f84ebdfc7"
+    },
+    {
+      "name": "model-00004.safetensors",
+      "size": 527831896,
+      "sha256": "5730b65eb434d4988f2a67f9d85688c1ba5749e74f95852b33901ee00b41b3e6"
+    },
+    {
+      "name": "model-00005.safetensors",
+      "size": 527831896,
+      "sha256": "4a2f9aaaffbdd2f6590e1ec98f2fbd381752e414b6044af6a23557d9ce622bc4"
+    },
+    {
+      "name": "model-00006.safetensors",
+      "size": 527831896,
+      "sha256": "a4d6da971c8627a4fb6b4929869bae60d9407879794583737c38f7e421244117"
+    },
+    {
+      "name": "model-00007.safetensors",
+      "size": 514921584,
+      "sha256": "fc64d0d18127e855e4193c48941e109e3596a2abca1b5f840b351a284a485f2c"
+    },
+    {
+      "name": "model-00008.safetensors",
+      "size": 527831896,
+      "sha256": "5fc1ad29276bc97f866f97b537674853bbba948991a671c3df88ef00daa011d0"
+    },
+    {
+      "name": "model-00009.safetensors",
+      "size": 527831896,
+      "sha256": "a54d8bad1e2e7fab6fd09b9c68fd6a616a8322433e33c023cedc2f6d61d05eda"
+    },
+    {
+      "name": "model-00010.safetensors",
+      "size": 527832424,
+      "sha256": "36fd1512ab7bef053c8960a2326ee4948a417400fb6c88ada5c672a3cf701a67"
+    },
+    {
+      "name": "model-00011.safetensors",
+      "size": 514922112,
+      "sha256": "fb4e06f18f3373a937444ecf72f340af2d184162ec3911adced68fd45fdc5326"
+    },
+    {
+      "name": "model-00012.safetensors",
+      "size": 527832424,
+      "sha256": "c9c88522e672b305fbf237e72583fd0967445c6b00d5af1d9d1a08a495f6f1db"
+    },
+    {
+      "name": "model-00013.safetensors",
+      "size": 527832424,
+      "sha256": "80e6dc06289531eaf98a7f98b14f290b068e05eae45670a8055b8cb8cd1331af"
+    },
+    {
+      "name": "model-00014.safetensors",
+      "size": 527832424,
+      "sha256": "9cc49310e4a11420124626e3b3b2654cb0d5e0a65d28780d4ffb222d76c15718"
+    },
+    {
+      "name": "model-00015.safetensors",
+      "size": 514922112,
+      "sha256": "8c6a2af8e8ace8e3b363c5399bdb6a39b40b78a20c8ff3d071b43ce92a60f4a8"
+    },
+    {
+      "name": "model-00016.safetensors",
+      "size": 527832424,
+      "sha256": "b44be5832ecb09b45be7831fddea95709cc9ff676749c26d82ea8ed0bed85627"
+    },
+    {
+      "name": "model-00017.safetensors",
+      "size": 527832424,
+      "sha256": "2871020915c72fe774f6fdfbcb1aa566b0680613b0a80cacf6ececef0adfeb44"
+    },
+    {
+      "name": "model-00018.safetensors",
+      "size": 527832424,
+      "sha256": "85bf77269c27687a590058c8965dea55928edc012f403f3c96343b7bc023b302"
+    },
+    {
+      "name": "model-00019.safetensors",
+      "size": 514922112,
+      "sha256": "f0b3353c1ac570833ce4050f6b44201fdda22d1582d24567b888292d28243e87"
+    },
+    {
+      "name": "model-00020.safetensors",
+      "size": 527832424,
+      "sha256": "39c9309115cd1b469314d2ef40ae4ff54c378c88d008c32009976a7c9ae0c66d"
+    },
+    {
+      "name": "model-00021.safetensors",
+      "size": 527832424,
+      "sha256": "930a367959cc36a84c74e0a9c35288a77a4c358139e86b456d251ce70b05f44c"
+    },
+    {
+      "name": "model-00022.safetensors",
+      "size": 527832424,
+      "sha256": "d1bc8932eab6a9dfa2415c07a9aff0002389a234ea4c968c861b1fd257b021c6"
+    },
+    {
+      "name": "model-00023.safetensors",
+      "size": 514922112,
+      "sha256": "3a39595d18c27dbf1394c3171dc043b7f2c2065d16fcb5e979e305b5f2125991"
+    },
+    {
+      "name": "model-00024.safetensors",
+      "size": 527832424,
+      "sha256": "2a1fb7365f6578022442b6d0fee07dd2c9697faf9a944d51bc170b2cbd52b06f"
+    },
+    {
+      "name": "model-00025.safetensors",
+      "size": 527832424,
+      "sha256": "4665ab8badf23317866b938f2fb5f8f86518ee99ae4b3fbc3bd61b5826adf71f"
+    },
+    {
+      "name": "model-00026.safetensors",
+      "size": 527832424,
+      "sha256": "c4d0804f358ee2393c8357ab25e9a6a365c9cee4a7050047678bd48a535a84f8"
+    },
+    {
+      "name": "model-00027.safetensors",
+      "size": 514922112,
+      "sha256": "35203a57b60e783aea8083a5f47443dbacd833fabd86a1a2af355d2d1838752a"
+    },
+    {
+      "name": "model-00028.safetensors",
+      "size": 527832424,
+      "sha256": "a0fe8c94723c3a8d10f69ddc67d15da1282f707beba6ac383f62c0b91cbe1864"
+    },
+    {
+      "name": "model-00029.safetensors",
+      "size": 527832424,
+      "sha256": "b9a2468b56aac02f6ef90d7e18303038c305598220c8d0d09d3afdfab2e571fc"
+    },
+    {
+      "name": "model-00030.safetensors",
+      "size": 527832424,
+      "sha256": "33e9e46d1a005e31e00f06a95d4bd108ead8723a3d11877b6f1fe8cc94fe3f4f"
+    },
+    {
+      "name": "model-00031.safetensors",
+      "size": 514922112,
+      "sha256": "2ef86ddb9c2c8ed4428304e21960f26c7c9e002ca430ad25b66c0e93bf5faa1c"
+    },
+    {
+      "name": "model-00032.safetensors",
+      "size": 527832424,
+      "sha256": "14caf9cdda5eb5ae755355e595435529bc8152e5e8f6bc28ed53f081004f99e6"
+    },
+    {
+      "name": "model-00033.safetensors",
+      "size": 527832424,
+      "sha256": "2f8415c2f03659aadcaac1554b15fbdd3e84f533fca7daf735c3d3e74bc16140"
+    },
+    {
+      "name": "model-00034.safetensors",
+      "size": 527832424,
+      "sha256": "664706807a61f4f926ac9aa37dc9597f90fb2555d5d5d8c1511e2b97e9da2859"
+    },
+    {
+      "name": "model-00035.safetensors",
+      "size": 514922112,
+      "sha256": "fba2d5d1354c79036d81d6eacdbe82a90ee4a207dccd2ffdd5b191691d2314e9"
+    },
+    {
+      "name": "model-00036.safetensors",
+      "size": 527832424,
+      "sha256": "acc9d8df72095d8bbec9ccd3c29e07b07bf064813767dcb482c963e62ea067e5"
+    },
+    {
+      "name": "model-00037.safetensors",
+      "size": 527832424,
+      "sha256": "05c3010ea712109b2fb01cfabf2c93fed825bf9e0d0ac95f6b528af6b0509666"
+    },
+    {
+      "name": "model-00038.safetensors",
+      "size": 527832424,
+      "sha256": "049206b4a32d35883b3f24a1db58fcc4bdd6c21246580090dd6b7d88ea68e060"
+    },
+    {
+      "name": "model-00039.safetensors",
+      "size": 514922112,
+      "sha256": "b516d6817f490658c9c178c3cc3ca833708d78253526ed51883fa4fff8cb7662"
+    },
+    {
+      "name": "model-globals.safetensors",
+      "size": 2034241832,
+      "sha256": "b00b11ff7de0072b5a3e08c04b7d8bbfe065ae2d1a299de6e0a2ae6d9896bb23"
+    },
+    {
+      "name": "qwen36_meta.json",
+      "size": 1702,
+      "sha256": null
+    },
+    {
+      "name": "tokenizer.json",
+      "size": 12807982,
+      "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    }
+  ],
+  "card": {
+    "base_model": "Qwen/Qwen3.6-35B-A3B",
+    "library_name": "colibri",
+    "license": "apache-2.0",
+    "tags": [
+      "colibri",
+      "qwen3.6",
+      "qwen3.6-35b-a3b",
+      "moe",
+      "int4",
+      "gs64"
+    ]
+  },
+  "local_directory": "models/colibri/qwen36-35b-a3b-i4-gs64",
+  "engine_release": "v2.0.0",
+  "verified_files": 47,
+  "verification_command": "hf cache verify --revision c619aa594ad1e70af82168fb6b4878427896e21c --fail-on-missing-files",
+  "purpose": "Separate original-Qwen model comparison; not equivalent to HAYAT HauhauCS weights",
+  "production_default": false
+}

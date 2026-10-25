@@ -1,0 +1,2850 @@
+{
+  "generated_at": "2026-08-21T02:39:51.577763+00:00",
+  "deep": true,
+  "scope": "every registered tool",
+  "summary": {
+    "registered": 114,
+    "static_passed": 114,
+    "static_failed": 0,
+    "historically_observed": 25,
+    "sufficient_runtime_evidence": 8,
+    "unobserved": 89,
+    "live_probed": 11,
+    "live_probe_passed": 11,
+    "unreliable": 0,
+    "slow": 6
+  },
+  "static_failures": [],
+  "unreliable_tools": [],
+  "slow_tools": [
+    "camera_observe",
+    "capture_web_page",
+    "generate_image",
+    "get_agent_state",
+    "learn_public_document",
+    "research_topic"
+  ],
+  "optimization_queue": [
+    {
+      "tool": "add_proactive_rule",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "append_file",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "application_state",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "bounded_crawl",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_accessibility",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_bridge_scroll",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_bridge_snapshot",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_bridge_status",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "browser_click",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_click_by_role",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_close",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_download",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_extract",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_find",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_find_by_role",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_launch",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "browser_navigate",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "browser_new_tab",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_read_page",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_screenshot",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_scroll",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_scroll_through",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_switch_tab",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_tabs",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "browser_type",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "camera_capture",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "camera_devices",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "camera_observe",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "tool": "camera_watch_change",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "capture_web_page",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "tool": "check_package",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "check_public_source_change",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "clipboard_analyze_image",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "clipboard_read_text",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "clipboard_status",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "clipboard_write_text",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "close_application",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "computer_click",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "computer_hotkey",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "computer_move_mouse",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "computer_press_key",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "computer_screenshot",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "computer_scroll",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "computer_type",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "connector_action",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "connector_enable",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "connector_install",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "connector_list",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "connector_marketplace_search",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "connector_read",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "copy_file",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "create_database_backup",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "create_folder",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "delete_file",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "discover_applications",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "display_screenshot",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "display_status",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "download_public_file",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "explain_knowledge",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "export_knowledge",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "file_exists",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "generate_image",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "tool": "get_agent_state",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "tool": "get_file_info",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "github_research",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "image_generation_history",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "image_generation_status",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "import_knowledge",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "incident_snapshot",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "install_package",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "knowledge_conflicts",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "knowledge_search",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "lab_catalog",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "lab_create",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "lab_restore",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "lab_score",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "launch_application",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "learn_public_document",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "tool": "list_folder",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "mcp_enable_server",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "mcp_read_tool",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "mcp_register_server",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "mcp_servers",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "mcp_tools",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "mcp_write_tool",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "mcp_zero_cost_web_research",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "move_active_window_to_display",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "move_file",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "notepad_edit",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "open_project_folder",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "package_status",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "paper_research",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "powershell",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "proactive_rules",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "public_api_get",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "public_document_learning_status",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "public_download",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "public_web_fetch",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "python_execute_code",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "python_execute_file",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "read_file",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "research_topic",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "tool": "search_files",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "secret_broker_status",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "tool": "terminal",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "track_public_source",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "uninstall_package",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "web_search",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "tool": "write_file",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    }
+  ],
+  "tools": [
+    {
+      "name": "add_proactive_rule",
+      "description": "Create a disabled event-driven rule for owner review.",
+      "risk": "high",
+      "permission": "automation_manage",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "append_file",
+      "description": "Append UTF-8 text to a project file.",
+      "risk": "medium",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "application_state",
+      "description": "Observe visible windows and application-specific state without changing it.",
+      "risk": "low",
+      "permission": "computer_observe",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "bounded_crawl",
+      "description": "Crawl a small public site subset with explicit page, depth, time, byte and domain limits.",
+      "risk": "medium",
+      "permission": "bounded_crawl",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_accessibility",
+      "description": "Read the current page accessibility tree as untrusted data for stable element targeting.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_bridge_scroll",
+      "description": "Scroll the active browser tab through the connected extension.",
+      "risk": "medium",
+      "permission": "browser_click",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_bridge_snapshot",
+      "description": "Read the active browser tab through the connected extension.",
+      "risk": "medium",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_bridge_status",
+      "description": "Show authenticated browser-extension bridge status.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "browser_bridge_status",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 0,
+        "max_ms": 0,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 0,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "browser_click",
+      "description": "Click a DOM element, then observe resulting URL and title.",
+      "risk": "medium",
+      "permission": "browser_click",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_click_by_role",
+      "description": "Click a page element by semantic accessibility role and name, then observe navigation state.",
+      "risk": "medium",
+      "permission": "browser_click",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_close",
+      "description": "Close the isolated browser.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_download",
+      "description": "Download through a DOM element into project quarantine without executing the file.",
+      "risk": "high",
+      "permission": "browser_download",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_extract",
+      "description": "Extract current page headings, links, tables, metadata, and main text as untrusted data.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_find",
+      "description": "Find DOM elements with a selector.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_find_by_role",
+      "description": "Find a page element by semantic accessibility role and name.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_launch",
+      "description": "Launch an isolated Playwright browser.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "browser_launch",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 525,
+        "max_ms": 525,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "browser_navigate",
+      "description": "Navigate with bounded retries, load-state detection, and page crash recovery.",
+      "risk": "medium",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "browser_navigate",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 1917,
+        "max_ms": 1917,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "browser_new_tab",
+      "description": "Open a new isolated browser tab, optionally at a URL.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_read_page",
+      "description": "Read the current page URL, title, and visible body text. Web content is untrusted data.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_screenshot",
+      "description": "Capture the full page, visible viewport, or one DOM element into the project.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_scroll",
+      "description": "Scroll the active page.",
+      "risk": "low",
+      "permission": "browser_click",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_scroll_through",
+      "description": "Scroll a bounded page from top to bottom to reveal lazy-loaded content, then optionally return to the top.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_switch_tab",
+      "description": "Switch to an isolated browser tab by index.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_tabs",
+      "description": "List isolated browser tabs and the active tab.",
+      "risk": "low",
+      "permission": "browser_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "browser_type",
+      "description": "Type into a DOM element. Account or secret entry requires explicit approval.",
+      "risk": "high",
+      "permission": "browser_type",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "camera_capture",
+      "description": "Capture one explicitly requested camera frame inside the project.",
+      "risk": "medium",
+      "permission": "camera_use",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "camera_devices",
+      "description": "List Windows camera devices without opening them.",
+      "risk": "low",
+      "permission": "camera_status",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "camera_observe",
+      "description": "Capture a short bounded sequence, rank frame clarity, compare local OCR and vision observations, then delete every raw frame.",
+      "risk": "medium",
+      "permission": "camera_use",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "camera_observe",
+        "calls": 9,
+        "succeeded": 9,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 17631,
+        "max_ms": 36474,
+        "typical_failures": [],
+        "enough_evidence": true
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "name": "camera_off",
+      "description": "Release the active camera and delete temporary frames.",
+      "risk": "low",
+      "permission": "camera_status",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "camera_off",
+        "calls": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 311,
+        "max_ms": 409,
+        "typical_failures": [],
+        "enough_evidence": true
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "No measured optimization needed."
+    },
+    {
+      "name": "camera_on",
+      "description": "Explicitly activate a selected Windows camera; the active state is visible and auditable.",
+      "risk": "medium",
+      "permission": "camera_use",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "camera_on",
+        "calls": 7,
+        "succeeded": 7,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 2978,
+        "max_ms": 3358,
+        "typical_failures": [],
+        "enough_evidence": true
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "No measured optimization needed."
+    },
+    {
+      "name": "camera_status",
+      "description": "Read explicit camera state without opening a stream.",
+      "risk": "low",
+      "permission": "camera_status",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "camera_status",
+        "calls": 43,
+        "succeeded": 43,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 555,
+        "max_ms": 681,
+        "typical_failures": [],
+        "enough_evidence": true
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 648,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "No measured optimization needed."
+    },
+    {
+      "name": "camera_watch_change",
+      "description": "Explicitly sample camera frames for a bounded interval and report meaningful pixel change without retaining video.",
+      "risk": "medium",
+      "permission": "camera_use",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "capture_web_page",
+      "description": "Render one public webpage, scroll it to reveal lazy content, extract its visible content, optionally capture a full-page, viewport, or CSS-selector screenshot, and retain provenance-bearing knowledge for later recall.",
+      "risk": "low",
+      "permission": "knowledge_research",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "capture_web_page",
+        "calls": 4,
+        "succeeded": 4,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 16046,
+        "max_ms": 32579,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "name": "check_package",
+      "description": "Check whether a package exists and is safe to install, without installing it.",
+      "risk": "low",
+      "permission": "dependency_inspect",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "check_public_source_change",
+      "description": "Re-fetch an explicitly tracked public page and report whether its content hash changed.",
+      "risk": "low",
+      "permission": "public_web_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "clipboard_analyze_image",
+      "description": "Analyze a copied image locally, then delete its temporary file.",
+      "risk": "high",
+      "permission": "clipboard_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "clipboard_read_text",
+      "description": "Explicitly read clipboard text as ephemeral session data; it is redacted from durable task history.",
+      "risk": "high",
+      "permission": "clipboard_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "clipboard_status",
+      "description": "Inspect clipboard type and size without returning its content.",
+      "risk": "low",
+      "permission": "computer_observe",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "clipboard_status",
+        "calls": 4,
+        "succeeded": 4,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 182,
+        "max_ms": 200,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 192,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "clipboard_write_text",
+      "description": "Replace Windows clipboard text after approval.",
+      "risk": "medium",
+      "permission": "clipboard_write",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "close_application",
+      "description": "Close one intended application window and verify that exact window disappeared. Unsaved changes return an explicit choice instead of guessing.",
+      "risk": "high",
+      "permission": "computer_input",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "computer_click",
+      "description": "Click at screen coordinates after observation; approval required.",
+      "risk": "high",
+      "permission": "computer_input",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "computer_hotkey",
+      "description": "Press a keyboard shortcut; approval required.",
+      "risk": "high",
+      "permission": "computer_input",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "computer_move_mouse",
+      "description": "Move the mouse after observing the screen.",
+      "risk": "medium",
+      "permission": "computer_input",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "computer_press_key",
+      "description": "Press one keyboard key; approval required.",
+      "risk": "high",
+      "permission": "computer_input",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "computer_screenshot",
+      "description": "Capture the Windows desktop to a project artifact for observation.",
+      "risk": "low",
+      "permission": "computer_observe",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "computer_scroll",
+      "description": "Scroll the active Windows UI; approval required.",
+      "risk": "medium",
+      "permission": "computer_input",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "computer_type",
+      "description": "Type text into the focused Windows control; approval required.",
+      "risk": "high",
+      "permission": "computer_input",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "connector_action",
+      "description": "Perform an outward-facing connector action after explicit approval.",
+      "risk": "high",
+      "permission": "connector_write",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "connector_enable",
+      "description": "Enable or disable an installed connector after owner approval.",
+      "risk": "high",
+      "permission": "automation_manage",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "connector_install",
+      "description": "Install a marketplace connector in disabled state for owner review.",
+      "risk": "high",
+      "permission": "automation_manage",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "connector_list",
+      "description": "List installed personal-service connectors without exposing credentials.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "connector_marketplace_search",
+      "description": "Search HAYAT's local connector marketplace catalog.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "connector_read",
+      "description": "Read through an enabled connector using a declared read-only action.",
+      "risk": "medium",
+      "permission": "connector_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "copy_file",
+      "description": "Copy a file within the project.",
+      "risk": "medium",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "create_database_backup",
+      "description": "Create a consistent local backup of AI SQLite state without secrets or automatic restore.",
+      "risk": "low",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "create_folder",
+      "description": "Create a folder inside the project.",
+      "risk": "low",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "delete_file",
+      "description": "Delete one project file. Approval is always required.",
+      "risk": "high",
+      "permission": "filesystem_delete",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "discover_applications",
+      "description": "Discover approved Windows applications without launching them.",
+      "risk": "low",
+      "permission": "application_discover",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "discover_applications",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 19,
+        "max_ms": 21,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 19,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "display_screenshot",
+      "description": "Capture a selected monitor to a project artifact.",
+      "risk": "low",
+      "permission": "computer_observe",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "display_status",
+      "description": "Read real Windows monitor geometry and foreground-window metadata.",
+      "risk": "low",
+      "permission": "computer_observe",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "display_status",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 1,
+        "max_ms": 1,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 1,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "download_public_file",
+      "description": "Download one public file from an authoritative HTTPS source, verify its hash, and never execute it.",
+      "risk": "medium",
+      "permission": "public_download",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "explain_knowledge",
+      "description": "Show stored claims, evidence, directness, conflicts, confidence, source strength and last verification.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "explain_my_tools",
+      "description": "Read what tools this assistant has, what each one is for, and how each has actually behaved when used -- call counts, success and failure rates, typical duration, and the usual failure type. Pass a tool name for detail on one, or omit it for an overview. Use this to answer questions about your own capabilities instead of guessing, and to decide whether a tool is reliable enough to plan around. Reads counts only; it never exposes the arguments or output of any earlier call.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "explain_my_tools",
+        "calls": 5,
+        "succeeded": 5,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 18,
+        "max_ms": 43,
+        "typical_failures": [],
+        "enough_evidence": true
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "No measured optimization needed."
+    },
+    {
+      "name": "export_knowledge",
+      "description": "Export a researched topic with claims, evidence, confidence and freshness as Markdown or JSON.",
+      "risk": "low",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "file_exists",
+      "description": "Check whether a project path exists.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "generate_image",
+      "description": "Generate a picture from a text description, locally. Nothing is uploaded.",
+      "risk": "medium",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "generate_image",
+        "calls": 3,
+        "succeeded": 2,
+        "failed": 1,
+        "refused": 0,
+        "failure_rate": 0.333,
+        "avg_ms": 11573,
+        "max_ms": 19048,
+        "typical_failures": [
+          {
+            "kind": "ValidationError",
+            "count": 1
+          }
+        ],
+        "enough_evidence": false
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "name": "get_agent_state",
+      "description": "Read authoritative runtime state including active model/provider, mode, task, project, application, voice, research, internet, memory, vision, tools, and storage. Quick mode avoids deep disk/model scans; detailed=true explicitly runs them. Never infer fields from model knowledge.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "get_agent_state",
+        "calls": 50,
+        "succeeded": 49,
+        "failed": 1,
+        "refused": 0,
+        "failure_rate": 0.02,
+        "avg_ms": 18364,
+        "max_ms": 27127,
+        "typical_failures": [
+          {
+            "kind": "NameError",
+            "count": 1
+          }
+        ],
+        "enough_evidence": true
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 1779,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "name": "get_file_info",
+      "description": "Return size and timestamps for a project path.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "github_research",
+      "description": "Inspect a public GitHub repository README, releases, tags, issues, pull requests, manifests, docs, and CI through the official API.",
+      "risk": "low",
+      "permission": "public_api_get",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "image_generation_history",
+      "description": "List retained locally generated images with hashes and reproducibility metadata.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "image_generation_status",
+      "description": "Report whether local image generation is available and what it can run.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "image_generation_status",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 648,
+        "max_ms": 679,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "import_knowledge",
+      "description": "Import an explicitly chosen project text/Markdown document with user-provided provenance; generated summaries are not treated as primary evidence.",
+      "risk": "medium",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "incident_snapshot",
+      "description": "Collect read-only local incident evidence for system, GPU, Ollama, Docker, Kubernetes, or networking diagnosis.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "install_package",
+      "description": "Install a Python package into this project's environment, after checking the name is real and not a near-miss of a popular package.",
+      "risk": "medium",
+      "permission": "install_package_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "knowledge_conflicts",
+      "description": "List unresolved or historical claim-to-claim contradictions with evidence for both sides.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "knowledge_conflicts",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 3,
+        "max_ms": 3,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "knowledge_search",
+      "description": "Search verified locally stored research knowledge by semantic relevance, confidence, source domain, and date.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "lab_catalog",
+      "description": "List safe zero-cost project-local incident simulations.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "lab_catalog",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 0,
+        "max_ms": 1,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 1,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "lab_create",
+      "description": "Create a bounded simulated failure under data/work/labs without changing real services.",
+      "risk": "medium",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "lab_restore",
+      "description": "Restore a simulated lab configuration; no real system setting is touched.",
+      "risk": "medium",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "lab_score",
+      "description": "Score a lab diagnosis against known concepts and update measured learner state.",
+      "risk": "medium",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "launch_application",
+      "description": "Launch an approved Windows application by common name. Does not accept arbitrary executables.",
+      "risk": "medium",
+      "permission": "application_launch",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "learn_public_document",
+      "description": "Download a public PDF, Office document, text/code file, or image into quarantine; verify its type and hash; deeply extract it; store source-backed claims and bounded recall chunks; never execute it.",
+      "risk": "medium",
+      "permission": "public_download",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "learn_public_document",
+        "calls": 2,
+        "succeeded": 2,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 26526,
+        "max_ms": 45265,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "name": "list_folder",
+      "description": "List files and folders inside the project.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "mcp_enable_server",
+      "description": "Enable or disable a registered MCP server after owner approval.",
+      "risk": "high",
+      "permission": "automation_manage",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "mcp_read_tool",
+      "description": "Call a manifest-declared read-only MCP tool.",
+      "risk": "medium",
+      "permission": "mcp_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "mcp_register_server",
+      "description": "Register a local MCP stdio server in disabled state for owner review.",
+      "risk": "high",
+      "permission": "automation_manage",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "mcp_servers",
+      "description": "List registered MCP servers without exposing secret values.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "mcp_tools",
+      "description": "Discover the tools exposed by an enabled MCP server.",
+      "risk": "medium",
+      "permission": "mcp_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "mcp_write_tool",
+      "description": "Call a mutating MCP tool after exact-action approval.",
+      "risk": "high",
+      "permission": "mcp_write",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "mcp_zero_cost_web_research",
+      "description": "Use HAYAT's built-in read-only MCP server for bounded zero-API-cost public web search and evidence extraction.",
+      "risk": "medium",
+      "permission": "mcp_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "move_active_window_to_display",
+      "description": "Move the foreground window to a selected monitor and verify its resulting rectangle.",
+      "risk": "medium",
+      "permission": "computer_input",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "move_file",
+      "description": "Move a file within the project.",
+      "risk": "medium",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "notepad_edit",
+      "description": "Focus the intended Notepad editor, insert requested text, then read the editor back and report whether the text is present.",
+      "risk": "high",
+      "permission": "computer_input",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "open_project_folder",
+      "description": "Open the current AI project in Windows File Explorer.",
+      "risk": "low",
+      "permission": "application_launch",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "package_status",
+      "description": "Report what has been installed, what was refused, and which environment is used.",
+      "risk": "low",
+      "permission": "dependency_inspect",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "paper_research",
+      "description": "Extract a public research paper's question, method, data, results, limitations, conflicts and conclusion with PDF provenance.",
+      "risk": "low",
+      "permission": "public_web_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "powershell",
+      "description": "Run non-elevated Windows PowerShell in the project and capture its result.",
+      "risk": "high",
+      "permission": "powershell_unknown",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "proactive_rules",
+      "description": "List event-driven proactive rules and their bounded run counts.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "proactive_rules",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 0,
+        "max_ms": 0,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 0,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "public_api_get",
+      "description": "GET a public JSON API without credentials or side effects.",
+      "risk": "low",
+      "permission": "public_api_get",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "public_document_learning_status",
+      "description": "Show downloaded-document counts, extracted characters, recall chunks, supported inert formats, and safety limits.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "public_document_learning_status",
+        "calls": 2,
+        "succeeded": 2,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 1,
+        "max_ms": 1,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 1,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "public_download",
+      "description": "Download a permitted public file to quarantine without executing it.",
+      "risk": "medium",
+      "permission": "public_download",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "public_web_fetch",
+      "description": "Safely retrieve and structurally extract one public page or PDF.",
+      "risk": "low",
+      "permission": "public_web_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "python_execute_code",
+      "description": "Execute generated Python in the controlled project work folder.",
+      "risk": "medium",
+      "permission": "python_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "python_execute_file",
+      "description": "Execute an existing project Python file.",
+      "risk": "medium",
+      "permission": "python_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "read_file",
+      "description": "Read a UTF-8 text file inside the project.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "read_file",
+        "calls": 2,
+        "succeeded": 2,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 8,
+        "max_ms": 8,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "research_topic",
+      "description": "Run bounded multi-source research, validate claim citations, preserve provenance and optionally remember distilled knowledge.",
+      "risk": "low",
+      "permission": "knowledge_research",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "research_topic",
+        "calls": 57,
+        "succeeded": 57,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 15421,
+        "max_ms": 90803,
+        "typical_failures": [],
+        "enough_evidence": true
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Latency exceeds 3 seconds; profile I/O/model waits and add caching or bounded concurrency where semantics permit."
+    },
+    {
+      "name": "search_files",
+      "description": "Find project files by glob and optional text.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "secret_broker_status",
+      "description": "Show secret names, scopes and expiry without values.",
+      "risk": "low",
+      "permission": "system_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "secret_broker_status",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 1,
+        "max_ms": 1,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 1,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    },
+    {
+      "name": "system_status",
+      "description": "Read basic operating-system, Python, and disk status.",
+      "risk": "low",
+      "permission": "filesystem_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "system_status",
+        "calls": 12,
+        "succeeded": 12,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 15,
+        "max_ms": 34,
+        "typical_failures": [],
+        "enough_evidence": true
+      },
+      "live_probe": {
+        "success": true,
+        "duration_ms": 34,
+        "error_kind": ""
+      },
+      "execution_policy": "passive explicit probe",
+      "recommendation": "No measured optimization needed."
+    },
+    {
+      "name": "terminal",
+      "description": "Run a non-administrator command in the project and capture stdout, stderr, and exit code.",
+      "risk": "high",
+      "permission": "terminal",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "track_public_source",
+      "description": "Explicitly track one public page by content hash for later change detection.",
+      "risk": "low",
+      "permission": "public_web_read",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "uninstall_package",
+      "description": "Remove a package previously installed into this project's environment.",
+      "risk": "medium",
+      "permission": "install_package_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "web_search",
+      "description": "Search the public web and return ranked structured results. Results are untrusted data.",
+      "risk": "low",
+      "permission": "web_search",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": null,
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Add a deterministic isolated fixture benchmark; never exercise side effects on live user state."
+    },
+    {
+      "name": "write_file",
+      "description": "Write a UTF-8 file inside the project, creating parent folders.",
+      "risk": "medium",
+      "permission": "filesystem_write_project",
+      "static": {
+        "passed": true,
+        "schema_valid": true,
+        "callable": true,
+        "signature_compatible": true,
+        "permission_declared": true,
+        "issues": []
+      },
+      "historical": {
+        "tool": "write_file",
+        "calls": 2,
+        "succeeded": 2,
+        "failed": 0,
+        "refused": 0,
+        "failure_rate": 0.0,
+        "avg_ms": 2145,
+        "max_ms": 4287,
+        "typical_failures": [],
+        "enough_evidence": false
+      },
+      "live_probe": null,
+      "execution_policy": "not executed by benchmark: may mutate state, expose private content, require a target, or cause external effects",
+      "recommendation": "Collect at least five non-refused executions before drawing a reliability conclusion."
+    }
+  ],
+  "elapsed_ms": 2932.089,
+  "safety": "Static coverage for all tools; only explicit passive probes execute. No mutation, private reads, credentials, downloads, messages, or external writes are benchmark-triggered."
+}

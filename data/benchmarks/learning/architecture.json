@@ -1,0 +1,174 @@
+{
+  "generated_at": "2026-10-07T05:17:52.997266+00:00",
+  "safe": true,
+  "learned_records_deleted": 0,
+  "evidence_deleted": 0,
+  "memory_indexes": {
+    "maintained": true,
+    "hashed_vectors_added": 0,
+    "health": {
+      "healthy": true,
+      "integrity": "ok",
+      "memories": 830,
+      "hashed_vectors": 830,
+      "neural_vectors": 689,
+      "dna_associations": 294,
+      "contradiction_links": 0,
+      "fts_available": true,
+      "fts_rows": 830,
+      "missing_hashed_vectors": 0,
+      "missing_fts_rows": 0
+    }
+  },
+  "knowledge_maintenance": {
+    "duplicates_resolved": 0,
+    "expired_query_cache_removed": 431,
+    "expired_source_cache_removed": 1434,
+    "evidence_deleted": 0,
+    "history_preserved": true
+  },
+  "databases": {
+    "memory": {
+      "optimized": true,
+      "checkpoint": {
+        "busy": 0,
+        "log_pages": 726,
+        "checkpointed_pages": 726
+      }
+    },
+    "knowledge": {
+      "optimized": true,
+      "checkpoint": {
+        "busy": 0,
+        "log_pages": 243,
+        "checkpointed_pages": 243
+      }
+    },
+    "teaching": {
+      "optimized": true,
+      "checkpoint": {
+        "busy": 0,
+        "log_pages": -1,
+        "checkpointed_pages": -1
+      }
+    },
+    "background_queue": {
+      "optimized": true,
+      "checkpoint": {
+        "busy": 0,
+        "log_pages": 0,
+        "checkpointed_pages": 0
+      }
+    },
+    "training": {
+      "optimized": true,
+      "checkpoint": {
+        "busy": 0,
+        "log_pages": -1,
+        "checkpointed_pages": -1
+      }
+    }
+  },
+  "before_bytes": {
+    "memory": 72724480,
+    "knowledge": 176398336,
+    "teaching": 73728,
+    "background_queue": 262144,
+    "training": 303104
+  },
+  "after_bytes": {
+    "memory": 73302016,
+    "knowledge": 176398336,
+    "teaching": 73728,
+    "background_queue": 262144,
+    "training": 307200
+  },
+  "alignment": {
+    "aligned": false,
+    "status": "blocked",
+    "checks": [
+      {
+        "name": "memory_integrity",
+        "passed": true,
+        "severity": "blocker",
+        "evidence": "SQLite integrity: ok"
+      },
+      {
+        "name": "recall_indexes",
+        "passed": true,
+        "severity": "blocker",
+        "evidence": "hashed missing=0, FTS missing=0"
+      },
+      {
+        "name": "claim_provenance",
+        "passed": true,
+        "severity": "blocker",
+        "evidence": "99.8% of claims have evidence"
+      },
+      {
+        "name": "summary_provenance",
+        "passed": true,
+        "severity": "blocker",
+        "evidence": "100.0% of summaries have a source"
+      },
+      {
+        "name": "contradictions_resolved",
+        "passed": false,
+        "severity": "blocker",
+        "evidence": "115 unresolved conflict(s)"
+      },
+      {
+        "name": "freshness",
+        "passed": false,
+        "severity": "warning",
+        "evidence": "14 active summary/summaries require refresh"
+      },
+      {
+        "name": "training_dataset",
+        "passed": true,
+        "severity": "blocker",
+        "evidence": "no leakage, split contamination, or invalid private consent"
+      },
+      {
+        "name": "automatic_promotion_disabled",
+        "passed": true,
+        "severity": "blocker",
+        "evidence": "learning cannot silently change model weights"
+      },
+      {
+        "name": "automatic_training_supervised",
+        "passed": false,
+        "severity": "warning",
+        "evidence": "candidate adapters are prepared only when asked for"
+      },
+      {
+        "name": "background_least_authority",
+        "passed": true,
+        "severity": "blocker",
+        "evidence": "background writes are restricted to validated research knowledge"
+      },
+      {
+        "name": "background_learning_approved",
+        "passed": true,
+        "severity": "warning",
+        "evidence": "owner configuration enables bounded continuous learning"
+      }
+    ],
+    "blockers": [
+      "contradictions_resolved"
+    ],
+    "warnings": [
+      "freshness",
+      "automatic_training_supervised"
+    ],
+    "policy": {
+      "public_learning": "approved within budgets and robots/site rules",
+      "local_storage": "approved for validated provenance-bearing knowledge",
+      "private_training": "requires per-dataset owner consent and remains local-only",
+      "self_permission_changes": "not approved"
+    },
+    "inventory_generated_at": "2026-10-07T05:46:47.041961+00:00"
+  },
+  "elapsed_ms": 880.549,
+  "alignment_checked_at": "2026-10-07T05:46:47.044114+00:00"
+}

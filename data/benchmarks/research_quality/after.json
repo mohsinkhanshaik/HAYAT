@@ -1,0 +1,557 @@
+{
+  "label": "after",
+  "created_at": "2026-08-13T07:50:19.347636+00:00",
+  "summary": {
+    "cases": 10,
+    "completion_rate": 1.0,
+    "answer_correctness": 1.0,
+    "citation_correctness": 0.5724,
+    "citation_completeness": 0.5688,
+    "source_quality": 0.6258,
+    "preferred_source_ratio": 0.8241,
+    "source_diversity": 0.8167,
+    "freshness_coverage": 0.14,
+    "retrieval_precision_at_3": 0.9,
+    "retrieval_recall_proxy": 1.0,
+    "retrieval_mrr": 0.95,
+    "median_latency_ms": 3307,
+    "mean_searches": 2.6,
+    "mean_pages_opened": 3.4,
+    "model_calls": 0
+  },
+  "cases": [
+    {
+      "id": "current_software_docs",
+      "category": "current software documentation",
+      "query": "What Python 3 documentation version is currently published?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 0.5714,
+      "citation_completeness": 0.5714,
+      "source_quality": 0.48,
+      "preferred_source_ratio": 1.0,
+      "retrieval_precision_at_3": 1.0,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 1.0,
+      "source_diversity": 0.6667,
+      "freshness_coverage": 0.0,
+      "confidence": 0.508,
+      "latency_ms": 2674,
+      "searches": 2,
+      "pages_opened": 3,
+      "model_calls": 0,
+      "duplicates": 2,
+      "cache_hits": 0,
+      "knowledge_hits": 7,
+      "independent_sources": 1,
+      "validated_claims": 4,
+      "sources": [
+        {
+          "url": "https://docs.python.org/3/",
+          "quality": 0.736,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.python.org/doc/versions/",
+          "quality": 0.408,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.python.org/doc/",
+          "quality": 0.296,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "sufficient_validated_evidence",
+      "errors": []
+    },
+    {
+      "id": "historical_stable_fact",
+      "category": "historical stable fact",
+      "query": "On what date did Apollo 11 first land humans on the Moon?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 0.8889,
+      "citation_completeness": 0.8889,
+      "source_quality": 0.7573,
+      "preferred_source_ratio": 0.6667,
+      "retrieval_precision_at_3": 0.6667,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 0.5,
+      "source_diversity": 0.6667,
+      "freshness_coverage": 0.6667,
+      "confidence": 0.654,
+      "latency_ms": 75,
+      "searches": 0,
+      "pages_opened": 3,
+      "model_calls": 0,
+      "duplicates": 0,
+      "cache_hits": 4,
+      "knowledge_hits": 7,
+      "independent_sources": 2,
+      "validated_claims": 8,
+      "sources": [
+        {
+          "url": "https://airandspace.si.edu/explore/stories/apollo-11-moon-landing",
+          "quality": 0.788,
+          "published_at": "July 29, 2021",
+          "updated_at": null
+        },
+        {
+          "url": "https://www.nasa.gov/missions/apollo/apollo-11/apollo-11-mission-overview/",
+          "quality": 0.742,
+          "published_at": "2015-04-17T18:55:46-04:00",
+          "updated_at": "2026-07-29T11:34:50-04:00"
+        },
+        {
+          "url": "https://www.nasa.gov/mission/apollo-11/",
+          "quality": 0.742,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "sufficient_validated_evidence",
+      "errors": []
+    },
+    {
+      "id": "current_technology_comparison",
+      "category": "current technology comparison",
+      "query": "Compare the current documented multi-GPU serving approaches in vLLM and TensorRT-LLM.",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 0.28,
+      "citation_completeness": 0.2273,
+      "source_quality": 0.4622,
+      "preferred_source_ratio": 0.8889,
+      "retrieval_precision_at_3": 1.0,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 1.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.0,
+      "confidence": 0.585,
+      "latency_ms": 9298,
+      "searches": 5,
+      "pages_opened": 9,
+      "model_calls": 0,
+      "duplicates": 10,
+      "cache_hits": 1,
+      "knowledge_hits": 7,
+      "independent_sources": 3,
+      "validated_claims": 5,
+      "sources": [
+        {
+          "url": "https://docs.vllm.ai/en/v0.8.0/serving/distributed_serving.html",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://docs.vllm.ai/en/v0.4.2/serving/distributed_serving.html",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/waynehacking8/trtllm-triton-serving",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://docs.vllm.ai/en/latest/serving/parallelism_scaling/",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/vllm-project/vllm/blob/main/docs/serving/parallelism_scaling.md",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://docs.lxp.lu/howto/llama3-vllm/",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/capetron/ptg-vllm-deploy",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/NVIDIA/TensorRT-LLM/blob/main/docs/source/features/parallel-strategy.md",
+          "quality": 0.4,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/NVIDIA/TensorRT-LLM",
+          "quality": 0.4,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "sufficient_validated_evidence",
+      "errors": []
+    },
+    {
+      "id": "github_project",
+      "category": "GitHub project question",
+      "query": "What is CPython's default development branch and where are releases documented?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.675,
+      "preferred_source_ratio": 1.0,
+      "retrieval_precision_at_3": 1.0,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 1.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.0,
+      "confidence": 0.624,
+      "latency_ms": 2918,
+      "searches": 2,
+      "pages_opened": 1,
+      "model_calls": 0,
+      "duplicates": 0,
+      "cache_hits": 0,
+      "knowledge_hits": 7,
+      "independent_sources": 1,
+      "validated_claims": 1,
+      "sources": [
+        {
+          "url": "https://github.com/python/cpython/branches",
+          "quality": 0.675,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "sufficient_validated_evidence",
+      "errors": []
+    },
+    {
+      "id": "research_paper",
+      "category": "research paper question",
+      "query": "What architecture did the original Attention Is All You Need paper introduce?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 0.25,
+      "citation_completeness": 0.25,
+      "source_quality": 0.81,
+      "preferred_source_ratio": 1.0,
+      "retrieval_precision_at_3": 1.0,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 1.0,
+      "source_diversity": 0.5,
+      "freshness_coverage": 0.0,
+      "confidence": 0.697,
+      "latency_ms": 4432,
+      "searches": 3,
+      "pages_opened": 2,
+      "model_calls": 0,
+      "duplicates": 0,
+      "cache_hits": 0,
+      "knowledge_hits": 7,
+      "independent_sources": 1,
+      "validated_claims": 1,
+      "sources": [
+        {
+          "url": "https://arxiv.org/abs/1706.03762",
+          "quality": 0.88,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://arxiv.org/pdf/1706.03762",
+          "quality": 0.74,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "best_available_evidence",
+      "errors": [
+        "duckduckgo_html: no results",
+        "duckduckgo_html: no results"
+      ]
+    },
+    {
+      "id": "controversial_multisource",
+      "category": "multi-source controversial claim",
+      "query": "Does moderate coffee consumption dehydrate healthy adults? Find supporting and opposing evidence.",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 0.6,
+      "citation_completeness": 0.6,
+      "source_quality": 0.514,
+      "preferred_source_ratio": 0.4,
+      "retrieval_precision_at_3": 0.6667,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 1.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.4,
+      "confidence": 0.556,
+      "latency_ms": 7615,
+      "searches": 5,
+      "pages_opened": 5,
+      "model_calls": 0,
+      "duplicates": 10,
+      "cache_hits": 0,
+      "knowledge_hits": 7,
+      "independent_sources": 4,
+      "validated_claims": 9,
+      "sources": [
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11668367/",
+          "quality": 0.751,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5696634/",
+          "quality": 0.751,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://coffeestudies.com/caffeine-health/does-coffee-dehydrate-you",
+          "quality": 0.356,
+          "published_at": "2026-07-15",
+          "updated_at": "2026-07-15"
+        },
+        {
+          "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0084154",
+          "quality": 0.356,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://health.clevelandclinic.org/coffee-dehydration",
+          "quality": 0.356,
+          "published_at": "2024-05-21T10:45:00.000Z",
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "sufficient_validated_evidence",
+      "errors": [
+        "https://pubmed.ncbi.nlm.nih.gov/24416202/: HTTPStatusError: Client error '403 Forbidden' for url 'https://pubmed.ncbi.nlm.nih.gov/24416202/'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403",
+        "https://pubmed.ncbi.nlm.nih.gov/29167102/: HTTPStatusError: Client error '403 Forbidden' for url 'https://pubmed.ncbi.nlm.nih.gov/29167102/'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403",
+        "https://www.researchgate.net/publication/259701471_No_Evidence_of_Dehydration_with_Moderate_Daily_Coffee_Intake_A_Counterbalanced_Cross-Over_Study_in_a_Free-Living_Population: HTTPStatusError: Client error '403 Forbidden' for url 'https://www.researchgate.net/publication/259701471_No_Evidence_of_Dehydration_with_Moderate_Daily_Coffee_Intake_A_Counterbalanced_Cross-Over_Study_in_a_Free-Living_Population'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403",
+        "https://www.bmj.com/content/359/bmj.j5024: HTTPStatusError: Client error '403 Forbidden' for url 'https://www.bmj.com/content/359/bmj.j5024'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403"
+      ]
+    },
+    {
+      "id": "api_documentation",
+      "category": "API documentation question",
+      "query": "How does HTTPX configure request timeouts in its current Python API?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 0.6667,
+      "citation_completeness": 0.6667,
+      "source_quality": 0.675,
+      "preferred_source_ratio": 1.0,
+      "retrieval_precision_at_3": 1.0,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 1.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.0,
+      "confidence": 0.624,
+      "latency_ms": 2683,
+      "searches": 2,
+      "pages_opened": 1,
+      "model_calls": 0,
+      "duplicates": 0,
+      "cache_hits": 0,
+      "knowledge_hits": 7,
+      "independent_sources": 1,
+      "validated_claims": 2,
+      "sources": [
+        {
+          "url": "https://github.com/encode/httpx/blob/master/docs/advanced/timeouts.md",
+          "quality": 0.675,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "sufficient_validated_evidence",
+      "errors": []
+    },
+    {
+      "id": "recent_release",
+      "category": "recent release/version question",
+      "query": "What is the current stable Playwright Python release and its release date?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 0.4,
+      "citation_completeness": 0.4,
+      "source_quality": 0.6453,
+      "preferred_source_ratio": 1.0,
+      "retrieval_precision_at_3": 1.0,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 1.0,
+      "source_diversity": 0.6667,
+      "freshness_coverage": 0.0,
+      "confidence": 0.666,
+      "latency_ms": 3697,
+      "searches": 2,
+      "pages_opened": 3,
+      "model_calls": 0,
+      "duplicates": 3,
+      "cache_hits": 0,
+      "knowledge_hits": 7,
+      "independent_sources": 2,
+      "validated_claims": 2,
+      "sources": [
+        {
+          "url": "https://playwright.dev/python/docs/release-notes",
+          "quality": 0.848,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://playwright.dev/docs/release-notes",
+          "quality": 0.792,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://pypi.org/project/playwright/",
+          "quality": 0.296,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "sufficient_validated_evidence",
+      "errors": []
+    },
+    {
+      "id": "contradiction_scope",
+      "category": "question requiring contradiction detection",
+      "query": "Does current CPython still have a GIL, including free-threaded builds? Resolve apparently conflicting documentation.",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 0.0667,
+      "citation_completeness": 0.0833,
+      "source_quality": 0.6703,
+      "preferred_source_ratio": 0.2857,
+      "retrieval_precision_at_3": 0.6667,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 1.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.0,
+      "confidence": 0.619,
+      "latency_ms": 8438,
+      "searches": 5,
+      "pages_opened": 7,
+      "model_calls": 0,
+      "duplicates": 4,
+      "cache_hits": 0,
+      "knowledge_hits": 7,
+      "independent_sources": 3,
+      "validated_claims": 1,
+      "sources": [
+        {
+          "url": "https://docs.python.org/3/howto/free-threading-python.html",
+          "quality": 0.68,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://docs.python.org/3/c-api/threads.html",
+          "quality": 0.68,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://docs.pythonlang.net/3/howto/free-threading-python.html",
+          "quality": 0.68,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/python/cpython/tree/main/Doc/",
+          "quality": 0.663,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/python/cpython",
+          "quality": 0.663,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/python/cpython/blob/main/Doc/howto/free-threading-python.rst",
+          "quality": 0.663,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/python/cpython/blob/main/Doc/whatsnew/3.13.rst",
+          "quality": 0.663,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "sufficient_validated_evidence",
+      "errors": [
+        "duckduckgo_html: no results",
+        "duckduckgo_html: no results"
+      ]
+    },
+    {
+      "id": "local_knowledge_reuse",
+      "category": "question already present in local knowledge",
+      "query": "How does Kubernetes schedule GPUs through device plugins?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.5687,
+      "preferred_source_ratio": 1.0,
+      "retrieval_precision_at_3": 1.0,
+      "retrieval_recall_proxy": 1.0,
+      "retrieval_mrr": 1.0,
+      "source_diversity": 0.6667,
+      "freshness_coverage": 0.3333,
+      "confidence": 0.587,
+      "latency_ms": 30,
+      "searches": 0,
+      "pages_opened": 0,
+      "model_calls": 0,
+      "duplicates": 0,
+      "cache_hits": 0,
+      "knowledge_hits": 8,
+      "independent_sources": 0,
+      "validated_claims": 0,
+      "sources": [
+        {
+          "url": "https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/",
+          "quality": 0.6,
+          "published_at": null,
+          "updated_at": "2024-09-20T20:33:05+00:00"
+        },
+        {
+          "url": "https://github.com/NVIDIA/k8s-device-plugin",
+          "quality": 0.553,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://github.com/kubernetes-dp/nvidia-k8s-device-plugin",
+          "quality": 0.553,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "fresh_local_knowledge",
+      "errors": []
+    }
+  ]
+}

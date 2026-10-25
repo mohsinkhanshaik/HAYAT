@@ -1,0 +1,49 @@
+{
+  "raw_created": true,
+  "validated_state": "VALIDATED",
+  "promoted_state": "TRAINING_READY",
+  "dedupe": true,
+  "redactions_first_record": 1,
+  "rejected": 1,
+  "splits": [
+    {
+      "category": "planning",
+      "state": "HELD_OUT",
+      "split": "test",
+      "count": 5
+    },
+    {
+      "category": "conversation",
+      "state": "REJECTED",
+      "split": null,
+      "count": 1
+    },
+    {
+      "category": "planning",
+      "state": "TRAINING_READY",
+      "split": "train",
+      "count": 52
+    },
+    {
+      "category": "planning",
+      "state": "TRAINING_READY",
+      "split": "validation",
+      "count": 3
+    },
+    {
+      "category": "routing",
+      "state": "TRAINING_READY",
+      "split": "validation",
+      "count": 1
+    }
+  ],
+  "validation": {
+    "passed": true,
+    "records": 62,
+    "cross_split_contamination": [],
+    "secret_leaks": [],
+    "duplicate_policy": "exact and normalized-semantic hash before split"
+  },
+  "training_execution_started": false,
+  "passed": true
+}

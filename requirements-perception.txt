@@ -1,0 +1,4 @@
+# Optional CPU person detection, matching the versions verified on this host.
+# Windows OCR/accessibility dependencies remain in requirements.txt.
+torch==2.14.0
+torchvision==0.29.0

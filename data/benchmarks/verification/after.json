@@ -1,0 +1,36 @@
+{
+  "cases": 6,
+  "failure_detection_accuracy": 1.0,
+  "details": [
+    {
+      "scenario": "app_failed_to_open",
+      "detected_failure": true,
+      "reason": "application=notepad; running=False; visible_window=False"
+    },
+    {
+      "scenario": "text_wrong_window",
+      "detected_failure": true,
+      "reason": "application=calculator; focused=True; requested_text_present=True"
+    },
+    {
+      "scenario": "wrong_file_contents",
+      "detected_failure": true,
+      "reason": "Read-back does not contain expected text."
+    },
+    {
+      "scenario": "wrong_browser_url",
+      "detected_failure": true,
+      "reason": "browser_destination='https://example.org'; expected='https://example.com'"
+    },
+    {
+      "scenario": "application_still_running",
+      "detected_failure": true,
+      "reason": "application=notepad; closed=True; target_window_exists=True"
+    },
+    {
+      "scenario": "incomplete_download",
+      "detected_failure": true,
+      "reason": "file_exists=True; complete=False; size_matches=False"
+    }
+  ]
+}

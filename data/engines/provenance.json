@@ -1,0 +1,10 @@
+{
+  "engine": "llama.cpp",
+  "tag": "b10451",
+  "asset": "llama-b10451-bin-win-cpu-x64.zip",
+  "url": "https://github.com/ggml-org/llama.cpp/releases/download/b10451/llama-b10451-bin-win-cpu-x64.zip",
+  "sha256": "5017036e0746933f0d35b8225e3f9768eee0f4fd54154e1328274d0e88537e7d",
+  "size_bytes": 18463051,
+  "extracted_to": "D:\\AI\\data\\engines\\llama.cpp-b10451-cpu-x64",
+  "fetched_at": "2026-08-16T07:01:43"
+}

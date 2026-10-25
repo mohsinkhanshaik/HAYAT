@@ -1,0 +1,30 @@
+# HAYAT's thinking model: Qwythos-9B (Qwen 3.5, uncensored), tuned for accuracy
+# and reproducibility. Built FROM the pulled GGUF so it inherits that model's
+# Qwen 3.5 chat template, tool-calling format, vision projector and thinking
+# support unchanged -- only the sampling is set here.
+#
+# Identity is NOT handled at this layer. The GGUF's chat template injects a
+# "You are Qwythos, created by Empero AI" line, and that is dealt with the way
+# every backend's self-description is: HAYAT's system preamble is authoritative
+# and the leak guard corrects any residue in output. HAYAT is the agent, not
+# the weights.
+FROM hf.co/llmfan46/Qwythos-9B-Claude-Mythos-5-1M-uncensored-heretic-GGUF:Q4_K_M
+
+# Qwen 3.5's own recommended sampling for factual, non-repetitive output.
+# Temperature is deliberately omitted: the app sets it per role (0.1 reasoning,
+# 0.3 conversation) and a PARAMETER here would only be a default it overrides.
+PARAMETER top_p 0.8
+PARAMETER top_k 20
+PARAMETER min_p 0.0
+# Qwen 3.5 degrades with a heavy repetition penalty; 1.05 is the documented
+# ceiling that still discourages loops without clipping correct repetition.
+PARAMETER repeat_penalty 1.05
+PARAMETER repeat_last_n 64
+# No fixed seed. A fixed seed made every identical question return a
+# byte-identical answer, which read as HAYAT parroting itself the second time
+# Mohsin asked -- "giving the same reply twice". Reproducibility is not worth
+# sounding like a stuck record in conversation, so generation varies naturally.
+# Stop tokens, so generation ends at the end of a turn rather than running on
+# into a hallucinated next turn.
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"

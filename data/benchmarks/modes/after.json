@@ -1,0 +1,98 @@
+{
+  "auto_cases": 7,
+  "auto_accuracy": 1.0,
+  "rows": [
+    {
+      "input": "Hi",
+      "intent": "CONVERSATION",
+      "modes": [
+        "FAST"
+      ],
+      "latency_ms": 0.194,
+      "passed": true
+    },
+    {
+      "input": "What is CUDA?",
+      "intent": "QUESTION",
+      "modes": [
+        "FAST"
+      ],
+      "latency_ms": 0.705,
+      "passed": true
+    },
+    {
+      "input": "What's new in CUDA?",
+      "intent": "RESEARCH",
+      "modes": [
+        "DEEP",
+        "RESEARCH"
+      ],
+      "latency_ms": 0.014,
+      "passed": true
+    },
+    {
+      "input": "Open Notepad.",
+      "intent": "COMPUTER_CONTROL",
+      "modes": [
+        "COMPUTER",
+        "FAST"
+      ],
+      "latency_ms": 0.575,
+      "passed": true
+    },
+    {
+      "input": "What's on my screen?",
+      "intent": "COMPUTER_CONTROL",
+      "modes": [
+        "COMPUTER",
+        "FAST",
+        "VISION"
+      ],
+      "latency_ms": 0.008,
+      "passed": true
+    },
+    {
+      "input": "Fix this Python code.",
+      "intent": "CODING",
+      "modes": [
+        "CODER",
+        "DEEP"
+      ],
+      "latency_ms": 0.019,
+      "passed": true
+    },
+    {
+      "input": "Research this deeply.",
+      "intent": "RESEARCH",
+      "modes": [
+        "DEEP",
+        "RESEARCH"
+      ],
+      "latency_ms": 0.009,
+      "passed": true
+    }
+  ],
+  "latency_ms": {
+    "router_mean": 0.01,
+    "router_p95": 0.012,
+    "memory_retrieval": 31.3,
+    "fast_conversation": 9838.73,
+    "deep_conversation": 12836.361,
+    "fast_research": 7333.333,
+    "vision": 17964.71
+  },
+  "evidence": {
+    "fast_response_chars": 599,
+    "fast_response_words": 95,
+    "deep_response_chars": 1447,
+    "research_complete": true,
+    "vision_verified": true,
+    "embedding": {
+      "provider": "ollama",
+      "model": null,
+      "available": false,
+      "privacy": "local_only",
+      "fallback": "hashed semantic + lexical + entity + recency"
+    }
+  }
+}

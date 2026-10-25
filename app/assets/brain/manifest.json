@@ -1,0 +1,23 @@
+{
+  "title": "Human Brain",
+  "creator": "3DRT STUDIOS",
+  "creator_url": "https://sketchfab.com/Hanako.com",
+  "source_url": "https://sketchfab.com/3d-models/human-brain-7a27c17fd6c0488bb31ab093236a47fb",
+  "license": "CC-BY-4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "acquired_from": "https://huggingface.co/datasets/allenai/objaverse",
+  "dataset_revision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "dataset_path": "glbs/000-012/7a27c17fd6c0488bb31ab093236a47fb.glb",
+  "dataset_license": "ODC-By-1.0",
+  "source_sha256": "5cb8665dd5d7c02ccc8fbb9369a7b1c1248d4c1e00316fd69c6c118d102af443",
+  "source_triangles": 4850,
+  "changes": "Scene transforms applied; centred, uniformly scaled, Y reflected; textures omitted; three simplified detail levels plus full-source Ultra; recoloured by GUI theme.",
+  "geometry_sha256": "9b1be649dea84eacb2fdf8a182c6c56c20d601d8bf75c513dd6aed1237d95011",
+  "triangles": {
+    "Low": 384,
+    "Normal": 1536,
+    "High": 2560,
+    "Ultra": 4850
+  },
+  "geometry_bytes": 279205
+}

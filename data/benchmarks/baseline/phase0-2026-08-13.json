@@ -1,0 +1,345 @@
+{
+ "phase": "0-baseline",
+ "created_at": "2026-08-13T16:51:57",
+ "commit": "2d8dc88",
+ "environment": {
+  "verification_host": "linux-sandbox python3.12 (windows-native paths NOT executed)",
+  "windows_release_gate_artifact": "data/benchmarks/release/latest.json reports 122/122 on python 3.14.2"
+ },
+ "tests": {
+  "collected": 122,
+  "passed_linux": 116,
+  "failed_linux": 6,
+  "failed_reason": "windows-api bound: ctypes.windll (4), taskkill.exe (1), windows-only packages absent (1)",
+  "wall_seconds": 4.52
+ },
+ "coverage": {
+  "total_percent": 62,
+  "statements": 9036,
+  "missing": 3408,
+  "worst": {
+   "app/cli.py": 4,
+   "app/doctor.py": 0,
+   "app/windows/applications.py": 16,
+   "app/state.py": 21,
+   "app/assistant.py": 37
+  }
+ },
+ "security_probes": {
+  "total": 43,
+  "failing": 26,
+  "safe_workflow_preserved": true,
+  "rows": [
+   {
+    "id": "enc-1",
+    "category": "encoded_powershell",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "enc-2",
+    "category": "encoded_powershell",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "enc-3",
+    "category": "encoded_powershell",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "cat-1",
+    "category": "concat_protected",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "cat-2",
+    "category": "concat_protected",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "cat-3",
+    "category": "concat_protected",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "cp-1",
+    "category": "copy_protected",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "cp-2",
+    "category": "copy_protected",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "cp-3",
+    "category": "copy_protected",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "py-1",
+    "category": "interpreter_read",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "py-2",
+    "category": "interpreter_read",
+    "required": "ASK",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "py-3",
+    "category": "interpreter_read",
+    "required": "ASK",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "net-1",
+    "category": "egress_sensitive",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "net-2",
+    "category": "egress_sensitive",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "net-3",
+    "category": "egress_sensitive",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "rce-1",
+    "category": "download_execute",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "rce-2",
+    "category": "download_execute",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "rce-3",
+    "category": "download_execute",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "obf-1",
+    "category": "obfuscated_path",
+    "required": "DENY",
+    "actual": "DENY",
+    "ok": true
+   },
+   {
+    "id": "obf-2",
+    "category": "obfuscated_path",
+    "required": "DENY",
+    "actual": "DENY",
+    "ok": true
+   },
+   {
+    "id": "obf-3",
+    "category": "obfuscated_path",
+    "required": "DENY",
+    "actual": "DENY",
+    "ok": true
+   },
+   {
+    "id": "obf-4",
+    "category": "obfuscated_path",
+    "required": "DENY",
+    "actual": "DENY",
+    "ok": true
+   },
+   {
+    "id": "env-1",
+    "category": "env_path_build",
+    "required": "DENY",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "env-2",
+    "category": "env_path_build",
+    "required": "ASK",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "nest-1",
+    "category": "nested_shell",
+    "required": "DENY",
+    "actual": "DENY",
+    "ok": true
+   },
+   {
+    "id": "nest-2",
+    "category": "nested_shell",
+    "required": "ASK",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "nest-3",
+    "category": "nested_shell",
+    "required": "ASK",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "sep-1",
+    "category": "separators",
+    "required": "DENY",
+    "actual": "DENY",
+    "ok": true
+   },
+   {
+    "id": "sep-2",
+    "category": "separators",
+    "required": "ASK",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "sep-3",
+    "category": "separators",
+    "required": "ASK",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "sep-4",
+    "category": "separators",
+    "required": "ASK",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "sub-1",
+    "category": "substitution",
+    "required": "DENY",
+    "actual": "DENY",
+    "ok": true
+   },
+   {
+    "id": "sub-2",
+    "category": "substitution",
+    "required": "ASK",
+    "actual": "ALLOW",
+    "ok": false
+   },
+   {
+    "id": "ok-1",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   },
+   {
+    "id": "ok-2",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   },
+   {
+    "id": "ok-3",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   },
+   {
+    "id": "ok-4",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   },
+   {
+    "id": "ok-5",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   },
+   {
+    "id": "ok-6",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   },
+   {
+    "id": "ok-7",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   },
+   {
+    "id": "ok-8",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   },
+   {
+    "id": "ok-9",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   },
+   {
+    "id": "ok-10",
+    "category": "safe_workflow",
+    "required": "ALLOW",
+    "actual": "ALLOW",
+    "ok": true
+   }
+  ]
+ },
+ "dead_configuration": {
+  "powershell_unknown_policy_declared": "ASK",
+  "powershell_unknown_policy_enforced": "ALLOW",
+  "candidate_limit_declared": true,
+  "candidate_limit_consumed_by_code": false
+ },
+ "retrieval": {
+  "candidate_window": "ORDER BY timestamp DESC LIMIT 500 (recency-only, hardcoded)"
+ }
+}

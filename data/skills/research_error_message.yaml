@@ -1,0 +1,19 @@
+name: research_error_message
+description: Research an unfamiliar software error using current documentation, releases, and public issue trackers.
+inputs:
+  - error
+  - software
+  - version
+tools:
+  - research_topic
+steps:
+  - tool: research_topic
+    arguments:
+      query: "{{software}} {{version}} error {{error}} official documentation GitHub issue"
+      level: normal
+      official_only: false
+      remember: true
+success_criteria:
+  - The exact version and error are part of the search scope.
+  - Proposed causes are tied to retrieved evidence.
+trusted: true

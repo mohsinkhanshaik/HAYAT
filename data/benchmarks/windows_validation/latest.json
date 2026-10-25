@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "generated_at":  "2026-08-17T05:55:11.7897468Z",
+    "tier":  "Quick",
+    "host_platform":  "Windows (PowerShell Desktop)",
+    "machine":  {
+                    "os":  "Microsoft Windows 11 Home",
+                    "machine":  "ROG Strix G16 G614FM_G614FM"
+                },
+    "overall_status":  "PASS",
+    "checks":  [
+                   {
+                       "name":  "compile",
+                       "category":  "quick",
+                       "status":  "PASS",
+                       "reason":  "exit code 0",
+                       "exit_code":  0,
+                       "duration_ms":  169,
+                       "output_tail":  ""
+                   },
+                   {
+                       "name":  "pytest",
+                       "category":  "quick",
+                       "status":  "PASS",
+                       "reason":  "exit code 0",
+                       "exit_code":  0,
+                       "duration_ms":  112591.4,
+                       "output_tail":  "........................................................................ [  9%]\r\n........................................................................ [ 18%]\r\n........................................................................ [ 27%]\r\n........................................................................ [ 37%]\r\n........................................................................ [ 46%]\r\n........................................................................ [ 55%]\r\n........................................................................ [ 65%]\r\n........................................................................ [ 74%]\r\n........................................................................ [ 83%]\r\n........................................................................ [ 93%]\r\n.....................................................                    [100%]\r\n773 passed in 111.81s (0:01:51)"
+                   },
+                   {
+                       "name":  "doctor",
+                       "category":  "quick",
+                       "status":  "PASS",
+                       "reason":  "exit code 0",
+                       "exit_code":  0,
+                       "duration_ms":  8963.6,
+                       "output_tail":  "\"available\": true,\r\n              \"language\": \"English (United States)\",\r\n              \"cloud\": false,\r\n              \"reason\": null\r\n            },\r\n            \"tesseract\": {\r\n              \"provider\": \"tesseract\",\r\n              \"available\": false,\r\n              \"executable\": null,\r\n              \"cloud\": false\r\n            }\r\n          }\r\n        }\r\n      }\r\n    },\r\n    \"displays\": {\r\n      \"status\": \"ready\",\r\n      \"detail\": {\r\n        \"count\": 2,\r\n        \"displays\": [\r\n          {\r\n            \"index\": 1,\r\n            \"handle\": 65639,\r\n            \"primary\": true,\r\n            \"left\": 0,\r\n            \"top\": 0,\r\n            \"right\": 1920,\r\n            \"bottom\": 1200,\r\n            \"width\": 1920,\r\n            \"height\": 1200,\r\n            \"work_area\": {\r\n              \"left\": 0,\r\n              \"top\": 50,\r\n              \"right\": 1920,\r\n              \"bottom\": 1140\r\n            }\r\n          },\r\n          {\r\n            \"index\": 2,\r\n            \"handle\": 131073,\r\n            \"primary\": false,\r\n            \"left\": 1920,\r\n            \"top\": 0,\r\n            \"right\": 5760,\r\n            \"bottom\": 2160,\r\n            \"width\": 3840,\r\n            \"height\": 2160,\r\n            \"work_area\": {\r\n              \"left\": 1920,\r\n              \"top\": 0,\r\n              \"right\": 5760,\r\n              \"bottom\": 2088\r\n            }\r\n          }\r\n        ],\r\n        \"active_window\": {\r\n          \"available\": true,\r\n          \"handle\": 1310918,\r\n          \"title\": \"test_identity_and_watch.py (cxd4yv) - AI - Visual Studio Code\",\r\n          \"left\": 1911,\r\n          \"top\": -9,\r\n          \"right\": 5769,\r\n          \"bottom\": 2097\r\n        }\r\n      }\r\n    },\r\n    \"clipboard\": {\r\n      \"status\": \"ready\",\r\n      \"detail\": {\r\n        \"type\": \"text\",\r\n        \"characters\": 34868,\r\n        \"content_persisted\": false,\r\n        \"sensitive_possible\": true\r\n      }\r\n    },\r\n    \"observability\": {\r\n      \"status\": \"ready\",\r\n      \"detail\": {\r\n        \"healthy\": true,\r\n        \"components\": {\r\n          \"model\": true,\r\n          \"memory\": true,\r\n          \"research\": true,\r\n          \"vision\": true,\r\n          \"voice\": true,\r\n          \"camera\": \"OFF\",\r\n          \"browser_registered\": true,\r\n          \"zero_cost\": true\r\n        },\r\n        \"resources\": {\r\n          \"observed_at\": \"2026-08-17T05:55:07.194917+00:00\",\r\n          \"cpu_percent\": 5.26,\r\n          \"ram\": {\r\n            \"total_bytes\": 42603331584,\r\n            \"available_bytes\": 25653977088,\r\n            \"used_percent\": 39.0\r\n          },\r\n          \"disk\": {\r\n            \"total_bytes\": 4000768323584,\r\n            \"free_bytes\": 3712498753536,\r\n            \"project_budget\": 500000000000,\r\n            \"reserve_bytes\": 300000000000\r\n          },\r\n          \"gpu\": [\r\n            {\r\n              \"name\": \"NVIDIA GeForce RTX 5060 Laptop GPU\",\r\n              \"vram_total_mb\": 8151,\r\n              \"vram_used_mb\": 560,\r\n              \"vram_free_mb\": 7340,\r\n              \"utilization_percent\": 29,\r\n              \"temperature_c\": 53\r\n            }\r\n          ],\r\n          \"paid_telemetry\": false\r\n        }\r\n      }\r\n    },\r\n    \"downloads\": {\r\n      \"status\": \"ready\",\r\n      \"detail\": {\r\n        \"directory\": \"D:\\\\AI\\\\data\\\\downloads\",\r\n        \"records\": 0,\r\n        \"bytes\": 0,\r\n        \"verified_records\": 0,\r\n        \"https_required\": true,\r\n        \"trusted_sources\": [\r\n          \"pypi.org\",\r\n          \"pythonhosted.org\",\r\n          \"github.com\",\r\n          \"githubusercontent.com\",\r\n          \"ollama.com\",\r\n          \"huggingface.co\",\r\n          \"microsoft.com\",\r\n          \"python.org\",\r\n          \"docker.com\",\r\n          \"kubernetes.io\",\r\n          \"nvidia.com\"\r\n        ],\r\n        \"automatic_execution\": false\r\n      }\r\n    },\r\n    \"backups\": {\r\n      \"status\": \"ready\",\r\n      \"detail\": {\r\n        \"directory\": \"D:\\\\AI\\\\data\\\\backups\",\r\n        \"backups\": 0,\r\n        \"latest\": null,\r\n        \"automatic_restore\": false,\r\n        \"includes_secrets\": false\r\n      }\r\n    }\r\n  }\r\n}\r\nDoctor passed with Python 3.14.2 at D:\\AI"
+                   },
+                   {
+                       "name":  "generated_docs_current",
+                       "category":  "quick",
+                       "status":  "PASS",
+                       "reason":  "exit code 0",
+                       "exit_code":  0,
+                       "duration_ms":  3693.3,
+                       "output_tail":  "Generated documentation is current: D:\\AI\\docs\\generated\\runtime-reference.md"
+                   }
+               ]
+}

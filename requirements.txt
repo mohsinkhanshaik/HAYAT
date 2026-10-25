@@ -1,0 +1,119 @@
+httpx>=0.28,<1
+# Public video extraction/downloading; default extras include the packaged
+# YouTube JavaScript challenge solver. FFmpeg and Node are local engines.
+yt-dlp[default]>=2025.11.12,<2027
+python-vlc>=3.0.21203,<4
+# Propagate public CelesTrak orbital elements for the ISS position.
+sgp4>=2.27,<3
+# Authenticated local/mobile API and its background ASGI server. The mobile
+# reply/status stream is implemented directly with FastAPI WebSockets.
+fastapi>=0.116,<1
+uvicorn>=0.35,<1
+# Resolves the real netmask for the selected LAN interface so mobile access is
+# restricted to that subnet instead of every virtual/VPN adapter.
+psutil>=7.0,<8
+beautifulsoup4>=4.12,<5
+# Encoding-aware rejection of DTDs/entities in public provider XML.
+defusedxml>=0.7.1,<1
+# Public-source OSINT profiles: offline article extraction after bounded retrieval.
+trafilatura>=2.2,<3
+pypdf>=5,<7
+fonttools>=4.50,<5  # lets pypdf read PDFs whose fonts use CFF/Type1 encodings
+# Architecture/report generation and verification. ReportLab creates the
+# vector PDF; pdfplumber provides an independent text/layout inspection path.
+reportlab>=4.4,<6
+pdfplumber>=0.11,<1
+PyYAML>=6.0,<7
+python-dotenv>=1.0,<2
+playwright>=1.50,<2
+# Window-handle captures prevent unrelated desktop apps contaminating GUI checks.
+Pillow>=11.2.1,<13
+PyAutoGUI>=0.9.54,<1
+# Portable text clipboard adapter (native OS commands are selected by the
+# package; lack of a graphical clipboard degrades without blocking startup).
+pyperclip>=1.9,<2
+# Windows desktop UI automation. Windows-only (it needs pywin32/comtypes), so
+# it is skipped on macOS/Linux -- app/windows/applications.py guards its import
+# and the Windows-automation tools degrade rather than blocking a cross-platform
+# install. On Windows it stays required.
+pywinauto>=0.6.9,<1; sys_platform == "win32"
+# Wi-Fi CSI from an ESP32 on a USB serial port (app/csi.py). Pure Python.
+pyserial>=3.5,<4
+APScheduler>=3.11,<4
+jsonschema>=4.23,<5
+numpy>=2.2,<3
+sounddevice>=0.5.1,<1
+faster-whisper>=1.1,<2
+# Portable global push-to-talk listener. It is loaded only when push-to-talk
+# starts; headless servers continue to run without a desktop/input backend.
+pynput>=1.8,<2
+# Voice capture reliability, pre-roll, adaptive VAD, bounded normalization,
+# and device probing use these existing local packages; no cloud speech or
+# always-recording service is introduced.
+# Speech synthesis. The default TTS provider is piper, so a fresh install
+# without this has no voice at all -- it was installed by hand and never
+# recorded, which is exactly how an environment becomes unreproducible.
+piper-tts>=1.7,<2
+pystray>=0.19.5,<1
+# Optional low-power wake word (voice.wake_word.engine: openwakeword). Its
+# models are downloaded on request by scripts/setup_wakeword.py, not here.
+openwakeword>=0.6,<1
+pytest>=8.3,<10
+# Per-test timeouts. Without it a hung test blocks forever rather than
+# failing: one GUI test opened a modal dialog nobody could answer and left a
+# pytest process running for two and a half hours before it was noticed.
+pytest-timeout>=2.3,<3
+ruff>=0.16.9,<0.17
+opencv-python-headless>=4.14,<6
+prompt_toolkit>=3.0.50,<4
+winsdk>=1.0.0b10,<2; sys_platform == "win32"
+# Windows APIs used for the clipboard, window handles, active-window tracking
+# and process inspection: app/ imports win32api, win32clipboard, win32con,
+# win32gui and win32process. Installed by hand and never recorded -- the same
+# way piper-tts went missing above, and the reason a fresh clone could import
+# app.perception.clipboard only by accident.
+pywin32>=306; sys_platform == "win32"
+# OCR. The Python side only drives the engine; the engine itself is a separate
+# install (`winget install UB-Mannheim.TesseractOCR`), which lands in
+# %LOCALAPPDATA%\Programs\Tesseract-OCR without touching PATH -- so it was
+# installed, working, and reported unavailable until app/perception/camera/ocr.py
+# learned to look there. Windows Media OCR is the default backend and needs
+# nothing; Tesseract is the fallback for images it struggles with.
+pytesseract>=0.3.10,<1
+# Drag-and-drop of files onto the window. Bundles the tkdnd Tcl extension.
+# Note the ordering constraint it brings: tkdnd initialises OLE2, which needs
+# COM in a single-threaded apartment, and importing pywinauto sets it the
+# other way -- so app/gui.py reserves the window before the runtime is built.
+tkinterdnd2>=0.4,<1
+# Document Intelligence Suite. These are runtime features, not optional test
+# conveniences: dropped Word, Excel and PowerPoint files are extracted and
+# indexed for later recall.
+python-docx>=1.2,<2
+openpyxl>=3.1,<4
+python-pptx>=1.0,<2
+pandas>=3,<4
+lxml>=5,<7
+# Secure connectors and extension/MCP bridges. The built-in zero-cost web MCP
+# reuses MCP, HTTPX, BeautifulSoup, and the existing safe-retrieval stack.
+mss>=10,<11
+keyring>=25,<26
+# Local mTLS remote access: X.509 CA/server/device certificates, encrypted
+# PKCS#8 private keys, password-protected PKCS#12 device bundles, and CRLs.
+cryptography>=46,<51
+websockets>=15,<18
+mcp>=2,<3
+watchdog>=6,<7
+rapidfuzz>=3,<4
+# Voice supervision and conditional multi-decode use Faster Whisper plus
+# bounded standard-library control. Technical alias/sound-alike expansion and
+# tamper digests use the standard library; DNA recall uses the existing
+# SQLite/FTS/vector stack. Image validation parses the PNG header directly.
+# No extra daemon, driver package, cloud service, or speculative dependency is
+# required for these features.
+# Download and drag/drop antimalware admission uses the Microsoft Defender
+# command-line scanner included with supported Windows installations. It is an
+# operating-system security prerequisite, not a pip dependency; if unavailable
+# or unsuccessful, file intake fails closed instead of bypassing the scan.
+# Offline language identification: which language a message is written in,
+# so HAYAT can explain it in English and offer to learn that language.
+langid>=1.1.6,<2

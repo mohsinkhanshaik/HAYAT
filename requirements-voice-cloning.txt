@@ -1,0 +1,6 @@
+# Optional local XTTS voice matching. Install into an environment supported by
+# Coqui/PyTorch; this file is deliberately outside portable bootstrap defaults.
+# A separately obtained local XTTS checkpoint and an agreed WAV are required.
+coqui-tts[codec]==0.27.5
+# Coqui 0.27 needs Transformers 4.x. Use scripts/setup_voice_cloning.py:
+# its child-only dependency directory preserves the main/training 5.x stack.

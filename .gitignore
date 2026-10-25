@@ -1,0 +1,158 @@
+.venv/
+.venv-cuda/
+# Downloaded Colibri model container; provenance is models/colibri-manifest.json.
+models/colibri/
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest-work-*/
+.pytest-*/
+# Per-run pytest temp trees when the suite pins its basetemp; scratch,
+# recreated on every run.
+.test-runs/
+.mypy_cache/
+.ruff_cache/
+data/logs/*
+!data/logs/.gitkeep
+data/tasks/*
+!data/tasks/.gitkeep
+data/work/*
+!data/work/.gitkeep
+data/memory/*.db*
+data/memory/*.json
+# Audit logs of the owner's confirmed actions: what was sent where.
+data/memory/*.jsonl
+# Monitor briefs and camera previews written by the intelligence workspace.
+data/memory/intelligence/
+# The owner's encrypted authorized-record vault (Windows-account DPAPI); private, never committed.
+data/memory/authorized-research/
+data/artifacts/*.png
+# Generated documents (write_pdf / write_file default output) are products, not source.
+data/artifacts/*.pdf
+data/artifacts/*.txt
+data/artifacts/*.md
+data/artifacts/*.docx
+data/artifacts/*.csv
+data/artifacts/web-captures/
+data/artifacts/downloads/
+# Chat exports saved from the desktop window are personal runtime output.
+data/artifacts/chat/
+data/models/
+# Plate recognition records, plate images and samples: personal data, never committed.
+data/anpr/
+# Job search: the owner's CV profile, matches and application packets (app/jobs/).
+data/jobs/
+data/memory/explore/
+data/knowledge/sources/
+data/knowledge/extracted/
+data/knowledge/indexes/
+data/knowledge/*.db*
+data/knowledge/official-pack-report.json
+data/knowledge/official-pack-expansion-report.json
+data/audio/
+# Other people's phone numbers and email addresses; never committed.
+data/contacts/
+data/networking/
+data/training/**/*.jsonl
+data/training/*.db*
+# Local consent, corpus reviews, registry backups and checkpoint staging.
+data/training/production-preparation-*/
+/voice-test.txt
+data/browser-profiles/
+data/downloads/
+data/backups/
+data/cache/
+data/camera/
+data/datasets/
+data/embeddings/
+data/tools/
+data/security/
+data/integrations/
+data/automation/
+data/workspace.json
+data/gui-panels.json
+playwright-report/
+test-results/
+*.tmp
+*.log
+
+# Fetched inference engines. Binaries are large and reproducible from the
+# recorded provenance, so the record is tracked and the payload is not.
+data/engines/*
+!data/engines/provenance.json
+
+# Open-weight voice models. Large, and re-downloadable on demand by
+# PiperTTS.ensure_voice(); the config records which voice is expected.
+data/voices/*
+
+# Background learner journals. Operational records, not source.
+data/learning/*
+!data/learning/.gitkeep
+
+# Diffusion checkpoints. Large, and re-downloadable from the provenance record.
+data/models/diffusion/*
+!data/models/diffusion/provenance.json
+data/artifacts/images/*
+data/artifacts/videos/*
+
+# Camera activation journal. Operational record, not source.
+data/camera/*
+
+# Editor/script backups.
+*.backup-*
+
+# Package install journal. Operational record, not source.
+data/packages/*
+
+# Runtime state, not source: how HAYAT's tools have behaved, and the marker
+# that says a run is still alive. Both are rebuilt from scratch and neither
+# means anything on another machine.
+data/tool_understanding.db*
+data/runtime-alive.json
+data/supervision/
+data/appearance.json
+
+# Intermediate render pages and built report output; the scripts that
+# produce them are tracked, the artifacts are not.
+tmp/
+output/
+
+# HAYAT's own Python, Ollama and models (scripts/make_portable.py): copies, ~19 GB.
+runtime/
+/HAYAT.lnk
+# Screenshot after the last computer action, shown in the Working view.
+data/artifacts/working/
+# Temporary worker team reports (app/agents/team.py).
+data/artifacts/teams/
+# Videos downloaded by the video clip tools.
+download/
+# Folders HAYAT generates under artifacts (product kits, reports); top-level samples stay tracked.
+data/artifacts/*/
+
+# Quran text cache (fetched from api.alquran.cloud on first read)
+data/knowledge/quran/
+# Invention workbench runs are runtime state.
+data/invention/*.db*
+# Generated research candidates can contain private query text; review locally.
+data/skills/candidates/research_*.yaml
+# Release gate runs (JUnit + manifest per run); latest.json stays tracked.
+data/benchmarks/release/runs/
+# Wi-Fi CSI recordings and baselines (app/csi.py)
+data/sensing/
+# IEEE MAC-prefix registry downloaded for device names (app/network.py)
+data/network/
+# NLTK language data downloaded by "set up language tools" (app/text_analysis.py)
+data/nltk_data/
+# GeoNames place names for naming the owner's location on this computer (app/location_privacy.py), downloaded on request.
+data/places/
+# Photo copies with GPS tags removed before sending.
+data/work/no-gps/
+# Enrolled people's face signatures (app/perception/faces.py): personal, never committed.
+data/faces/
+# Tor for HAYAT's own web reading (app/privacy_masks.py): its state, log and the owner's on/off choice.
+data/tor/
+data/privacy-masks.json
+
+# REA's contained home, cache and temp (app/reverse_engineer.py contained_folders)
+data/rea-home/

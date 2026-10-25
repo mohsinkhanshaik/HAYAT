@@ -1,0 +1,524 @@
+{
+  "label": "before",
+  "created_at": "2026-08-13T07:26:55.059068+00:00",
+  "summary": {
+    "cases": 10,
+    "completion_rate": 1.0,
+    "answer_correctness": 0.7,
+    "citation_correctness": 1.0,
+    "citation_completeness": 1.0,
+    "source_quality": 0.659,
+    "preferred_source_ratio": 0.2167,
+    "source_diversity": 0.9667,
+    "freshness_coverage": 0.1608,
+    "median_latency_ms": 1558,
+    "mean_searches": 1.8,
+    "mean_pages_opened": 1.7,
+    "model_calls": 0
+  },
+  "cases": [
+    {
+      "id": "current_software_docs",
+      "category": "current software documentation",
+      "query": "What Python 3 documentation version is currently published?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.636,
+      "preferred_source_ratio": 1.0,
+      "source_diversity": 0.6667,
+      "freshness_coverage": 0.0,
+      "confidence": 0.696,
+      "latency_ms": 3255,
+      "searches": 2,
+      "pages_opened": 5,
+      "model_calls": 0,
+      "duplicates": 4,
+      "sources": [
+        {
+          "url": "https://docs.python.org/3/download.html",
+          "quality": 0.72,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://docs.python.org/3/contents.html",
+          "quality": 0.72,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://docs.python.org/3/",
+          "quality": 0.7,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.python.org/doc/versions/",
+          "quality": 0.54,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.python.org/doc/",
+          "quality": 0.5,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "budget_reached",
+      "errors": []
+    },
+    {
+      "id": "historical_stable_fact",
+      "category": "historical stable fact",
+      "query": "On what date did Apollo 11 first land humans on the Moon?",
+      "complete": true,
+      "correctness": 0.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.53,
+      "preferred_source_ratio": 0.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.25,
+      "confidence": 0.6912,
+      "latency_ms": 720,
+      "searches": 1,
+      "pages_opened": 0,
+      "model_calls": 0,
+      "duplicates": 0,
+      "sources": [
+        {
+          "url": "https://learn.mit.edu/",
+          "quality": 0.7,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/",
+          "quality": 0.6,
+          "published_at": null,
+          "updated_at": "2024-09-20T20:33:05+00:00"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/training/",
+          "quality": 0.5,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.learncharter.org/",
+          "quality": 0.5,
+          "published_at": "2019-10-20T02:21:08+00:00",
+          "updated_at": "2026-06-18T17:42:30+00:00"
+        },
+        {
+          "url": "https://learn.lboro.ac.uk/",
+          "quality": 0.5,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://learning.google/",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://learn.eltngl.com/",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "offline_cached_knowledge",
+      "errors": [
+        "duckduckgo_html: no results"
+      ]
+    },
+    {
+      "id": "current_technology_comparison",
+      "category": "current technology comparison",
+      "query": "Compare the current documented multi-GPU serving approaches in vLLM and TensorRT-LLM.",
+      "complete": true,
+      "correctness": 0.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.6,
+      "preferred_source_ratio": 0.1667,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.3333,
+      "confidence": 0.7200000000000001,
+      "latency_ms": 1395,
+      "searches": 2,
+      "pages_opened": 0,
+      "model_calls": 0,
+      "duplicates": 0,
+      "sources": [
+        {
+          "url": "https://developer.nvidia.com/blog/ensuring-balanced-gpu-allocation-in-kubernetes-clusters-with-time-based-fairshare/",
+          "quality": 0.72,
+          "published_at": "2026-01-28T17:00:00+00:00",
+          "updated_at": "2026-03-05T19:20:07+00:00"
+        },
+        {
+          "url": "https://github.com/kubernetes/kubernetes/releases",
+          "quality": 0.7,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/",
+          "quality": 0.6,
+          "published_at": null,
+          "updated_at": "2024-09-20T20:33:05+00:00"
+        },
+        {
+          "url": "https://kubernetes.io/releases/",
+          "quality": 0.6,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.kubernetes.dev/resources/release/",
+          "quality": 0.5,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.kubernetes.org/gpu-scheduling",
+          "quality": 0.48,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "offline_cached_knowledge",
+      "errors": [
+        "duckduckgo_html: no results",
+        "duckduckgo_html: no results"
+      ]
+    },
+    {
+      "id": "github_project",
+      "category": "GitHub project question",
+      "query": "What is CPython's default development branch and where are releases documented?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.592,
+      "preferred_source_ratio": 1.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.2,
+      "confidence": 0.6615,
+      "latency_ms": 725,
+      "searches": 1,
+      "pages_opened": 0,
+      "model_calls": 0,
+      "duplicates": 0,
+      "sources": [
+        {
+          "url": "https://docs.python.org/3/download.html",
+          "quality": 0.72,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://docs.python.org/3/",
+          "quality": 0.7,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.python.org/doc/versions/",
+          "quality": 0.52,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.python.org/doc/",
+          "quality": 0.5,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://devguide.python.org/versions/",
+          "quality": 0.52,
+          "published_at": null,
+          "updated_at": "2026-05-27T13:42:06+00:00"
+        }
+      ],
+      "stop_reason": "offline_cached_knowledge",
+      "errors": [
+        "duckduckgo_html: no results"
+      ]
+    },
+    {
+      "id": "research_paper",
+      "category": "research paper question",
+      "query": "What architecture did the original Attention Is All You Need paper introduce?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.7,
+      "preferred_source_ratio": 0.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.0,
+      "confidence": 0.665,
+      "latency_ms": 1742,
+      "searches": 2,
+      "pages_opened": 1,
+      "model_calls": 0,
+      "duplicates": 1,
+      "sources": [
+        {
+          "url": "https://design.umn.edu/academics/programs/about-architecture",
+          "quality": 0.7,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "best_available_evidence",
+      "errors": [
+        "duckduckgo_html: no results",
+        "duckduckgo_html: no results"
+      ]
+    },
+    {
+      "id": "controversial_multisource",
+      "category": "multi-source controversial claim",
+      "query": "Does moderate coffee consumption dehydrate healthy adults? Find supporting and opposing evidence.",
+      "complete": true,
+      "correctness": 0.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.54,
+      "preferred_source_ratio": 0.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.625,
+      "confidence": 0.773,
+      "latency_ms": 1985,
+      "searches": 1,
+      "pages_opened": 8,
+      "model_calls": 0,
+      "duplicates": 0,
+      "sources": [
+        {
+          "url": "https://does.dc.gov/",
+          "quality": 0.8,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://eslteacher.org/do-vs-does/",
+          "quality": 0.52,
+          "published_at": "2026-01-14T01:14:52+00:00",
+          "updated_at": "2026-08-06T08:12:46+00:00"
+        },
+        {
+          "url": "https://englishwithsaid.com/how-to-use-do-and-does-correctly-in-english-complete-beginner-intermediate-guide/",
+          "quality": 0.52,
+          "published_at": "2025-12-02T09:13:43+00:00",
+          "updated_at": "2025-12-02T09:13:44+00:00"
+        },
+        {
+          "url": "https://www.dictionary.com/browse/does",
+          "quality": 0.5,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://dictionary.cambridge.org/dictionary/english/does",
+          "quality": 0.5,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://wiserread.com/do-vs-does/",
+          "quality": 0.5,
+          "published_at": "2026-07-26T00:04:41+00:00",
+          "updated_at": "2026-07-27T02:51:08+00:00"
+        },
+        {
+          "url": "https://proofed.com/writing-tips/grammar-when-to-use-do-does-and-did/",
+          "quality": 0.5,
+          "published_at": "2022-08-12T14:00:00+00:00",
+          "updated_at": "2025-11-12T09:07:10+00:00"
+        },
+        {
+          "url": "https://www.thesaurus.com/articles/do-vs-does",
+          "quality": 0.48,
+          "published_at": "2022-08-18T07:01:09Z",
+          "updated_at": "2022-08-18T23:30:28Z"
+        }
+      ],
+      "stop_reason": "sufficient_multi_source_evidence",
+      "errors": [
+        "duckduckgo_html: no results",
+        "https://www.merriam-webster.com/dictionary/does: HTTPStatusError: Client error '403 Forbidden' for url 'https://www.merriam-webster.com/dictionary/does'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403",
+        "https://www.collinsdictionary.com/us/dictionary/english/does: HTTPStatusError: Client error '403 Forbidden' for url 'https://www.collinsdictionary.com/us/dictionary/english/does'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403"
+      ]
+    },
+    {
+      "id": "api_documentation",
+      "category": "API documentation question",
+      "query": "How does HTTPX configure request timeouts in its current Python API?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.8,
+      "preferred_source_ratio": 0.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.0,
+      "confidence": 0.71,
+      "latency_ms": 1607,
+      "searches": 2,
+      "pages_opened": 1,
+      "model_calls": 0,
+      "duplicates": 1,
+      "sources": [
+        {
+          "url": "https://does.dc.gov/",
+          "quality": 0.8,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "best_available_evidence",
+      "errors": [
+        "duckduckgo_html: no results",
+        "duckduckgo_html: no results"
+      ]
+    },
+    {
+      "id": "recent_release",
+      "category": "recent release/version question",
+      "query": "What is the current stable Playwright Python release and its release date?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.592,
+      "preferred_source_ratio": 0.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.2,
+      "confidence": 0.6624,
+      "latency_ms": 1509,
+      "searches": 2,
+      "pages_opened": 0,
+      "model_calls": 0,
+      "duplicates": 0,
+      "sources": [
+        {
+          "url": "https://docs.python.org/3/download.html",
+          "quality": 0.72,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://docs.python.org/3/",
+          "quality": 0.7,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://www.python.org/doc/versions/",
+          "quality": 0.52,
+          "published_at": null,
+          "updated_at": null
+        },
+        {
+          "url": "https://devguide.python.org/versions/",
+          "quality": 0.52,
+          "published_at": null,
+          "updated_at": "2026-05-27T13:42:06+00:00"
+        },
+        {
+          "url": "https://www.python.org/doc/",
+          "quality": 0.5,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "offline_cached_knowledge",
+      "errors": [
+        "duckduckgo_html: no results",
+        "duckduckgo_html: no results"
+      ]
+    },
+    {
+      "id": "contradiction_scope",
+      "category": "question requiring contradiction detection",
+      "query": "Does current CPython still have a GIL, including free-threaded builds? Resolve apparently conflicting documentation.",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.8,
+      "preferred_source_ratio": 0.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.0,
+      "confidence": 0.71,
+      "latency_ms": 3146,
+      "searches": 4,
+      "pages_opened": 1,
+      "model_calls": 0,
+      "duplicates": 2,
+      "sources": [
+        {
+          "url": "https://does.dc.gov/",
+          "quality": 0.8,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "best_available_evidence",
+      "errors": [
+        "duckduckgo_html: no results",
+        "duckduckgo_html: no results",
+        "duckduckgo_html: no results",
+        "duckduckgo_html: no results"
+      ]
+    },
+    {
+      "id": "local_knowledge_reuse",
+      "category": "question already present in local knowledge",
+      "query": "How does Kubernetes schedule GPUs through device plugins?",
+      "complete": true,
+      "correctness": 1.0,
+      "citation_correctness": 1.0,
+      "citation_completeness": 1.0,
+      "source_quality": 0.8,
+      "preferred_source_ratio": 0.0,
+      "source_diversity": 1.0,
+      "freshness_coverage": 0.0,
+      "confidence": 0.71,
+      "latency_ms": 817,
+      "searches": 1,
+      "pages_opened": 1,
+      "model_calls": 0,
+      "duplicates": 0,
+      "sources": [
+        {
+          "url": "https://does.dc.gov/",
+          "quality": 0.8,
+          "published_at": null,
+          "updated_at": null
+        }
+      ],
+      "stop_reason": "best_available_evidence",
+      "errors": [
+        "duckduckgo_html: no results"
+      ]
+    }
+  ]
+}

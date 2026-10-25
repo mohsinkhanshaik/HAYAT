@@ -1,0 +1,11 @@
+{
+  "memories": 2002,
+  "associations": 201,
+  "queries": 100,
+  "complete_linked_recall_rate": 1.0,
+  "mean_latency_ms": 53.448,
+  "p95_latency_ms": 61.651,
+  "maximum_latency_ms": 88.952,
+  "bounded_depth": 2,
+  "passed": true
+}

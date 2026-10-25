@@ -1,0 +1,25 @@
+# HAYAT's foundation since 2026-10-04: Qwen3.6-35B-A3B Uncensored (HauhauCS
+# "Aggressive" build), Q4_K_M, with its f16 vision projector.
+#
+# It is a mixture-of-experts model: 35B parameters, of which only about 3B are
+# used for each token, so on this laptop (8 GB RTX 5060, 42 GB RAM) it writes
+# about 31 tokens a second while most of it sits in system memory. Measured
+# against the previous qwen3.5 9B foundation it answered more of a hard test
+# (11 vs 9 of 12 reasoning and knowledge questions) and knew newer facts, and it
+# reads images itself. See docs/models.md.
+#
+# Its weights live in runtime/ollama-models. It was imported from the two GGUF
+# files below, which were already on the machine; to import it again into
+# HAYAT's Ollama (port 11435), from this folder:
+#   $env:OLLAMA_HOST = "127.0.0.1:11435"
+#   ..\..\runtime\ollama\ollama.exe create qwen3.6-35b-a3b-uncensored:q4_k_m -f qwen3.6-35b-a3b-uncensored.Modelfile
+# The chat format, tool calls and thinking switch are Ollama's qwen3.5 renderer
+# and parser, the same family's format.
+FROM C:\Users\mohsin khan\.ollama\models\manifests\registry.ollama.ai\library\Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf
+FROM C:\Users\mohsin khan\.ollama\models\manifests\registry.ollama.ai\library\mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf
+RENDERER qwen3.5
+PARSER qwen3.5
+PARAMETER temperature 1
+PARAMETER top_k 20
+PARAMETER top_p 0.95
+PARAMETER presence_penalty 1.5

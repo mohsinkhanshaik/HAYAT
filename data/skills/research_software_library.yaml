@@ -1,0 +1,18 @@
+name: research_software_library
+description: Research the current API and compatibility of a software library using authoritative sources.
+inputs:
+  - library
+  - version
+tools:
+  - research_topic
+steps:
+  - tool: research_topic
+    arguments:
+      query: "{{library}} {{version}} official documentation API compatibility release notes GitHub"
+      level: normal
+      official_only: true
+      remember: true
+success_criteria:
+  - At least one current primary source was retrieved.
+  - Findings preserve citations and version context.
+trusted: true

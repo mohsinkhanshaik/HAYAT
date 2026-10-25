@@ -1,0 +1,12 @@
+name: public_camera_research
+description: Refresh a registered public camera publisher and search its catalog with provenance and availability limits.
+inputs: [feed, query]
+tools: [intelligence_refresh, intelligence_cameras]
+steps:
+  - tool: intelligence_refresh
+    arguments: {feeds: ["{{feed}}"], due_only: true}
+  - tool: intelligence_cameras
+    arguments: {query: "{{query}}", feed: "{{feed}}", limit: 25}
+success_criteria:
+  - Catalog results identify registered publishers; retrieval time does not imply fresh camera capture.
+trusted: true

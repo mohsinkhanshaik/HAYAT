@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-08-21T01:45:00.574833+00:00",
+  "iterations": 10,
+  "cold_inventory_ms": {
+    "mean": 86.229,
+    "p95": 104.664
+  },
+  "cached_inventory_ms": {
+    "mean": 0.0057,
+    "p95": 0.0074
+  },
+  "cached_alignment_ms": {
+    "mean": 0.0195,
+    "p95": 0.0248
+  },
+  "aligned": true,
+  "blockers": [],
+  "warnings": [
+    "freshness"
+  ],
+  "records": {
+    "durable_memory": 582,
+    "researched_knowledge": 107,
+    "teaching_topics": 39,
+    "background_learned": 60,
+    "trusted_procedures": 5,
+    "registered_skills": 5,
+    "training": 4
+  }
+}

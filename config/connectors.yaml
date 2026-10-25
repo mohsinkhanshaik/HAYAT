@@ -1,0 +1,25 @@
+connectors:
+  - id: github
+    name: GitHub
+    transport: http
+    endpoint: https://api.github.com
+    scopes: [repo:read, issues:read, issues:write]
+    read_actions: [user, repos, issues]
+    description: Repositories, issues, pull requests, and source metadata.
+  - id: notion
+    name: Notion
+    transport: http
+    endpoint: https://api.notion.com/v1
+    scopes: [pages:read, pages:write]
+    read_actions: [search, pages]
+    description: Search and work with explicitly shared Notion pages.
+  - id: personal-mcp
+    name: Personal MCP Server
+    transport: mcp
+    scopes: [tools:read, tools:call]
+    description: Template for a locally configured Model Context Protocol server.
+  - id: browser-extension
+    name: HAYAT Browser Extension
+    transport: browser_extension
+    scopes: [tabs:read, page:snapshot, page:scroll]
+    description: Authenticated localhost bridge to the user-installed browser extension.

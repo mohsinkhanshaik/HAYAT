@@ -1,0 +1,2047 @@
+{
+ "source": "config/cctv_sources.tallinn.json in https://github.com/bilawalsidhu/gods-eye-view (commit 591f299), MIT licence",
+ "publisher": "City of Tallinn (ristmikud.tallinn.ee) — public intersection camera frames",
+ "copied": "2026-10-11",
+ "cameras": [
+  {
+   "id": "tln-103",
+   "name": "Viru väljak (suund Mere pst ja Narva mnt)",
+   "lat": 59.436563,
+   "lon": 24.752702,
+   "heading_deg": 60.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam103.jpg"
+  },
+  {
+   "id": "tln-104",
+   "name": "Viru väljak (suund Pärnu mnt)",
+   "lat": 59.436449,
+   "lon": 24.752409,
+   "heading_deg": 227.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam104.jpg"
+  },
+  {
+   "id": "tln-001",
+   "name": "Estonia pst - Teatri väljak (suund Tammsaare park)",
+   "lat": 59.434566,
+   "lon": 24.75182,
+   "heading_deg": 285.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam001.jpg"
+  },
+  {
+   "id": "tln-002",
+   "name": "Estonia pst - Teatri väljak (suund Reaalkool)",
+   "lat": 59.434411,
+   "lon": 24.751394,
+   "heading_deg": 221.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam002.jpg"
+  },
+  {
+   "id": "tln-056",
+   "name": "Pärnu mnt - Draamateater (suund Viru ring)",
+   "lat": 59.434771,
+   "lon": 24.748074,
+   "heading_deg": 224.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam056.jpg"
+  },
+  {
+   "id": "tln-057",
+   "name": "Pärnu mnt - Draamateater (suund G.Otsa)",
+   "lat": 59.434787,
+   "lon": 24.747846,
+   "heading_deg": 153.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam057.jpg"
+  },
+  {
+   "id": "tln-055",
+   "name": "Pärnu mnt - Draamateater (suund Pärnu)",
+   "lat": 59.434931,
+   "lon": 24.748116,
+   "heading_deg": 187.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam055.jpg"
+  },
+  {
+   "id": "tln-252",
+   "name": "Ahtri tn - Hobujaama tn (suund Mere pst)",
+   "lat": 59.439527,
+   "lon": 24.759203,
+   "heading_deg": 199.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam252.jpg"
+  },
+  {
+   "id": "tln-253",
+   "name": "Ahtri tn - Laeva tn (suund Mere pst)",
+   "lat": 59.440241,
+   "lon": 24.758499,
+   "heading_deg": 199.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam253.jpg"
+  },
+  {
+   "id": "tln-254",
+   "name": "Kai tn - Logi tn (suund Mere pst)",
+   "lat": 59.443646,
+   "lon": 24.758982,
+   "heading_deg": 201.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam254.jpg"
+  },
+  {
+   "id": "tln-255",
+   "name": "Kai tn - Logi tn (suund Sadama tn)",
+   "lat": 59.443726,
+   "lon": 24.758929,
+   "heading_deg": 112.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam255.jpg"
+  },
+  {
+   "id": "tln-256",
+   "name": "Sadama tn - Logi tn",
+   "lat": 59.444087,
+   "lon": 24.758738,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam256.jpg"
+  },
+  {
+   "id": "tln-257",
+   "name": "Logi tn - Rumbi tn ringristmik",
+   "lat": 59.444784,
+   "lon": 24.758468,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam257.jpg"
+  },
+  {
+   "id": "tln-258",
+   "name": "Põhja pst - Kursi tn (suund Kopli)",
+   "lat": 59.443755,
+   "lon": 24.75169,
+   "heading_deg": 289.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam258.jpg"
+  },
+  {
+   "id": "tln-259",
+   "name": "Mere pst - Sadama tn (suund Kopli)",
+   "lat": 59.443099,
+   "lon": 24.7517,
+   "heading_deg": 298.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam259.jpg"
+  },
+  {
+   "id": "tln-260",
+   "name": "Mere pst - Sadama tn (suund Ahtri tn)",
+   "lat": 59.443376,
+   "lon": 24.75108,
+   "heading_deg": 19.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam260.jpg"
+  },
+  {
+   "id": "tln-141",
+   "name": "Suur-Rannavärava tn (suund vanalinn)",
+   "lat": 59.443689,
+   "lon": 24.749489,
+   "heading_deg": 167.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam141.jpg"
+  },
+  {
+   "id": "tln-142",
+   "name": "Põhja pst - Kalasadama tn",
+   "lat": 59.444322,
+   "lon": 24.747884,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam142.jpg"
+  },
+  {
+   "id": "tln-143",
+   "name": "Mere pst - Sadama tn",
+   "lat": 59.443925,
+   "lon": 24.750162,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam143.jpg"
+  },
+  {
+   "id": "tln-110",
+   "name": "Mere pst - Ahtri tn (suund Ahtri)",
+   "lat": 59.441066,
+   "lon": 24.753474,
+   "heading_deg": 19.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam110.jpg"
+  },
+  {
+   "id": "tln-111",
+   "name": "Mere pst (suund Kopli) - Ahtri tn",
+   "lat": 59.441159,
+   "lon": 24.753354,
+   "heading_deg": 298.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam111.jpg"
+  },
+  {
+   "id": "tln-232",
+   "name": "Niine tn- Põhja pst",
+   "lat": 59.443436,
+   "lon": 24.743054,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam232.jpg"
+  },
+  {
+   "id": "tln-200",
+   "name": "Suurtüki trammitee (suund Vanalinn)",
+   "lat": 59.44159,
+   "lon": 24.744471,
+   "heading_deg": 173.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam200.jpg"
+  },
+  {
+   "id": "tln-201",
+   "name": "Suurtüki trammitee (suund Kopli)",
+   "lat": 59.44255,
+   "lon": 24.742802,
+   "heading_deg": 294.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam201.jpg"
+  },
+  {
+   "id": "tln-176",
+   "name": "Reidi tee - Lootsi tn (suund sadam)",
+   "lat": 59.439741,
+   "lon": 24.763115,
+   "heading_deg": 284.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam176.jpg"
+  },
+  {
+   "id": "tln-177",
+   "name": "Reidi tee - Ahtri tn",
+   "lat": 59.440038,
+   "lon": 24.764174,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam177.jpg"
+  },
+  {
+   "id": "tln-178",
+   "name": "Reidi tee - Jõe tn - Ahtri tn",
+   "lat": 59.440445,
+   "lon": 24.765684,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam178.jpg"
+  },
+  {
+   "id": "tln-179",
+   "name": "Reidi tee - Uus-Sadama tn (suund sadam)",
+   "lat": 59.441438,
+   "lon": 24.77107,
+   "heading_deg": 284.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam179.jpg"
+  },
+  {
+   "id": "tln-180",
+   "name": "Reidi tee - Petrooleumi tn (suund sadam)",
+   "lat": 59.442505,
+   "lon": 24.774809,
+   "heading_deg": 284.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam180.jpg"
+  },
+  {
+   "id": "tln-181",
+   "name": "Reidi tee - Petrooleumi tn (suund Pirita)",
+   "lat": 59.442353,
+   "lon": 24.775149,
+   "heading_deg": 39.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam181.jpg"
+  },
+  {
+   "id": "tln-182",
+   "name": "Reidi tee - Pikksilma tn (suund Pirita)",
+   "lat": 59.443717,
+   "lon": 24.781199,
+   "heading_deg": 39.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam182.jpg"
+  },
+  {
+   "id": "tln-183",
+   "name": "Reidi tee - Pikksilma tn (suund sadam)",
+   "lat": 59.443454,
+   "lon": 24.781978,
+   "heading_deg": 284.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam183.jpg"
+  },
+  {
+   "id": "tln-184",
+   "name": "Reidi tee - Narva mnt (suund sadam)",
+   "lat": 59.442546,
+   "lon": 24.790007,
+   "heading_deg": 287.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam184.jpg"
+  },
+  {
+   "id": "tln-186",
+   "name": "Narva mnt - Pirita tee (suund Pirita)",
+   "lat": 59.442678,
+   "lon": 24.793428,
+   "heading_deg": 49.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam186.jpg"
+  },
+  {
+   "id": "tln-185",
+   "name": "Narva mnt - Pirita tee (suund kesklinn)",
+   "lat": 59.443259,
+   "lon": 24.796238,
+   "heading_deg": 260.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam185.jpg"
+  },
+  {
+   "id": "tln-187",
+   "name": "Pirita tee (suund Pirita)",
+   "lat": 59.44453,
+   "lon": 24.797405,
+   "heading_deg": 22.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam187.jpg"
+  },
+  {
+   "id": "tln-193",
+   "name": "Pirita tee - Rummu tee (suund Kesklinn)",
+   "lat": 59.463067,
+   "lon": 24.826954,
+   "heading_deg": 236.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam193.jpg"
+  },
+  {
+   "id": "tln-194",
+   "name": "Pirita tee - Rummu tee (suund Rummu tee)",
+   "lat": 59.463166,
+   "lon": 24.8272,
+   "heading_deg": 145.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam194.jpg"
+  },
+  {
+   "id": "tln-195",
+   "name": "Merivälja tee (suund Merivälja)",
+   "lat": 59.468017,
+   "lon": 24.833886,
+   "heading_deg": 2.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam195.jpg"
+  },
+  {
+   "id": "tln-196",
+   "name": "Merivälja tee (suund kesklinn)",
+   "lat": 59.468364,
+   "lon": 24.834059,
+   "heading_deg": 232.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam196.jpg"
+  },
+  {
+   "id": "tln-197",
+   "name": "Merivälja tee - Kloostrimetsa tee",
+   "lat": 59.467995,
+   "lon": 24.834101,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam197.jpg"
+  },
+  {
+   "id": "tln-251",
+   "name": "Narva mnt - Hobujaama tn",
+   "lat": 59.437143,
+   "lon": 24.75758,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam251.jpg"
+  },
+  {
+   "id": "tln-250",
+   "name": "Narva mnt - A.Laikmaa tn",
+   "lat": 59.437386,
+   "lon": 24.757149,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam250.jpg"
+  },
+  {
+   "id": "tln-247",
+   "name": "Estonia pst - A.Laikmaa tn",
+   "lat": 59.435646,
+   "lon": 24.757835,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam247.jpg"
+  },
+  {
+   "id": "tln-248",
+   "name": "Gonsiori tn - A.Laikmaa tn",
+   "lat": 59.435603,
+   "lon": 24.757367,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam248.jpg"
+  },
+  {
+   "id": "tln-246",
+   "name": "Gonsiori tn - Kivisilla tn",
+   "lat": 59.435281,
+   "lon": 24.760618,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam246.jpg"
+  },
+  {
+   "id": "tln-245",
+   "name": "Gonsiori tn (suund Lasnamäe) - Maneeži tn",
+   "lat": 59.435224,
+   "lon": 24.759971,
+   "heading_deg": 88.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam245.jpg"
+  },
+  {
+   "id": "tln-083",
+   "name": "Gonsiori tn - Pronksi tn (suund Kaubamaja)",
+   "lat": 59.434719,
+   "lon": 24.764614,
+   "heading_deg": 241.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam083.jpg"
+  },
+  {
+   "id": "tln-082",
+   "name": "Gonsiori tn - Pronksi tn (suund Politsei park)",
+   "lat": 59.434834,
+   "lon": 24.764321,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam082.jpg"
+  },
+  {
+   "id": "tln-154",
+   "name": "Gonsiori tn - Kreutzwald tn (suund kesklinn)",
+   "lat": 59.434205,
+   "lon": 24.76877,
+   "heading_deg": 320.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam154.jpg"
+  },
+  {
+   "id": "tln-155",
+   "name": "Gonsiori tn - Kreutzwald tn (suund Lasnamäe)",
+   "lat": 59.434263,
+   "lon": 24.768316,
+   "heading_deg": 88.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam155.jpg"
+  },
+  {
+   "id": "tln-152",
+   "name": "Gonsiori tn - Vilmsi tn (suund kesklinn)",
+   "lat": 59.432946,
+   "lon": 24.778944,
+   "heading_deg": 320.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam152.jpg"
+  },
+  {
+   "id": "tln-151",
+   "name": "Gonsiori tn - Vilmsi tn (suund Lasnamäe)",
+   "lat": 59.433151,
+   "lon": 24.778499,
+   "heading_deg": 88.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam151.jpg"
+  },
+  {
+   "id": "tln-156",
+   "name": "Gonsiori tn - Laagna tee (suund kesklinn)",
+   "lat": 59.432014,
+   "lon": 24.785148,
+   "heading_deg": 320.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam156.jpg"
+  },
+  {
+   "id": "tln-153",
+   "name": "Gonsiori tn - Laagna tee (suund Lasnamäe)",
+   "lat": 59.431972,
+   "lon": 24.784385,
+   "heading_deg": 88.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam153.jpg"
+  },
+  {
+   "id": "tln-140",
+   "name": "Pronksi tn - Raua tn (suund Ahtri tn)",
+   "lat": 59.435491,
+   "lon": 24.764554,
+   "heading_deg": 331.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam140.jpg"
+  },
+  {
+   "id": "tln-150",
+   "name": "Pronksi tn - Raua tn (suund Liivalaia tn)",
+   "lat": 59.435766,
+   "lon": 24.764763,
+   "heading_deg": 225.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam150.jpg"
+  },
+  {
+   "id": "tln-076",
+   "name": "Narva mnt - Pronksi tn",
+   "lat": 59.437559,
+   "lon": 24.76451,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam076.jpg"
+  },
+  {
+   "id": "tln-077",
+   "name": "Narva mnt - Jõe tn",
+   "lat": 59.437162,
+   "lon": 24.764493,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam077.jpg"
+  },
+  {
+   "id": "tln-126",
+   "name": "Narva mnt- Petrooleumi tn - Vilmsi tn (suund Petrooleumi)",
+   "lat": 59.439333,
+   "lon": 24.774961,
+   "heading_deg": 62.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam126.jpg"
+  },
+  {
+   "id": "tln-127",
+   "name": "Narva mnt- Petrooleumi tn - Vilmsi tn (suund Kesklinn)",
+   "lat": 59.439099,
+   "lon": 24.774931,
+   "heading_deg": 260.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam127.jpg"
+  },
+  {
+   "id": "tln-128",
+   "name": "Narva mnt- Petrooleumi tn - Vilmsi tn (suund Pirita)",
+   "lat": 59.439155,
+   "lon": 24.774939,
+   "heading_deg": 49.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam128.jpg"
+  },
+  {
+   "id": "tln-004",
+   "name": "Narva mnt - Poska tn (suund Pirita)",
+   "lat": 59.440424,
+   "lon": 24.785142,
+   "heading_deg": 49.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam004.jpg"
+  },
+  {
+   "id": "tln-080",
+   "name": "Liivalaia tn - Rävala pst",
+   "lat": 59.432829,
+   "lon": 24.763296,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam080.jpg"
+  },
+  {
+   "id": "tln-081",
+   "name": "Tartu mnt - Kreutzwaldi tn",
+   "lat": 59.432612,
+   "lon": 24.763292,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam081.jpg"
+  },
+  {
+   "id": "tln-008",
+   "name": "Tartu mnt - Pronksi tn",
+   "lat": 59.432644,
+   "lon": 24.763167,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam008.jpg"
+  },
+  {
+   "id": "tln-037",
+   "name": "Tartu mnt - Odra tn - Türnpuu tn",
+   "lat": 59.428311,
+   "lon": 24.775817,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam037.jpg"
+  },
+  {
+   "id": "tln-038",
+   "name": "Tartu mnt - Odra tn - Türnpuu tn (bussijaam)",
+   "lat": 59.428236,
+   "lon": 24.776052,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam038.jpg"
+  },
+  {
+   "id": "tln-039",
+   "name": "Tartu mnt - Odra tn - Türnpuu tn (suund Tartu)",
+   "lat": 59.428578,
+   "lon": 24.775648,
+   "heading_deg": 135.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam039.jpg"
+  },
+  {
+   "id": "tln-044",
+   "name": "Odra tn - Lastekodu tn (suund bussijaam)",
+   "lat": 59.427845,
+   "lon": 24.774329,
+   "heading_deg": 152.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam044.jpg"
+  },
+  {
+   "id": "tln-045",
+   "name": "Lastekodu tn",
+   "lat": 59.427493,
+   "lon": 24.774769,
+   "heading_deg": 124.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam045.jpg"
+  },
+  {
+   "id": "tln-042",
+   "name": "Türnpu tn - Kunderi tn (suund kesklinn)",
+   "lat": 59.430259,
+   "lon": 24.777907,
+   "heading_deg": 297.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam042.jpg"
+  },
+  {
+   "id": "tln-043",
+   "name": "Türnpu tn - Kunderi tn (suund Laagna tee)",
+   "lat": 59.43025,
+   "lon": 24.778187,
+   "heading_deg": 77.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam043.jpg"
+  },
+  {
+   "id": "tln-167",
+   "name": "Laagna - Selveri (suund Laagna tee)",
+   "lat": 59.430974,
+   "lon": 24.782075,
+   "heading_deg": 84.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam167.jpg"
+  },
+  {
+   "id": "tln-168",
+   "name": "Laagna - Selveri (suund kesklinn)",
+   "lat": 59.430905,
+   "lon": 24.782174,
+   "heading_deg": 264.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam168.jpg"
+  },
+  {
+   "id": "tln-188",
+   "name": "Tartu mnt - Lubja tn (suund kesklinn)",
+   "lat": 59.427399,
+   "lon": 24.778227,
+   "heading_deg": 306.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam188.jpg"
+  },
+  {
+   "id": "tln-009",
+   "name": "Tartu mnt (suund Sikupilli) - Peterburi mnt",
+   "lat": 59.424337,
+   "lon": 24.786011,
+   "heading_deg": 98.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam009.jpg"
+  },
+  {
+   "id": "tln-084",
+   "name": "Tartu mnt - Peterburi mnt",
+   "lat": 59.423987,
+   "lon": 24.785984,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam084.jpg"
+  },
+  {
+   "id": "tln-078",
+   "name": "Tartu mnt - Järvevana tee",
+   "lat": 59.422259,
+   "lon": 24.788525,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam078.jpg"
+  },
+  {
+   "id": "tln-079",
+   "name": "Tartu mnt - Suur-Sõjamäe tee",
+   "lat": 59.422655,
+   "lon": 24.787219,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam079.jpg"
+  },
+  {
+   "id": "tln-005",
+   "name": "Tartu mnt (suund kesklinn) - Lennujaama tee",
+   "lat": 59.420012,
+   "lon": 24.791687,
+   "heading_deg": 306.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam005.jpg"
+  },
+  {
+   "id": "tln-006",
+   "name": "Tartu mnt (suund Tartu) - Lennujaama tee",
+   "lat": 59.420097,
+   "lon": 24.791955,
+   "heading_deg": 135.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam006.jpg"
+  },
+  {
+   "id": "tln-136",
+   "name": "Tartu mnt - Vana-Tartu mnt",
+   "lat": 59.411638,
+   "lon": 24.802079,
+   "heading_deg": 327.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam136.jpg"
+  },
+  {
+   "id": "tln-137",
+   "name": "Tartu mnt - Kanali tee",
+   "lat": 59.408044,
+   "lon": 24.806241,
+   "heading_deg": 321.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam137.jpg"
+  },
+  {
+   "id": "tln-047",
+   "name": "Tartu mnt (suund kesklinn)- Mõigu tee",
+   "lat": 59.407197,
+   "lon": 24.807312,
+   "heading_deg": 317.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam047.jpg"
+  },
+  {
+   "id": "tln-048",
+   "name": "Tartu mnt (suund Tartu)- Mõigu tee",
+   "lat": 59.407873,
+   "lon": 24.808022,
+   "heading_deg": 135.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam048.jpg"
+  },
+  {
+   "id": "tln-112",
+   "name": "Liivalaia tn (suund Pärnu mnt)- Juhkentali tn - Lembitu tn",
+   "lat": 59.429447,
+   "lon": 24.756856,
+   "heading_deg": 310.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam112.jpg"
+  },
+  {
+   "id": "tln-113",
+   "name": "Liivalaia tn - Juhkentali tn (suund Juhkentali) - Lembitu tn",
+   "lat": 59.429332,
+   "lon": 24.757253,
+   "heading_deg": 115.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam113.jpg"
+  },
+  {
+   "id": "tln-114",
+   "name": "Liivalaia tn - Juhkentali tn - Lembitu tn (suund Lembitu)",
+   "lat": 59.429408,
+   "lon": 24.757142,
+   "heading_deg": 352.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam114.jpg"
+  },
+  {
+   "id": "tln-099",
+   "name": "Juhkentali tn - Filtri tee - Odra tn (suund Lasnamäe)",
+   "lat": 59.427039,
+   "lon": 24.771295,
+   "heading_deg": 72.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam099.jpg"
+  },
+  {
+   "id": "tln-100",
+   "name": "Juhkentali tn - Filtri tee",
+   "lat": 59.426993,
+   "lon": 24.771712,
+   "heading_deg": 359.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam100.jpg"
+  },
+  {
+   "id": "tln-234",
+   "name": "Järvevana tee (raudteeülesõit, suund Mustamäe)",
+   "lat": 59.404763,
+   "lon": 24.738254,
+   "heading_deg": 61.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam234.jpg"
+  },
+  {
+   "id": "tln-233",
+   "name": "Järvevana tee (suund Lasnamäe)",
+   "lat": 59.404951,
+   "lon": 24.738513,
+   "heading_deg": 58.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam233.jpg"
+  },
+  {
+   "id": "tln-236",
+   "name": "Järvevana tee – Veerenni tn (suund Mustamäe)",
+   "lat": 59.411381,
+   "lon": 24.75603,
+   "heading_deg": 273.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam236.jpg"
+  },
+  {
+   "id": "tln-235",
+   "name": "Järvevana tee – Veerenni tn (suund Lasnamäe)",
+   "lat": 59.41389,
+   "lon": 24.758873,
+   "heading_deg": 58.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam235.jpg"
+  },
+  {
+   "id": "tln-024",
+   "name": "Järvevana tee (ennem tunnelit suund Lasnamäe)",
+   "lat": 59.418157,
+   "lon": 24.765801,
+   "heading_deg": 61.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam024.jpg"
+  },
+  {
+   "id": "tln-046",
+   "name": "Lasnamäele (tunnelis)",
+   "lat": 59.420112,
+   "lon": 24.768063,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam046.jpg"
+  },
+  {
+   "id": "tln-050",
+   "name": "Mustamäele (enne tunnelit)",
+   "lat": 59.402648,
+   "lon": 24.726843,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam050.jpg"
+  },
+  {
+   "id": "tln-237",
+   "name": "Järvevana tee (suund Mustamäe)",
+   "lat": 59.422859,
+   "lon": 24.779258,
+   "heading_deg": 275.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam237.jpg"
+  },
+  {
+   "id": "tln-238",
+   "name": "Järvevana tee – Filtri tee tunnel (suund Lasnamäe)",
+   "lat": 59.422861,
+   "lon": 24.775729,
+   "heading_deg": 58.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam238.jpg"
+  },
+  {
+   "id": "tln-239",
+   "name": "Järvevana tee – Filtri tee tunnel (suund Mustamäe)",
+   "lat": 59.418727,
+   "lon": 24.76628,
+   "heading_deg": 273.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam239.jpg"
+  },
+  {
+   "id": "tln-109",
+   "name": "Tehnika tn - Veskiposti tn",
+   "lat": 59.421036,
+   "lon": 24.765894,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam109.jpg"
+  },
+  {
+   "id": "tln-065",
+   "name": "Vabaduse väljak",
+   "lat": 59.432928,
+   "lon": 24.745551,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam065.jpg"
+  },
+  {
+   "id": "tln-066",
+   "name": "Estonia pst - Pärnu mnt",
+   "lat": 59.432902,
+   "lon": 24.746388,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam066.jpg"
+  },
+  {
+   "id": "tln-125",
+   "name": "Pärnu mnt - Suur-Ameerika tn",
+   "lat": 59.427286,
+   "lon": 24.742256,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam125.jpg"
+  },
+  {
+   "id": "tln-069",
+   "name": "Pärnu mnt (suund Pärnu) - Liivalaia tn",
+   "lat": 59.427382,
+   "lon": 24.742399,
+   "heading_deg": 187.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam069.jpg"
+  },
+  {
+   "id": "tln-070",
+   "name": "Pärnu mnt (suund \"Kosmos\") - Liivalaia tn",
+   "lat": 59.427435,
+   "lon": 24.742399,
+   "heading_deg": 198.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam070.jpg"
+  },
+  {
+   "id": "tln-229",
+   "name": "Pärnu mnt (suund \"Kosmos\") - Vineeri tn",
+   "lat": 59.422531,
+   "lon": 24.742465,
+   "heading_deg": 198.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam229.jpg"
+  },
+  {
+   "id": "tln-228",
+   "name": "Pärnu mnt (suund Pärnu) - Vineeri tn",
+   "lat": 59.423128,
+   "lon": 24.74246,
+   "heading_deg": 187.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam228.jpg"
+  },
+  {
+   "id": "tln-096",
+   "name": "Pärnu mnt - Tondi tn",
+   "lat": 59.390586,
+   "lon": 24.721513,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam096.jpg"
+  },
+  {
+   "id": "tln-105",
+   "name": "Pärnu mnt - Saku tn",
+   "lat": 59.410027,
+   "lon": 24.736825,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam105.jpg"
+  },
+  {
+   "id": "tln-106",
+   "name": "Pärnu mnt - Kohila tn",
+   "lat": 59.392114,
+   "lon": 24.722693,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam106.jpg"
+  },
+  {
+   "id": "tln-087",
+   "name": "Pärnu mnt (suund kesklinn)- Järvevana tee",
+   "lat": 59.403498,
+   "lon": 24.730369,
+   "heading_deg": 46.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam087.jpg"
+  },
+  {
+   "id": "tln-088",
+   "name": "Pärnu mnt (suund Pärnu)- Järvevana tee",
+   "lat": 59.403106,
+   "lon": 24.729843,
+   "heading_deg": 187.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam088.jpg"
+  },
+  {
+   "id": "tln-089",
+   "name": "Pärnu mnt - Järvevana tee (suund Lasnamäe)",
+   "lat": 59.401662,
+   "lon": 24.729479,
+   "heading_deg": 85.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam089.jpg"
+  },
+  {
+   "id": "tln-014",
+   "name": "Kaarli pst – Toompuiestee (suund kesklinn)",
+   "lat": 59.431194,
+   "lon": 24.738821,
+   "heading_deg": 50.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam014.jpg"
+  },
+  {
+   "id": "tln-015",
+   "name": "Kaarli pst – Toompea tn",
+   "lat": 59.431784,
+   "lon": 24.740162,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam015.jpg"
+  },
+  {
+   "id": "tln-003",
+   "name": "Kaarli pst – Toompea tn (suund Kaarli)",
+   "lat": 59.431929,
+   "lon": 24.740284,
+   "heading_deg": 249.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam003.jpg"
+  },
+  {
+   "id": "tln-018",
+   "name": "Endla tn – Toompuiestee (suund Kaarli pst)",
+   "lat": 59.431278,
+   "lon": 24.738573,
+   "heading_deg": 64.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam018.jpg"
+  },
+  {
+   "id": "tln-019",
+   "name": "Endla tn – Toompuiestee (suund Tõnismägi)",
+   "lat": 59.431002,
+   "lon": 24.738563,
+   "heading_deg": 87.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam019.jpg"
+  },
+  {
+   "id": "tln-031",
+   "name": "Luise tn - Tehnika tn (suund Kesklinn)",
+   "lat": 59.428958,
+   "lon": 24.726741,
+   "heading_deg": 59.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam031.jpg"
+  },
+  {
+   "id": "tln-033",
+   "name": "Luise tn - Tehnika tn (suund Taksopark)",
+   "lat": 59.428958,
+   "lon": 24.726741,
+   "heading_deg": 225.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam033.jpg"
+  },
+  {
+   "id": "tln-032",
+   "name": "Endla tn - Tehnika tn (suund Kesklinn)",
+   "lat": 59.428081,
+   "lon": 24.725906,
+   "heading_deg": 59.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam032.jpg"
+  },
+  {
+   "id": "tln-034",
+   "name": "Endla tn - Tehnika tn (suund Balti jaam)",
+   "lat": 59.428185,
+   "lon": 24.72632,
+   "heading_deg": 25.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam034.jpg"
+  },
+  {
+   "id": "tln-210",
+   "name": "Toompuiestee - Paldiski mnt",
+   "lat": 59.434713,
+   "lon": 24.732985,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam210.jpg"
+  },
+  {
+   "id": "tln-213",
+   "name": "Paldiski mnt - Tehnika (suund kesklinn)",
+   "lat": 59.434115,
+   "lon": 24.723775,
+   "heading_deg": 80.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam213.jpg"
+  },
+  {
+   "id": "tln-215",
+   "name": "Paldiski mnt - Ristiku (suund Ristiku)",
+   "lat": 59.433961,
+   "lon": 24.722239,
+   "heading_deg": 358.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam215.jpg"
+  },
+  {
+   "id": "tln-214",
+   "name": "Paldiski mnt - Ristiku (suund Mustamäe)",
+   "lat": 59.433935,
+   "lon": 24.722092,
+   "heading_deg": 219.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam214.jpg"
+  },
+  {
+   "id": "tln-061",
+   "name": "Toompuiestee - Tehnika tn",
+   "lat": 59.436464,
+   "lon": 24.732776,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam061.jpg"
+  },
+  {
+   "id": "tln-062",
+   "name": "Toompuiestee - Tehnika tn (suund Baltijaam)",
+   "lat": 59.43648,
+   "lon": 24.732919,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam062.jpg"
+  },
+  {
+   "id": "tln-212",
+   "name": "Toompuiestee - Nunne (suund Balti jaam)",
+   "lat": 59.440055,
+   "lon": 24.739168,
+   "heading_deg": 356.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam212.jpg"
+  },
+  {
+   "id": "tln-211",
+   "name": "Toompuiestee - Nunne (suund Sadam)",
+   "lat": 59.439959,
+   "lon": 24.73877,
+   "heading_deg": 45.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam211.jpg"
+  },
+  {
+   "id": "tln-115",
+   "name": "Pae tn - Peterburi tee",
+   "lat": 59.425941,
+   "lon": 24.801485,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam115.jpg"
+  },
+  {
+   "id": "tln-051",
+   "name": "Narva mnt (suund kesklinn) - Turba tn",
+   "lat": 59.444945,
+   "lon": 24.814854,
+   "heading_deg": 260.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam051.jpg"
+  },
+  {
+   "id": "tln-117",
+   "name": "Smuuli tee - Punane tn (suund kesklinn)",
+   "lat": 59.433702,
+   "lon": 24.831138,
+   "heading_deg": 265.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam117.jpg"
+  },
+  {
+   "id": "tln-118",
+   "name": "Smuuli tee - Punane tn (suund Narva)",
+   "lat": 59.434066,
+   "lon": 24.831069,
+   "heading_deg": 90.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam118.jpg"
+  },
+  {
+   "id": "tln-091",
+   "name": "Peterburi mnt (suund kesklinn) - Smuuli tee",
+   "lat": 59.429014,
+   "lon": 24.834234,
+   "heading_deg": 280.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam091.jpg"
+  },
+  {
+   "id": "tln-092",
+   "name": "Peterburi mnt (suund Narva) - Smuuli tee",
+   "lat": 59.429117,
+   "lon": 24.835587,
+   "heading_deg": 90.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam092.jpg"
+  },
+  {
+   "id": "tln-090",
+   "name": "Suur-Sõjamäe tn - Smuuli tn",
+   "lat": 59.415712,
+   "lon": 24.844588,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam090.jpg"
+  },
+  {
+   "id": "tln-097",
+   "name": "Peterburi mnt (suund kesklinn) - Väo tee",
+   "lat": 59.441,
+   "lon": 24.89688,
+   "heading_deg": 280.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam097.jpg"
+  },
+  {
+   "id": "tln-098",
+   "name": "Peterburi mnt (suund Narva) - Rahu tee",
+   "lat": 59.440679,
+   "lon": 24.89654,
+   "heading_deg": 90.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam098.jpg"
+  },
+  {
+   "id": "tln-217",
+   "name": "Laagna tee - Mustakivi tee (suund kesklinn)",
+   "lat": 59.441903,
+   "lon": 24.866537,
+   "heading_deg": 264.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam217.jpg"
+  },
+  {
+   "id": "tln-131",
+   "name": "Laagna tee - Mustakivi tee (suund Peterburi tee)",
+   "lat": 59.441798,
+   "lon": 24.86727,
+   "heading_deg": 250.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam131.jpg"
+  },
+  {
+   "id": "tln-216",
+   "name": "Laagna tee - Mustakivi tee (suund Narva mnt)",
+   "lat": 59.442615,
+   "lon": 24.86635,
+   "heading_deg": 264.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam216.jpg"
+  },
+  {
+   "id": "tln-230",
+   "name": "Ussimäe tn (suund Pärnamäe) - Priisle tn",
+   "lat": 59.452244,
+   "lon": 24.891294,
+   "heading_deg": 29.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam230.jpg"
+  },
+  {
+   "id": "tln-231",
+   "name": "Ussimäe tn (suund Kärberi tn) - Priisle tn",
+   "lat": 59.451904,
+   "lon": 24.892549,
+   "heading_deg": 164.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam231.jpg"
+  },
+  {
+   "id": "tln-249",
+   "name": "Ussimäe tn - Narva mnt",
+   "lat": 59.454048,
+   "lon": 24.893883,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam249.jpg"
+  },
+  {
+   "id": "tln-224",
+   "name": "Laagna tee - Kärberi tn (suund kesklinn)",
+   "lat": 59.446959,
+   "lon": 24.897265,
+   "heading_deg": 264.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam224.jpg"
+  },
+  {
+   "id": "tln-225",
+   "name": "Laagna tee - Kärberi tn (suund Peterburi tee)",
+   "lat": 59.446061,
+   "lon": 24.898016,
+   "heading_deg": 250.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam225.jpg"
+  },
+  {
+   "id": "tln-123",
+   "name": "Pärnu mnt - Järvevana tee (suund Neste)",
+   "lat": 59.402114,
+   "lon": 24.730092,
+   "heading_deg": 77.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam123.jpg"
+  },
+  {
+   "id": "tln-164",
+   "name": "Pärnu mnt - Järvevana tee (suund Neste)2",
+   "lat": 59.402281,
+   "lon": 24.729054,
+   "heading_deg": 77.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam164.jpg"
+  },
+  {
+   "id": "tln-095",
+   "name": "Pärnu mnt - Viljandi mnt",
+   "lat": 59.393577,
+   "lon": 24.725086,
+   "heading_deg": 338.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam095.jpg"
+  },
+  {
+   "id": "tln-058",
+   "name": "Viljandi mnt (suund kesklinn) - Valdeku tn",
+   "lat": 59.376621,
+   "lon": 24.746196,
+   "heading_deg": 0.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam058.jpg"
+  },
+  {
+   "id": "tln-059",
+   "name": "Viljandi mnt - Valdeku tn (suund Rapla)",
+   "lat": 59.376086,
+   "lon": 24.746952,
+   "heading_deg": 352.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam059.jpg"
+  },
+  {
+   "id": "tln-053",
+   "name": "Pärnu mnt (suund kesklinn) - Viljandi mnt",
+   "lat": 59.394192,
+   "lon": 24.72507,
+   "heading_deg": 338.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam053.jpg"
+  },
+  {
+   "id": "tln-052",
+   "name": "Pärnu mnt - Männiku tee (suund Nõmme)",
+   "lat": 59.394485,
+   "lon": 24.724622,
+   "heading_deg": 209.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam052.jpg"
+  },
+  {
+   "id": "tln-107",
+   "name": "Vabaduse pst - Männiku tee (suund kesklinn)",
+   "lat": 59.388608,
+   "lon": 24.719608,
+   "heading_deg": 36.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam107.jpg"
+  },
+  {
+   "id": "tln-108",
+   "name": "Vabaduse pst - Männiku tee (suund Pärnu)",
+   "lat": 59.387006,
+   "lon": 24.718067,
+   "heading_deg": 184.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam108.jpg"
+  },
+  {
+   "id": "tln-204",
+   "name": "Männiku tee - Valdeku tn (suund kesklinn)",
+   "lat": 59.375607,
+   "lon": 24.717817,
+   "heading_deg": 16.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam204.jpg"
+  },
+  {
+   "id": "tln-205",
+   "name": "Männiku tee - Valdeku tn (suund Viljandi mnt)",
+   "lat": 59.375208,
+   "lon": 24.718735,
+   "heading_deg": 107.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam205.jpg"
+  },
+  {
+   "id": "tln-093",
+   "name": "Pärnu mnt (suund kesklinn) - Vabaduse pst",
+   "lat": 59.392581,
+   "lon": 24.722975,
+   "heading_deg": 46.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam093.jpg"
+  },
+  {
+   "id": "tln-094",
+   "name": "Pärnu mnt (suund Pärnu) - Vabaduse pst",
+   "lat": 59.360803,
+   "lon": 24.629726,
+   "heading_deg": 187.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam094.jpg"
+  },
+  {
+   "id": "tln-073",
+   "name": "Nõmme keskus (suund Järve)",
+   "lat": 59.388164,
+   "lon": 24.683717,
+   "heading_deg": 57.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam073.jpg"
+  },
+  {
+   "id": "tln-074",
+   "name": "Nõmme keskus (suund Hiiu)",
+   "lat": 59.387863,
+   "lon": 24.684014,
+   "heading_deg": 205.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam074.jpg"
+  },
+  {
+   "id": "tln-075",
+   "name": "Nõmme keskus (suund Mustamäe)",
+   "lat": 59.387825,
+   "lon": 24.683534,
+   "heading_deg": 350.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam075.jpg"
+  },
+  {
+   "id": "tln-208",
+   "name": "Pärnu mnt - Vääna tn(suund Jaam)",
+   "lat": 59.383489,
+   "lon": 24.669711,
+   "heading_deg": 333.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam208.jpg"
+  },
+  {
+   "id": "tln-209",
+   "name": "Pärnu mnt - Hiiu tn",
+   "lat": 59.383774,
+   "lon": 24.671343,
+   "heading_deg": 37.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam209.jpg"
+  },
+  {
+   "id": "tln-134",
+   "name": "Sõpruse pst-Endla tn-Tulika tn(suund kesklinn)",
+   "lat": 59.427587,
+   "lon": 24.720716,
+   "heading_deg": 46.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam134.jpg"
+  },
+  {
+   "id": "tln-132",
+   "name": "Sõpruse pst-Endla tn-Tulika tn(suund Sõle tn)",
+   "lat": 59.42718,
+   "lon": 24.719952,
+   "heading_deg": 31.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam132.jpg"
+  },
+  {
+   "id": "tln-133",
+   "name": "Sõpruse pst-Endla tn-Tulika tn(suund Sõruse pst)",
+   "lat": 59.427614,
+   "lon": 24.720183,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam133.jpg"
+  },
+  {
+   "id": "tln-007",
+   "name": "Sõpruse pst-Endla tn-Tulika tn(ülevaade)",
+   "lat": 59.427159,
+   "lon": 24.720762,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam007.jpg"
+  },
+  {
+   "id": "tln-199",
+   "name": "Tammsaare tee (K-Rauta vasakpööre)",
+   "lat": 59.402253,
+   "lon": 24.716109,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam199.jpg"
+  },
+  {
+   "id": "tln-198",
+   "name": "Tammsaare tee – Sõjakooli tn (suund Tondi)",
+   "lat": 59.402426,
+   "lon": 24.721012,
+   "heading_deg": 20.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam198.jpg"
+  },
+  {
+   "id": "tln-129",
+   "name": "Tammsaare tee - Alajaama viadukt (suund Järvevana)",
+   "lat": 59.40244,
+   "lon": 24.725683,
+   "heading_deg": 57.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam129.jpg"
+  },
+  {
+   "id": "tln-130",
+   "name": "Tammsaare tee - Alajaama viadukt (suund Tondi)",
+   "lat": 59.40263,
+   "lon": 24.725773,
+   "heading_deg": 25.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam130.jpg"
+  },
+  {
+   "id": "tln-030",
+   "name": "Järvevana tee (suund Delta Plaza)",
+   "lat": 59.40323,
+   "lon": 24.731772,
+   "heading_deg": 237.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam030.jpg"
+  },
+  {
+   "id": "tln-026",
+   "name": "Järvevana tee (raudteeülesõit, suund Lasnamäe)",
+   "lat": 59.40425,
+   "lon": 24.736421,
+   "heading_deg": 61.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam026.jpg"
+  },
+  {
+   "id": "tln-025",
+   "name": "Tammsaare tee - Tondi tn (suund Sõpruse)",
+   "lat": 59.402343,
+   "lon": 24.710432,
+   "heading_deg": 259.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam025.jpg"
+  },
+  {
+   "id": "tln-027",
+   "name": "Tammsaare tee- Tondi tn (suund Järvevana)",
+   "lat": 59.40232,
+   "lon": 24.710637,
+   "heading_deg": 60.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam027.jpg"
+  },
+  {
+   "id": "tln-063",
+   "name": "Paldiski mnt - Tulika tn",
+   "lat": 59.432784,
+   "lon": 24.716433,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam063.jpg"
+  },
+  {
+   "id": "tln-064",
+   "name": "Paldiski mnt - Sõle tn",
+   "lat": 59.432548,
+   "lon": 24.716106,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam064.jpg"
+  },
+  {
+   "id": "tln-146",
+   "name": "Sõle tn - Kolde pst(suund Kopli)",
+   "lat": 59.439692,
+   "lon": 24.707628,
+   "heading_deg": 337.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam146.jpg"
+  },
+  {
+   "id": "tln-147",
+   "name": "Sõle tn - Kolde pst(suund kesklinn)",
+   "lat": 59.439517,
+   "lon": 24.707809,
+   "heading_deg": 77.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam147.jpg"
+  },
+  {
+   "id": "tln-138",
+   "name": "Sõle tn - Sitsi tn (suund Kopli)",
+   "lat": 59.449008,
+   "lon": 24.698039,
+   "heading_deg": 337.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam138.jpg"
+  },
+  {
+   "id": "tln-139",
+   "name": "Sõle tn - Sitsi tn (suund kesklinn)",
+   "lat": 59.448887,
+   "lon": 24.698323,
+   "heading_deg": 77.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam139.jpg"
+  },
+  {
+   "id": "tln-035",
+   "name": "Paldiski mnt - Endla tn (Mustamäele, Õismäele)",
+   "lat": 59.429184,
+   "lon": 24.705238,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam035.jpg"
+  },
+  {
+   "id": "tln-036",
+   "name": "Paldiski mnt - Endla tn (suund Kesklinn)",
+   "lat": 59.429163,
+   "lon": 24.704665,
+   "heading_deg": 74.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam036.jpg"
+  },
+  {
+   "id": "tln-071",
+   "name": "Sõpruse pst - Tammsaare tee (suund Õismäe)",
+   "lat": 59.405108,
+   "lon": 24.701013,
+   "heading_deg": 322.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam071.jpg"
+  },
+  {
+   "id": "tln-072",
+   "name": "Sõpruse pst (suund Kesklinn) - Tammsaare tee",
+   "lat": 59.404814,
+   "lon": 24.700778,
+   "heading_deg": 46.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam072.jpg"
+  },
+  {
+   "id": "tln-135",
+   "name": "Sõpruse pst - Tammsaare tee (suund Järvevana)",
+   "lat": 59.404721,
+   "lon": 24.701844,
+   "heading_deg": 67.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam135.jpg"
+  },
+  {
+   "id": "tln-067",
+   "name": "Mustamäe tee - Tammsaare tee (suund Õismäe)",
+   "lat": 59.408213,
+   "lon": 24.684591,
+   "heading_deg": 287.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam067.jpg"
+  },
+  {
+   "id": "tln-068",
+   "name": "Mustamäe tee (suund kesklinn) - Tammsaare tee",
+   "lat": 59.408467,
+   "lon": 24.685432,
+   "heading_deg": 49.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam068.jpg"
+  },
+  {
+   "id": "tln-206",
+   "name": "Sõpruse pst - Vilde tee (suund Mustamäe tee)",
+   "lat": 59.40084,
+   "lon": 24.694514,
+   "heading_deg": 27.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam206.jpg"
+  },
+  {
+   "id": "tln-207",
+   "name": "Sõpruse pst - Vilde tee (suund PERH)",
+   "lat": 59.401166,
+   "lon": 24.694591,
+   "heading_deg": 87.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam207.jpg"
+  },
+  {
+   "id": "tln-085",
+   "name": "Ehitajate tee (suund Õismäe) - Kadaka tee",
+   "lat": 59.411095,
+   "lon": 24.66473,
+   "heading_deg": 314.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam085.jpg"
+  },
+  {
+   "id": "tln-086",
+   "name": "Ehitajate tee (suund Mustamäe) - Kadaka tee",
+   "lat": 59.41072,
+   "lon": 24.665023,
+   "heading_deg": 53.3,
+   "image": "https://ristmikud.tallinn.ee/last/cam086.jpg"
+  },
+  {
+   "id": "tln-242",
+   "name": "Tammsaare tee - Ehitajate tee",
+   "lat": 59.410186,
+   "lon": 24.668587,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam242.jpg"
+  },
+  {
+   "id": "tln-243",
+   "name": "Tammsaare tee - Laki tn (suund Tondi)",
+   "lat": 59.409677,
+   "lon": 24.675388,
+   "heading_deg": 20.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam243.jpg"
+  },
+  {
+   "id": "tln-244",
+   "name": "Laki tn - Karjavälja tn",
+   "lat": 59.410538,
+   "lon": 24.675171,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam244.jpg"
+  },
+  {
+   "id": "tln-121",
+   "name": "Kadaka tee-Akadeemia tee(linnast välja)",
+   "lat": 59.404375,
+   "lon": 24.654813,
+   "heading_deg": 237.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam121.jpg"
+  },
+  {
+   "id": "tln-122",
+   "name": "Kadaka tee-Akadeemia tee(linna)",
+   "lat": 59.404005,
+   "lon": 24.655773,
+   "heading_deg": 152.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam122.jpg"
+  },
+  {
+   "id": "tln-029",
+   "name": "Ehitajate tee - Vilde tee (Õismäele, Szolnokisse)",
+   "lat": 59.404035,
+   "lon": 24.669087,
+   "heading_deg": 155.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam029.jpg"
+  },
+  {
+   "id": "tln-119",
+   "name": "Paldiski mnt - Mõisa tn(suund kesklinn)",
+   "lat": 59.42564,
+   "lon": 24.65558,
+   "heading_deg": 74.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam119.jpg"
+  },
+  {
+   "id": "tln-120",
+   "name": "Paldiski mnt - Mõisa tn(suund Õismäe)",
+   "lat": 59.425738,
+   "lon": 24.656454,
+   "heading_deg": 163.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam120.jpg"
+  },
+  {
+   "id": "tln-218",
+   "name": "Paldiski mnt - Rannamõisa tee (suund Ehitajate tee)",
+   "lat": 59.423104,
+   "lon": 24.645519,
+   "heading_deg": 144.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam218.jpg"
+  },
+  {
+   "id": "tln-219",
+   "name": "Paldiski mnt - Rannamõisa tee (suund kesklinn)",
+   "lat": 59.423571,
+   "lon": 24.645852,
+   "heading_deg": 74.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam219.jpg"
+  },
+  {
+   "id": "tln-220",
+   "name": "Paldiski mnt - Rannamõisa tee (suund Keila)",
+   "lat": 59.423611,
+   "lon": 24.644619,
+   "heading_deg": 224.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam220.jpg"
+  },
+  {
+   "id": "tln-221",
+   "name": "Paldiski mnt - K-Rauta ristmik (suund kesklinn)",
+   "lat": 59.421208,
+   "lon": 24.642079,
+   "heading_deg": 74.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam221.jpg"
+  },
+  {
+   "id": "tln-222",
+   "name": "Rannamõisa tee - Lõuka tn (suund kesklinn)",
+   "lat": 59.426581,
+   "lon": 24.631192,
+   "heading_deg": 81.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam222.jpg"
+  },
+  {
+   "id": "tln-223",
+   "name": "Rannamõisa tee - Lõuka tn (suund Tabasalu)",
+   "lat": 59.426779,
+   "lon": 24.631276,
+   "heading_deg": 267.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam223.jpg"
+  },
+  {
+   "id": "tln-226",
+   "name": "Rannamõisa tee - Pikaliiva tn (suund Tabasalu)",
+   "lat": 59.429054,
+   "lon": 24.619573,
+   "heading_deg": 269.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam226.jpg"
+  },
+  {
+   "id": "tln-227",
+   "name": "Rannamõisa tee - Pikaliiva tn (suund Õismägi)",
+   "lat": 59.429005,
+   "lon": 24.619071,
+   "heading_deg": 299.8,
+   "image": "https://ristmikud.tallinn.ee/last/cam227.jpg"
+  },
+  {
+   "id": "tln-028",
+   "name": "Paldiski mnt - Õismäe tee(Harku järve JKÜ)",
+   "lat": 59.413327,
+   "lon": 24.634074,
+   "heading_deg": 31.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam028.jpg"
+  },
+  {
+   "id": "tln-010",
+   "name": "Paldiski mnt - Järveotsa tee (suund Keila)",
+   "lat": 59.4101,
+   "lon": 24.631905,
+   "heading_deg": 226.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam010.jpg"
+  },
+  {
+   "id": "tln-011",
+   "name": "Paldiski mnt - Järveotsa tee (suund kesklinn)",
+   "lat": 59.40966,
+   "lon": 24.631066,
+   "heading_deg": 66.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam011.jpg"
+  },
+  {
+   "id": "tln-012",
+   "name": "Paldiski mnt - Järvekalda tee (suund Keila)",
+   "lat": 59.407169,
+   "lon": 24.619328,
+   "heading_deg": 224.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam012.jpg"
+  },
+  {
+   "id": "tln-013",
+   "name": "Paldiski mnt - Järvekalda tee (suund kesklinn)",
+   "lat": 59.407085,
+   "lon": 24.618982,
+   "heading_deg": 74.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam013.jpg"
+  },
+  {
+   "id": "tln-162",
+   "name": "Paldiski mnt - Tähetorni tee (suund kesklinn)",
+   "lat": 59.395395,
+   "lon": 24.594379,
+   "heading_deg": 74.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam162.jpg"
+  },
+  {
+   "id": "tln-163",
+   "name": "Paldiski mnt - Tähetorni tee (suund Keila)",
+   "lat": 59.394981,
+   "lon": 24.593069,
+   "heading_deg": 224.9,
+   "image": "https://ristmikud.tallinn.ee/last/cam163.jpg"
+  },
+  {
+   "id": "tln-202",
+   "name": "Akadeemia tee - Järveotsa tee (suund Järveotsa tee)",
+   "lat": 59.407704,
+   "lon": 24.648984,
+   "heading_deg": 35.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam202.jpg"
+  },
+  {
+   "id": "tln-203",
+   "name": "Akadeemia tee - Järveotsa tee (suund Pöörise tn)",
+   "lat": 59.407846,
+   "lon": 24.6476,
+   "heading_deg": 76.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam203.jpg"
+  },
+  {
+   "id": "tln-148",
+   "name": "Kopli tn(suund Kesklinn) - Erika tn(suund Kesklinn)",
+   "lat": 59.448425,
+   "lon": 24.712092,
+   "heading_deg": 117.1,
+   "image": "https://ristmikud.tallinn.ee/last/cam148.jpg"
+  },
+  {
+   "id": "tln-149",
+   "name": "Kopli tn(suund Kopli) - Ristiku tn",
+   "lat": 59.448183,
+   "lon": 24.711782,
+   "heading_deg": 113.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam149.jpg"
+  },
+  {
+   "id": "tln-144",
+   "name": "Sitsi tn- Paljasaare tee",
+   "lat": 59.453739,
+   "lon": 24.703756,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam144.jpg"
+  },
+  {
+   "id": "tln-145",
+   "name": "Kopli tn - Sitsi tn",
+   "lat": 59.453345,
+   "lon": 24.70339,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam145.jpg"
+  },
+  {
+   "id": "tln-060",
+   "name": "Narva mnt (suund linnast välja) - Vormsi tn",
+   "lat": 59.455037,
+   "lon": 24.870274,
+   "heading_deg": 80.2,
+   "image": "https://ristmikud.tallinn.ee/last/cam060.jpg"
+  },
+  {
+   "id": "tln-040",
+   "name": "Narva mnt (suund linna) - Kose tee",
+   "lat": 59.454762,
+   "lon": 24.871014,
+   "heading_deg": 257.4,
+   "image": "https://ristmikud.tallinn.ee/last/cam040.jpg"
+  },
+  {
+   "id": "tln-165",
+   "name": "Vana-Narva mnt (linnast välja) - Pärnamäe tee",
+   "lat": 59.460155,
+   "lon": 24.904597,
+   "heading_deg": 264.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam165.jpg"
+  },
+  {
+   "id": "tln-166",
+   "name": "Vana-Narva mnt (linna) - Pärnamäe tee",
+   "lat": 59.460544,
+   "lon": 24.905172,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam166.jpg"
+  },
+  {
+   "id": "tln-169",
+   "name": "Pärnamäe tee - Muuga tee (suund Muuga)",
+   "lat": 59.467009,
+   "lon": 24.904098,
+   "heading_deg": 137.6,
+   "image": "https://ristmikud.tallinn.ee/last/cam169.jpg"
+  },
+  {
+   "id": "tln-170",
+   "name": "Pärnamäe tee - Muuga tee (suund Narva mnt)",
+   "lat": 59.467406,
+   "lon": 24.904724,
+   "heading_deg": 229.7,
+   "image": "https://ristmikud.tallinn.ee/last/cam170.jpg"
+  },
+  {
+   "id": "tln-173",
+   "name": "Pärnamäe tee - Randvere tee(suund Lasnamäe)",
+   "lat": 59.490974,
+   "lon": 24.88026,
+   "heading_deg": 199.5,
+   "image": "https://ristmikud.tallinn.ee/last/cam173.jpg"
+  },
+  {
+   "id": "tln-174",
+   "name": "Pärnamäe tee - Randvere tee(suund Viimsi)",
+   "lat": 59.490747,
+   "lon": 24.879395,
+   "heading_deg": 267.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam174.jpg"
+  },
+  {
+   "id": "tln-101",
+   "name": "Kalev P&R (sissepääs), Pärnu mnt 150",
+   "lat": 59.409043,
+   "lon": 24.735154,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam101.jpg"
+  },
+  {
+   "id": "tln-016",
+   "name": "Kalev P&R (vaade 1), Pärnu mnt 150",
+   "lat": 59.409303,
+   "lon": 24.7352,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam016.jpg"
+  },
+  {
+   "id": "tln-017",
+   "name": "Kalev P&R (vaade 2), Pärnu mnt 150",
+   "lat": 59.40902,
+   "lon": 24.734724,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam017.jpg"
+  },
+  {
+   "id": "tln-102",
+   "name": "Kalev P&R (vaade 3), Pärnu mnt 150",
+   "lat": 59.409423,
+   "lon": 24.735403,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam102.jpg"
+  },
+  {
+   "id": "tln-175",
+   "name": "Tondi P&R (sissepääs), Pärnu mnt 142a",
+   "lat": 59.41052,
+   "lon": 24.734112,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam175.jpg"
+  },
+  {
+   "id": "tln-161",
+   "name": "Tondi P&R, Pärnu mnt 142a",
+   "lat": 59.410559,
+   "lon": 24.73414,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam161.jpg"
+  },
+  {
+   "id": "tln-190",
+   "name": "Pirita 1 P&R (sissepääs), Jõesuu tee 5",
+   "lat": 59.467211,
+   "lon": 24.832099,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam190.jpg"
+  },
+  {
+   "id": "tln-021",
+   "name": "Pirita 1 P&R, Jõesuu tee 5",
+   "lat": 59.467026,
+   "lon": 24.832559,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam021.jpg"
+  },
+  {
+   "id": "tln-189",
+   "name": "Pirita 2 P&R (sissepääs), Jõesuu tee 5",
+   "lat": 59.467141,
+   "lon": 24.832829,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam189.jpg"
+  },
+  {
+   "id": "tln-020",
+   "name": "Pirita 2 P&R, Jõesuu tee 5",
+   "lat": 59.467406,
+   "lon": 24.832463,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam020.jpg"
+  },
+  {
+   "id": "tln-192",
+   "name": "Väike-Õismäe P&R (sissepääs 1), Paldiski mnt 221",
+   "lat": 59.413013,
+   "lon": 24.635229,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam192.jpg"
+  },
+  {
+   "id": "tln-022",
+   "name": "Väike-Õismäe P&R (sissepääs 2), Paldiski mnt 221",
+   "lat": 59.413128,
+   "lon": 24.634471,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam022.jpg"
+  },
+  {
+   "id": "tln-191",
+   "name": "Väike-Õismäe P&R, Paldiski mnt 221",
+   "lat": 59.412643,
+   "lon": 24.635013,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam191.jpg"
+  },
+  {
+   "id": "tln-023",
+   "name": "Oru P&R, Narva mnt 120C",
+   "lat": 59.443192,
+   "lon": 24.804078,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam023.jpg"
+  },
+  {
+   "id": "tln-124",
+   "name": "Viru tn langetatav pollar",
+   "lat": 59.436614,
+   "lon": 24.751546,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam124.jpg"
+  },
+  {
+   "id": "tln-240",
+   "name": "Vana-Kalamaja pollar",
+   "lat": 59.441202,
+   "lon": 24.738547,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam240.jpg"
+  },
+  {
+   "id": "tln-157",
+   "name": "Gonsiori P&R (sissepääs), Gonsiori T7 / Laagna tee T12",
+   "lat": 59.431982,
+   "lon": 24.782368,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam157.jpg"
+  },
+  {
+   "id": "tln-158",
+   "name": "Gonsiori P&R (vaade 1), Gonsiori T7 / Laagna tee T12",
+   "lat": 59.431451,
+   "lon": 24.782516,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam158.jpg"
+  },
+  {
+   "id": "tln-159",
+   "name": "Gonsiori P&R (vaade 2), Gonsiori T7 / Laagna tee T12",
+   "lat": 59.431663,
+   "lon": 24.782473,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam159.jpg"
+  },
+  {
+   "id": "tln-160",
+   "name": "Gonsiori P&R (vaade 3), Gonsiori T7 / Laagna tee T12",
+   "lat": 59.431561,
+   "lon": 24.782502,
+   "heading_deg": null,
+   "image": "https://ristmikud.tallinn.ee/last/cam160.jpg"
+  },
+  {
+   "id": "tln-171",
+   "name": "Laagri P&R (sissepääs), Pärnu mnt. 550",
+   "lat": 59.358221,
+   "lon": 24.627948,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam171.jpg"
+  },
+  {
+   "id": "tln-172",
+   "name": "Laagri P&R, Pärnu mnt. 550",
+   "lat": 59.357012,
+   "lon": 24.627735,
+   "heading_deg": 0.0,
+   "image": "https://ristmikud.tallinn.ee/last/cam172.jpg"
+  }
+ ]
+}

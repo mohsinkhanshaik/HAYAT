@@ -1,0 +1,92 @@
+[
+  {
+    "id": "current_software_docs",
+    "category": "current software documentation",
+    "query": "What Python 3 documentation version is currently published?",
+    "mode": "quick",
+    "primary_only": true,
+    "expected_any": ["Python 3", "documentation"],
+    "preferred_domains": ["docs.python.org", "python.org"]
+  },
+  {
+    "id": "historical_stable_fact",
+    "category": "historical stable fact",
+    "query": "On what date did Apollo 11 first land humans on the Moon?",
+    "mode": "quick",
+    "primary_only": true,
+    "expected_any": ["July 20, 1969", "20 July 1969", "1969"],
+    "preferred_domains": ["nasa.gov"]
+  },
+  {
+    "id": "current_technology_comparison",
+    "category": "current technology comparison",
+    "query": "Compare the current documented multi-GPU serving approaches in vLLM and TensorRT-LLM.",
+    "mode": "normal",
+    "primary_only": true,
+    "expected_any": ["tensor parallel", "pipeline parallel", "multi-GPU", "multi GPU"],
+    "preferred_domains": ["docs.vllm.ai", "nvidia.github.io", "github.com"]
+  },
+  {
+    "id": "github_project",
+    "category": "GitHub project question",
+    "query": "What is CPython's default development branch and where are releases documented?",
+    "mode": "quick",
+    "primary_only": true,
+    "expected_any": ["main", "release"],
+    "preferred_domains": ["github.com", "python.org"]
+  },
+  {
+    "id": "research_paper",
+    "category": "research paper question",
+    "query": "What architecture did the original Attention Is All You Need paper introduce?",
+    "mode": "normal",
+    "primary_only": true,
+    "expected_any": ["Transformer", "attention"],
+    "preferred_domains": ["arxiv.org", "papers.nips.cc", "neurips.cc"]
+  },
+  {
+    "id": "controversial_multisource",
+    "category": "multi-source controversial claim",
+    "query": "Does moderate coffee consumption dehydrate healthy adults? Find supporting and opposing evidence.",
+    "mode": "normal",
+    "primary_only": false,
+    "expected_any": ["hydration", "dehydration", "fluid"],
+    "preferred_domains": ["nih.gov", "pubmed.ncbi.nlm.nih.gov", "mayoclinic.org"]
+  },
+  {
+    "id": "api_documentation",
+    "category": "API documentation question",
+    "query": "How does HTTPX configure request timeouts in its current Python API?",
+    "mode": "quick",
+    "primary_only": true,
+    "expected_any": ["Timeout", "timeout", "connect", "read"],
+    "preferred_domains": ["python-httpx.org", "github.com"]
+  },
+  {
+    "id": "recent_release",
+    "category": "recent release/version question",
+    "query": "What is the current stable Playwright Python release and its release date?",
+    "mode": "quick",
+    "primary_only": true,
+    "expected_any": ["Playwright", "release"],
+    "preferred_domains": ["github.com", "pypi.org", "playwright.dev"]
+  },
+  {
+    "id": "contradiction_scope",
+    "category": "question requiring contradiction detection",
+    "query": "Does current CPython still have a GIL, including free-threaded builds? Resolve apparently conflicting documentation.",
+    "mode": "normal",
+    "primary_only": true,
+    "expected_any": ["GIL", "free-threaded", "free threaded"],
+    "preferred_domains": ["docs.python.org", "peps.python.org", "python.org"]
+  },
+  {
+    "id": "local_knowledge_reuse",
+    "category": "question already present in local knowledge",
+    "query": "How does Kubernetes schedule GPUs through device plugins?",
+    "mode": "local_knowledge_only",
+    "primary_only": true,
+    "expected_any": ["device plugin", "extended resource", "gpu"],
+    "preferred_domains": ["kubernetes.io", "github.com"]
+  }
+]

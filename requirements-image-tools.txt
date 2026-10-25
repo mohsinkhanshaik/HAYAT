@@ -1,0 +1,10 @@
+# Optional local image toolkit. Windows x64 wheels for CPython 3.12-3.15.
+# Install with scripts/setup_image_tools.py --install; existing base dependencies
+# are reused, never upgraded. Hashes are published by PyPI for these exact wheels.
+ImageHash==4.3.2 --hash=sha256:02b0f965f8c77cd813f61d7d39031ea27d4780e7ebcad56c6cd6a709acc06e5f
+ExifRead==3.5.1 --hash=sha256:e5426ce2857423ad401e575ea9d159dc97449dc041fb6e61b35109caea72c311
+PyWavelets==1.10.0 \
+    --hash=sha256:5be6bdee86f8088eb15becaefabfecaa6336cd6103c58f46d2466d127b4f08cc \
+    --hash=sha256:47179b616e3afc53bfdc1274437af9b541bb1ddf2404929599affdfbd21e51c4 \
+    --hash=sha256:cc2567834ca971b1655eb3220b1343d71ff3318f9405ab5d83ee621b2342192d \
+    --hash=sha256:1085f7381eaa9e25428b196c2dc7fef0c136dcb1e68ca92f737cb6d7a9f5fbee

@@ -1,0 +1,164 @@
+{
+  "cases": 12,
+  "correct_tool_rate": 1.0,
+  "wrong_tool_rate": 0.0,
+  "missing_tool_rate": 0.0,
+  "details": [
+    {
+      "utterance": "Open Notepad.",
+      "expected": [
+        "launch_application"
+      ],
+      "actual": [
+        "launch_application"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Close Notepad.",
+      "expected": [
+        "close_application"
+      ],
+      "actual": [
+        "close_application"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Write hello in Notepad.",
+      "expected": [
+        "launch_application",
+        "notepad_edit"
+      ],
+      "actual": [
+        "launch_application",
+        "notepad_edit"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Create a folder called Research.",
+      "expected": [
+        "create_folder"
+      ],
+      "actual": [
+        "create_folder"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Create a text file called note.txt containing hello.",
+      "expected": [
+        "write_file",
+        "read_file"
+      ],
+      "actual": [
+        "write_file",
+        "read_file"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Inspect this project and list the files.",
+      "expected": [
+        "list_folder"
+      ],
+      "actual": [
+        "list_folder"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Open my AI project folder.",
+      "expected": [
+        "open_project_folder"
+      ],
+      "actual": [
+        "open_project_folder"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Create a Python script that prints Hello from my AI and execute it.",
+      "expected": [
+        "write_file",
+        "python_execute_file"
+      ],
+      "actual": [
+        "write_file",
+        "python_execute_file"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Research the current Python release using official sources.",
+      "expected": [
+        "research_topic"
+      ],
+      "actual": [
+        "research_topic"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Look this up quickly: current Ollama documentation.",
+      "expected": [
+        "research_topic"
+      ],
+      "actual": [
+        "research_topic"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Why do you believe that? What evidence supports that?",
+      "expected": [
+        "explain_knowledge"
+      ],
+      "actual": [
+        "explain_knowledge"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    },
+    {
+      "utterance": "Find all Python files and create data/artifacts/python_report.md.",
+      "expected": [
+        "search_files",
+        "write_file",
+        "file_exists",
+        "read_file"
+      ],
+      "actual": [
+        "search_files",
+        "write_file",
+        "file_exists",
+        "read_file"
+      ],
+      "missing": [],
+      "wrong": [],
+      "passed": true
+    }
+  ]
+}

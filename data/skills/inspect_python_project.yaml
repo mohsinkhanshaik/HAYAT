@@ -1,0 +1,20 @@
+name: inspect_python_project
+description: Inspect a Python project and list its Python source files using read-only project tools.
+inputs:
+  - folder
+tools:
+  - list_folder
+  - search_files
+steps:
+  - tool: list_folder
+    arguments:
+      path: "{{folder}}"
+      recursive: false
+  - tool: search_files
+    arguments:
+      path: "{{folder}}"
+      pattern: "*.py"
+success_criteria:
+  - project folder was listed
+  - Python files were found and returned
+trusted: true

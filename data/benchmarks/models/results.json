@@ -1,0 +1,225 @@
+{
+  "models": [
+    {
+      "model": "qwythos:latest",
+      "capabilities": [
+        "tools",
+        "thinking",
+        "completion",
+        "vision"
+      ],
+      "classification_accuracy": 0.6,
+      "planning_accuracy": 0.0,
+      "reasoning_accuracy": 0.6666666666666666,
+      "conversation_accuracy": 1.0,
+      "coding_accuracy": 1.0,
+      "research_synthesis_accuracy": 1.0,
+      "planning_tools": [
+        "notepad_edit"
+      ],
+      "instruction_json_reliability": 1.0,
+      "mean_latency_seconds": 3.888,
+      "generation_tokens_per_second": 19.31,
+      "loaded_vram_bytes": 5506523461,
+      "vision_probe": {
+        "supported": true,
+        "response_valid": true,
+        "latency_seconds": 16.568
+      },
+      "errors": []
+    },
+    {
+      "model": "hf.co/llmfan46/Qwythos-9B-Claude-Mythos-5-1M-uncensored-heretic-GGUF:Q4_K_M",
+      "capabilities": [
+        "tools",
+        "thinking",
+        "completion",
+        "vision"
+      ],
+      "classification_accuracy": 0.6,
+      "planning_accuracy": 0.0,
+      "reasoning_accuracy": 0.6666666666666666,
+      "conversation_accuracy": 1.0,
+      "coding_accuracy": 1.0,
+      "research_synthesis_accuracy": 1.0,
+      "planning_tools": [
+        "notepad_edit"
+      ],
+      "instruction_json_reliability": 1.0,
+      "mean_latency_seconds": 3.768,
+      "generation_tokens_per_second": 19.73,
+      "loaded_vram_bytes": null,
+      "vision_probe": {
+        "supported": true,
+        "response_valid": true,
+        "latency_seconds": 10.352
+      },
+      "errors": []
+    },
+    {
+      "model": "qwen2.5-coder:1.5b-base",
+      "capabilities": [
+        "completion",
+        "insert"
+      ],
+      "classification_accuracy": 0.4,
+      "planning_accuracy": 0.0,
+      "reasoning_accuracy": 0.3333333333333333,
+      "conversation_accuracy": 1.0,
+      "coding_accuracy": 0.0,
+      "research_synthesis_accuracy": 0.3333333333333333,
+      "planning_tools": [
+        "notepad_edit",
+        "notepad_edit"
+      ],
+      "instruction_json_reliability": 1.0,
+      "mean_latency_seconds": 3.391,
+      "generation_tokens_per_second": 67.51,
+      "loaded_vram_bytes": 1287871528,
+      "vision_probe": {
+        "supported": false,
+        "response_valid": null,
+        "latency_seconds": null
+      },
+      "errors": []
+    },
+    {
+      "model": "hayat:latest",
+      "capabilities": [
+        "completion",
+        "vision",
+        "audio",
+        "tools",
+        "thinking"
+      ],
+      "classification_accuracy": 0.2,
+      "planning_accuracy": 0.0,
+      "reasoning_accuracy": 1.0,
+      "conversation_accuracy": 1.0,
+      "coding_accuracy": 1.0,
+      "research_synthesis_accuracy": 0.6666666666666666,
+      "planning_tools": [
+        "notepad_edit"
+      ],
+      "instruction_json_reliability": 1.0,
+      "mean_latency_seconds": 4.265,
+      "generation_tokens_per_second": 46.89,
+      "loaded_vram_bytes": 3230536825,
+      "vision_probe": {
+        "supported": true,
+        "response_valid": true,
+        "latency_seconds": 3.406
+      },
+      "errors": []
+    },
+    {
+      "model": "qwen:latest",
+      "capabilities": [
+        "completion"
+      ],
+      "classification_accuracy": 0.6,
+      "planning_accuracy": 0.0,
+      "reasoning_accuracy": 0.3333333333333333,
+      "conversation_accuracy": 0.3333333333333333,
+      "coding_accuracy": 0.5,
+      "research_synthesis_accuracy": 0.3333333333333333,
+      "planning_tools": [
+        "notepad_edit"
+      ],
+      "instruction_json_reliability": 1.0,
+      "mean_latency_seconds": 3.111,
+      "generation_tokens_per_second": 63.07,
+      "loaded_vram_bytes": 5527390125,
+      "vision_probe": {
+        "supported": false,
+        "response_valid": null,
+        "latency_seconds": null
+      },
+      "errors": []
+    },
+    {
+      "model": "gemma4:latest",
+      "capabilities": [
+        "completion",
+        "vision",
+        "audio",
+        "tools",
+        "thinking"
+      ],
+      "classification_accuracy": 0.2,
+      "planning_accuracy": 0.0,
+      "reasoning_accuracy": 1.0,
+      "conversation_accuracy": 1.0,
+      "coding_accuracy": 1.0,
+      "research_synthesis_accuracy": 0.6666666666666666,
+      "planning_tools": [
+        "notepad_edit"
+      ],
+      "instruction_json_reliability": 1.0,
+      "mean_latency_seconds": 3.591,
+      "generation_tokens_per_second": 44.38,
+      "loaded_vram_bytes": 3230536825,
+      "vision_probe": {
+        "supported": true,
+        "response_valid": true,
+        "latency_seconds": 3.222
+      },
+      "errors": []
+    },
+    {
+      "model": "llama3:latest",
+      "capabilities": [
+        "completion"
+      ],
+      "classification_accuracy": 0.6,
+      "planning_accuracy": 0.0,
+      "reasoning_accuracy": 0.6666666666666666,
+      "conversation_accuracy": 0.6666666666666666,
+      "coding_accuracy": 1.0,
+      "research_synthesis_accuracy": 0.6666666666666666,
+      "planning_tools": [
+        "notepad_edit",
+        "notepad_edit"
+      ],
+      "instruction_json_reliability": 1.0,
+      "mean_latency_seconds": 5.3,
+      "generation_tokens_per_second": 50.39,
+      "loaded_vram_bytes": 5553258495,
+      "vision_probe": {
+        "supported": false,
+        "response_valid": null,
+        "latency_seconds": null
+      },
+      "errors": []
+    },
+    {
+      "model": "qwen3.5:latest",
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ],
+      "classification_accuracy": 0.4,
+      "planning_accuracy": 0.0,
+      "reasoning_accuracy": 1.0,
+      "conversation_accuracy": 1.0,
+      "coding_accuracy": 1.0,
+      "research_synthesis_accuracy": 0.6666666666666666,
+      "planning_tools": [
+        "notepad_edit"
+      ],
+      "instruction_json_reliability": 1.0,
+      "mean_latency_seconds": 6.226,
+      "generation_tokens_per_second": 32.76,
+      "loaded_vram_bytes": 5506439576,
+      "vision_probe": {
+        "supported": true,
+        "response_valid": true,
+        "latency_seconds": 8.306
+      },
+      "errors": []
+    }
+  ],
+  "selection_method": "accuracy first, then observed latency"
+}

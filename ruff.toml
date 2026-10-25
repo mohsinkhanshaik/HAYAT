@@ -1,0 +1,12 @@
+target-version = "py311"
+extend-exclude = ["runtime/**", "data/**", "models/**", "output/**", "tmp/**", ".test-runs/**", ".pytest-*/**", "app/vendor/replica_skill/**"]
+
+[lint]
+# F: undefined names and unused code. B904: exception chaining.
+# S110/S112: no silent `except: pass/continue` -- use app.logging.log_swallowed,
+# or a `# noqa: S110 -- reason` where logging is impossible.
+select = ["F", "B904", "S110", "S112", "S314", "S306"]
+
+[lint.per-file-ignores]
+# Test scaffolding tears down fixtures that may already be gone.
+"tests/**" = ["S110", "S112"]

@@ -1,0 +1,289 @@
+# The fallback for any category not named below. ASK meant a tool nobody had
+# thought to list stopped and waited for Mohsin, which is the opposite of
+# deciding for itself. He asked for it to pick its own tools and run them
+# unattended, and this is the line that was preventing that.
+#
+# The prompt was also doing a second job nobody designed it for: it was how he
+# found out a tool had run at all. Removing it without replacing that would
+# have traded a gate for a blindfold, so every tool start, finish and failure
+# now goes to the live console instead. Autonomy in exchange for visibility,
+# not autonomy in exchange for silence.
+default: ALLOW
+permissions:
+  filesystem_read: ALLOW
+  system_read: ALLOW
+  filesystem_write_project: ALLOW
+  # ALLOW rather than ASK, at Mohsin's instruction. These were already silent
+  # in practice -- Trusted Owner Mode resolves them before the broker is ever
+  # reached -- so ASK here described a prompt that never appeared. A config
+  # that misdescribes real behaviour is worse than a permissive one: it makes
+  # the entries that DO stop look identical to the ones that never did.
+  filesystem_delete: ALLOW
+  browser_read: ALLOW
+  browser_click: ALLOW
+  browser_type: ALLOW
+  browser_download: ALLOW
+  web_search: ALLOW
+  public_web_read: ALLOW
+  public_download: ALLOW
+  dependency_inspect: ALLOW
+  bounded_crawl: ALLOW
+  public_api_get: ALLOW
+  knowledge_research: ALLOW
+  connector_read: ALLOW
+  mcp_read: ALLOW
+  # Granted on 2026-08-21, at Mohsin's explicit and repeated instruction:
+  # "approve all tools and dependencies and all permission". These write to
+  # accounts and services rather than to this machine, so the concern was
+  # raised and he reaffirmed it; that is his call to make about his own
+  # accounts. The authority kernel still records every one of them, so a
+  # message sent or a form submitted is auditable after the fact even though
+  # it is no longer stopped before it.
+  connector_write: ALLOW
+  mcp_write: ALLOW
+  automation_manage: ALLOW
+  login_account: ALLOW
+  submit_form: ALLOW
+  external_post: ALLOW
+  send_message: ALLOW
+  install_package_project: ALLOW
+  install_system_software: ALLOW
+  powershell_safe: ALLOW
+  powershell_unknown: ALLOW
+  # Granted 2026-08-21. Mohsin has asked for admin access from the first day
+  # and asked again today. Note what it means rather than pretending it is
+  # ordinary: an elevated shell can switch off the controls that supervise the
+  # agent, so this is the one grant that can undo the others. The command
+  # policy still classifies what is actually run, and destructive or
+  # fetch-and-execute commands are refused on their own terms below.
+  powershell_admin: ALLOW
+  # Carved out of powershell_admin at Mohsin's instruction on 2026-08-21.
+  # Admin work runs without asking; ending the session everyone else is in the
+  # middle of does not. A reboot destroys nothing that was saved and
+  # everything that was not, and that is worth one question.
+  restart_computer: ASK
+  shutdown_computer: ASK
+  python_project: ALLOW
+  # Every sensor, granted. Mohsin asked for full access to the hardware on his
+  # own machine, and these all stay local: the camera frame, the clipboard,
+  # and the screen are read here and never leave.
+  #
+  # Two things still hold them back, and neither is a prompt. Privacy mode
+  # turns all of them off in one move regardless of this file, and a camera
+  # session is bounded by a watchdog that closes the device whatever the
+  # caller is doing -- so "always allowed" means "no interruption", not
+  # "on without limit".
+  computer_observe: ALLOW
+  computer_input: ALLOW
+  clipboard_read: ALLOW
+  clipboard_write: ALLOW
+  camera_status: ALLOW
+  camera_use: ALLOW
+  application_discover: ALLOW
+  application_launch: ALLOW
+  delete_system_file: DENY
+  modify_system: DENY
+  financial_transaction: DENY
+  purchase: DENY
+  credential_access: DENY
+  bypass_access_control: DENY
+# Where the agent may work. Previously this said "." while the code ignored it
+# entirely and hard-coded the project directory, so the agent could not open a
+# file on your own Desktop. These roots are now genuinely enforced.
+#
+# Widening WHERE is not widening WHAT: protected_paths below still refuses
+# Windows itself, and every write still passes the risk tier and approval path.
+allowed_roots:
+  - .                      # D:\AI itself
+  - '%USERPROFILE%\Desktop'
+  - '%USERPROFILE%\Documents'
+  - '%USERPROFILE%\Downloads'
+  - '%USERPROFILE%\Pictures'
+  - '%USERPROFILE%\Videos'
+  - '%USERPROFILE%\Music'
+  - '%USERPROFILE%\OneDrive'
+  - '%LOCALAPPDATA%\Temp'
+  - D:\
+protected_paths:
+  - C:\Windows
+  - C:\Program Files
+  - C:\Program Files (x86)
+  - C:\ProgramData
+  - '%WINDIR%'
+  - C:\Users\*\.ssh
+  - C:\Users\*\.aws
+  - C:\Users\*\.kube
+  - C:\Users\*\.gnupg
+  - C:\Users\*\AppData\Local\Google\Chrome\User Data
+  - C:\Users\*\AppData\Local\Microsoft\Edge\User Data
+  - C:\Users\*\AppData\Roaming\Mozilla\Firefox\Profiles
+  - C:\Users\*\AppData\Local\Microsoft\Credentials
+  - C:\Users\*\AppData\Roaming\Microsoft\Credentials
+  # D:\AI's own security surface. The agent works on itself, so its authority
+  # store and policy files are placed out of reach of ordinary file tools --
+  # changing them is a permission change, not a file edit, and belongs to the
+  # owner rather than to a plan step.
+  - '*\data\memory\authority.db'
+# Credential files, refused wherever they live rather than only in the project.
+protected_project_files:
+  # The authority boundary is changed only by an explicit reviewed source
+  # change, never by the agent's ordinary filesystem tools.
+  - config/permissions.yaml
+  - app/safety/authority.py
+  - app/safety/permissions.py
+  - app/safety/approval_records.py
+  - app/safety/elevation.py
+  - .env
+  - .env.*
+  - '*.pem'
+  - '*.pfx'
+  - '*.p12'
+  - id_rsa
+  - id_ed25519
+  - .git-credentials
+  - .npmrc
+  - .pypirc
+command_policy:
+  # Allowlist boundary. A shell command is ALLOW only when every segment matches
+  # one of these profiles AND no elevated-risk signal is present. Anything else
+  # is ASK. See app/safety/command_policy.py and docs/security.md.
+  safe_profiles:
+    git:
+      subcommands: [status, log, diff, show, branch, rev-parse, ls-files, describe, remote, config, blame, shortlog, tag]
+      denied_flags: ['--exec', '-c']
+    pytest:
+      bare_allowed: true
+    python:
+      # Only `python -m <approved module>` is a safe profile. Running an arbitrary
+      # script through the shell is not: that is what the permissioned
+      # `python_execute_file` tool exists for.
+      require_module: true
+      modules: [pytest, pip, compileall, json.tool, unittest, this]
+      module_subcommands:
+        # install/uninstall added 2026-08-24. Mohsin asked for HAYAT to be able
+        # to install any tool or dependency it needs and confirmed it
+        # explicitly, with the one condition that it costs nothing. PyPI
+        # packages are free, and the money rules that enforce the condition are
+        # elsewhere and unchanged: purchase and financial_transaction are DENY.
+        pip: [check, list, show, freeze, --version, install, uninstall, download]
+      # The index flags stay denied. "Install what you need" is not the same as
+      # "fetch code from any host that asks", and keeping installs on PyPI is
+      # what makes the difference between a dependency and a supply-chain
+      # compromise -- which is the thing he asked to be protected from.
+      denied_flags: ['-c', '-', '--command', '--index-url', '--extra-index-url', '--trusted-host']
+    py:
+      require_module: true
+      modules: [pytest, pip, compileall, json.tool]
+      denied_flags: ['-c', '-']
+    pip:
+      subcommands: [check, list, show, freeze, install, uninstall, download]
+      denied_flags: ['--index-url', '--extra-index-url', '--trusted-host']
+    # Added 2026-08-24 so "install what you need" does not stop to ask each
+    # time. These were only ever in the ask list, never classified as safe, so
+    # removing them from it left them unclassified and still asking.
+    winget:
+      subcommands: [install, upgrade, search, list, show, source]
+    choco:
+      subcommands: [install, upgrade, search, list, info]
+    scoop:
+      subcommands: [install, update, search, list, info]
+    ruff:
+      subcommands: [check, format, rule, version]
+      denied_flags: ['--fix-only']
+    mypy:
+      bare_allowed: true
+    dir:
+      bare_allowed: true
+    ls:
+      bare_allowed: true
+    pwd:
+      bare_allowed: true
+    whoami:
+      bare_allowed: true
+    hostname:
+      bare_allowed: true
+    echo:
+      bare_allowed: true
+    cd:
+      bare_allowed: true
+    get-childitem:
+      bare_allowed: true
+    gci:
+      bare_allowed: true
+    get-location:
+      bare_allowed: true
+    get-date:
+      bare_allowed: true
+    get-item:
+      bare_allowed: true
+    test-path:
+      bare_allowed: true
+    measure-object:
+      bare_allowed: true
+    select-object:
+      bare_allowed: true
+    sort-object:
+      bare_allowed: true
+    where-object:
+      bare_allowed: true
+    select-string:
+      bare_allowed: true
+    get-content:
+      bare_allowed: true
+    write-output:
+      bare_allowed: true
+    get-process:
+      bare_allowed: true
+    get-command:
+      bare_allowed: true
+    get-module:
+      bare_allowed: true
+  # Referencing any of these in a shell command is DENY on every path:
+  # terminal, PowerShell, Python, copy, archive, and network tools.
+  protected_resources:
+    - .env
+    - .env.local
+    - .env.production
+    - id_rsa
+    - id_dsa
+    - id_ecdsa
+    - id_ed25519
+    - .ssh
+    - authorized_keys
+    - known_hosts
+    - credentials
+    - credentials.json
+    - login data
+    - .npmrc
+    - .pypirc
+    - .git-credentials
+    - .aws
+    - .kube
+    - secring.gpg
+    - .pem
+    - .pfx
+    - .p12
+  denied_binaries:
+    - mimikatz
+    - procdump
+    - lazagne
+blocked_command_patterns:
+  - '(?i)\b(?:Get-Content|gc|type|more|cat)\b[^\r\n]*\.env\b'
+  - '(?i)\bRemove-Item\b.*\b-Recurse\b.*(?:C:\\Windows|C:\\Program Files)'
+  - '(?i)\b(?:bcdedit|regedit|reg\s+(?:add|delete)|sc\s+(?:create|delete|config)|net\s+user)\b'
+  - '(?i)\b(?:Format-Volume|Clear-Disk|Initialize-Disk|diskpart)\b'
+  - '(?i)\bSet-ExecutionPolicy\b.*\b(?:LocalMachine|MachinePolicy)\b'
+  - '(?i)\b(?:Invoke-Mimikatz|sekurlsa|credential|Login Data)\b'
+  # Permanent owner invariant: diagnostics may read driver state, but HAYAT
+  # never removes/disables drivers or deletes Windows system tools.
+  - '(?i)\bpnputil(?:\.exe)?\s+/(?:delete-driver|disable-device|remove-device)\b'
+  - '(?i)\b(?:Disable-PnpDevice|Uninstall-PnpDevice|Remove-WindowsDriver)\b'
+  - '(?i)\bdism(?:\.exe)?\b[^\r\n]*(?:/remove-driver|/disable-feature)\b'
+ask_command_patterns:
+  - '(?i)\b(?:Remove-Item|del|erase|rmdir)\b'
+  # winget/choco/scoop install moved out of "ask" on 2026-08-24: Mohsin asked
+  # for HAYAT to install whatever tools it needs and confirmed it, so stopping
+  # to ask each time is asking a question he has already answered. Package
+  # managers install free software; spending money is refused by the purchase
+  # and financial_transaction rules, which are DENY and stay that way.
+  - '(?i)\bStart-Process\b.*\b-Verb\s+RunAs\b'

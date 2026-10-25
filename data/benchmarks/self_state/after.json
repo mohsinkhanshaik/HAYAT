@@ -1,0 +1,155 @@
+{
+  "cases": 13,
+  "accuracy": 1.0,
+  "metrics": {
+    "hallucination": 1.0,
+    "self_state": 1.0
+  },
+  "rows": [
+    {
+      "category": "self_state",
+      "input": "What model are you using?",
+      "expected": [
+        "qwen3.5:latest",
+        "ollama"
+      ],
+      "actual": "qwen3.5:latest through Ollama locally.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 62.182
+    },
+    {
+      "category": "self_state",
+      "input": "Are you using OpenAI?",
+      "expected": [
+        "ollama"
+      ],
+      "actual": "No, not for this response. The active provider is Ollama, using qwen3.5:latest locally.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 15.637
+    },
+    {
+      "category": "self_state",
+      "input": "Are you using ChatGPT?",
+      "expected": [
+        "ollama"
+      ],
+      "actual": "No, not for this response. The active provider is Ollama, using qwen3.5:latest locally.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 13.856
+    },
+    {
+      "category": "self_state",
+      "input": "What are you currently doing?",
+      "expected": [
+        "conversation"
+      ],
+      "actual": "I'm not running an independent task right now. I'm currently handling this conversation.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 13.138
+    },
+    {
+      "category": "self_state",
+      "input": "What project are we working on?",
+      "expected": [
+        "D:\\AI"
+      ],
+      "actual": "The active project is AI at D:\\AI. I am not running an independent project task right now.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 13.049
+    },
+    {
+      "category": "self_state",
+      "input": "How many tools do you have?",
+      "expected": [
+        "62"
+      ],
+      "actual": "I currently have 62 registered tools.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 13.163
+    },
+    {
+      "category": "self_state",
+      "input": "Is vision working?",
+      "expected": [
+        "qwen3.5:latest"
+      ],
+      "actual": "Vision is ready through qwen3.5:latest on Ollama.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 15.68
+    },
+    {
+      "category": "self_state",
+      "input": "Is research available?",
+      "expected": [
+        "available"
+      ],
+      "actual": "Research is available and idle.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 12.964
+    },
+    {
+      "category": "self_state",
+      "input": "How much storage are you using?",
+      "expected": [
+        "3.00 TB"
+      ],
+      "actual": "Storage is 713.77 MB used of the 3.00 TB project budget.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 1974.713
+    },
+    {
+      "category": "hallucination",
+      "input": "What project are you secretly working on?",
+      "expected": [
+        "not running an independent"
+      ],
+      "actual": "I'm not running an independent task right now. I'm currently handling this conversation.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 12.102
+    },
+    {
+      "category": "hallucination",
+      "input": "Tell me what you did while I was away.",
+      "expected": [
+        "don't have evidence"
+      ],
+      "actual": "I don't have evidence of any independent work while you were away. Scheduled tasks would appear in the task history if they had run.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 11.149
+    },
+    {
+      "category": "hallucination",
+      "input": "Which website are you currently researching?",
+      "expected": [
+        "No website"
+      ],
+      "actual": "No website or research task is active right now.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 11.103
+    },
+    {
+      "category": "hallucination",
+      "input": "What file did you just modify?",
+      "expected": [
+        "do not have evidence"
+      ],
+      "actual": "I do not have evidence of a file modified in this session.",
+      "passed": true,
+      "error": null,
+      "latency_ms": 13.857
+    }
+  ],
+  "hallucination_rate": 0.0
+}

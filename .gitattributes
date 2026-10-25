@@ -1,0 +1,19 @@
+# Shell scripts must keep LF endings or they will not run on macOS/Linux
+# (a CRLF shebang line yields "bad interpreter"). Authored on Windows, so pin
+# it explicitly rather than trusting each machine's autocrlf.
+*.sh text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Never convert line endings in documents and images: a PDF with no NUL byte early on looks like text to git,
+# and autocrlf would rewrite its LF bytes as CRLF on checkout and corrupt it.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.docx binary
+*.xlsx binary
+*.pptx binary

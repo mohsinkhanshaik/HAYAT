@@ -1,0 +1,10 @@
+name: business_stress_test
+description: Evaluate a supplied business scenario with owner time, capacity limits, sensitivity and target thresholds without changing accounting.
+inputs: [assumptions]
+tools: [business_model]
+steps:
+  - tool: business_model
+    arguments: {assumptions: "{{assumptions}}"}
+success_criteria:
+  - Outputs separate planning assumptions from actual revenue and show one-factor stress tests.
+trusted: true

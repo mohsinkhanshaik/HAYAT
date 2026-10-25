@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/mohsinkhanshaik/HAYAT/security/advisories/new
+    about: Please report security problems privately, not as public issues.
+  - name: How to use HAYAT
+    url: https://github.com/mohsinkhanshaik/HAYAT/blob/main/docs/how-to-use-hayat.md
+    about: Every area HAYAT covers, with words to say and the window to open.

@@ -1,0 +1,17 @@
+name: research_scientific_topic
+description: Research a scientific topic with preference for original papers and explicit limitations.
+inputs:
+  - topic
+tools:
+  - research_topic
+steps:
+  - tool: research_topic
+    arguments:
+      query: "{{topic}} original research paper methodology results limitations"
+      level: deep
+      official_only: false
+      remember: true
+success_criteria:
+  - Original research is preferred over summaries.
+  - Findings distinguish results from limitations and uncertainty.
+trusted: true

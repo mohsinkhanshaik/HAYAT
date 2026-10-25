@@ -1,0 +1,731 @@
+{
+  "tuning": {
+    "cases": 42,
+    "recall": 0.905,
+    "median_shortlist": 25,
+    "max_shortlist": 74,
+    "registered_tools": 416,
+    "misses": [
+      "is the requests library already there for python",
+      "find me remote python gigs",
+      "tell me when the EU AI act page changes",
+      "what would make my landing page convert better"
+    ],
+    "details": [
+      {
+        "request": "turn this recording into a few short highlights",
+        "acceptable": [
+          "make_video_clips",
+          "clip_generator",
+          "create_video_clip"
+        ],
+        "found": [
+          "create_video_clip",
+          "make_video_clips"
+        ],
+        "shortlist_size": 12,
+        "passed": true
+      },
+      {
+        "request": "how many hours of work haven't I charged anyone for yet",
+        "acceptable": [
+          "time_unbilled"
+        ],
+        "found": [
+          "time_unbilled"
+        ],
+        "shortlist_size": 49,
+        "passed": true
+      },
+      {
+        "request": "who still hasn't paid me",
+        "acceptable": [
+          "invoice_list"
+        ],
+        "found": [
+          "invoice_list"
+        ],
+        "shortlist_size": 74,
+        "passed": true
+      },
+      {
+        "request": "remind Sarah politely that her bill is overdue",
+        "acceptable": [
+          "payment_reminder"
+        ],
+        "found": [
+          "payment_reminder"
+        ],
+        "shortlist_size": 10,
+        "passed": true
+      },
+      {
+        "request": "any quakes or storms near Tokyo right now",
+        "acceptable": [
+          "intelligence_around",
+          "intelligence_event",
+          "intelligence_alerts"
+        ],
+        "found": [
+          "intelligence_around"
+        ],
+        "shortlist_size": 12,
+        "passed": true
+      },
+      {
+        "request": "show me live traffic cameras near the Golden Gate bridge",
+        "acceptable": [
+          "intelligence_cameras",
+          "intelligence_best_camera"
+        ],
+        "found": [
+          "intelligence_best_camera",
+          "intelligence_cameras"
+        ],
+        "shortlist_size": 52,
+        "passed": true
+      },
+      {
+        "request": "which planes are flying over Dubai",
+        "acceptable": [
+          "intelligence_aircraft"
+        ],
+        "found": [
+          "intelligence_aircraft"
+        ],
+        "shortlist_size": 7,
+        "passed": true
+      },
+      {
+        "request": "what text did I just grab with ctrl+c",
+        "acceptable": [
+          "clipboard_read_text"
+        ],
+        "found": [
+          "clipboard_read_text"
+        ],
+        "shortlist_size": 14,
+        "passed": true
+      },
+      {
+        "request": "put the meeting notes in a word document",
+        "acceptable": [
+          "write_docx"
+        ],
+        "found": [
+          "write_docx"
+        ],
+        "shortlist_size": 26,
+        "passed": true
+      },
+      {
+        "request": "make a slide deck about our third quarter results",
+        "acceptable": [
+          "write_presentation"
+        ],
+        "found": [
+          "write_presentation"
+        ],
+        "shortlist_size": 4,
+        "passed": true
+      },
+      {
+        "request": "back up the database before I change anything",
+        "acceptable": [
+          "create_database_backup"
+        ],
+        "found": [
+          "create_database_backup"
+        ],
+        "shortlist_size": 39,
+        "passed": true
+      },
+      {
+        "request": "is my computer healthy, check cpu and memory",
+        "acceptable": [
+          "system_status"
+        ],
+        "found": [
+          "system_status"
+        ],
+        "shortlist_size": 24,
+        "passed": true
+      },
+      {
+        "request": "find a program on this pc for editing photos",
+        "acceptable": [
+          "discover_applications",
+          "find_software"
+        ],
+        "found": [
+          "find_software"
+        ],
+        "shortlist_size": 42,
+        "passed": true
+      },
+      {
+        "request": "get VLC on this machine",
+        "acceptable": [
+          "install_software"
+        ],
+        "found": [
+          "install_software"
+        ],
+        "shortlist_size": 10,
+        "passed": true
+      },
+      {
+        "request": "is the requests library already there for python",
+        "acceptable": [
+          "check_package"
+        ],
+        "found": [],
+        "shortlist_size": 20,
+        "passed": false
+      },
+      {
+        "request": "what am I working on lately",
+        "acceptable": [
+          "situation_report"
+        ],
+        "found": [
+          "situation_report"
+        ],
+        "shortlist_size": 24,
+        "passed": true
+      },
+      {
+        "request": "draw a cat astronaut",
+        "acceptable": [
+          "generate_image"
+        ],
+        "found": [
+          "generate_image"
+        ],
+        "shortlist_size": 25,
+        "passed": true
+      },
+      {
+        "request": "tell mom on whatsapp that I'm running late",
+        "acceptable": [
+          "whatsapp_send"
+        ],
+        "found": [
+          "whatsapp_send"
+        ],
+        "shortlist_size": 8,
+        "passed": true
+      },
+      {
+        "request": "mail the report to Ali",
+        "acceptable": [
+          "email_send"
+        ],
+        "found": [
+          "email_send"
+        ],
+        "shortlist_size": 31,
+        "passed": true
+      },
+      {
+        "request": "save Ahmed's number 0501234567",
+        "acceptable": [
+          "contact_save"
+        ],
+        "found": [
+          "contact_save"
+        ],
+        "shortlist_size": 32,
+        "passed": true
+      },
+      {
+        "request": "I'm starting work on the Acme job now, clock me in",
+        "acceptable": [
+          "time_timer_start"
+        ],
+        "found": [
+          "time_timer_start"
+        ],
+        "shortlist_size": 16,
+        "passed": true
+      },
+      {
+        "request": "which of my customers actually make me money",
+        "acceptable": [
+          "client_profitability"
+        ],
+        "found": [
+          "client_profitability"
+        ],
+        "shortlist_size": 68,
+        "passed": true
+      },
+      {
+        "request": "write a proposal for the website redesign job",
+        "acceptable": [
+          "generate_proposal",
+          "proposal_builder"
+        ],
+        "found": [
+          "generate_proposal"
+        ],
+        "shortlist_size": 61,
+        "passed": true
+      },
+      {
+        "request": "check how well example.com shows up on google",
+        "acceptable": [
+          "seo_audit",
+          "google_profile_audit"
+        ],
+        "found": [
+          "google_profile_audit",
+          "seo_audit"
+        ],
+        "shortlist_size": 45,
+        "passed": true
+      },
+      {
+        "request": "find me remote python gigs",
+        "acceptable": [
+          "find_freelance_jobs"
+        ],
+        "found": [],
+        "shortlist_size": 69,
+        "passed": false
+      },
+      {
+        "request": "what's on my second screen",
+        "acceptable": [
+          "display_screenshot"
+        ],
+        "found": [
+          "display_screenshot"
+        ],
+        "shortlist_size": 27,
+        "passed": true
+      },
+      {
+        "request": "look through the webcam and tell me what you see",
+        "acceptable": [
+          "camera_observe",
+          "camera_capture"
+        ],
+        "found": [
+          "camera_capture",
+          "camera_observe"
+        ],
+        "shortlist_size": 49,
+        "passed": true
+      },
+      {
+        "request": "read me surah al fatiha",
+        "acceptable": [
+          "quran_read"
+        ],
+        "found": [
+          "quran_read"
+        ],
+        "shortlist_size": 28,
+        "passed": true
+      },
+      {
+        "request": "how well are your parts working together",
+        "acceptable": [
+          "brain_mesh_status",
+          "brain_mesh_self_check"
+        ],
+        "found": [
+          "brain_mesh_self_check",
+          "brain_mesh_status"
+        ],
+        "shortlist_size": 16,
+        "passed": true
+      },
+      {
+        "request": "how reliable are your tools",
+        "acceptable": [
+          "explain_my_tools"
+        ],
+        "found": [
+          "explain_my_tools"
+        ],
+        "shortlist_size": 18,
+        "passed": true
+      },
+      {
+        "request": "tell me when the EU AI act page changes",
+        "acceptable": [
+          "track_public_source",
+          "check_public_source_change"
+        ],
+        "found": [],
+        "shortlist_size": 62,
+        "passed": false
+      },
+      {
+        "request": "try this python snippet somewhere safe",
+        "acceptable": [
+          "sandbox_run_python"
+        ],
+        "found": [
+          "sandbox_run_python"
+        ],
+        "shortlist_size": 19,
+        "passed": true
+      },
+      {
+        "request": "is it going to rain in Lahore",
+        "acceptable": [
+          "intelligence_weather"
+        ],
+        "found": [
+          "intelligence_weather"
+        ],
+        "shortlist_size": 11,
+        "passed": true
+      },
+      {
+        "request": "find the cheapest used iPhone 13",
+        "acceptable": [
+          "price_comparison_engine"
+        ],
+        "found": [
+          "price_comparison_engine"
+        ],
+        "shortlist_size": 6,
+        "passed": true
+      },
+      {
+        "request": "set up a weekly email for my bakery's customers",
+        "acceptable": [
+          "newsletter_builder"
+        ],
+        "found": [
+          "newsletter_builder"
+        ],
+        "shortlist_size": 72,
+        "passed": true
+      },
+      {
+        "request": "where am I right now",
+        "acceptable": [
+          "device_location"
+        ],
+        "found": [
+          "device_location"
+        ],
+        "shortlist_size": 24,
+        "passed": true
+      },
+      {
+        "request": "what's plugged into this pc",
+        "acceptable": [
+          "list_devices"
+        ],
+        "found": [
+          "list_devices"
+        ],
+        "shortlist_size": 25,
+        "passed": true
+      },
+      {
+        "request": "what happened near Karachi over the last week",
+        "acceptable": [
+          "intelligence_history",
+          "intelligence_around"
+        ],
+        "found": [
+          "intelligence_history"
+        ],
+        "shortlist_size": 12,
+        "passed": true
+      },
+      {
+        "request": "get the newest qwen model onto this machine",
+        "acceptable": [
+          "pull_model",
+          "find_model"
+        ],
+        "found": [
+          "find_model",
+          "pull_model"
+        ],
+        "shortlist_size": 13,
+        "passed": true
+      },
+      {
+        "request": "show me the pictures you made yesterday",
+        "acceptable": [
+          "image_gallery",
+          "image_generation_history"
+        ],
+        "found": [
+          "image_gallery",
+          "image_generation_history"
+        ],
+        "shortlist_size": 42,
+        "passed": true
+      },
+      {
+        "request": "note down that I spent 40 dollars on printer ink",
+        "acceptable": [
+          "expense_record"
+        ],
+        "found": [
+          "expense_record"
+        ],
+        "shortlist_size": 11,
+        "passed": true
+      },
+      {
+        "request": "what would make my landing page convert better",
+        "acceptable": [
+          "conversion_optimizer"
+        ],
+        "found": [],
+        "shortlist_size": 32,
+        "passed": false
+      }
+    ]
+  },
+  "held_out": {
+    "cases": 20,
+    "recall": 0.85,
+    "median_shortlist": 23,
+    "max_shortlist": 68,
+    "registered_tools": 416,
+    "misses": [
+      "how is the air traffic over London looking",
+      "will it be windy in Chicago tomorrow",
+      "put Firefox on this computer"
+    ],
+    "details": [
+      {
+        "request": "how is the air traffic over London looking",
+        "acceptable": [
+          "intelligence_aircraft"
+        ],
+        "found": [],
+        "shortlist_size": 12,
+        "passed": false
+      },
+      {
+        "request": "will it be windy in Chicago tomorrow",
+        "acceptable": [
+          "intelligence_weather"
+        ],
+        "found": [],
+        "shortlist_size": 2,
+        "passed": false
+      },
+      {
+        "request": "what did I copy a moment ago",
+        "acceptable": [
+          "clipboard_read_text"
+        ],
+        "found": [
+          "clipboard_read_text"
+        ],
+        "shortlist_size": 35,
+        "passed": true
+      },
+      {
+        "request": "knock out a quick PowerPoint on solar panels",
+        "acceptable": [
+          "write_presentation"
+        ],
+        "found": [
+          "write_presentation"
+        ],
+        "shortlist_size": 23,
+        "passed": true
+      },
+      {
+        "request": "paint me a sunset over the sea",
+        "acceptable": [
+          "generate_image"
+        ],
+        "found": [
+          "generate_image"
+        ],
+        "shortlist_size": 13,
+        "passed": true
+      },
+      {
+        "request": "text my brother on whatsapp that dinner is at 8",
+        "acceptable": [
+          "whatsapp_send"
+        ],
+        "found": [
+          "whatsapp_send"
+        ],
+        "shortlist_size": 8,
+        "passed": true
+      },
+      {
+        "request": "stop the clock on the Acme job",
+        "acceptable": [
+          "time_timer_stop"
+        ],
+        "found": [
+          "time_timer_stop"
+        ],
+        "shortlist_size": 13,
+        "passed": true
+      },
+      {
+        "request": "who owes me money right now",
+        "acceptable": [
+          "invoice_list"
+        ],
+        "found": [
+          "invoice_list"
+        ],
+        "shortlist_size": 68,
+        "passed": true
+      },
+      {
+        "request": "log a 15 dollar taxi ride as a business cost",
+        "acceptable": [
+          "expense_record"
+        ],
+        "found": [
+          "expense_record"
+        ],
+        "shortlist_size": 68,
+        "passed": true
+      },
+      {
+        "request": "snap a photo with the webcam",
+        "acceptable": [
+          "camera_capture",
+          "camera_observe"
+        ],
+        "found": [
+          "camera_capture",
+          "camera_observe"
+        ],
+        "shortlist_size": 54,
+        "passed": true
+      },
+      {
+        "request": "what's showing on my other monitor",
+        "acceptable": [
+          "display_screenshot"
+        ],
+        "found": [
+          "display_screenshot"
+        ],
+        "shortlist_size": 21,
+        "passed": true
+      },
+      {
+        "request": "put Firefox on this computer",
+        "acceptable": [
+          "install_software"
+        ],
+        "found": [],
+        "shortlist_size": 12,
+        "passed": false
+      },
+      {
+        "request": "is numpy installed",
+        "acceptable": [
+          "check_package"
+        ],
+        "found": [
+          "check_package"
+        ],
+        "shortlist_size": 11,
+        "passed": true
+      },
+      {
+        "request": "find contract work as a data analyst",
+        "acceptable": [
+          "find_freelance_jobs"
+        ],
+        "found": [
+          "find_freelance_jobs"
+        ],
+        "shortlist_size": 7,
+        "passed": true
+      },
+      {
+        "request": "turn this long video into tiktok-sized pieces",
+        "acceptable": [
+          "make_video_clips",
+          "clip_generator",
+          "create_video_clip"
+        ],
+        "found": [
+          "create_video_clip",
+          "make_video_clips"
+        ],
+        "shortlist_size": 25,
+        "passed": true
+      },
+      {
+        "request": "which clients bring in the most profit",
+        "acceptable": [
+          "client_profitability"
+        ],
+        "found": [
+          "client_profitability"
+        ],
+        "shortlist_size": 68,
+        "passed": true
+      },
+      {
+        "request": "look up Sara's email address in my contacts",
+        "acceptable": [
+          "contact_find"
+        ],
+        "found": [
+          "contact_find"
+        ],
+        "shortlist_size": 24,
+        "passed": true
+      },
+      {
+        "request": "any wildfires or floods near Sydney",
+        "acceptable": [
+          "intelligence_around",
+          "intelligence_event",
+          "intelligence_alerts"
+        ],
+        "found": [
+          "intelligence_alerts",
+          "intelligence_around",
+          "intelligence_event"
+        ],
+        "shortlist_size": 34,
+        "passed": true
+      },
+      {
+        "request": "what's my machine's ram and disk looking like",
+        "acceptable": [
+          "system_status"
+        ],
+        "found": [
+          "system_status"
+        ],
+        "shortlist_size": 11,
+        "passed": true
+      },
+      {
+        "request": "show the images you generated last week",
+        "acceptable": [
+          "image_gallery",
+          "image_generation_history"
+        ],
+        "found": [
+          "image_gallery",
+          "image_generation_history"
+        ],
+        "shortlist_size": 40,
+        "passed": true
+      }
+    ]
+  }
+}

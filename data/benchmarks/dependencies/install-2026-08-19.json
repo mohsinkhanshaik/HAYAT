@@ -1,0 +1,52 @@
+{
+  "recorded_at": "2026-08-19",
+  "verification": {
+    "checked": 129,
+    "working": 123,
+    "broken": 0
+  },
+  "python": "3.14.2",
+  "requested_by": "Mohsin, full dependency list, explicitly approved including the heavy tier",
+  "installed_total_in_env": 312,
+  "batch_one": {
+    "attempted": 80,
+    "installed": 80,
+    "refused": 0,
+    "failed": 0,
+    "seconds": 377
+  },
+  "batch_two_heavy": {
+    "attempted": 24,
+    "installed": 21,
+    "refused": 0,
+    "failed": 3,
+    "seconds": 205
+  },
+  "failed_to_install": {
+    "mediapipe": "WinError 5 access denied during install (file lock)",
+    "pyaudio": "no C compiler on this machine; sounddevice already covers audio I/O",
+    "paddleocr": "WinError 5 access denied during install"
+  },
+  "installed_but_unusable": {
+    "webrtcvad": "imports pkg_resources, which setuptools 84 no longer ships; project uses its own energy-threshold VAD"
+  },
+  "not_pip_packages": [
+    "Ollama",
+    "SQLite/FTS5",
+    "Win32/COM/WMI",
+    "PowerShell",
+    "ripgrep",
+    "fd",
+    "jq",
+    "curl",
+    "winget",
+    "Git",
+    "Tesseract",
+    "Playwright browsers",
+    "nvidia-smi",
+    "SearXNG",
+    "llama.cpp"
+  ],
+  "rollback": "data/backups/requirements-before-bulk-install.txt",
+  "suite_after_install": "1142 passed"
+}

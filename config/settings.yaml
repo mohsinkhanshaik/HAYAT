@@ -1,0 +1,468 @@
+project_name: AI
+max_steps: 20
+max_retries_per_step: 2
+command_timeout_seconds: 60
+model_timeout_seconds: 120
+memory_database: data/memory/agent.db
+log_directory: data/logs
+artifact_directory: data/artifacts
+work_directory: data/work
+active_mode: AUTO
+# Optional services wait for an explicit manual start, including saved schedules.
+background_services:
+  autostart: false
+cost_policy:
+  mode: ZERO-COST
+  paid_api_allowed: false
+  cloud_inference_allowed: false
+  paid_search_allowed: false
+  cloud_embeddings_allowed: false
+  cloud_tts_allowed: false
+  cloud_stt_allowed: false
+proactive_assistance: SUGGEST
+resources:
+  # An explicit image-generation task may ask idle Ollama models to unload so
+  # the diffusion engine can use the 8GB GPU. The service and model files are
+  # untouched; the next language turn loads its selected model again.
+  automatic_model_eviction: true
+  # Live GUI profile. It changes Ollama residency/context hints only; it never
+  # stops drivers, Windows services, or unrelated applications.
+  runtime_mode: balanced
+model_routing:
+  # Qwen remains available, but a comparably scored non-Qwen local model wins
+  # when it is within this measured margin. This reduces backend dependence
+  # without choosing a materially worse answer path merely by model name.
+  prefer_non_qwen_within_score: 0.03
+  # HAYAT's identity package inherits its base model's benchmark until it has
+  # its own measured row. For conversation/teaching it wins only within this
+  # small verified-quality margin; materially better specialists remain.
+  prefer_identity_within_score: 0.02
+  # HAYAT always writes the reply (app/models/council.py). Another model is
+  # consulted as an advisor only when its verified quality for that kind of
+  # task beats HAYAT's by at least this much (0..1).
+  consult_specialist_margin: 0.05
+executive_brain:
+  # Deep/adversarial substantive turns get a bounded skeptical review.
+  # Both roles can use the same admitted local model, sequentially.
+  dual_review_enabled: true
+  # Hard questions asked outside Deep modes get the same review (not in FAST).
+  review_deep_turns: true
+  # Self-questioning before a hard answer: off | deep_modes | deep_turns.
+  # deep_turns = Deep modes plus explain/why/compare/design-style questions.
+  # Costs one extra private model call on those turns; greetings and FAST skip it.
+  self_inquiry: deep_turns
+learning_database: data/memory/learning.db
+training_directory: data/training
+training:
+  # Manual only at the owner's latest request; no automatic adapter preparation.
+  automatic_training: false
+  minimum_validated_samples: 1000
+  require_validation_split: true
+  require_held_out_test: true
+  # A Hugging Face-format, local model checkpoint is required for adapter
+  # training. Ollama's quantized blob is an inference artifact, so no download
+  # or guessed conversion is attempted. Set this only to an owner-reviewed
+  # local directory containing the matching trainable foundation checkpoint.
+  training_base_checkpoint: ""
+  private_data:
+    # Private examples may be staged only after an explicit owner action and
+    # successful verification. They stay in a separate local corpus. Secrets
+    # are always redacted and no cloud/export route can opt itself in.
+    enabled: true
+    local_only: true
+    explicit_consent_required: true
+    cloud_export_allowed: false
+    # On at Mohsin's instruction, 2026-08-23. This is the switch that actually
+    # changes something today: the corpus stands at 4 records against a gate of
+    # 1000, and nothing was adding to it. Everything collected stays local --
+    # local_only and cloud_export_allowed above are unchanged, and secrets are
+    # redacted before a record is written.
+    automatic_collection: true
+owner_mode:
+  # All passive, ordinary, and recoverable local-owner actions run without a
+  # prompt. External identity/actions, Administrator work, credentials,
+  # security changes, money, and self-permission changes remain protected.
+  enabled: true
+memory_retrieval:
+  candidate_limit: 500
+  reranker_enabled: false
+  # Dynamic Neural Associations (DNA): bounded relationship traversal after
+  # hybrid recall. This is a local retrieval graph, not neural-weight training.
+  dna:
+    enabled: true
+    auto_link: true
+    auto_link_max: 3
+    auto_link_min_importance: 0.70
+    auto_link_min_similarity: 0.58
+    seed_limit: 4
+    max_depth: 2
+    max_nodes: 24
+    edge_decay: 0.72
+    minimum_score: 0.08
+  weights:
+    neural: 0.48
+    hashed_semantic: 0.06
+    lexical: 0.20
+    entity: 0.05
+    project: 0.07
+    recency: 0.03
+    confidence: 0.04
+    importance: 0.04
+    successful_use: 0.03
+skills_directory: data/skills
+storage:
+  root: .  # the HAYAT folder itself, wherever it is copied
+  # The owner assigned one governed terabyte to durable learning. The overall
+  # project ceiling leaves room for code, dependencies and local models while
+  # the physical-disk reserve remains authoritative. This is a ceiling, not a
+  # preallocation of disk space.
+  maximum_total_bytes: 3000000000000
+  reserve_free_space_bytes: 300000000000
+  category_quotas:
+    learning: 1000000000000
+  warn_at_percent: 80
+  critical_at_percent: 95
+  automatic_cleanup: true
+  disposable_screenshot_days: 30
+browser:
+  headless: true
+  preferred_channel: chrome
+research:
+  enabled: true
+  # A search answers in the same turn if it finishes within this many seconds;
+  # otherwise HAYAT says it is still searching and reports back when done.
+  inline_wait_seconds: 20
+  # After this long a still-running search tells Mohsin it is slow, then keeps going.
+  job_timeout_seconds: 180
+  search_provider: auto
+  database: data/knowledge/knowledge.db
+  user_agent: AI-Research/1.0 (+local personal assistant)
+  respect_robots_txt: true
+  request_timeout_seconds: 20
+  onion_request_timeout_seconds: 30
+  per_domain_delay_seconds: 0.35
+  max_concurrency: 3
+  log_queries: true
+  log_excerpts: false
+  model_synthesis: true
+  budgets:
+    fast:
+      searches: 2
+      pages: 5
+      max_seconds: 30
+      max_bytes: 5242880
+    normal:
+      searches: 5
+      pages: 15
+      max_seconds: 90
+      max_bytes: 20971520
+    deep:
+      searches: 10
+      pages: 40
+      max_seconds: 240
+      max_bytes: 62914560
+computer_control:
+  enabled: true
+  pause_seconds: 0.15
+vision:
+  enabled: true
+camera:
+  enabled: true
+  device: 0
+  width: 1280
+  height: 720
+  retain_frames: false
+scheduler:
+  enabled: true
+  database: data/memory/jobs.db
+proactive:
+  event_triggers_enabled: true
+  default_action: suggest
+  maximum_runs_per_hour: 4
+development:
+  code_monitor:
+    enabled: true
+    interval_seconds: 180
+browser_extension_bridge:
+  enabled: true
+  host: 127.0.0.1
+  port: 8765
+web:
+  # Phone/browser access to HAYAT. The desktop generates a long protected
+  # passphrase in the secret broker when HAYAT_WEB_TOKEN is not explicitly
+  # supplied, so Same Wi-Fi is one-click and needs no phone app or paid relay.
+  # The server comes up with the desktop window -- no separate process.
+  # host `lan` resolves and binds only the primary local
+  # interface, and request admission permits only its subnet plus loopback.
+  # Wildcard, public, mesh/VPN, and link-local bindings are rejected. The token
+  # never lives in this YAML or GUI logs. If protected storage fails, startup
+  # fails closed. Every remote request uses reduced REMOTE_OWNER authority.
+  enabled: true
+  # off | same_wifi | anywhere. Anywhere additionally requires at least one
+  # paired client certificate and TLS 1.3. It never creates firewall, UPnP, or
+  # router rules; external routing is a separate explicit owner operation.
+  mode: same_wifi
+  host: lan
+  port: 8770
+connectors:
+  enabled: true
+  require_scoped_secrets: true
+mcp_gateway:
+  enabled: true
+  require_registered_servers: true
+  builtin_web_research:
+    enabled: true
+    # Direct unattended scraping of Google result pages is deliberately off.
+    # The MCP uses free providers and can inspect a Google page the owner
+    # explicitly opened and snapshotted through the browser bridge.
+    google_results_page_automation: false
+voice:
+  version: 2
+  # Voice is available, but the desktop asks for microphone approval on every
+  # launch before starting its listener. Push-to-talk is the default mode.
+  # Faster-whisper hears, Piper speaks, and neither sends audio anywhere.
+  enabled: true
+  mode: push_to_talk
+  push_to_talk_key: ctrl+space
+  # While push-to-talk is on, HAYAT keeps the hotkey to itself so it does not
+  # also reach the focused app (in an editor Ctrl+Space opens suggestions, and
+  # holding it to talk stacked popups). false lets other apps see it again.
+  push_to_talk_exclusive: true
+  stt:
+    provider: faster_whisper
+    model: base.en
+    language: auto
+    device: cpu
+    compute_type: int8
+    beam_size: 5
+    multi_decode:
+      # A clear command pays for one decode. Empty or acoustically uncertain
+      # audio gets one stronger local retry, bounded at two total passes.
+      enabled: true
+      maximum_passes: 2
+      retry_below_confidence: 0.52
+      retry_beam_size: 8
+    # Continuous recording already uses local VAD. A second Whisper VAD pass
+    # can discard short commands; bounded level normalization improves quiet
+    # speech without amplifying a truly silent input into a hallucination.
+    vad_filter: false
+    normalize_audio: true
+    maximum_gain: 8.0
+    target_peak: 0.8
+    initial_prompt: This is a command to a Windows assistant named HAYAT.
+    download_root: data/models/whisper
+    # HAYAT is not an English word, so without help it is transcribed as
+    # "hayaat", "hyatt" or "high at" -- the proper-noun failure that made
+    # earlier voice sessions misfire. Mohsin is here for the same reason.
+    hotwords: HAYAT Hayat Mohsin Chrome Edge PowerShell Python GitHub YouTube Kubernetes
+    # Hear other languages too: when the multilingual model (faster-whisper
+    # small, python -m scripts.setup_arabic) is installed, speech is transcribed
+    # in whatever language it is in, so Urdu or Spanish is understood and
+    # explained in English instead of being turned into English noise. About
+    # 0.6 s slower per utterance than base.en. false keeps English-only.
+    detect_other_languages: true
+  tts:
+    # Piper: MIT, open-weight voices in data/voices, synthesised in-process
+    # through onnxruntime. Replaces Windows SAPI, which worked but tied the
+    # assistant's voice to the operating system and spawned PowerShell per
+    # sentence. Set to windows_sapi to go back, or auto to prefer Piper and
+    # fall back only when no voice has been downloaded.
+    provider: piper
+    voice: en_US-lessac-medium
+    sentence_pause: 0.16
+    speed: 1.0
+    volume: 1.0
+    output_device: auto
+  microphone:
+    device: auto
+    sample_rate: 16000
+    channels: 1
+    maximum_seconds: 30
+    minimum_push_seconds: 0.4
+    minimum_utterance_seconds: 1.5
+    pre_roll_seconds: 0.5
+    # Require 150 ms of consecutive speech before committing a turn. Pre-roll
+    # still preserves its beginning; isolated clicks cannot start false turns.
+    speech_start_chunks: 3
+    # Hands-free: after speech starts, a frame quieter than this share of the
+    # speaker's own level counts as silence, even over steady background noise.
+    release_ratio: 0.2
+    # Hands-free: one utterance is cut and transcribed after this long, so
+    # background talk or a TV can never hold the microphone open.
+    max_utterance_seconds: 15
+  vad:
+    enabled: true
+    energy_threshold: 0.0035
+    silence_seconds: 1.4
+    speech_start_timeout: 8.0
+    # Hands-free transcripts less certain than this are treated as room noise.
+    minimum_confidence: 0.3
+  wake_word:
+    enabled: false
+    # phrase: transcribe each utterance and look for the phrase below (works
+    # for "hey hayat", but runs speech recognition on everything it hears).
+    # openwakeword: a tiny model listens for `model` and only its detection
+    # starts recording. There is no pre-trained "hey hayat" model; the free
+    # ones are hey_jarvis, alexa, hey_mycroft and hey_rhasspy, or a path to a
+    # custom-trained .onnx. Download one first:
+    #   .\.venv\Scripts\python.exe -m scripts.setup_wakeword hey_jarvis
+    engine: phrase
+    model: hey_jarvis
+    threshold: 0.5
+    phrase: hey hayat
+    aliases:
+      - hey hayat
+      - hay hayat
+      - hi hayat
+      - hey hyatt
+      - hey a i
+      - hey we are
+  interruption:
+    enabled: true
+    echo_rejection_similarity: 0.60
+  approvals:
+    enabled: true
+    timeout_seconds: 45
+  spoken_responses:
+    enabled: true
+  progress_speech:
+    enabled: true
+  reliability:
+    # Transient device/STT errors re-probe audio and back off instead of
+    # killing or spinning the listener. Stop/privacy remain authoritative.
+    supervised: true
+    watchdog_seconds: 5
+    device_reprobe_seconds: 300
+    initial_backoff_seconds: 0.25
+    maximum_backoff_seconds: 30
+  warm_stt_on_start: true
+  privacy:
+    retain_audio: false
+    log_transcriptions: false
+
+learning:
+  # Whisper model for speaking exercises in language courses. "small" is the
+  # default; "base" is faster but hears Arabic less reliably. Downloaded by
+  # python -m scripts.setup_arabic.
+  language_speech_model: small
+  continuous:
+    # On. HAYAT reads in the background between requests -- searching and
+    # reading public pages about what recently failed or was left unfinished.
+    #
+    # It runs as BACKGROUND_LEARNER. That principal may read public evidence
+    # and write only validated, provenance-bearing knowledge to its own store.
+    # It cannot write arbitrary files, click, type, launch applications, use
+    # sensors, submit forms, or reach another machine.
+    #
+    # To stop it: /learn stop, or /learn halt, or create data/learning/STOP.
+    # The halt file works even if the runtime is wedged.
+    enabled: true
+    # Keep the 24/7 loop responsive to the adaptive curriculum. Cycles remain
+    # sequential, pause for foreground turns, yield under load, and cannot
+    # exceed the hourly/request/disk ceilings below.
+    interval_seconds: 30
+    # Owner-requested 24/7 standby. Budgets still stop all learning work;
+    # the worker waits for the normal hour/day rollover without resetting them.
+    # Stop, halt, privacy, principal authority and resource gates still apply.
+    standby_after_budget: true
+    # Persist retry deadlines so a broken source cannot monopolize the queue.
+    retry_delay_seconds: 60
+    # Review evidence and perform small local maintenance between cycles.
+    maintenance_interval_seconds: 900
+    # New questions wake the queue immediately, but actual learning starts
+    # only after the owner has been idle for the configured safety window.
+    research_level: deep
+    anticipate_followups: true
+    anticipated_per_request: 2
+    # Slowly audit real evidence gaps rather than asking a model to invent
+    # private "thoughts". Conflicts and stale knowledge are reconsidered only
+    # while idle and under the same public-read/validated-write authority.
+    idle_reflection: true
+    reflection_candidates: 2
+    seed_topics:
+      - current official Windows accessibility and UI Automation guidance
+      - current faster-whisper latency and accuracy guidance for Windows
+      - current Piper TTS voice quality and pronunciation controls
+      - current stable-diffusion.cpp image quality and memory optimization guidance
+      - SQLite WAL durability backup and corruption recovery guidance
+      - local LLM routing load shedding and VRAM management
+      - child-safe adaptive teaching and parent supervision patterns
+      - prompt-injection defenses for tool-using local agents
+    budget:
+      # Raised to 12 on 2026-08-21: Mohsin asked for it to teach itself, and 4
+      # deep cycles an hour is a slow way to do that.
+      #
+      # Raised again on 2026-08-24, when he asked it to read the web
+      # continuously. The old ceiling of 12 cycles and 60 requests an hour was
+      # written for a learner that only ran on an idle machine, and it capped
+      # the loop at roughly one topic every five minutes. Every source it uses
+      # is free -- DuckDuckGo HTML and direct public fetches, no API keys and
+      # no account -- so a higher rate costs nothing but disk and electricity.
+      #
+      # The rails that make this safe are unchanged and are the ones that
+      # matter: it holds a read-only BACKGROUND_LEARNER principal that cannot
+      # act, it yields the moment the machine is actually under load, it stops
+      # dead at the daily byte ceiling, its storage is quota-governed, and a
+      # single file on disk halts it from outside the process.
+      # Doubled again on 2026-08-25 at Mohsin's request. 120 cycles an hour is
+      # one every 30 seconds; the sources stay free, so the only cost is disk
+      # and electricity, and the read-only-authority and machine-busy rails are
+      # unchanged. The daily byte ceiling doubles with it to match.
+      max_cycles_per_hour: 120
+      max_requests_per_hour: 600
+      max_bytes_per_day: 8589934592
+      max_seconds_per_cycle: 300
+      # Only a tiebreaker now, consulted when the CPU is already busy. It was
+      # the first and strongest test, which is why the learner sat out every
+      # session Mohsin was present for.
+      min_idle_seconds: 60
+      max_cpu_percent: 70
+      # It has work queued and the machine is free; waiting 15 seconds between
+      # cycles was most of the idle time in an hour.
+      idle_retry_seconds: 5
+
+intelligence:
+  # Owner-requested unattended public intelligence; no per-cycle approval.
+  enabled: true
+  tick_seconds: 60
+  extended_sources: true
+  # Owner-requested 2026-10-06: find new public camera and data sources while
+  # idle (app/intelligence/discovery.py). Same gates as the background learner
+  # (paused while you work, off in privacy mode, STOP file, CPU/RAM checks),
+  # plus its own request budget. Public sources only; no logins, no bypassing.
+  discovery:
+    enabled: true
+    priority_regions: [India, Makkah]
+    requests_per_hour: 30
+    interval_seconds: 600
+
+thinking:
+  # On. Mohsin asked to see HAYAT think, and having to turn it on every
+  # session meant he mostly saw silence instead. Narration is drawn from
+  # events the work already publishes, so it costs nothing to leave on.
+  # Turn it off for a quiet session with /thinking off.
+  narrate: true
+
+business:
+  # Today's business brief, shown in the chat once a day when something needs
+  # your attention (overdue invoices, follow-ups, the next launch step, actions
+  # waiting for your confirmation). It only reads your books; it never sends,
+  # publishes or changes anything. Set to false for no automatic brief.
+  daily_brief: true
+  # How often the window checks, in hours.
+  brief_check_hours: 4
+
+email:
+  # Sending mail from your own account over SMTP; free with any provider that
+  # offers it. Gmail: smtp_host smtp.gmail.com, port 587, starttls, and an app
+  # password (Google Account -> Security -> App passwords; needs 2-step
+  # verification). The password is never written here. Store it once in the
+  # Windows credential store:
+  #   .\.venv\Scripts\python.exe main.py --secret-set email_smtp_password --secret-scope email:send
+  smtp_host: ""
+  smtp_port: 587
+  # starttls (port 587) or ssl (port 465).
+  security: starttls
+  username: ""
+  # Defaults to username when empty.
+  from_address: ""

@@ -1,0 +1,108 @@
+# hayat:latest is the main identity model. Since 2026-10-04 its Modelfile
+# derives from Qwen3.6-35B-A3B Uncensored (models/foundations/), a mixture-of-
+# experts model that uses ~3B of its 35B parameters per token, and adds HAYAT's
+# identity, direct-answer contract, evidence rules, and bounded action policy.
+# It is the default for conversation, reasoning, research synthesis, and coding.
+# Measured on this laptop it beat the previous qwen3.5 9B foundation on hard
+# reasoning and recent facts (docs/models.md).
+#
+# The same foundation also does vision and DEEP-mode advice. Ollama keeps one
+# copy of shared weights loaded, so nothing is swapped in and out of the 8 GB
+# GPU between chat, images and DEEP turns.
+#
+# Other installed models, including the uncensored Qwen3.8 27B and Qwythos,
+# stay installed and may rank only as measured advisors; they never replace
+# HAYAT as the answer writer. qwen3.5:latest stays installed as the base of the
+# rollback copy. all-minilm embeds, and classification stays on the fast
+# deterministic path rather than paying a large model on every turn.
+default_model:
+  provider: ollama
+  model: hayat:latest
+  temperature: 0.2
+conversation_model:
+  provider: ollama
+  model: hayat:latest
+  temperature: 0.3
+classification_model:
+  provider: auto
+  model: null
+  temperature: 0.0
+reasoning_model:
+  provider: ollama
+  model: hayat:latest
+  temperature: 0.1
+coding_model:
+  provider: ollama
+  model: hayat:latest
+research_synthesis_model:
+  provider: ollama
+  model: hayat:latest
+embedding_model:
+  provider: ollama
+  model: all-minilm:latest
+  allow_cloud: false
+vision_model:
+  provider: ollama
+  model: qwen3.6-35b-a3b-uncensored:q4_k_m
+# In DEEP mode this model writes a second opinion before HAYAT answers;
+# pleasantries stay on HAYAT. It is HAYAT's own foundation without HAYAT's
+# identity prompt, so it shares the loaded weights and costs no reload. Measured
+# 2026-10-04 it answered 8 of 8 check questions at ~31 tokens/s, where the
+# previous advisor (Qwen3.8 27B Uncensored, still installed) answered 7 of 8 at
+# 3.2 tokens/s. num_ctx is the starting window; the desktop's resource mode
+# then resizes it with every other HAYAT model so Ollama never reloads the
+# shared weights to resize them. It thinks before advising: on 22 hard
+# questions and coding tasks that scored 22 of 22 against 20 without thinking,
+# at about three times the time (~1,300 thinking tokens each), so
+# max_advice_tokens, which counts thinking too, is 4000 (~2 minutes at most).
+# Choosing DEEP preloads it. Remove this block to turn it off.
+escalation_model:
+  provider: ollama
+  model: qwen3.6-35b-a3b-uncensored:q4_k_m
+  use_for: [deep_mode]
+  timeout_seconds: 300
+  num_ctx: 16384
+  think: true
+  max_advice_tokens: 4000
+identity_model:
+  provider: ollama
+  model: hayat:latest
+  base_model: qwen3.6-35b-a3b-uncensored:q4_k_m
+  kind: ollama_custom_identity_model
+  foundation_independent: false
+providers:
+  # Optional Colibri HTTP gateway. No engine or weights are installed by this
+  # setting. Set model to the exact /v1/models id and context to the server's
+  # actual limit before selecting provider: colibri for a model role.
+  colibri:
+    enabled: false
+    base_url: http://127.0.0.1:8000/v1
+    # Installed comparison candidate; start with scripts/start_colibri.ps1.
+    # It is original Qwen, not the HauhauCS foundation used by hayat:latest.
+    model: qwen36-35b-a3b-colibri-i4-gs64
+    api_key: ${COLIBRI_API_KEY:-}
+    context_length: 4096
+    timeout: 180
+  ollama:
+    base_url: ${OLLAMA_BASE_URL:-http://localhost:11434}
+    model: ${OLLAMA_MODEL:-hayat:latest}
+  lm_studio:
+    base_url: ${LM_STUDIO_BASE_URL:-http://localhost:1234/v1}
+    api_key: ${LM_STUDIO_API_KEY:-lm-studio}
+    model: ${LM_STUDIO_MODEL:-}
+  openai:
+    base_url: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+    api_key: ${OPENAI_API_KEY:-}
+    model: ${OPENAI_MODEL:-}
+  anthropic:
+    base_url: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+    api_key: ${ANTHROPIC_API_KEY:-}
+    model: ${ANTHROPIC_MODEL:-}
+  gemini:
+    base_url: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+    api_key: ${GEMINI_API_KEY:-}
+    model: ${GEMINI_MODEL:-}
+  embedding_compatible:
+    base_url: ${EMBEDDING_BASE_URL:-}
+    api_key: ${EMBEDDING_API_KEY:-}
+    model: ${EMBEDDING_MODEL:-}

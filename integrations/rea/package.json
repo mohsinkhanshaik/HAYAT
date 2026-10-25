@@ -1,0 +1,8 @@
+{
+  "name": "hayat-rea-runtime",
+  "private": true,
+  "description": "REA (morluto/rea, MIT) for HAYAT: pinned, installed with --ignore-scripts",
+  "dependencies": {
+    "rea-agents": "6.7.0"
+  }
+}

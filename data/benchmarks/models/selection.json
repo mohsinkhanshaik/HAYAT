@@ -1,0 +1,22 @@
+{
+  "classification_model": {
+    "provider": "ollama",
+    "model": "qwen:latest"
+  },
+  "conversation_model": {
+    "provider": "ollama",
+    "model": "qwen2.5-coder:1.5b-base"
+  },
+  "reasoning_model": {
+    "provider": "ollama",
+    "model": "qwen3.5:latest"
+  },
+  "coding_model": {
+    "provider": "ollama",
+    "model": "gemma4:latest"
+  },
+  "research_synthesis_model": {
+    "provider": "ollama",
+    "model": "hf.co/llmfan46/Qwythos-9B-Claude-Mythos-5-1M-uncensored-heretic-GGUF:Q4_K_M"
+  }
+}
