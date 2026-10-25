@@ -165,3 +165,21 @@ def test_intelligence_source_details_end_with_a_readable_full_record():
                            "count": 41, "enabled": True})
     assert "Full record" in text and "Enabled: yes" in text
     assert "Raw record" not in text and '"enabled": true' not in text
+
+
+@pytest.mark.parametrize("request_text", [
+    "give me a python list of the planets", "write that as a dictionary", "show the JSON object for it",
+    "what's the tuple literal for those values?",
+])
+def test_a_requested_python_literal_is_the_answer_not_a_leak(request_text):
+    from app.assistant import AssistantService
+
+    literal = "['Mercury', 'Venus', 'Earth']" if "list" in request_text else "{'a': 1, 'b': True}"
+    assert AssistantService._never_raw(literal, request_text) == literal
+
+
+def test_an_unrequested_printout_is_still_made_readable():
+    from app.assistant import AssistantService
+
+    text = AssistantService._never_raw("{'intent': 'CONVERSATION', 'requires_tools': True}", "yeah exactly")
+    assert "Intent: CONVERSATION" in text and "{" not in text

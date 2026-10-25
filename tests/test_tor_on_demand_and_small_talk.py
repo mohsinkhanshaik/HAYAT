@@ -203,3 +203,25 @@ def test_the_capability_list_reaches_the_model_as_droppable_context(tmp_path):
         assert sent[-1].content == "how are you today?"
         if kept:
             assert listing and listing[0].optional_context
+
+
+def test_a_ready_tor_is_not_rechecked_from_its_log_on_every_request(tmp_path, monkeypatch):
+    fake = FakeTor(tmp_path / "state" / "tor.log")
+    mask, route = tor_mask(tmp_path, fake)
+    route.ensure_ready()
+    reads = []
+    original = TorMask.bootstrapped
+    monkeypatch.setattr(TorMask, "bootstrapped", lambda self: reads.append(1) or original(self))
+    for _ in range(50):
+        route.ensure_ready()
+    assert mask.ready() and len(reads) <= 1  # remembered for the life of the process
+    fake.code = 1  # Tor exits: readiness is not remembered past the process
+    assert not mask.ready()
+
+
+def test_bootstrap_progress_reads_only_the_end_of_a_large_log(tmp_path):
+    mask, _route = tor_mask(tmp_path, FakeTor(tmp_path / "state" / "tor.log"))
+    mask.log.parent.mkdir(parents=True, exist_ok=True)
+    mask.log.write_text("[notice] Bootstrapped 10%\n" + "noise line\n" * 200_000 + "[notice] Bootstrapped 100% (done)\n",
+                        encoding="utf-8")
+    assert mask.bootstrapped() == 100
