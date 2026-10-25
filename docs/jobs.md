@@ -6,6 +6,24 @@ an application always waits for your confirmation**, because it acts as you towa
 
 Open it from **Studios → Jobs**, or ask in chat.
 
+## Location filter
+
+Type a place the way you would say it; HAYAT matches it the way job boards write it (`app/jobs/places.py`):
+
+- **States and provinces** match their name or postal code: *Michigan* finds "Detroit, MI"; *Ontario* finds
+  "Toronto, ON". A state never matches inside a city name, so *Michigan* does not match "Michigan City, IN".
+- **Countries** also match postings that name only a state or province: *USA* finds "Austin, TX"; *Canada* finds
+  "Toronto, ON". "IN" is Indiana unless the posting says India.
+- **Cities** match their other names: *Bangalore* = Bengaluru, *NYC* = New York, *Bombay* = Mumbai, *Gurgaon* =
+  Gurugram, *SF* = San Francisco.
+- **Remote** matches "Remote - US", "Remote (Worldwide)", work-from-home and remote-mode postings.
+- **City, State** needs both parts: *Paris, TX* does not match Paris, France.
+- Separate alternatives with `;` (*Texas; Michigan*); *Worldwide* or an empty box shows every location.
+
+If every source fails, the status line now says so in one sentence ("Every search source tried (RemoteOK, Jobicy …)
+failed: the connection was refused …"); the full errors are in **Sources**. With Tor turned on for HAYAT, the first
+search starts Tor itself (about a minute) instead of failing.
+
 ## Worldwide, deeper searches and scrolling
 
 In **Matches**, leave Location blank or choose **Worldwide** to view all advertised locations. The editable field accepts any city/country name, including countries outside its suggestions. Separate alternative locations with `;`, for example `Tokyo; Singapore`. Worldwide removes the search-location restriction; it does not mean every remote role accepts applicants from every country. Your own preferences and posting restrictions still affect eligibility.
