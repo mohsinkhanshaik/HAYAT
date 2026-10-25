@@ -14,7 +14,8 @@ video, track markets and jobs, and remember what matters — with a local langua
 ![Cost](https://img.shields.io/badge/API%20cost-%240-success)
 [![Model on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20model-HAYAT--35B-yellow)](https://huggingface.co/Mohsinkhanshaik/HAYAT-35B-A3B-Uncensored-GGUF)
 
-[Quick start](#quick-start) · [What it can do](#what-it-can-do) · [How to use it](docs/how-to-use-hayat.md) ·
+[Quick start](#quick-start) · [What it can do](#what-it-can-do) · [**HAYAT explained**](docs/hayat-explained.md) ·
+[How to use it](docs/how-to-use-hayat.md) ·
 [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) ·
 [Discussions](https://github.com/mohsinkhanshaik/HAYAT/discussions) · [Models](#models)
 
@@ -51,7 +52,11 @@ video, track markets and jobs, and remember what matters — with a local langua
 | **Privacy tools** | Tor masking, location-exposure checks, network guard, secret redaction, Windows Hello owner checks |
 | **Build** | Reverse-engineering workbench, code tools, automations and reminders, worker teams for bigger jobs |
 
-The full list — 40 areas, each with words to say and the window to open — is in **[How to use HAYAT](docs/how-to-use-hayat.md)**.
+**Deep dive:** [HAYAT explained](docs/hayat-explained.md) covers how every part works inside — the 21-part brain,
+memory and its "DNA" association graph, 24/7 learning and self-upgrade, predictions and their measured track
+records, people and client search, jobs, markets, global intelligence, vision, media, voice, privacy and limits —
+with today's test results. The full list of 40 areas, each with words to say and the window to open, is in
+**[How to use HAYAT](docs/how-to-use-hayat.md)**.
 
 ### Feature status
 
