@@ -20,13 +20,22 @@ jobs:
           python-version: "3.14"
           cache: pip
       - name: Install dependencies
-        # The annotate plugin shows each failing test on the pull request itself.
-        run: python -m pip install -r requirements.txt pytest-github-actions-annotate-failures
+        run: python -m pip install -r requirements.txt
       - name: Lint
         run: python -m ruff check app tests scripts
       - name: Core tests
-        run: >
-          python -m pytest -q --timeout=300 --basetemp=.test-runs/ci
-          tests/test_documentation.py tests/test_plain_output.py tests/test_code_quality.py
-          tests/test_tor_on_demand_and_small_talk.py tests/test_retry_and_darkweb_routing.py
-          tests/test_camera_consent.py tests/test_chat_completion.py tests/test_launch.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest -q -rfE --tb=line --timeout=300 --basetemp=.test-runs/ci \
+            tests/test_documentation.py tests/test_plain_output.py tests/test_code_quality.py \
+            tests/test_tor_on_demand_and_small_talk.py tests/test_retry_and_darkweb_routing.py \
+            tests/test_camera_consent.py tests/test_chat_completion.py tests/test_launch.py 2>&1 | tee pytest-output.txt
+      - name: Show failures on the pull request
+        if: failure()
+        shell: bash
+        run: |
+          grep -E "^(FAILED|ERROR|E   |[^ ]+\.py:[0-9]+: )" pytest-output.txt | head -40 | while IFS= read -r line; do
+            echo "::error title=Test failure::${line}"
+          done
+          tail -5 pytest-output.txt | while IFS= read -r line; do echo "::notice title=Summary::${line}"; done
