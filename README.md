@@ -7,6 +7,8 @@
 Talk to it, let it research the web, see through your camera and screen, use your apps, write code, make images and
 video, track markets and jobs, and remember what matters — with a local language model and no cloud account.
 
+[![Release](https://img.shields.io/github/v/release/mohsinkhanshaik/HAYAT)](https://github.com/mohsinkhanshaik/HAYAT/releases/latest)
+[![Checks](https://github.com/mohsinkhanshaik/HAYAT/actions/workflows/checks.yml/badge.svg)](https://github.com/mohsinkhanshaik/HAYAT/actions/workflows/checks.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 ![Tests](https://img.shields.io/badge/tests-7%2C865-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
