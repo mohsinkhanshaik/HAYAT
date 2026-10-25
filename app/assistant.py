@@ -320,14 +320,19 @@ class AssistantService:
         except Exception:
             log_swallowed(_log, "publishing a superseded-turn event")
 
-    @staticmethod
-    def _never_raw(display: Any) -> str:
+    #: A request for code or a data structure: its literal answer is the deliverable, not a leak.
+    _ASKS_FOR_CODE = re.compile(
+        r"(?i)\b(?:python|code|snippet|script|syntax|literal|dict(?:ionary)?|list|array|tuple|json|yaml|object)\b")
+
+    @classmethod
+    def _never_raw(cls, display: Any, request: str = "") -> str:
         """A reply is never a pasted data structure.
 
         "yeah exactly" was once answered with "{'intent': 'CONVERSATION',
         'confidence': 0.95, ...}". A whole reply that is a Python object, or the
         printout of one (single quotes, True/False/None), is said in plain lines.
-        JSON the owner asked for is left alone: it parses as JSON.
+        JSON the owner asked for is left alone: it parses as JSON. So is a Python
+        literal when the request asked for code, a list or a dictionary.
         """
         from app.plain_output import describe
 
@@ -335,7 +340,7 @@ class AssistantService:
             return describe(display)
         text = str(display or "")
         stripped = text.strip()
-        if stripped[:1] in "{[" and stripped[-1:] in "}]":
+        if stripped[:1] in "{[" and stripped[-1:] in "}]" and not cls._ASKS_FOR_CODE.search(request or ""):
             import ast
             import json
 
@@ -379,7 +384,7 @@ class AssistantService:
         )
         if customer_pending and status == ResponseStatus.SUCCESS:
             status = ResponseStatus.PARTIAL
-        text = self._never_raw(display)
+        text = self._never_raw(display, getattr(intent, "goal", "") or "")
         try:
             response = AssistantResponse(
                 display_text=text,

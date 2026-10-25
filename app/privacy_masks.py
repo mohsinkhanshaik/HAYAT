@@ -221,7 +221,17 @@ class TorMask:
     DEMAND_RETRY_SECONDS = 30.0
 
     def ready(self) -> bool:
-        return self.running() and self.bootstrapped() >= 100
+        """Running and fully bootstrapped. Checked on every masked request, so a confirmed bootstrap is
+        remembered for the life of the process instead of re-reading Tor's ever-growing log each time."""
+        process = self.process
+        if process is None or process.poll() is not None:
+            return False
+        if getattr(self, "_ready_process", None) is process:
+            return True
+        if self.bootstrapped() >= 100:
+            self._ready_process = process
+            return True
+        return False
 
     def ensure_started(self, timeout: float = 90) -> None:
         """Bring Tor up for a masked request that found it down; raise a plain reason when it cannot.
@@ -292,8 +302,13 @@ class TorMask:
         return torrc
 
     def bootstrapped(self) -> int:
+        # Only the end of the log: read_text()[-20000:] read the whole file first, and Tor's log grows
+        # for as long as HAYAT runs.
         try:
-            text = self.log.read_text(encoding="utf-8", errors="replace")[-20000:]
+            with self.log.open("rb") as handle:
+                handle.seek(0, os.SEEK_END)
+                handle.seek(max(0, handle.tell() - 20000))
+                text = handle.read().decode("utf-8", errors="replace")
         except OSError:
             return 0
         found = re.findall(r"Bootstrapped (\d+)%", text)
