@@ -42,7 +42,8 @@ def test_search_carries_location_and_keeps_provider_failures_visible_after_refre
     window.remote.set(True)
     window.search()
     assert str(window.search_button.cget("state")) == "disabled"
-    pump(window, lambda: bool(received) and "Request timed out" in window.search_note.cget("text")
+    # The failure stays visible, said plainly ("Offline source failed: it took too long to answer").
+    pump(window, lambda: bool(received) and "took too long" in window.search_note.cget("text")
          and str(window.search_button.cget("state")) == "normal")
     pump(window, lambda: not window.match_tree.get_children())
     assert len(received) == 1
@@ -163,3 +164,13 @@ def test_narrow_matches_table_shows_whole_columns_and_keeps_hidden_ones_in_detai
     assert detail["job"]["source_name"] in header
     if detail["job"].get("posted_at"):
         assert "posted " + str(detail["job"]["posted_at"])[:10] in header
+
+
+def test_failed_sources_are_one_plain_sentence_not_raw_errors(jobs_window):
+    window = jobs_window
+    refused = "ConnectError: [WinError 10061] No connection could be made because the target machine actively refused it"
+    window.show_search({"new": 0, "read": [{"source": name, "kept": 0, "error": refused}
+                                            for name in ("remoteok", "jobicy", "himalayas")]})
+    note = window.search_note.cget("text")
+    assert "RemoteOK, Jobicy and Himalayas" in note and "connection was refused" in note
+    assert "WinError" not in note and "ConnectError" not in note and "remoteok:" not in note

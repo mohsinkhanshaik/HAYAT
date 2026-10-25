@@ -508,9 +508,10 @@ class JobsWindow(tk.Toplevel):
             summary += f"; {value['matching_total']} match the search"
         if failed:
             summary += f"; {len(failed)} source(s) unavailable."
-            summary += "\n" + " | ".join(f"{item.get('source', 'Source')}: {' '.join(str(item['error']).split())[:180]}" for item in failed[:4])
-            if len(failed) > 4:
-                summary += " | More details in Sources."
+            # One plain sentence, not "remoteok: ConnectError: [WinError 10061] ..." for every source.
+            from app.research.jobs import plain_source_errors
+            summary += "\n" + plain_source_errors([(item.get("source", "Source"), str(item["error"])[:300]) for item in failed]) \
+                + " Details are in Sources."
         if coverage := value.get("coverage"):
             summary += f"\n{coverage.get('depth', 'normal')} search - {coverage.get('requests', 'unknown')} requests - {coverage.get('stop_reason', 'configured sources checked')}. Not every platform is searchable by API."
         limited = [item for item in sources if item.get("limited")]

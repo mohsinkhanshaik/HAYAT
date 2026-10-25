@@ -32,7 +32,11 @@ _log = logging.getLogger(__name__)
 #: Search sources by their internal names, as the owner knows them.
 _SOURCE_NAMES = {"duckduckgo_html": "DuckDuckGo", "duckduckgo": "DuckDuckGo", "bing_rss": "Bing", "bing": "Bing",
                  "google": "Google", "wikipedia": "Wikipedia", "searxng": "SearXNG", "brave": "Brave",
-                 "mojeek": "Mojeek", "ahmia": "Ahmia (onion index)"}
+                 "mojeek": "Mojeek", "ahmia": "Ahmia (onion index)",
+                 # Job boards (app/jobs/sources.py)
+                 "remoteok": "RemoteOK", "jobicy": "Jobicy", "himalayas": "Himalayas", "workingnomads": "Working Nomads",
+                 "themuse": "The Muse", "arbeitnow": "Arbeitnow", "greenhouse": "Greenhouse", "lever": "Lever",
+                 "ashby": "Ashby", "workday": "Workday"}
 
 
 def plain_errors(error: str) -> str:
@@ -47,12 +51,28 @@ def plain_errors(error: str) -> str:
     text = " ".join(str(error or "").split())
     if not text:
         return ""
-    parts = re.split(r";\s+(?=[A-Za-z][\w .()-]{1,40}:\s)", text)
-    reasons: dict[str, list[str]] = {}
-    for part in parts:
+    pairs = []
+    for part in re.split(r";\s+(?=[A-Za-z][\w .()-]{1,40}:\s)", text):
         source, sep, detail = part.partition(": ")
         if not sep or " " in source.strip() and source.strip().lower() not in _SOURCE_NAMES:
             source, detail = "", part
+        pairs.append((source, detail))
+    return plain_source_errors(pairs)
+
+
+def plain_source_errors(pairs) -> str:
+    """The same sentence from (source, error) pairs, for callers that already know each source's name.
+
+    Parsing "Offline source: Request timed out" back out of one string lost
+    multi-word names such as "Working Nomads" and "The Muse".
+    """
+    import re
+
+    pairs = [(str(source or ""), " ".join(str(detail or "").split())) for source, detail in pairs]
+    if not pairs:
+        return ""
+    reasons: dict[str, list[str]] = {}
+    for source, detail in pairs:
         detail = re.sub(r"^(?:httpx\.)?[A-Z]\w*(?:Error|Exception|Timeout)\s*:\s*", "", detail)  # exception class
         detail = re.sub(r"^\[[a-z_]+;\s*route=\w+\]\s*", "", detail)  # diagnostic tag
         if re.search(r"WinError 10061|actively refused|connection_refused", detail):
@@ -68,9 +88,9 @@ def plain_errors(error: str) -> str:
     for detail, names in reasons.items():
         named = [name for name in names if name]
         who = (" and ".join(named) if len(named) <= 2 else ", ".join(named[:-1]) + " and " + named[-1]) if named else ""
-        lowered = detail[:1].lower() + detail[1:] if detail[1:2].islower() else detail
-        sentences.append(f"{who} failed: {lowered}." if who else f"{detail[:1].upper() + detail[1:]}.")
-    if len(reasons) == 1 and len(parts) > 1 and sentences[0].count(" and ") >= 1:
+        # Our own reasons are already lower-case; a provider's keeps its capitals ("Tor is on ...").
+        sentences.append(f"{who} failed: {detail}." if who else f"{detail[:1].upper() + detail[1:]}.")
+    if len(reasons) == 1 and len(pairs) > 1 and sentences[0].count(" and ") >= 1:
         sentences[0] = "Every search source tried (" + sentences[0].split(" failed:")[0] + ") failed:" + sentences[0].split(" failed:")[1]
     return " ".join(sentences)
 

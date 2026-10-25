@@ -420,36 +420,22 @@ def same_posting(left: dict[str, Any], right: dict[str, Any]) -> bool:
 
 
 def matches_location(row: dict[str, Any], location: str) -> bool:
-    """Match advertised locations or explicit country restrictions, not stray description words."""
-    from app.jobs.understand import REGIONS
+    """Match the advertised location (states, codes, city aliases, countries, remote); see app/jobs/places.py."""
+    from app.jobs.places import place_matches
     value = location.strip()
     if not value or value.casefold() in {"worldwide", "whole world", "all locations", "anywhere", "global", "world"}:
         return True
     if re.search(r"[;|]", value):
         return any(matches_location(row, part) for part in re.split(r"[;|]", value) if part.strip())
     reading = row.get("reading") or {}
-    if value.casefold() == "remote":
-        return reading.get("mode") == "remote" or row.get("remote") is True
-    if listed_in_location(str(row.get("location") or ""), value):
-        return True
-    # Country names/aliases use the same bounded patterns as the posting reader.
-    for name, pattern in REGIONS.items():
-        if re.fullmatch(rf"(?:{pattern})", value, re.IGNORECASE):
-            return name in reading.get("regions", [])
-    return False
+    remote = reading.get("mode") == "remote" or row.get("remote") is True
+    return place_matches(str(row.get("location") or ""), value, regions=reading.get("regions") or (), remote=remote)
 
 
 def listed_in_location(place: str, location: str) -> bool:
-    """Whether the posting's own location field names this place (directly or by a country alias)."""
-    from app.jobs.understand import REGIONS
-    normalized = re.sub(r"[^\w]+", " ", str(location or "").casefold()).strip()
-    advertised = re.sub(r"[^\w]+", " ", str(place or "").casefold()).strip()
-    if normalized and re.search(r"(?<!\w)" + re.escape(normalized) + r"(?!\w)", advertised):
-        return True
-    for _name, pattern in REGIONS.items():
-        if re.fullmatch(rf"(?:{pattern})", str(location or "").strip(), re.IGNORECASE):
-            return bool(re.search(rf"\b(?:{pattern})\b", str(place or ""), re.IGNORECASE))
-    return False
+    """Whether the posting's own location field names this place (directly, by alias, state code or country)."""
+    from app.jobs.places import place_matches
+    return bool(str(location or "").strip()) and place_matches(place, location)
 
 
 def collect(fetcher: Any, sources: list[str], terms: list[str], depth: str = "normal", check=None, progress=None) -> dict[str, Any]:
