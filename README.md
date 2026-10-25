@@ -136,6 +136,11 @@ Questions, ideas, show-and-tell, or want to work on HAYAT together? Start a thre
 **[Discussions](https://github.com/mohsinkhanshaik/HAYAT/discussions)** — that is the best way to reach me.
 Bugs go in [Issues](https://github.com/mohsinkhanshaik/HAYAT/issues).
 
+[![GitHub](https://img.shields.io/badge/GitHub-mohsinkhanshaik-181717?logo=github)](https://github.com/mohsinkhanshaik)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Mohsin_Khan_Shaik-0A66C2?logo=linkedin)](https://www.linkedin.com/in/mohsin-khan-shaik-972817213/)
+[![X](https://img.shields.io/badge/X-@MohsinKhanShai5-000000?logo=x)](https://x.com/MohsinKhanShai5)
+[![Website](https://img.shields.io/badge/Website-mohsinkhanshaik.com-555555?logo=googlechrome)](https://mohsinkhanshaik.com/)
+
 ## Free, forever, and yours to run
 
 HAYAT runs entirely on **your** computer. There is no server to depend on and nobody else's machine needs to be on:
