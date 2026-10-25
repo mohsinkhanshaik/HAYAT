@@ -60,6 +60,14 @@ records, people and client search, jobs, markets, global intelligence, vision, m
 with today's test results. The full list of 40 areas, each with words to say and the window to open, is in
 **[How to use HAYAT](docs/how-to-use-hayat.md)**.
 
+### A look inside
+
+| Trade Center (read-only, live) | Global intelligence |
+| --- | --- |
+| <img src="docs/images/trade-center.png" alt="Trade Center: live Bitcoin chart with forecast range, order book and recent trades" width="420"> | <img src="docs/images/global-intelligence.png" alt="Global intelligence: world map with feeds, filters and event assessment" width="420"> |
+| **What can HAYAT do?** | **Brain 5D** |
+| <img src="docs/images/what-can-hayat-do.png" alt="The capability guide with 40 areas and Try buttons" width="420"> | <img src="docs/images/brain.png" alt="Brain 5D: HAYAT's 21 subsystems on a 3D brain with an activity timeline" width="420"> |
+
 ### Feature status
 
 | Capability | Status | Notes |
