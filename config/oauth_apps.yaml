@@ -28,3 +28,14 @@ x:
 linkedin:
   # LinkedIn needs a client secret: put both in data/integrations/oauth-apps.json.
   client_id: ""
+facebook:
+  # Meta app (Business type, development mode), Facebook Login redirect http://localhost:8799/.
+  # Its App Secret goes in data/integrations/oauth-apps.json. Covers the Page and its linked Instagram.
+  client_id: ""
+threads:
+  # Meta app with the Threads use case, redirect http://localhost:8794/. Secret in the local file.
+  client_id: ""
+discord:
+  # Discord application, OAuth2 redirect http://127.0.0.1:8795/ (webhook.incoming). Secret in the local file.
+  client_id: ""
+# Bluesky needs nothing here: it signs in as an AT Protocol "localhost client", which needs no registration.

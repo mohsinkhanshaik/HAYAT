@@ -402,7 +402,7 @@ def test_the_window_groups_in_order_names_the_secret_and_enables_post_everywhere
                     pass
                 walk(child)
         walk(window.connect_tab)
-        assert "1. Paste a bot token" in texts and any(text.startswith("Make a bot token") for text in texts)
+        assert "1. Connect your Telegram bot" in texts and any(text.startswith("Make a bot token") for text in texts)
         window.filter.set("bluesky")
         shared_tk.update()
         assert window.card_widgets["bluesky"]["card"].winfo_ismapped() and not window.card_widgets["google"]["card"].winfo_ismapped()

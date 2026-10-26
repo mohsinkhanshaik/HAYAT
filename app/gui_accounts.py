@@ -503,6 +503,12 @@ class AccountsCenter(tk.Toplevel):
                      justify='left', wraplength=640).pack(fill='x')
             ttk.Button(box, text='Sign out', style='Compact.Hayat.TButton', command=self.sign_out).pack(side='right')
             ttk.Button(box, text='Check now', style='Compact.Hayat.TButton', command=self.test).pack(side='right', padx=6)
+            if row['key'] == 'telegram':
+                ttk.Button(box, text='Link my chat', style='Compact.Hayat.TButton', command=self.link_telegram).pack(side='right')
+                ttk.Button(box, text='Open my bot ↗', style='Compact.Hayat.TButton', command=self.open_telegram_bot).pack(side='right', padx=6)
+                linked = ((self.manager._records().get('telegram') or {}).get('settings') or {}).get('chat_name', '')
+                tk.Label(words, text=f'Messages go to: {linked}' if linked else 'Press Open my bot, tap Start, then Link my chat.',
+                         bg=p.PANEL, fg=p.MUTED if linked else p.GOLD_SOFT, font=('Segoe UI', 9), anchor='w').pack(fill='x')
         setup_first = row['needs_app'] and not row['client_id_set'] and not row['connected'] and \
             not any(method['key'] == 'token' for method in row['methods'])
         if setup_first:
@@ -514,8 +520,12 @@ class AccountsCenter(tk.Toplevel):
             card.pack(fill='x', pady=(0, 6))
             head = tk.Frame(card, bg=p.PANEL)
             head.pack(fill='x')
-            title = method['label'] if method['key'] != 'token' else (row.get('token_title')
-                                                                      or f"Paste {_a(row.get('token_label', 'token'))}")
+            if method['key'] == 'token':
+                title = row.get('token_title') or f"Paste {_a(row.get('token_label', 'token'))}"
+            elif method['key'] == 'browser':
+                title = row.get('browser_title') or method['label']
+            else:
+                title = method['label']
             tk.Label(head, text=f"{number}. {title}", bg=p.PANEL, fg=p.WHITE, font=('Segoe UI Semibold', 11)).pack(side='left')
             if not method['ready']:
                 missing = ('needs the app’s client secret (in the app setup)' if row['client_id_set'] and method['key'] == 'browser'
@@ -534,10 +544,11 @@ class AccountsCenter(tk.Toplevel):
             elif method['key'] == 'browser':
                 line = tk.Frame(card, bg=p.PANEL)
                 line.pack(fill='x', pady=(6, 0))
-                if row.get('dynamic_app'):  # Mastodon: the server comes first; HAYAT registers itself there
-                    tk.Label(line, text='Your server', bg=p.PANEL, fg=p.WHITE, font=('Segoe UI', 9)).pack(side='left', padx=(0, 6))
-                    server = self.token_values.setdefault('server', StringVar(self, next(
-                        (field.get('value', '') for field in row.get('token_fields') or [] if field['name'] == 'server'), '')))
+                if row.get('dynamic_app'):  # Mastodon's server or Bluesky's handle comes first
+                    first = (row.get('token_fields') or [{'name': 'server', 'label': 'Your server', 'value': ''}])[0]
+                    tk.Label(line, text='Your handle' if first['name'] == 'handle' else 'Your server', bg=p.PANEL, fg=p.WHITE,
+                             font=('Segoe UI', 9)).pack(side='left', padx=(0, 6))
+                    server = self.token_values.setdefault(first['name'], StringVar(self, first.get('value', '')))
                     entry = ttk.Entry(line, textvariable=server, width=28)
                     entry.pack(side='left', padx=(0, 8))
                     entry.bind('<Return>', lambda _event: self.start_browser())
@@ -549,7 +560,8 @@ class AccountsCenter(tk.Toplevel):
                 if row.get('builtin_app'):
                     tk.Label(line, text="HAYAT's own app: just sign in", bg=p.PANEL, fg=UP, font=('Segoe UI', 9)).pack(side='left', padx=8)
                 elif row.get('dynamic_app'):
-                    tk.Label(line, text='No setup: HAYAT registers itself with your server', bg=p.PANEL, fg=UP,
+                    tk.Label(line, text='No setup needed' if row['key'] == 'bluesky' else
+                             'No setup: HAYAT registers itself with your server', bg=p.PANEL, fg=UP,
                              font=('Segoe UI', 9)).pack(side='left', padx=8)
                 self.browser_area = tk.Frame(card, bg=p.PANEL)
                 self.browser_area.pack(fill='x')
@@ -735,9 +747,11 @@ class AccountsCenter(tk.Toplevel):
             if entry is not None and entry.winfo_exists():
                 entry.focus_set()
             return
-        server = self.token_values['server'].get().strip() if row.get('dynamic_app') and 'server' in self.token_values else ''
+        field = ((row.get('token_fields') or [{'name': 'server'}])[0])['name']
+        server = self.token_values[field].get().strip() if row.get('dynamic_app') and field in self.token_values else ''
         if row.get('dynamic_app') and not server:
-            self.note('Type your server first, such as mastodon.social.', DOWN)
+            self.note('Type your handle first, such as name.bsky.social.' if field == 'handle'
+                      else 'Type your server first, such as mastodon.social.', DOWN)
             return
         self.browser_key = key
         self.note('Your browser is open at the sign-in page. Sign in and approve there; it comes back to HAYAT, which '
@@ -862,6 +876,27 @@ class AccountsCenter(tk.Toplevel):
     def done_check_all(self, value: dict | None, error: str | None) -> None:
         self.refresh()
         self.paint_connect()
+
+    def open_telegram_bot(self) -> None:
+        self._run('telegram_bot', self.manager.telegram_bot_link)
+
+    def done_telegram_bot(self, value: str | None, error: str | None) -> None:
+        if error or not value:
+            self.note('Could not read the bot: ' + (error or 'no username').split(': ', 1)[-1], DOWN)
+            return
+        webbrowser.open(value)
+        self.note('Telegram opens your bot: tap Start, then press Link my chat.', self.p.GOLD_SOFT)
+
+    def link_telegram(self) -> None:
+        self.note('Looking for the chat that tapped Start…')
+        self._run('telegram_link', self.manager.telegram_link_chat)
+
+    def done_telegram_link(self, value: dict | None, error: str | None) -> None:
+        if error:
+            self.note(error.split(': ', 1)[-1], DOWN)
+            return
+        self.paint_connect()
+        self.note(f"Linked: HAYAT's Telegram messages now go to {value['linked_chat']}.", UP)
 
     def sign_out(self) -> None:
         key = self.selected

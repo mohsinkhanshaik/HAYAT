@@ -40,7 +40,9 @@ NOT_OFFERED = (
 def social_providers(Provider: Any, Operation: Any) -> tuple[Any, ...]:
     post = (("text", "Post", True),)
     return (
-        Provider("bluesky", "Bluesky", "Your timeline and notifications, and posting once you confirm", ("token",),
+        Provider("bluesky", "Bluesky", "Your timeline and notifications, and posting once you confirm", ("browser", "token"),
+                 # The browser first: AT Protocol OAuth as a localhost client needs no app registration (app/accounts_atproto.py).
+                 dynamic_app=True, browser_title="Sign in with Bluesky in your browser",
                  token_label="app password", token_fields=(("handle", "Your handle, e.g. name.bsky.social"),),
                  token_page="https://bsky.app/settings/app-passwords", group="Social",
                  token_steps=("Press Make a token: Bluesky's App passwords page opens (Settings → Privacy and security → "
@@ -98,15 +100,27 @@ def social_providers(Provider: Any, Operation: Any) -> tuple[Any, ...]:
                              Operation("post", "Post to X", True, post))),
         Provider("telegram", "Telegram", "Messages sent to your bot, and the bot messaging you once you confirm", ("token",),
                  token_label="bot token", token_page="https://t.me/BotFather", auth_scheme="", group="Messaging",
+                 token_title="Connect your Telegram bot",
                  token_steps=("Press Make a token: Telegram opens @BotFather. Send /newbot and pick a name and a username "
                               "ending in bot.",
-                              "BotFather replies with a token like 123456789:AA…; paste it above.",
-                              "Send your new bot any message from your phone, so it knows where to reach you."),
+                              "BotFather replies with a token like 123456789:AA…; paste it above and press Enter.",
+                              "Press Open my bot and tap Start: HAYAT links that chat by itself, so messages reach you "
+                              "without a chat ID."),
                  operations=(Operation("profile", "Which bot"),
                              Operation("messages", "Latest messages to my bot"),
                              Operation("send", "Send a Telegram message from my bot", True,
                                        (("chat", "Chat ID (empty: whoever wrote to the bot last)", False), ("text", "Message", True))))),
-        Provider("discord", "Discord", "Posting to a channel, and reading channels with a bot", ("webhook", "token"),
+        Provider("discord", "Discord", "Posting to a channel, and reading channels with a bot", ("browser", "webhook", "token"),
+                 # The browser: you pick a server and channel on Discord's page and HAYAT gets a posting webhook for it.
+                 scopes=("webhook.incoming",), authorize_url="https://discord.com/oauth2/authorize",
+                 token_url="https://discord.com/api/oauth2/token", browser_needs_secret=True, pkce=False, loopback_port=8795,
+                 browser_title="Choose a server and channel in your browser",
+                 app_page="https://discord.com/developers/applications",
+                 app_steps=("Open the Discord Developer Portal (button below) → New Application, name it \"HAYAT\".",
+                            "OAuth2 → Redirects: add http://127.0.0.1:8795/ and save.",
+                            "Copy the Client ID and (Reset Secret) the Client Secret into the boxes below and press Save app.",
+                            "Then Choose a server and channel: Discord shows your servers; pick one and a channel, authorize, "
+                            "and HAYAT can post there once you confirm each message."),
                  token_label="bot token", auth_scheme="Bot", group="Messaging",
                  webhook_prefixes=("https://discord.com/api/webhooks/", "https://discordapp.com/api/webhooks/"),
                  webhook_page="https://support.discord.com/hc/en-us/articles/228383668",
@@ -125,7 +139,21 @@ def social_providers(Provider: Any, Operation: Any) -> tuple[Any, ...]:
                              Operation("post_message", "Post a message to a channel", True,
                                        (("channel", "Channel ID (empty with a webhook)", False), ("text", "Message", True))))),
         Provider("facebook", "Facebook Page & Instagram", "Your Page's posts and your Instagram posts, and posting to the "
-                 "Page once you confirm", ("token",), token_label="Page access token",
+                 "Page once you confirm", ("browser", "token"), token_label="Page access token",
+                 # Facebook Login in the browser: HAYAT keeps a Page token for your Page (and its linked Instagram).
+                 scopes=("pages_show_list", "pages_read_engagement", "pages_manage_posts", "instagram_basic",
+                         "business_management"), scope_separator=",",
+                 authorize_url="https://www.facebook.com/v21.0/dialog/oauth",
+                 token_url="https://graph.facebook.com/v21.0/oauth/access_token", browser_needs_secret=True, pkce=False,
+                 loopback_host="localhost", loopback_port=8799, browser_title="Sign in with Facebook in your browser",
+                 app_page="https://developers.facebook.com/apps/creation/",
+                 app_steps=("Create an app at developers.facebook.com (button below): type Business. It stays in development "
+                            "mode, which is enough for your own Pages and Instagram; no review is needed.",
+                            "Add the product Facebook Login; under its Settings add http://localhost:8799/ to Valid OAuth "
+                            "Redirect URIs (development mode allows localhost).",
+                            "App settings → Basic: copy the App ID and App Secret into the boxes below and press Save app.",
+                            "Sign in with Facebook: choose your Page (and its Instagram) on Facebook's page; HAYAT keeps that "
+                            "Page's token, which does not expire."),
                  token_fields=(("page", "Page ID (Page → About → Page transparency, or the number in its address)"),),
                  token_page="https://developers.facebook.com/tools/explorer/", group="Social",
                  token_steps=("Create an app at developers.facebook.com (type Business; it stays in development mode, which "
@@ -140,7 +168,18 @@ def social_providers(Provider: Any, Operation: Any) -> tuple[Any, ...]:
                              Operation("posts", "My Page's latest posts"),
                              Operation("instagram", "My latest Instagram posts"),
                              Operation("post", "Post to my Facebook Page", True, (("text", "Post", True),)))),
-        Provider("threads", "Threads", "Your Threads posts, and posting once you confirm", ("token",),
+        Provider("threads", "Threads", "Your Threads posts, and posting once you confirm", ("browser", "token"),
+                 # Threads login in the browser; the 60-day token is renewed by itself while HAYAT is used.
+                 scopes=("threads_basic", "threads_content_publish"), scope_separator=",",
+                 authorize_url="https://threads.net/oauth/authorize", token_url="https://graph.threads.net/oauth/access_token",
+                 browser_needs_secret=True, pkce=False, loopback_host="localhost", loopback_port=8794,
+                 browser_title="Sign in with Threads in your browser",
+                 app_page="https://developers.facebook.com/apps/creation/",
+                 app_steps=("Create an app at developers.facebook.com (button below) with the Threads use case; add yourself as a "
+                            "Threads tester and accept the invite in Threads (Settings → Account → Website permissions).",
+                            "Threads API → Settings: Redirect Callback URL http://localhost:8794/ (if Threads only accepts "
+                            "https, use the Make a token way below instead).",
+                            "Copy the Threads App ID and App Secret into the boxes below and press Save app."),
                  token_page="https://developers.facebook.com/apps/", group="Social",
                  token_steps=("At developers.facebook.com create an app with the Threads use case; add yourself as a Threads "
                               "tester and accept the invite in Threads (Settings → Account → Website permissions).",
@@ -212,7 +251,15 @@ class SocialAccounts:
         return {"access_token": session["accessJwt"], "refresh_token": session.get("refreshJwt", ""), "did": session.get("did", ""),
                 "handle": session.get("handle", handle), "expires_in": 6000}
 
+    def _bsky(self, method: str, nsid: str, *, token: str = "", **kwargs: Any) -> Any:
+        """A Bluesky call: the account's own server with a DPoP proof for a browser sign-in, bsky.social otherwise."""
+        if self._account_value("bluesky").get("method") == "oauth":
+            return self._bluesky_xrpc(method, nsid, **kwargs)
+        return self._api("bluesky", method, BSKY + nsid, token=token, **kwargs)
+
     def _bluesky_refresh(self, value: dict[str, Any]) -> dict[str, Any]:
+        if value.get("method") == "oauth":
+            return self._bluesky_oauth_refresh(value)
         fresh = self._json("POST", BSKY + "com.atproto.server.refreshSession",
                            headers={"Authorization": f"Bearer {value['refresh_token']}", "Accept": "application/json"})
         if not fresh.get("accessJwt"):
@@ -223,7 +270,13 @@ class SocialAccounts:
 
     def _who_social(self, key: str, token: str) -> str | None:
         if key == "bluesky":
-            data = self._api(key, "GET", BSKY + "com.atproto.server.getSession", token=token)
+            try:
+                data = self._bsky("GET", "com.atproto.server.getSession", token=token)
+            except RuntimeError:
+                if self._account_value("bluesky").get("method") != "oauth":
+                    raise
+                # Some servers answer getSession only for app-password sessions: the profile names the account too.
+                data = self._bsky("GET", "app.bsky.actor.getProfile", params={"actor": self._account_value("bluesky")["did"]})
             return "@" + (data.get("handle") or "bluesky user")
         if key == "mastodon":
             server = self._mastodon_server()
@@ -256,15 +309,15 @@ class SocialAccounts:
     def _read_bluesky(self, operation: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         handle = self._account_value("bluesky").get("handle", "")
         if operation == "profile":
-            data = self._api("bluesky", "GET", BSKY + "app.bsky.actor.getProfile", params={"actor": handle})
+            data = self._bsky("GET", "app.bsky.actor.getProfile", params={"actor": handle})
             return [{"title": data.get("displayName") or "@" + handle, "detail": "@" + handle,
                      "extra": f"{data.get('followersCount', 0)} followers · {data.get('postsCount', 0)} posts"}]
         if operation == "notifications":
-            data = self._api("bluesky", "GET", BSKY + "app.bsky.notification.listNotifications", params={"limit": 20})
+            data = self._bsky("GET", "app.bsky.notification.listNotifications", params={"limit": 20})
             return [{"title": f"{item.get('reason', '')} from @{(item.get('author') or {}).get('handle', '')}",
                      "when": item.get("indexedAt", ""), "unread": not item.get("isRead", True),
                      "extra": str((item.get("record") or {}).get("text", ""))[:200]} for item in data.get("notifications") or []]
-        data = self._api("bluesky", "GET", BSKY + "app.bsky.feed.getTimeline", params={"limit": 20})
+        data = self._bsky("GET", "app.bsky.feed.getTimeline", params={"limit": 20})
         rows = []
         for item in data.get("feed") or []:
             post = item.get("post") or {}
@@ -278,7 +331,7 @@ class SocialAccounts:
         if graphemes(text) > 300:
             raise ValueError("A Bluesky post holds at most 300 characters.")
         value = self._account_value("bluesky")
-        made = self._api("bluesky", "POST", BSKY + "com.atproto.repo.createRecord",
+        made = self._bsky("POST", "com.atproto.repo.createRecord",
                          json={"repo": value["did"], "collection": "app.bsky.feed.post",
                                "record": {"$type": "app.bsky.feed.post", "text": text,
                                           "createdAt": datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")}})
@@ -389,8 +442,36 @@ class SocialAccounts:
                          "extra": f"chat {(message.get('chat') or {}).get('id', '')}"})
         return rows
 
+    def telegram_link_chat(self) -> dict[str, Any]:
+        """The chat that tapped Start in the bot (or wrote to it last) becomes where HAYAT's messages go."""
+        updates = self._telegram("getUpdates", params={"limit": 50})
+        chats = []
+        for update in updates:
+            message = update.get("message") or {}
+            chat = message.get("chat") or {}
+            if chat.get("type") == "private" and chat.get("id"):
+                chats.append((str(message.get("text") or "").startswith("/start"), chat))
+        if not chats:
+            raise ValueError("Nobody has opened the bot yet: press Open my bot, tap Start, then Link my chat.")
+        started = [chat for is_start, chat in chats if is_start]
+        chat = (started or [chat for _is_start, chat in chats])[-1]
+        name = " ".join(str(part) for part in (chat.get("first_name"), chat.get("last_name")) if part) or chat.get("username", "")
+        with self._lock:
+            records = self._records()
+            settings = records.setdefault("telegram", {}).setdefault("settings", {})
+            settings.update(chat=str(chat["id"]), chat_name=name)
+            self._save_records(records)
+        return {**self.status("telegram"), "linked_chat": name or str(chat["id"])}
+
+    def telegram_bot_link(self) -> str:
+        """https://t.me/<bot>?start=hayat: opens the bot in Telegram with a Start button."""
+        username = self._telegram("getMe").get("username", "")
+        return f"https://t.me/{username}?start=hayat" if username else ""
+
     def _write_telegram(self, operation: str, params: dict[str, str]) -> dict[str, Any]:
         chat = params.get("chat", "").strip()
+        if not chat:
+            chat = ((self._records().get("telegram") or {}).get("settings") or {}).get("chat", "")
         if not chat:
             updates = self._telegram("getUpdates", params={"limit": 20})
             chats = [((update.get("message") or {}).get("chat") or {}).get("id") for update in updates]

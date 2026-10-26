@@ -45,6 +45,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlsplit
 
 import httpx
 
+from app.accounts_atproto import AtprotoAccounts
 from app.accounts_mail import MailAccounts, mail_provider
 from app.accounts_social import NOT_OFFERED, SocialAccounts, social_providers
 from app.logging import log_swallowed
@@ -102,6 +103,10 @@ class Provider:
     token_title: str = ""
     #: The app registers itself with the owner's server at sign-in (Mastodon): browser sign-in needs no setup.
     dynamic_app: bool = False
+    #: The browser sign-in card's title when "Sign in with your browser" says too little (Discord: pick a channel).
+    browser_title: str = ""
+    #: Meta joins scopes with commas.
+    scope_separator: str = " "
 
 
 PROVIDERS: dict[str, Provider] = {provider.key: provider for provider in (
@@ -318,7 +323,7 @@ def when(text: str) -> str:
     raise ValueError(f"Give the time as 2026-10-14 15:00, not {text!r}.")
 
 
-class AccountManager(SocialAccounts, MailAccounts):
+class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
     def __init__(self, broker: Any, path: Path | str, *, request: Callable[..., Any] | None = None,
                  open_browser: Callable[[str], Any] | None = None) -> None:
         self.broker = broker
@@ -420,6 +425,7 @@ class AccountManager(SocialAccounts, MailAccounts):
                          "connected_as": record.get("connected_as", ""), "method": record.get("method", ""),
                          "connected_at": record.get("connected_at", ""), "client_id_set": bool(record.get("client_id")),
                          "builtin_app": bool(builtin.get("client_id")) and not own, "dynamic_app": provider.dynamic_app,
+                         "browser_title": provider.browser_title,
                          "redirect_address": redirect_address(provider),
                          # The last real check of the sign-in (check): when, whether it worked, and why not.
                          "checked_at": record.get("checked_at", ""), "check_ok": record.get("check_ok"),
@@ -475,6 +481,13 @@ class AccountManager(SocialAccounts, MailAccounts):
         if not (self._records().get(key) or {}).get("connected"):
             raise PermissionError(f"{self.provider(key).name} is not connected. Open Accounts & sign-in to connect it.")
         value = json.loads(self._secret(f"account.{key}", key))
+        if key == "threads" and value.get("method") == "browser" and value.get("expires_at") \
+                and 90 <= value["expires_at"] - time.time() < 7 * 86400:
+            fresh = self._json("GET", "https://graph.threads.net/refresh_access_token",
+                               params={"grant_type": "th_refresh_token", "access_token": value["access_token"]})
+            if fresh.get("access_token"):
+                value.update(access_token=fresh["access_token"], expires_at=time.time() + float(fresh.get("expires_in") or 5_184_000))
+                self.broker.store(f"account.{key}", json.dumps(value), scopes=[f"account:{key}"])
         if value.get("expires_at") and value["expires_at"] - time.time() < 90:
             if not value.get("refresh_token"):
                 raise PermissionError(f"The {self.provider(key).name} sign-in has expired; sign in again.")
@@ -684,7 +697,7 @@ class AccountManager(SocialAccounts, MailAccounts):
         else:
             client_id, client_secret = self._client(key, need_secret=provider.browser_needs_secret)
         authorize_url, token_url = provider.authorize_url, provider.token_url
-        scopes = " ".join(provider.scopes)
+        scopes = provider.scope_separator.join(provider.scopes)
         verifier, challenge = _pkce()
         state = secrets.token_urlsafe(24)
         try:
@@ -694,15 +707,19 @@ class AccountManager(SocialAccounts, MailAccounts):
                                "address. Close what is using it and try again.") from exc
         try:
             redirect = f"http://{provider.loopback_host}:{listener.port}/"
-            if provider.dynamic_app:
+            context: dict[str, Any] = {}
+            if key == "bluesky":  # AT Protocol OAuth: the request goes to the account's own server first (PAR)
+                bluesky_link, context = self._bluesky_start(server, redirect, state, challenge)
+            elif provider.dynamic_app:
                 client_id, client_secret, authorize_url, token_url, scopes = self._register_dynamic_app(key, server, redirect)
-            query = {"client_id": client_id, "response_type": "code", "redirect_uri": redirect, "scope": scopes,
+            query = {"client_id": "" if key == "bluesky" else client_id, "response_type": "code", "redirect_uri": redirect,
+                     "scope": scopes,
                      "state": state, **provider.extra_authorize}
             if provider.pkce:
                 query.update(code_challenge=challenge, code_challenge_method="S256")
             if key == "google":
                 query.update(access_type="offline", prompt="consent")
-            link = authorize_url + "?" + urlencode(query, quote_via=quote)
+            link = bluesky_link if key == "bluesky" else authorize_url + "?" + urlencode(query, quote_via=quote)
             with self._lock:
                 self._browsers[key] = {"listener": listener, "link": link}
             try:
@@ -711,6 +728,11 @@ class AccountManager(SocialAccounts, MailAccounts):
                 log_swallowed(_log, "opening the sign-in page in the default browser")
             code = listener.wait(timeout)
             try:
+                if key == "bluesky":
+                    self._bluesky_finish(context, code, verifier, redirect)
+                    result = self._mark_connected(key, "browser")
+                    listener.finish(True, f"HAYAT is connected to Bluesky as {result['connected_as']}. You can close this tab.")
+                    return result
                 form = {"grant_type": "authorization_code", "code": code, "redirect_uri": redirect, "client_id": client_id}
                 if provider.pkce:
                     form["code_verifier"] = verifier
@@ -723,7 +745,7 @@ class AccountManager(SocialAccounts, MailAccounts):
                 if not token.get("access_token"):
                     raise PermissionError(f"{provider.name} did not issue a token: "
                                           f"{token.get('error_description') or token.get('error') or 'unknown'}.")
-                result = self._store_token(key, token, "browser")
+                result = self._finish_browser_token(key, token, client_id, client_secret)
             except Exception as exc:
                 listener.finish(False, f"HAYAT could not finish connecting {provider.name}: {exc}")
                 raise
@@ -734,21 +756,81 @@ class AccountManager(SocialAccounts, MailAccounts):
                 self._browsers.pop(key, None)
             listener.close()
 
+    def _mark_connected(self, key: str, method: str) -> dict[str, Any]:
+        """Record a connection whose secret is already stored, after reading whose account it is."""
+        with self._lock:  # provisionally connected, so the read below may use the stored sign-in
+            records = self._records()
+            previous = dict(records.get(key) or {})
+            records.setdefault(key, {})["connected"] = True
+            self._save_records(records)
+        try:
+            who = self._who(key, self._token(key))
+        except Exception:
+            self.broker.delete(f"account.{key}")  # a sign-in that cannot be read is not kept
+            with self._lock:
+                records = self._records()
+                records[key] = previous
+                self._save_records(records)
+            raise
+        now = datetime.now(UTC).isoformat(timespec="seconds")
+        with self._lock:
+            records = self._records()
+            records.setdefault(key, {}).update(connected=True, connected_as=who, method=method, connected_at=now,
+                                               checked_at=now, check_ok=True, check_error="")
+            self._save_records(records)
+        return self.status(key)
+
+    def _finish_browser_token(self, key: str, token: dict[str, Any], client_id: str, client_secret: str) -> dict[str, Any]:
+        """What a provider's code exchange gives, made into a lasting connection."""
+        if key == "discord":
+            # webhook.incoming: Discord returns the channel's webhook chosen on its page; posting needs nothing else.
+            hook = (token.get("webhook") or {}).get("url", "")
+            if not hook:
+                raise PermissionError("Discord did not return a webhook for the chosen channel.")
+            return self.save_webhook("discord", hook)
+        if key == "facebook":
+            # A long-lived user token, then the Page's own token (a Page token from a long-lived user token does not expire).
+            lasting = self._json("GET", "https://graph.facebook.com/v21.0/oauth/access_token",
+                                 params={"grant_type": "fb_exchange_token", "client_id": client_id, "client_secret": client_secret,
+                                         "fb_exchange_token": token["access_token"]})
+            user_token = lasting.get("access_token") or token["access_token"]
+            pages = self._json("GET", "https://graph.facebook.com/v21.0/me/accounts",
+                               params={"fields": "id,name,access_token", "access_token": user_token}).get("data") or []
+            if not pages:
+                raise PermissionError("Facebook gave access to no Page: choose your Page on Facebook's page and try again.")
+            wanted = ((self._records().get("facebook") or {}).get("settings") or {}).get("page", "")
+            page = next((item for item in pages if item.get("id") == wanted), pages[0])
+            with self._lock:
+                records = self._records()
+                records.setdefault("facebook", {}).setdefault("settings", {})["page"] = str(page["id"])
+                self._save_records(records)
+            return self._store_token("facebook", {"access_token": page["access_token"]}, "browser")
+        if key == "threads":
+            lasting = self._json("GET", "https://graph.threads.net/access_token",
+                                 params={"grant_type": "th_exchange_token", "client_secret": client_secret,
+                                         "access_token": token["access_token"]})
+            if lasting.get("access_token"):
+                token = {"access_token": lasting["access_token"], "expires_in": lasting.get("expires_in") or 5_184_000}
+        return self._store_token(key, token, "browser")
+
     def _sign_in_server(self, key: str, server: str) -> str:
         """The owner's server for a self-registering provider (Mastodon), checked and kept with the account."""
+        field = (self.provider(key).token_fields or (("server", ""),))[0][0]  # Mastodon: server; Bluesky: handle
         if not server:
             try:
-                server = self._setting(key, "server")  # the server used last time
+                server = self._setting(key, field)  # the one used last time
             except PermissionError:
                 server = ""
         value = str(server or "")
-        value = re.sub(r"^https?://", "", value).strip().strip("/").lower()
+        value = re.sub(r"^https?://", "", value).strip().strip("/").lstrip("@").lower()
         if not re.fullmatch(r"[a-z0-9.-]+\.[a-z]{2,}", value):
-            raise ValueError("Type your server's name first, such as mastodon.social.")
-        public_server(value)
+            raise ValueError("Type your handle first, such as name.bsky.social." if field == "handle"
+                             else "Type your server's name first, such as mastodon.social.")
+        if field == "server":
+            public_server(value)
         with self._lock:
             records = self._records()
-            records.setdefault(key, {}).setdefault("settings", {})["server"] = value
+            records.setdefault(key, {}).setdefault("settings", {})[field] = value
             self._save_records(records)
         return value
 

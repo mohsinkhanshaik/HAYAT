@@ -99,9 +99,22 @@ The button had been greyed out until a developer app was registered, so it looke
   (`config/oauth_apps.yaml`, see below) it is one click for everyone and the card says "HAYAT's own app: just sign
   in". Without one, the button reads **Set up, then sign in**: it opens the steps (GitHub's form comes filled in;
   the exact redirect address has a **Copy** button), and **Save app** opens the sign-in by itself.
-- **Bluesky** keeps the app password (one tab, paste once): its browser sign-in for desktop apps needs DPoP-bound
-  tokens HAYAT does not have yet. **Facebook, Instagram, Threads** need a Meta app with review for each permission,
-  so they keep their tokens; **Telegram** uses a BotFather token; **Discord** a webhook or bot token.
+- **Bluesky: no setup either.** Type your handle and press **Sign in with Bluesky in your browser**. HAYAT signs
+  in as an AT Protocol "localhost client" (no registration anywhere): it finds your account's server from your
+  handle, sends the sign-in request there first (PAR, PKCE), opens your server's sign-in page, and checks the
+  tokens belong to your account. Every request carries a DPoP proof signed with a key made for this sign-in; the
+  key and tokens stay in Windows Credential Manager and renew themselves (`app/accounts_atproto.py`). The app
+  password stays as a second way.
+- **Facebook Page & Instagram: Sign in with Facebook in your browser.** With a Meta app (development mode is
+  enough for your own Pages, no review), you pick your Page on Facebook's page; HAYAT swaps the sign-in for a
+  long-lived one and keeps that Page's token, which does not expire. Instagram is read through the Page.
+- **Threads: Sign in with Threads in your browser.** The sign-in becomes a 60-day token, renewed by itself in its
+  last week while HAYAT is used.
+- **Discord: Choose a server and channel in your browser.** Discord shows your servers and channels; the one you
+  pick gives HAYAT a posting webhook (webhook.incoming). A bot token still adds reading channels.
+- **Telegram: Connect your Telegram bot.** Telegram has no sign-in for apps, so the bot way is made short: BotFather
+  opens, you paste the token, **Open my bot** opens it in Telegram with a Start button, and **Link my chat** finds
+  the chat that tapped Start, so messages reach you without a chat ID.
 
 #### HAYAT's own apps (the project maintainer, once)
 
@@ -118,6 +131,9 @@ The steps are the same as each provider's one-time setup in the window; a user's
 | Reddit | installed app (no secret) | `http://127.0.0.1:8798/` |
 | X | Native App, OAuth 2.0 PKCE | `http://127.0.0.1:8797/` |
 | LinkedIn | app on a company Page (secret in the local file) | `http://127.0.0.1:8796/` |
+| Facebook + Instagram | Meta Business app, Facebook Login (secret in the local file) | `http://localhost:8799/` |
+| Threads | Meta app, Threads use case (secret in the local file) | `http://localhost:8794/` |
+| Discord | Discord application, OAuth2 (secret in the local file) | `http://127.0.0.1:8795/` |
 
 ### Email with your normal login (2026-10-26)
 
