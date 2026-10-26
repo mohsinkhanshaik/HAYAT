@@ -18,6 +18,7 @@ from app.gui_windows import MARGIN, place_over, placement, work_area
 from app.intelligence.classify import CATEGORIES, SEVERITY_COLOURS, SEVERITY_LABEL
 from app.intelligence.feeds import ALL_FEEDS, configured
 from app.intelligence.view import REGIONS, TIME_RANGES, MapViewport, format_point, relative_time
+from app.gui_fonts import DISPLAY
 
 SEVERITY_FILTERS = {'All severities': '', 'High only': 'high', 'Medium and above': 'medium', 'Low and above': 'low'}
 CATEGORY_FILTERS = {'All events': '', **{title: key for key, (title, _colour, _shape) in CATEGORIES.items()}}
@@ -354,15 +355,12 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
     def _styles(self):
         p = self.palette
         style = ttk.Style(self)
-        for name, padding in (('Chip.Toolbutton', (9, 3)), ('Segment.Toolbutton', (12, 5))):
-            style.configure(name, background=p.PANEL_2, foreground=p.WHITE, padding=padding, relief='flat',
-                            borderwidth=1, bordercolor=p.LINE, font=('Segoe UI Semibold', 9))
-            style.map(name, background=[('selected', p.GOLD), ('active', p.PANEL_HOVER)],
-                      foreground=[('selected', p.BLACK)])
+        # Chips and segments are styled once for every window in app/gui_theme.py. Restyling them here in gold
+        # turned the chosen segment gold in every window opened after this one.
         style.configure('Intelligence.TNotebook.Tab', padding=(12, 7), font=('Segoe UI Semibold', 9))
         style.configure('Intel.Treeview', rowheight=26, background=p.PANEL, fieldbackground=p.PANEL,
                         foreground=p.WHITE, bordercolor=p.LINE, font=('Segoe UI', 9))
-        style.map('Intel.Treeview', background=[('selected', p.GOLD)], foreground=[('selected', p.BLACK)])
+        style.map('Intel.Treeview', background=[('selected', p.ROYAL)], foreground=[('selected', '#FFFFFF')])
         style.configure('Intel.Treeview.Heading', background=p.PANEL_2, foreground=p.WHITE,
                         font=('Segoe UI Semibold', 9))
 
@@ -377,7 +375,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         draw_globe(globe, p.ROYAL_SOFT, p.GOLD)
         words = tk.Frame(header, bg=p.BLACK)
         words.pack(side='left', fill='x', expand=True)
-        self.title_label = tk.Label(words, text='Global Intelligence', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI Semibold', 19), anchor='w')
+        self.title_label = tk.Label(words, text='Global Intelligence', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 19), anchor='w')
         self.title_label.pack(fill='x')
         self.subtitle = tk.Label(words, text='Real-time world events, natural hazards, cyber threats and space weather from public agencies',
                                  bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 9), anchor='w')
@@ -862,7 +860,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
             self.status_label.pack(side='left', before=self.feedback_label)
             self.feedback_label.configure(anchor='e', justify='right')
             self.globe.pack(side='left', padx=(0, 12), before=self.title_label.master)
-            self.title_label.configure(font=('Segoe UI Semibold', 19))
+            self.title_label.configure(font=(DISPLAY, 19))
             self.header.configure(pady=10)
         for button in (*self.header_buttons, *self.map_actions, *self.card_actions.items):
             if str(button.cget('image')):

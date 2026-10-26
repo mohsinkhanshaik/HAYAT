@@ -13,6 +13,7 @@ from app.gui_icons import apply_icons
 from app.gui_resources import StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 
 def _ban_store() -> Path:
@@ -62,7 +63,7 @@ class SecurityStudio(tk.Toplevel):
         header = tk.Frame(self, bg=p.BLACK, padx=16, pady=10)
         header.pack(fill="x")
         tk.Label(header, text="Security", bg=p.BLACK, fg=p.WHITE,
-                 font=("Segoe UI Semibold", 16)).pack(side="left")
+                 font=(DISPLAY, 16)).pack(side="left")
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.destroy).pack(side="right")
         self.overview = StringVar(self, "Reading local defenses…")
         summary = tk.Label(self, textvariable=self.overview, bg=p.BLACK, fg=p.GOLD_SOFT,

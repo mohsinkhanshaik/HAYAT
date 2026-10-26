@@ -122,7 +122,7 @@ def setup(tmp_path):
 def test_every_provider_lists_its_ways_to_sign_in_and_what_it_can_do(setup):
     status = setup.manager.status()
     assert [row["key"] for row in status["accounts"]] == ["google", "microsoft", "github", "linkedin", "notion", "slack", "bluesky",
-                                                          "mastodon", "reddit", "x", "telegram", "discord", "facebook", "threads"]
+                                                          "mastodon", "reddit", "x", "telegram", "discord", "facebook", "threads", "mail"]
     assert status["connected"] == []
     github = setup.manager.status("github")
     assert [(method["key"], method["ready"]) for method in github["methods"]] == [("device", False), ("browser", False), ("token", True)]
@@ -336,5 +336,187 @@ def test_the_window_connects_with_a_code_reads_and_prepares(shared_tk, setup, mo
         window.prepare()
         assert "Prepared as action #1" in window.write_note.cget("text") and gate.pending()[0]["title"] == "Open an issue (GitHub)"
         assert not any(url.endswith("/issues") for _method, url, _kwargs in setup.fake.calls)  # nothing sent before confirming
+    finally:
+        window.close()
+
+
+# ---------------------------------------------------------------- 2026-10-25: confirming a connection
+
+def _browser_sign_in(setup, answer_redirect):
+    """Start a Google browser sign-in; `answer_redirect(redirect, state)` plays the provider's side."""
+    setup.manager.set_app("google", "1234567890-abc.apps.googleusercontent.com", "google-secret")
+
+    def browser(url):
+        query = parse_qs(urlsplit(url).query)
+        setup.fake.challenge = query["code_challenge"][0]
+        answer_redirect(query["redirect_uri"][0], query["state"][0])
+    setup.manager.open_browser = browser
+
+
+def _visit(pages):
+    def visit(redirect, state):
+        threading.Thread(target=lambda: pages.append(urllib.request.urlopen(f"{redirect}?code=auth-code&state={state}",
+                                                                            timeout=20).read().decode()), daemon=True).start()
+    return visit
+
+
+def _wait_for(ready, seconds=10):
+    deadline = time.monotonic() + seconds
+    while not ready() and time.monotonic() < deadline:
+        time.sleep(.02)
+    return ready()
+
+
+def test_the_browser_tab_shows_the_real_result_after_the_account_is_read(setup):
+    pages = []
+    _browser_sign_in(setup, _visit(pages))
+    done = setup.manager.sign_in_browser("google", timeout=10)
+    # Said only after the token was exchanged and the account read, naming the account that answered.
+    assert _wait_for(lambda: pages) and "connected to Google as owner@gmail.com" in pages[0]
+    assert done["check_ok"] is True and done["checked_at"] == done["connected_at"]
+
+
+def test_the_browser_tab_says_so_when_the_exchange_fails(setup):
+    pages = []
+    real = setup.fake
+
+    def provider(method, url, **kwargs):
+        if url == "https://oauth2.googleapis.com/token":
+            return Response(400, {"error": "invalid_grant", "error_description": "Bad Request"})
+        return real(method, url, **kwargs)
+    setup.manager._request = provider
+    _browser_sign_in(setup, _visit(pages))
+    with pytest.raises(Exception):
+        setup.manager.sign_in_browser("google", timeout=10)
+    # The tab used to say "HAYAT is connected" here, before the exchange had failed.
+    assert _wait_for(lambda: pages) and "could not finish connecting Google" in pages[0] and "is connected" not in pages[0]
+    assert not setup.manager.status("google")["connected"]
+
+
+def test_the_address_a_tab_ended_on_can_be_pasted_to_finish(setup):
+    states = []
+    _browser_sign_in(setup, lambda redirect, state: states.append((redirect, state)))
+    outcome = {}
+    worker = threading.Thread(target=lambda: outcome.update(done=setup.manager.sign_in_browser("google", timeout=10)), daemon=True)
+    worker.start()
+    assert _wait_for(lambda: states and setup.manager.browser_link("google"), 5)
+    redirect, state = states[0]
+    assert setup.manager.browser_link("google").startswith("https://accounts.google.com/")
+    assert setup.manager.status("google")["browser_waiting"]
+    with pytest.raises(ValueError, match="not from this sign-in"):
+        setup.manager.finish_browser_from_address("google", f"{redirect}?code=other&state=someone-else")
+    # The tab could not reach 127.0.0.1, but its address bar still holds the code.
+    assert setup.manager.finish_browser_from_address("google", f"{redirect}?state={state}&code=auth-code&scope=email")
+    worker.join(10)
+    assert outcome["done"]["connected_as"] == "owner@gmail.com" and not setup.manager.browser_link("google")
+    with pytest.raises(ValueError, match="No Google browser sign-in is waiting"):
+        setup.manager.finish_browser_from_address("google", "http://127.0.0.1/?code=x")
+
+
+def test_a_waiting_browser_sign_in_can_be_cancelled(setup):
+    _browser_sign_in(setup, lambda redirect, state: None)
+    errors = []
+
+    def run():
+        try:
+            setup.manager.sign_in_browser("google", timeout=10)
+        except Exception as exc:
+            errors.append(exc)
+    worker = threading.Thread(target=run, daemon=True)
+    worker.start()
+    assert _wait_for(lambda: setup.manager.browser_link("google"), 5)
+    setup.manager.cancel_browser("google")
+    worker.join(10)
+    assert errors and "cancelled" in str(errors[0])
+
+
+def test_check_confirms_the_sign_in_and_finds_a_lost_or_refused_one(setup):
+    setup.manager.save_token("notion", "secret_notion")
+    checked = setup.manager.check("notion")
+    assert checked["check_ok"] is True and checked["checked_at"] and checked["connected_as"] == "HAYAT reader"
+    # Refused by the provider (revoked on its site): still saved, but marked as not working, with the reason.
+    setup.broker.values["account.notion"] = json.dumps({"access_token": "secret_revoked", "method": "token"})
+    refused = setup.manager.check("notion")
+    assert refused["connected"] and refused["check_ok"] is False and refused["check_error"]
+    assert "secret_revoked" not in refused["check_error"]
+    # Missing from the credential store (as a leftover test record was): no longer shown as connected.
+    setup.broker.delete("account.notion")
+    lost = setup.manager.check("notion")
+    assert not lost["connected"] and "missing from Windows Credential Manager" in lost["check_error"]
+    with pytest.raises(PermissionError, match="not connected"):
+        setup.manager.check("notion")
+    assert setup.manager.check_all() == {"check_view": True, "results": []}
+
+
+def test_chat_checks_accounts_live_and_says_what_answered(setup):
+    assert account_request("is my notion connected?") == {"tool": "account_check", "arguments": {"provider": "notion"}}
+    assert account_request("check my accounts") == {"tool": "account_check", "arguments": {}}
+    assert account_request("am i signed in to gmail") == {"tool": "account_check", "arguments": {"provider": "google"}}
+    assert account_request("check my gmail")["tool"] == "account_read"  # reading the inbox, not checking the sign-in
+    assert "account_check" in TOOL_NAMES
+    setup.manager.save_token("notion", "secret_notion")
+
+    def said(value):
+        return report([{"tool": "account_check", "result": {"success": True, "output": value}, "verification": {"passed": True}}])
+    assert said(setup.manager.check_all()).startswith("Notion: working, signed in as HAYAT reader (checked just now")
+    setup.broker.values["account.notion"] = json.dumps({"access_token": "secret_revoked", "method": "token"})
+    text = said(setup.manager.check_all("notion"))
+    assert "the check failed" in text and "Sign in again" in text
+
+
+def test_the_window_checks_accounts_and_offers_a_tab_fallback_while_waiting(shared_tk, setup, monkeypatch):
+    import app.gui_accounts as window_module
+    from app.gui_theme import Palette
+    monkeypatch.setattr(window_module.webbrowser, "open", lambda url: None)
+    clipboard = []
+    monkeypatch.setattr(window_module.AccountsCenter, 'clipboard_clear', lambda _self: clipboard.clear())
+    monkeypatch.setattr(window_module.AccountsCenter, 'clipboard_append', lambda _self, text: clipboard.append(text))
+    setup.manager.save_token("notion", "secret_notion")
+    setup.broker.values["account.notion"] = json.dumps({"access_token": "secret_revoked", "method": "token"})
+
+    class GUI(Palette):
+        pass
+    gui = GUI()
+    gui.root, gui.runtime = shared_tk, SimpleNamespace(accounts=setup.manager, confirmations=ConfirmationGate(), email=None,
+                                                       secret_broker=setup.broker)
+    window = window_module.AccountsCenter(gui)
+
+    def wait(ready, seconds=10):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            shared_tk.update()
+            if ready():
+                return True
+            time.sleep(.02)
+        return ready()
+
+    def everything(widget):
+        for child in widget.winfo_children():
+            yield child
+            yield from everything(child)
+    try:
+        # Opening the window checks every connected account: a refused one shows as not working.
+        assert wait(lambda: 'check_all' not in window._busy and "not working" in window.status.get())
+        assert "sign-in not working" in window.card_widgets["notion"]["state"].cget("text")
+        window.select("notion")
+        labels = [child.cget("text") for child in everything(window.connect_tab) if isinstance(child, window_module.tk.Label)]
+        assert "Saved, but the sign-in is not working" in labels and any("Sign in again below" in text for text in labels)
+        assert any(isinstance(child, window_module.ttk.Button) and child.cget("text") == "Check now"
+                   for child in everything(window.connect_tab))
+        # Browser sign-in: while waiting, the link can be copied into any tab and the end address pasted back.
+        _browser_sign_in(setup, lambda redirect, state: None)
+        window.select("google")
+        window.start_browser()
+        assert wait(lambda: any(isinstance(child, window_module.ttk.Button) and child.cget("text") == "Finish sign-in"
+                                for child in everything(window.browser_area)))
+        copy = next(child for child in everything(window.browser_area)
+                    if isinstance(child, window_module.ttk.Button) and child.cget("text") == "Copy the sign-in link")
+        copy.invoke()
+        assert clipboard and clipboard[0].startswith("https://accounts.google.com/")
+        state = parse_qs(urlsplit(clipboard[0]).query)["state"][0]
+        window.return_address.set(f"http://127.0.0.1:1/?state={state}&code=auth-code")
+        window.finish_from_address()
+        assert wait(lambda: window.row("google")["connected"] and 'browser' not in window._busy)
+        assert "Connected and checked" in window.connect_note.cget("text")
     finally:
         window.close()

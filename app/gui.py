@@ -19,6 +19,7 @@ from typing import Any
 from app.gui_theme import DarkScrolledText
 from app.windows.com_apartment import configure_gui_sta
 from app.logging import log_swallowed
+from app.gui_fonts import DISPLAY
 
 _log = logging.getLogger(__name__)
 
@@ -704,7 +705,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         bar = tk.Frame(self.root, bg=self.PANEL, padx=12, pady=6)
         self._transparency_bar = bar
         bar.pack(fill='x', padx=10, pady=(4, 0))
-        self.features_button = ttk.Button(bar, text='All features', style='Compact.HayatAccent.TButton', command=self._open_features)
+        self.features_button = ttk.Button(bar, text='All features', style='Compact.Hayat.TButton', command=self._open_features)
         self.features_button.pack(side='left', padx=(0, 6))
         self.activity_button = ttk.Button(bar, text='Activity', style='Compact.Hayat.TButton', command=self._open_activity)
         self.activity_button.pack(side='left', padx=(0, 10))
@@ -808,11 +809,11 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         brand = tk.Frame(rail, bg=self.BLACK, padx=8, pady=6)
         brand.pack(fill="x", pady=(0, 8))
         tk.Label(brand, text="H", bg=self.GOLD, fg=self.BLACK, width=3,
-                 font=("Segoe UI Semibold", 17), pady=4).pack(side="left", padx=(0, 10))
+                 font=(DISPLAY, 17), pady=4).pack(side="left", padx=(0, 10))
         brand_words = tk.Frame(brand, bg=self.BLACK)
         brand_words.pack(side="left", fill="x", expand=True)
         tk.Label(brand_words, text="HAYAT", bg=self.BLACK, fg=self.WHITE,
-                 font=("Segoe UI Semibold", 16), anchor="w").pack(fill="x")
+                 font=(DISPLAY, 16), anchor="w").pack(fill="x")
         tk.Label(brand_words, text="YOUR LOCAL AI", bg=self.BLACK,
                  fg=self.MUTED, font=("Segoe UI", 8), anchor="w").pack(fill="x", pady=(2, 0))
 
@@ -1045,19 +1046,19 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         home_header = tk.Frame(self._welcome, bg=self.PANEL, padx=18, pady=6)
         home_header.pack(fill='x')
         tk.Label(home_header, text='What will you build today?', bg=self.PANEL, fg=self.WHITE,
-                 font=('Segoe UI Semibold', 20), anchor='w').pack(fill='x', pady=(2, 2))
+                 font=(DISPLAY, 20), anchor='w').pack(fill='x', pady=(2, 2))
         tk.Label(home_header, text='Speak, research, create and turn a plan into finished work.',
                  bg=self.PANEL, fg=self.MUTED, font=('Segoe UI', 10), anchor='w').pack(fill='x')
         from app.gui_intelligence_parts import FlowRow
         home_actions = FlowRow(self._welcome, self.PANEL, gap=6, height=36)
         home_actions.pack(fill='x', padx=16, pady=(0, 8))
-        # Short labels: six starting points on one row at 1536 px (a seventh wrapped and squeezed the 3D scene).
+        # Short labels: six starting points on one row down to 1440 px (a seventh wrapped and squeezed the 3D scene).
         for label, command in (('Earning plan', self._open_earning_plan),
-                               ('Attach evidence', self._add_files),
+                               ('Attach', self._add_files),
                                ('Learning', lambda: self.show_view('background')),
-                               ('Find open source', lambda: self.use_example('open_source_search {"query": "local speech recognition"}')),
+                               ('Open source', lambda: self.use_example('open_source_search {"query": "local speech recognition"}')),
                                ('Find jobs', self._open_jobs), ('Markets', self._open_markets)):
-            home_actions.add(ttk.Button(home_actions, text=label, style='Hayat.TButton', command=command))
+            home_actions.add(ttk.Button(home_actions, text=label, width=0, style='Hayat.TButton', command=command))
         self._core_requested = False
         self.depth_view_title = StringVar(self.root, "Workspace")
         self.depth_view_detail = StringVar(self.root, "Drag to rotate · Scroll to zoom · Choose a capability")
@@ -1079,7 +1080,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         # Two primary views stay as direct buttons; the studios (which each open
         # their own window) live behind one "Studios" menu, so the row cannot
         # overflow and hide a button as more studios are added.
-        ttk.Button(scene_controls, text="What can HAYAT do?", width=0, style="HayatAccent.TButton",
+        ttk.Button(scene_controls, text="What can HAYAT do?", width=0, style="Hayat.TButton",
                    command=self._open_help).pack(side="left", padx=(0, 6))
         for title, command in (("Brain 5D", lambda: self.show_view("operator")),
                                ("Eye", self.open_camera_view)):
@@ -1493,7 +1494,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         tools_heading = tk.Frame(self._tools_window, bg=self.BLACK)
         tools_heading.pack(fill="x", padx=18, pady=(16, 4))
         tk.Label(tools_heading, text="Tools & controls", bg=self.BLACK, fg=self.WHITE,
-                 font=("Segoe UI Semibold", 16), anchor="w").pack(side="left")
+                 font=(DISPLAY, 16), anchor="w").pack(side="left")
         # A close button of its own: the title bar can be under a docked bar.
         ttk.Button(tools_heading, text="✕  Close", width=0, style="Hayat.TButton",
                    command=lambda: self._tools_expanded and self._toggle_tools_drawer()).pack(side="right")
@@ -2564,7 +2565,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.depth_nav.select(key)
         self._preview_depth_view(key)
         for name, button in self.depth_shortcuts.items():
-            button.configure(style="HayatAccent.TButton" if name == key else "Hayat.TButton")
+            button.configure(style="HayatChosen.TButton" if name == key else "Hayat.TButton")
         for name, item in self.nav.items():
             item.select(name == key)
         titles = {name: title for name, _icon, title, _sub in self.VIEWS}
@@ -2730,7 +2731,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         current = manager.snapshot()['configured']
         god = 'DEEP' in current and 'ADVERSARIAL' in current
         self.reasoning_button.configure(text='Beast mode: on' if god else 'Beast mode',
-                                        style='HayatAccent.TButton' if god else 'Hayat.TButton')
+                                        style='HayatChosen.TButton' if god else 'Hayat.TButton')
 
     def _paint_reply_controls(self) -> None:
         busy = self._working_since is not None
@@ -2843,6 +2844,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             self._label_core_button(True)
         # U+FE0F asks for a colour emoji, which Tk 8.6 cannot draw; it showed as a blank gap after "☀️".
         body = text.rstrip().replace("️", "")
+        # Emoji themselves are shown in colour as small pictures (app/gui_emoji.py).
+        from app.gui_emoji import insert as emoji_insert
         from app.gui_motion import near_bottom
         follow = tag == "user" or near_bottom(self.chat)
         if self._chat_find_open and self._chat_find_var.get():
@@ -2864,14 +2867,14 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                 if tag == "assistant" and newline and lead.rstrip().endswith(":"):
                     # "app/voice has 17 items:" then the items: the lines below the
                     # heading are data, shown aligned rather than as prose.
-                    self.chat.insert("end", lead + "\n", tag)
-                    self.chat.insert("end", block + "\n", (tag, "block"))
+                    emoji_insert(self.chat, "end", lead + "\n", tag)
+                    emoji_insert(self.chat, "end", block + "\n", (tag, "block"))
                 elif tag == "assistant":
                     self._insert_formatted(rest.rstrip(), tag)
                 else:
-                    self.chat.insert("end", rest.rstrip() + "\n", tag)
+                    emoji_insert(self.chat, "end", rest.rstrip() + "\n", tag)
             else:
-                self.chat.insert("end", body + "\n", tag)
+                emoji_insert(self.chat, "end", body + "\n", tag)
                 self._transcript.write(body + "\n")
             # Show, don't just name. A generated picture whose path is in the reply
             # is embedded straight into the transcript, because "Saved to <path>"
@@ -2996,6 +2999,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
 
     def _insert_formatted(self, body: str, tag: str) -> None:
         """A reply with its Markdown and maths shown as formatting, not symbols."""
+        from app.gui_emoji import insert as emoji_insert
         from app.gui_rich import markdown_segments
 
         body = re.sub(r"\n{3,}", "\n\n", body)
@@ -3007,7 +3011,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                 self.chat.tag_config(link_tag, foreground=self.ROYAL_SOFT, underline=True)
                 self.chat.tag_bind(link_tag, "<Button-1>", lambda _e, url=segment.href: self._open_source(url))
                 tags += (link_tag,)
-            self.chat.insert("end", segment.text, tags)
+            emoji_insert(self.chat, "end", segment.text, tags)
         self.chat.insert("end", "\n", tag)
 
     @staticmethod
@@ -4934,7 +4938,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             log_swallowed(_log, "reading situation suggestions for the chat chips")
             return
         for index, (label, request) in enumerate(picks):
-            style = "Compact.HayatAccent.TButton" if index == 0 else "Compact.Hayat.TButton"
+            style = "Compact.Hayat.TButton"
             button = chips.add(ttk.Button(chips, text=label, style=style,
                                           command=lambda text=request: self.use_example(text)), index)
             self._situation_buttons.append(button)

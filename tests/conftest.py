@@ -66,6 +66,29 @@ sqlite3.connect = _guarded_connect
 
 
 @pytest.fixture(autouse=True)
+def no_builtin_oauth_apps(monkeypatch):
+    """Tests see no built-in app registrations, whatever the maintainer puts in config/oauth_apps.yaml or the
+    owner keeps in data/integrations/oauth-apps.json; a test that needs them sets manager._builtin_apps."""
+    try:
+        import app.accounts as accounts
+    except Exception:  # an environment without the accounts module's dependencies
+        return
+    monkeypatch.setattr(accounts, "builtin_apps", lambda path=None: {})
+
+
+@pytest.fixture(autouse=True, scope="session")
+def owner_account_records_stay_untouched():
+    """The sandbox above redirects databases only. data/integrations/accounts.json is JSON, and a test fixture once
+    left a fake "Bluesky connected" record in the owner's copy: the Accounts window then showed a connection with
+    no sign-in behind it. Any test that changes the owner's file fails the run."""
+    path = LIVE_DATA / "integrations" / "accounts.json"
+    before = path.read_bytes() if path.exists() else None
+    yield
+    after = path.read_bytes() if path.exists() else None
+    assert after == before, "a test changed the owner's data/integrations/accounts.json; give it a tmp_path"
+
+
+@pytest.fixture(autouse=True)
 def location_fix_does_not_leak_between_tests():
     """The location guard keeps the latest fix in memory (app/location_privacy.SHIELD). A test that reads a
     stand-in location must not leave it behind to round or hold another test's coordinates."""

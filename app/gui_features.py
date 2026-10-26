@@ -12,6 +12,7 @@ from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.gui_workspace import WorkspaceCommand
 from app.safety.sensitive import redact
+from app.gui_fonts import DISPLAY
 
 
 @dataclass
@@ -119,7 +120,7 @@ class FeaturesWindow(tk.Toplevel):
         header = tk.Frame(self, bg=gui.BLACK, padx=16, pady=12)
         header.pack(fill='x')
         tk.Label(header, text='All features and tools', bg=gui.BLACK, fg=gui.WHITE,
-                 font=('Segoe UI Semibold', 18)).pack(side='left')
+                 font=(DISPLAY, 18)).pack(side='left')
         ttk.Button(header, text='Activity and transparency', command=gui._open_activity).pack(side='right')
         filters = tk.Frame(self, bg=gui.BLACK, padx=16)
         filters.pack(fill='x')

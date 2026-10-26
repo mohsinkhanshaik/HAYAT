@@ -80,7 +80,97 @@ text doesn't fit (Bluesky 300 characters, X 280, Threads and Mastodon 500) is le
      doesn't work is not kept.
 
 **In every way, you type your password only on the provider's own page.**
-HAYAT never sees it.
+HAYAT never sees it. An "app password" (Bluesky) is a separate password you
+make on the provider's site for HAYAT alone, never your login password; the
+window says so beside the box.
+
+### Browser sign-in for every platform (2026-10-26)
+
+**Sign in with your browser** opens the provider's page in a tab; you sign in there (your password never reaches
+HAYAT), approve, and the tab comes back to HAYAT on this computer. HAYAT exchanges the code, reads the account to
+confirm it, shows the real result in the tab, and keeps the sign-in in Windows Credential Manager. It stays signed
+in across restarts and renews itself before it expires (Google, Microsoft, X, Reddit refresh tokens; Mastodon and
+GitHub tokens do not expire).
+
+The button had been greyed out until a developer app was registered, so it looked broken. Now:
+- **Mastodon: no setup at all.** Type your server and press the button: HAYAT registers itself with your server
+  (Mastodon allows any app to), opens the tab and comes back signed in.
+- **Google, Microsoft, GitHub, Reddit, X, LinkedIn** need an app registration once. With **HAYAT's own app**
+  (`config/oauth_apps.yaml`, see below) it is one click for everyone and the card says "HAYAT's own app: just sign
+  in". Without one, the button reads **Set up, then sign in**: it opens the steps (GitHub's form comes filled in;
+  the exact redirect address has a **Copy** button), and **Save app** opens the sign-in by itself.
+- **Bluesky** keeps the app password (one tab, paste once): its browser sign-in for desktop apps needs DPoP-bound
+  tokens HAYAT does not have yet. **Facebook, Instagram, Threads** need a Meta app with review for each permission,
+  so they keep their tokens; **Telegram** uses a BotFather token; **Discord** a webhook or bot token.
+
+#### HAYAT's own apps (the project maintainer, once)
+
+Register each app under the project's own account and put the **client ID** in `config/oauth_apps.yaml`; it is not
+a secret (every sign-in link carries it). A **client secret** never goes in the repository: keep it in
+`data/integrations/oauth-apps.json` (ignored by git), e.g. `{"google": {"client_id": "…", "client_secret": "…"}}`.
+The steps are the same as each provider's one-time setup in the window; a user's own app always wins.
+
+| Provider | App type | Redirect address |
+|---|---|---|
+| Microsoft | Entra public client, personal + work accounts, public client flows on | `http://localhost` |
+| GitHub | OAuth app, Enable Device Flow (code sign-in needs only the ID) | `http://127.0.0.1/` |
+| Google | Desktop app (secret in the local file) | none needed |
+| Reddit | installed app (no secret) | `http://127.0.0.1:8798/` |
+| X | Native App, OAuth 2.0 PKCE | `http://127.0.0.1:8797/` |
+| LinkedIn | app on a company Page (secret in the local file) | `http://127.0.0.1:8796/` |
+
+### Email with your normal login (2026-10-26)
+
+**Email (any provider)** connects your mailbox the way any mail app does: your address and password, over
+IMAP and SMTP. No developer app, client ID or API key (`app/accounts_mail.py`).
+- Zoho, GMX, AOL, Yandex, Fastmail, Rediffmail, company and own-domain mail: your normal password.
+- Gmail, Yahoo, iCloud: these providers refuse normal passwords from mail apps; make an app password in the
+  account's security settings (the window links it). Google's "abcd efgh ijkl mnop" spaces are fine.
+- Outlook, Hotmail, Live: Microsoft turned password logins off for mail apps in 2024; use **Microsoft → Sign in
+  with a code** instead. Proton Mail needs Proton's Bridge app.
+
+HAYAT logs in once to check before keeping anything; the password goes to Windows Credential Manager, never a
+file or the chat. Then: newest mail, unread mail, search (reading never marks mail as read), and **Send an
+email**, which waits for your confirmation. The same login also sets up sending from chat and Business.
+
+HAYAT does not type your passwords into websites or drive your logged-in social accounts with a scripted browser:
+sites forbid it and it would put the accounts at risk. Social accounts keep their own simple ways (Bluesky app
+password, Mastodon token, and so on).
+
+### Confirming a connection (2026-10-25)
+
+"Connected" used to be a note written at sign-in, and nothing confirmed it:
+- The browser tab said "HAYAT is connected" the moment the provider sent it
+  back, before HAYAT had exchanged the code for a token. If the exchange then
+  failed (a wrong client secret, an expired code), the tab still claimed
+  success.
+- A test had left a fake "Bluesky connected" record in the live accounts file
+  with no sign-in stored, and the window showed it as connected.
+
+Now:
+- **The tab shows the real result.** It waits until the token is exchanged and
+  the account read, then says "HAYAT is connected to Google as you@…" or why
+  it could not finish.
+- **Every connection is checked.** Opening Accounts & sign-in reads each
+  connected account once (whose account the sign-in belongs to) and shows the
+  result on its card: connected, or "sign-in not working" with the reason.
+  **Check now** repeats it. A sign-in missing from Windows Credential Manager
+  is no longer shown as connected.
+- **A tab fallback while signing in with the browser:**
+  - **Open it again ↗** and **Copy the sign-in link**: paste the link into a
+    tab of the browser where you are already signed in to that service.
+  - If you approve but the tab says it cannot reach this computer (127.0.0.1
+    or localhost: another browser, a security tool, a remote desktop), copy
+    the whole address from that tab's address bar and paste it under
+    **Finish sign-in**. HAYAT checks it belongs to this sign-in (its state
+    value) and finishes. An address from another sign-in is refused.
+  - **Cancel** stops waiting.
+- **Keyboard:** the first empty box has focus, **Tab** moves to the next box
+  and **Enter** connects from any of them.
+- In chat: "is my bluesky connected?", "check my accounts", "am I signed in
+  to github" make the same live check (`account_check`).
+- Tests can no longer touch the live accounts file: the run fails if
+  `data/integrations/accounts.json` changes.
 
 **More ways for Slack:**
 - **Incoming webhook:** the simplest way to post to one channel. Paste the

@@ -419,17 +419,24 @@ def same_posting(left: dict[str, Any], right: dict[str, Any]) -> bool:
         and place(left) in generic_remote and place(right) in generic_remote)
 
 
-def matches_location(row: dict[str, Any], location: str) -> bool:
-    """Match the advertised location (states, codes, city aliases, countries, remote); see app/jobs/places.py."""
-    from app.jobs.places import place_matches
+def matches_location(row: dict[str, Any], location: str, *, include_remote: bool = False) -> bool:
+    """Jobs at that place, plus remote jobs that may be done from there (see app/jobs/places.py).
+
+    `include_remote=False` keeps only postings located at the place.
+    """
+    from app.jobs.places import place_matches, remote_open_to
     value = location.strip()
     if not value or value.casefold() in {"worldwide", "whole world", "all locations", "anywhere", "global", "world"}:
         return True
     if re.search(r"[;|]", value):
-        return any(matches_location(row, part) for part in re.split(r"[;|]", value) if part.strip())
+        return any(matches_location(row, part, include_remote=include_remote)
+                   for part in re.split(r"[;|]", value) if part.strip())
     reading = row.get("reading") or {}
     remote = reading.get("mode") == "remote" or row.get("remote") is True
-    return place_matches(str(row.get("location") or ""), value, regions=reading.get("regions") or (), remote=remote)
+    place, regions = str(row.get("location") or ""), reading.get("regions") or ()
+    if place_matches(place, value, regions=regions, remote=remote):
+        return True
+    return include_remote and remote and value.casefold() != "remote" and remote_open_to(place, value, regions=regions)
 
 
 def listed_in_location(place: str, location: str) -> bool:

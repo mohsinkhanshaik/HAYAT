@@ -12,6 +12,7 @@ from tkinter import ttk
 
 from app.gui_windows import place_over
 from scripts import autostart
+from app.gui_fonts import DISPLAY
 
 
 def status_text(info: dict) -> str:
@@ -45,7 +46,7 @@ class StartupDialog(tk.Toplevel):
         content = tk.Frame(self, bg=palette.BLACK, padx=24, pady=20)
         content.pack(fill="both", expand=True)
         tk.Label(content, text="Start at login", bg=palette.BLACK, fg=palette.WHITE,
-                 font=("Segoe UI Semibold", 16), anchor="w").pack(fill="x")
+                 font=(DISPLAY, 16), anchor="w").pack(fill="x")
         platform_name = "Windows account" if sys.platform == "win32" else "user account"
         tk.Label(content, text=f"Runs for your {platform_name} after sign-in. The login launcher"
                  " supervises crashes and does not need administrator access.",

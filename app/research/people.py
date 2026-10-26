@@ -14,7 +14,12 @@ from app.research.query_planner import PlannedQuery
 
 BROKERS = {'whitepages.com', 'spokeo.com', 'beenverified.com', 'truthfinder.com', 'intelius.com',
            'peoplefinders.com', 'fastpeoplesearch.com', 'truepeoplesearch.com', 'radaris.com',
-           'clustrmaps.com', 'familytreenow.com', 'peekyou.com', 'mylife.com'}
+           'clustrmaps.com', 'familytreenow.com', 'peekyou.com', 'mylife.com',
+           # Contact-data brokers: they sell guessed or scraped work emails and phone numbers.
+           'derrick-app.com', 'rocketreach.co', 'rocketreach.com', 'zoominfo.com', 'apollo.io', 'lusha.com',
+           'signalhire.com', 'contactout.com', 'hunter.io', 'snov.io', 'leadiq.com', 'seamless.ai', 'adapt.io',
+           'uplead.com', 'kaspr.io', 'getprospect.com', 'voilanorbert.com', 'anymailfinder.com', 'lead411.com',
+           'aeroleads.com', 'skrapp.io', 'salesintel.io', 'swordfish.ai', 'datanyze.com', 'cognism.com'}
 PRIVATE = re.compile(
     r'(?i)\b(?:home|residential|private|personal|current|street)\s+(?:address|phone|number|email|location)|'
     r'\b(?:phone|telephone|mobile|cellphone|e-?mail|date of birth|born on|birthday|social security|'
@@ -188,6 +193,28 @@ def parse_person_request(text):
     return PersonRequest(parts[0].strip('"\''), parts[1] if len(parts) > 1 else '')
 
 
+#: Sources that usually describe a person's own work first: Wikipedia, universities, scholarly records.
+_AUTHORITATIVE = re.compile(r'(?i)(?:^|\.)(?:wikipedia\.org|wikidata\.org|openalex\.org|orcid\.org|arxiv\.org|'
+                            r'scholar\.google\.com|dblp\.org|acm\.org|ieee\.org)$|\.(?:edu|ac\.[a-z]{2}|gov)$')
+
+
+def source_rank(request, source, has_facts):
+    """Higher first. A fan-made 'Portfolio-Linus-Torvalds' repository ranked above Wikipedia-type sources before."""
+    parts = urlsplit(source.final_url)
+    host = (parts.hostname or '').lower()
+    score = 2.0 if has_facts else 0.0
+    if request.profile_url and source.final_url.rstrip('/').casefold() == request.profile_url.rstrip('/').casefold():
+        score += 4
+    if host == 'api.github.com' or _AUTHORITATIVE.search(host):
+        score += 3
+    if host == 'github.com':
+        owner = parts.path.strip('/').split('/')[0].casefold()
+        profile_owner = urlsplit(request.profile_url).path.strip('/').split('/')[0].casefold() if request.profile_url else ''
+        if parts.path.strip('/').count('/') >= 1 and owner != profile_owner:
+            score -= 3  # someone else's repository about the person
+    return score + float(getattr(source, 'quality', 0) or 0)
+
+
 def person_answer(request, documents, claims):
     """Keep same-name source candidates separate; no synthesized identity dossier."""
     from app.research.models import ClaimStatus
@@ -197,13 +224,35 @@ def person_answer(request, documents, claims):
         lines.append('Context supplied: ' + request.context)
     if not documents:
         lines.append('No retrievable public professional source passed the name and source checks. Add a public organization, role or profile link.')
-    for index, source in enumerate(documents, 1):
-        lines += ['', f'[{index}] {source.title}', source.final_url,
-                  'Published: ' + (source.published_at or 'not reported') + ' · Retrieved: ' + source.retrieved_at]
-        facts = [claim.text for claim in claims if claim.status in (ClaimStatus.SUPPORTED, ClaimStatus.PARTIALLY_SUPPORTED)
+
+    def tidy(text):
+        # A page's own footnote marks ("since 1991 [1] .", "born 1986 [ 3 ]", "[citation needed]") read as HAYAT's
+        # source numbers once quoted here.
+        text = re.sub(r'\s*\[\s*(?:\d+|[a-z]|citation needed|note \d+)\s*\]', '', str(text), flags=re.I)
+        return re.sub(r'\s+([.,;:)])', r'\1', re.sub(r'\(\s*in\s+[a-z]{2}\s*\)', '', text)).strip()
+
+    def facts_for(source):
+        found = [tidy(claim.text) for claim in claims if claim.status in (ClaimStatus.SUPPORTED, ClaimStatus.PARTIALLY_SUPPORTED)
                  and public_work_claim(claim.text) and request.mentions(claim.text)
                  and any(evidence.source_url in (source.url, source.final_url) for evidence in claim.evidence)]
-        lines += ['• ' + text for text in dict.fromkeys(facts[:5])] or ['No supported public-work claim was extracted from this source.']
+        return list(dict.fromkeys(found))[:5]
+
+    ranked = sorted(documents, key=lambda source: -source_rank(request, source, bool(facts_for(source))))
+    by_source = [(index, source, facts_for(source)) for index, source in enumerate(ranked, 1)]
+    # At a glance: facts the sources state, best supported first, each with the sources that state it. Still not a
+    # merged identity: the line below says so, and every fact keeps its source numbers.
+    cited: dict[str, list[int]] = {}
+    for index, _source, facts in by_source:
+        for fact in facts:
+            cited.setdefault(fact, []).append(index)
+    if cited:
+        top = sorted(cited.items(), key=lambda item: (-len(item[1]), item[1][0]))[:5]
+        lines += ['', 'At a glance (as the sources report it; check that they describe the person you mean):']
+        lines += [f'• {fact} [{", ".join(map(str, where))}]' for fact, where in top]
+    for index, source, facts in by_source:
+        lines += ['', f'[{index}] {source.title}', source.final_url,
+                  'Published: ' + (source.published_at or 'not reported') + ' · Retrieved: ' + source.retrieved_at]
+        lines += ['• ' + text for text in facts] or ['No supported public-work claim was extracted from this source.']
     lines += ['', 'Not established: whether these sources describe the same person, whether older roles are current, or whether this is the person you mean.',
               'Scope: public work, professional background and published work. No face identification, private contact details, family dossiers or person tracking.']
     return '\n'.join(lines)

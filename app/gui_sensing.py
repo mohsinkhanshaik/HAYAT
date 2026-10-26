@@ -29,6 +29,7 @@ from app.gui_resources import BooleanVar, StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.logging import log_swallowed
+from app.gui_fonts import DISPLAY
 
 _log = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ class SensingStudio(tk.Toplevel):
         p = self.palette
         header = tk.Frame(self, bg=p.BLACK, padx=16, pady=10)
         header.pack(fill="x")
-        tk.Label(header, text="Wi-Fi sensing & router", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16)).pack(side="left")
+        tk.Label(header, text="Wi-Fi sensing & router", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16)).pack(side="left")
         tk.Label(header, text="channel state information · movement · camera cross-check · router and network", bg=p.BLACK, fg=p.MUTED,
                  font=("Segoe UI", 9)).pack(side="left", padx=10, pady=(5, 0))
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.destroy).pack(side="right")

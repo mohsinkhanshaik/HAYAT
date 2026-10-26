@@ -15,6 +15,7 @@ from tkinter import ttk
 from typing import Any
 
 from app.gui_resources import StringVar
+from app.gui_fonts import DISPLAY
 
 #: The four stages a spoken request passes through, keyed by voice states.
 STAGES = (("listening", "Listening", "Capturing your voice"), ("transcribing", "Transcribing", "Converting to text"),
@@ -57,7 +58,7 @@ class VoicePage:
         p, page = self.palette, self.page
         head = tk.Frame(page, bg=p.BLACK)
         head.pack(fill="x", pady=(0, 6))
-        tk.Label(head, text="Voice Studio", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 17), anchor="w").pack(side="left")
+        tk.Label(head, text="Voice Studio", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 17), anchor="w").pack(side="left")
         self.subtitle = tk.Label(head, text="  Speak naturally with HAYAT · voice, transcription and replies run locally",
                                  bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9), anchor="w")
         self.subtitle.pack(side="left", pady=(6, 0))
@@ -340,7 +341,7 @@ class VoicePage:
             self._draw_pipeline(stage)
         self.toggle.configure(text="Stop voice" if enabled else "Start voice")
         for mode, button in self.mode_buttons.items():
-            button.configure(style="HayatAccent.TButton" if voice.get("mode") == mode else "Hayat.TButton")
+            button.configure(style="HayatChosen.TButton" if voice.get("mode") == mode else "Hayat.TButton")
         from app.gui_voice import voice_summary
         self.detail.set(f"{voice_summary(voice)} · {STATE_TEXT.get(state, state)}" + (f" · {voice['last_error']}" if voice.get("last_error") else ""))
         recognition = voice.get("last_recognition") or {}

@@ -22,6 +22,7 @@ from typing import Any, Callable
 
 from app.gui_resources import BooleanVar, StringVar
 from app.money_desk import PURPOSES
+from app.gui_fonts import DISPLAY
 
 URGENCY_COLOURS = {"high": "#F05D5E", "medium": "#E8C46A", "low": "#7DD3FC"}
 POT_COLOURS = ("#E8C46A", "#7DD3FC", "#A3E635", "#F0ABFC", "#FDBA74", "#5EEAD4")
@@ -47,7 +48,7 @@ class MoneyDeskWindow(tk.Toplevel):
         self.value: dict[str, Any] | None = None
         head = tk.Frame(self, bg=p.BLACK)
         head.pack(fill="x", padx=16, pady=(14, 2))
-        tk.Label(head, text="HAYAT Wallet", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16), anchor="w").pack(side="left")
+        tk.Label(head, text="HAYAT Wallet", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16), anchor="w").pack(side="left")
         ttk.Button(head, text="Think now", style="HayatAccent.TButton", command=self.think).pack(side="right")
         ttk.Button(head, text="Can I afford…?", style="Hayat.TButton", command=self.afford).pack(side="right", padx=6)
         self.status = tk.Label(head, text="", bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9))

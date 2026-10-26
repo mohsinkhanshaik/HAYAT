@@ -49,7 +49,8 @@ def test_search_carries_location_and_keeps_provider_failures_visible_after_refre
     assert len(received) == 1
     criteria = received[0]
     assert criteria.pop("check")() is True and callable(criteria.pop("progress"))
-    assert criteria == {"query": "mechanical engineer", "location": "Toronto", "remote": True, "force": True, "depth": "deep"}
+    assert criteria == {"query": "mechanical engineer", "location": "Toronto", "remote": True, "force": True, "depth": "deep",
+                        "include_remote": True}  # remote jobs doable from Toronto count, unless unticked
     assert "Offline source" in window.search_note.cget("text")
     assert "No jobs match" in window.search_note.cget("text")
     window.clear_filters()

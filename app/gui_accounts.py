@@ -19,6 +19,7 @@ import queue
 import threading
 import time
 import tkinter as tk
+from datetime import datetime
 import webbrowser
 from tkinter import ttk
 from typing import Any
@@ -26,6 +27,7 @@ from typing import Any
 from app.gui_intelligence_parts import blend
 from app.gui_resources import StringVar
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 UP, DOWN = '#4ADE80', '#F05D5E'
 COLOURS = {'google': '#4285F4', 'microsoft': '#00A4EF', 'github': '#8B949E', 'linkedin': '#0A66C2', 'notion': '#A0A0A0',
@@ -39,6 +41,14 @@ BLURBS = {'device': 'Easiest. HAYAT shows a short code; you sign in on the provi
                    'Windows Credential Manager.',
           'webhook': 'The simplest way to post to one channel: the service gives you a web address that posts there. It cannot '
                      'read anything. Kept in Windows Credential Manager like a token.'}
+
+
+def _local_time(stamp: str) -> str:
+    """'2026-10-25T20:31:05+00:00' as this computer's time, '20:31'."""
+    try:
+        return datetime.fromisoformat(stamp).astimezone().strftime('%H:%M')
+    except (TypeError, ValueError):
+        return ''
 
 
 def _a(label: str) -> str:
@@ -70,6 +80,8 @@ class AccountsCenter(tk.Toplevel):
         self.filter = StringVar(self, '')
         self.client_id = StringVar(self, '')
         self.client_secret = StringVar(self, '')
+        self.return_address = StringVar(self, '')
+        self.browser_key = ''
         self.write_op = StringVar(self, '')
         self.field_vars: dict[str, Any] = {}
         self.title('HAYAT · Accounts & sign-in')
@@ -82,6 +94,9 @@ class AccountsCenter(tk.Toplevel):
         place_over(self, gui.root, (1360, 860))
         self.deiconify()
         self._tick_id = self.after(100, self._tick)
+        if self.data and self.data.get('connected'):
+            self.status.set(self.status.get() + ' · checking…')
+            self._run('check_all', self.manager.check_all)
 
     # ------------------------------------------------------------------ layout
     def _build(self) -> None:
@@ -90,7 +105,7 @@ class AccountsCenter(tk.Toplevel):
         header.pack(fill='x')
         words = tk.Frame(header, bg=p.BLACK)
         words.pack(side='left', fill='x', expand=True)
-        tk.Label(words, text='Accounts & sign-in', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI Semibold', 19), anchor='w').pack(fill='x')
+        tk.Label(words, text='Accounts & sign-in', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 19), anchor='w').pack(fill='x')
         tk.Label(words, text='Connect your own accounts, then read your mail, calendar, files, repositories and channels, and send '
                              'or create things once you confirm', bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 9), anchor='w').pack(fill='x')
         self.everywhere_button = ttk.Button(header, text='Post everywhere…', style='HayatAccent.TButton', command=self.post_everywhere)
@@ -131,7 +146,7 @@ class AccountsCenter(tk.Toplevel):
         self.not_offered = tk.Frame(inner, bg=p.BLACK)
         self.not_offered.pack(fill='x')
         right = tk.Frame(body, bg=p.BLACK)
-        self.title_label = tk.Label(right, text='', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI Semibold', 16), anchor='w')
+        self.title_label = tk.Label(right, text='', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16), anchor='w')
         self.title_label.pack(fill='x')
         self.state_label = tk.Label(right, text='', bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 10), anchor='w')
         self.state_label.pack(fill='x', pady=(0, 4))
@@ -312,12 +327,19 @@ class AccountsCenter(tk.Toplevel):
             if row['key'] not in self.card_widgets:
                 self._card(row)
             widgets = self.card_widgets[row['key']]
-            widgets['state'].configure(text=('● connected · ' + row['connected_as']) if row['connected'] else '○ not connected',
-                                       fg=UP if row['connected'] else self.p.MUTED)
+            if row['connected'] and row.get('check_ok') is False:
+                state, colour = '⚠ sign-in not working · check again or reconnect', DOWN
+            elif row['connected']:
+                state, colour = '● connected · ' + row['connected_as'], UP
+            else:
+                state, colour = '○ not connected', self.p.MUTED
+            widgets['state'].configure(text=state, fg=colour)
             fill = blend(self.p.GOLD, self.p.PANEL, .82) if row['key'] == self.selected else self.p.PANEL
             for name in ('card', 'words', 'name', 'state', 'badge'):
                 widgets[name].configure(bg=fill)
-        self.status.set(f"{len(self.data['connected'])} of {len(self.data['accounts'])} accounts connected")
+        failing = [row['name'] for row in self.data['accounts'] if row['connected'] and row.get('check_ok') is False]
+        self.status.set(f"{len(self.data['connected'])} of {len(self.data['accounts'])} accounts connected"
+                        + (f" · {', '.join(failing)} not working" if failing else ''))
         for name, group in self.group_widgets.items():
             rows = [row for row in self.data['accounts'] if row.get('group') == name]
             connected = sum(1 for row in rows if row['connected'])
@@ -464,9 +486,23 @@ class AccountsCenter(tk.Toplevel):
         if row['connected']:
             box = tk.Frame(frame, bg=p.PANEL, padx=12, pady=10)
             box.pack(fill='x', pady=(8, 4))
-            tk.Label(box, text=f"Connected as {row['connected_as']}", bg=p.PANEL, fg=UP, font=('Segoe UI Semibold', 12), anchor='w').pack(side='left')
+            words = tk.Frame(box, bg=p.PANEL)
+            words.pack(side='left', fill='x', expand=True)
+            failed = row.get('check_ok') is False
+            tk.Label(words, text=f"Connected as {row['connected_as']}" if not failed else 'Saved, but the sign-in is not working',
+                     bg=p.PANEL, fg=DOWN if failed else UP, font=('Segoe UI Semibold', 12), anchor='w').pack(fill='x')
+            when = _local_time(row.get('checked_at', ''))
+            if failed:
+                detail = f"Checked at {when}: {row.get('check_error') or 'no answer'}. Sign in again below." if when else \
+                    f"{row.get('check_error') or 'No answer'}. Sign in again below."
+            elif when:
+                detail = f"✓ Checked at {when}: {row['name']} answered as this account."
+            else:
+                detail = 'Not checked yet: press Check now.'
+            tk.Label(words, text=detail, bg=p.PANEL, fg=DOWN if failed else p.MUTED, font=('Segoe UI', 9), anchor='w',
+                     justify='left', wraplength=640).pack(fill='x')
             ttk.Button(box, text='Sign out', style='Compact.Hayat.TButton', command=self.sign_out).pack(side='right')
-            ttk.Button(box, text='Test connection', style='Compact.Hayat.TButton', command=self.test).pack(side='right', padx=6)
+            ttk.Button(box, text='Check now', style='Compact.Hayat.TButton', command=self.test).pack(side='right', padx=6)
         setup_first = row['needs_app'] and not row['client_id_set'] and not row['connected'] and \
             not any(method['key'] == 'token' for method in row['methods'])
         if setup_first:
@@ -478,7 +514,8 @@ class AccountsCenter(tk.Toplevel):
             card.pack(fill='x', pady=(0, 6))
             head = tk.Frame(card, bg=p.PANEL)
             head.pack(fill='x')
-            title = method['label'] if method['key'] != 'token' else f"Paste {_a(row.get('token_label', 'token'))}"
+            title = method['label'] if method['key'] != 'token' else (row.get('token_title')
+                                                                      or f"Paste {_a(row.get('token_label', 'token'))}")
             tk.Label(head, text=f"{number}. {title}", bg=p.PANEL, fg=p.WHITE, font=('Segoe UI Semibold', 11)).pack(side='left')
             if not method['ready']:
                 missing = ('needs the app’s client secret (in the app setup)' if row['client_id_set'] and method['key'] == 'browser'
@@ -495,9 +532,30 @@ class AccountsCenter(tk.Toplevel):
                 self.code_area = tk.Frame(card, bg=p.PANEL)
                 self.code_area.pack(fill='x')
             elif method['key'] == 'browser':
-                button = ttk.Button(card, text='Open the sign-in page', style='HayatAccent.TButton', command=self.start_browser)
-                button.pack(anchor='w', pady=(6, 0))
-                button.state(['!disabled' if method['ready'] else 'disabled'])
+                line = tk.Frame(card, bg=p.PANEL)
+                line.pack(fill='x', pady=(6, 0))
+                if row.get('dynamic_app'):  # Mastodon: the server comes first; HAYAT registers itself there
+                    tk.Label(line, text='Your server', bg=p.PANEL, fg=p.WHITE, font=('Segoe UI', 9)).pack(side='left', padx=(0, 6))
+                    server = self.token_values.setdefault('server', StringVar(self, next(
+                        (field.get('value', '') for field in row.get('token_fields') or [] if field['name'] == 'server'), '')))
+                    entry = ttk.Entry(line, textvariable=server, width=28)
+                    entry.pack(side='left', padx=(0, 8))
+                    entry.bind('<Return>', lambda _event: self.start_browser())
+                # Never a dead button: without an app yet, it leads into the one-time setup instead.
+                button = ttk.Button(line, text='Open the sign-in page' if method['ready'] else 'Set up, then sign in',
+                                    style='HayatAccent.TButton', command=self.start_browser)
+                button.pack(side='left')
+                button.state(['disabled'] if row.get('browser_waiting') else ['!disabled'])
+                if row.get('builtin_app'):
+                    tk.Label(line, text="HAYAT's own app: just sign in", bg=p.PANEL, fg=UP, font=('Segoe UI', 9)).pack(side='left', padx=8)
+                elif row.get('dynamic_app'):
+                    tk.Label(line, text='No setup: HAYAT registers itself with your server', bg=p.PANEL, fg=UP,
+                             font=('Segoe UI', 9)).pack(side='left', padx=8)
+                self.browser_area = tk.Frame(card, bg=p.PANEL)
+                self.browser_area.pack(fill='x')
+                if self.browser_key == row['key']:  # a repaint while waiting keeps the waiting panel
+                    self._browser_tries = 0
+                    self.after_idle(self.paint_browser_wait)
             elif method['key'] == 'webhook':
                 actions = tk.Frame(card, bg=p.PANEL)
                 actions.pack(fill='x', pady=(6, 0))
@@ -511,13 +569,18 @@ class AccountsCenter(tk.Toplevel):
                     tk.Label(card, text=f'{index}. {step}', bg=p.PANEL, fg=p.WHITE, font=('Segoe UI', 9), anchor='w', justify='left',
                              wraplength=820).pack(fill='x')
             else:
+                first_empty = None
                 # The values a token needs beside it: a Mastodon server, a Bluesky handle, a Facebook Page ID.
                 for field in row.get('token_fields') or []:
                     line = tk.Frame(card, bg=p.PANEL)
                     line.pack(fill='x', pady=(6, 0))
                     tk.Label(line, text=field['label'], bg=p.PANEL, fg=p.WHITE, font=('Segoe UI', 9), anchor='w').pack(anchor='w')
                     variable = self.token_values.setdefault(field['name'], StringVar(self, field.get('value', '')))
-                    ttk.Entry(line, textvariable=variable, width=60).pack(fill='x')
+                    field_entry = ttk.Entry(line, textvariable=variable, width=60)
+                    field_entry.pack(fill='x')
+                    field_entry.bind('<Return>', lambda _event: self.save_token())
+                    if not variable.get() and first_empty is None:
+                        first_empty = field_entry
                 label = row.get('token_label', 'token')
                 actions = tk.Frame(card, bg=p.PANEL)
                 actions.pack(fill='x', pady=(6, 0))
@@ -526,6 +589,15 @@ class AccountsCenter(tk.Toplevel):
                 entry.pack(side='left', fill='x', expand=True)
                 entry.bind('<Return>', lambda _event: self.save_token())
                 ttk.Button(actions, text=f'Save {label}', style='HayatAccent.TButton', command=self.save_token).pack(side='left', padx=6)
+                if not row['connected']:
+                    # Typing can start at once; Tab moves on to the next box and Enter connects from any of them.
+                    target = first_empty or entry
+                    self.after_idle(lambda widget=target: widget.winfo_exists() and widget.focus_set())
+                if label.lower() == 'app password':
+                    tk.Label(card, text=f"This is an app password you make for HAYAT on {row['name']}'s site, not your "
+                                        f"{row['name']} login password. You can remove it there at any time.",
+                             bg=p.PANEL, fg=p.GOLD_SOFT, font=('Segoe UI', 9), anchor='w', justify='left',
+                             wraplength=820).pack(fill='x', pady=(4, 0))
                 if row['token_page']:
                     ttk.Button(actions, text='Make a token ↗', style='Compact.Hayat.TButton',
                                command=lambda: webbrowser.open(row['token_page'])).pack(side='left')
@@ -553,11 +625,20 @@ class AccountsCenter(tk.Toplevel):
         ttk.Button(line, text='Open the setup page ↗', style='Compact.Hayat.TButton',
                    command=lambda: webbrowser.open(row['app_page'])).pack(side='left')
         tk.Label(line, text='Client ID', bg=p.PANEL, fg=p.WHITE).pack(side='left', padx=(12, 4))
-        ttk.Entry(line, textvariable=self.client_id, width=34).pack(side='left')
+        self.client_id_entry = ttk.Entry(line, textvariable=self.client_id, width=34)
+        self.client_id_entry.pack(side='left')
+        self.client_id_entry.bind('<Return>', lambda _event: self.save_app())
         if row['browser_needs_secret']:
             tk.Label(line, text='Client secret', bg=p.PANEL, fg=p.WHITE).pack(side='left', padx=(10, 4))
             ttk.Entry(line, textvariable=self.client_secret, show='•', width=22).pack(side='left')
         ttk.Button(line, text='Save app', style='HayatAccent.TButton', command=self.save_app).pack(side='left', padx=6)
+        if row.get('redirect_address'):
+            copy = tk.Frame(setup, bg=p.PANEL)
+            copy.pack(fill='x', pady=(6, 0))
+            tk.Label(copy, text=f"Redirect / callback address to paste there: {row['redirect_address']}", bg=p.PANEL,
+                     fg=p.GOLD_SOFT, font=('Segoe UI', 9)).pack(side='left')
+            ttk.Button(copy, text='Copy', style='Compact.Hayat.TButton',
+                       command=lambda: self.copy_text(row['redirect_address'], 'Redirect address copied.')).pack(side='left', padx=6)
 
     def note(self, text: str, colour: str | None = None) -> None:
         if getattr(self, 'connect_note', None) is not None and self.connect_note.winfo_exists():
@@ -573,6 +654,11 @@ class AccountsCenter(tk.Toplevel):
         self.client_secret.set('')
         self.refresh()
         self.paint_connect()
+        if getattr(self, '_sign_in_after_setup', '') == self.selected and any(
+                method['key'] == 'browser' and method['ready'] for method in self.row()['methods']):
+            self._sign_in_after_setup = ''
+            self.start_browser()  # the sign-in the owner pressed for, now that the app exists
+            return
         self.note('App saved. Now choose a way to sign in above.', UP)
 
     def start_device(self) -> None:
@@ -637,16 +723,98 @@ class AccountsCenter(tk.Toplevel):
 
     def start_browser(self) -> None:
         key = self.selected
-        self.note('Your browser is open at the sign-in page. Approve there; HAYAT waits up to five minutes…', self.p.GOLD_SOFT)
-        self._run('browser', lambda: self.manager.sign_in_browser(key))
+        row = self.manager.status(key)  # fresh: an app saved elsewhere (chat, another window) counts at once
+        method = next((item for item in row['methods'] if item['key'] == 'browser'), {})
+        if not method.get('ready'):
+            # The one-time app setup first, then the same button signs in (Save app starts it).
+            self._sign_in_after_setup = key
+            self.note(f"{row['name']} needs a one-time app registration before browser sign-in: follow the steps in "
+                      "One-time app setup below, paste the Client ID (and secret), and press Save app; the sign-in "
+                      "then opens by itself.", self.p.GOLD_SOFT)
+            entry = getattr(self, 'client_id_entry', None)
+            if entry is not None and entry.winfo_exists():
+                entry.focus_set()
+            return
+        server = self.token_values['server'].get().strip() if row.get('dynamic_app') and 'server' in self.token_values else ''
+        if row.get('dynamic_app') and not server:
+            self.note('Type your server first, such as mastodon.social.', DOWN)
+            return
+        self.browser_key = key
+        self.note('Your browser is open at the sign-in page. Sign in and approve there; it comes back to HAYAT, which '
+                  'reads the account to confirm it and keeps the sign-in safely (up to five minutes)…', self.p.GOLD_SOFT)
+        self._run('browser', lambda: self.manager.sign_in_browser(key, server=server))
+        self._browser_tries = 0
+        self.after(200, self.paint_browser_wait)
+
+    def paint_browser_wait(self) -> None:
+        """While the browser sign-in waits: open it again, copy it into any tab, paste the address back, or cancel."""
+        key = self.browser_key
+        area = getattr(self, 'browser_area', None)
+        if self._closed or not key or key != self.selected or area is None or not area.winfo_exists():
+            return
+        link = self.manager.browser_link(key)
+        if not link:
+            self._browser_tries += 1
+            if self._browser_tries < 25 and 'browser' in self._busy:
+                self.after(200, self.paint_browser_wait)
+            return
+        p = self.p
+        for child in area.winfo_children():
+            child.destroy()
+        name = self.row().get('name', key)
+        tk.Label(area, text=f'Waiting for you to approve on {name}…', bg=p.PANEL, fg=p.GOLD_SOFT,
+                 font=('Segoe UI Semibold', 10), anchor='w').pack(fill='x', pady=(8, 2))
+        line = tk.Frame(area, bg=p.PANEL)
+        line.pack(fill='x')
+        ttk.Button(line, text='Open it again ↗', style='Compact.Hayat.TButton',
+                   command=lambda: webbrowser.open(link)).pack(side='left')
+        ttk.Button(line, text='Copy the sign-in link', style='Compact.Hayat.TButton',
+                   command=lambda: self.copy_text(link, 'Sign-in link copied: paste it into a tab of the browser where you '
+                                                        'are signed in to ' + name + '.')).pack(side='left', padx=6)
+        ttk.Button(line, text='Cancel', style='Compact.Hayat.TButton', command=self.cancel_browser).pack(side='left')
+        tk.Label(area, text='Approved, but the tab says it cannot reach this computer (127.0.0.1 or localhost)? Copy the whole '
+                            'address from that tab\'s address bar and paste it here:',
+                 bg=p.PANEL, fg=p.MUTED, font=('Segoe UI', 9), anchor='w', justify='left', wraplength=820).pack(fill='x', pady=(6, 2))
+        back = tk.Frame(area, bg=p.PANEL)
+        back.pack(fill='x')
+        entry = ttk.Entry(back, textvariable=self.return_address, width=70)
+        entry.pack(side='left', fill='x', expand=True)
+        entry.bind('<Return>', lambda _event: self.finish_from_address())
+        ttk.Button(back, text='Finish sign-in', style='HayatAccent.TButton', command=self.finish_from_address).pack(side='left', padx=6)
+
+    def copy_text(self, text: str, message: str) -> None:
+        self.clipboard_clear()
+        self.clipboard_append(text)
+        self.note(message, self.p.GOLD_SOFT)
+
+    def finish_from_address(self) -> None:
+        address = self.return_address.get().strip()
+        if not address or not self.browser_key:
+            return
+        try:
+            ok = self.manager.finish_browser_from_address(self.browser_key, address)
+        except Exception as exc:
+            self.note(str(exc), DOWN)
+            return
+        self.return_address.set('')
+        self.note('Got it: exchanging the code and reading the account to confirm…' if ok
+                  else 'That address says the sign-in did not finish; HAYAT shows why in a moment.', self.p.GOLD_SOFT)
+
+    def cancel_browser(self) -> None:
+        if self.browser_key:
+            self.manager.cancel_browser(self.browser_key)
 
     def done_browser(self, value: dict | None, error: str | None) -> None:
+        self.browser_key = ''
+        self.return_address.set('')
         if error:
+            self.refresh()
+            self.paint_connect()
             self.note('Not connected: ' + error.split(': ', 1)[-1], DOWN)
             return
         self.refresh()
         self.paint_connect()
-        self.note(f"Connected as {value['connected_as']}.", UP)
+        self.note(f"Connected and checked: {value['name']} answered as {value['connected_as']}.", UP)
         self.bell()
 
     def save_token(self) -> None:
@@ -674,15 +842,26 @@ class AccountsCenter(tk.Toplevel):
             return
         self.refresh()
         self.paint_connect()
-        self.note(f"Token works: connected as {value['connected_as']}.", UP)
+        self.note(f"Connected and checked: {value['name']} answered as {value['connected_as']}.", UP)
 
     def test(self) -> None:
         key = self.selected
-        self._run('test', lambda: self.manager.read(key, 'profile'))
+        self.note('Checking: one read of whose account this is…')
+        self._run('test', lambda: self.manager.check(key))
 
     def done_test(self, value: dict | None, error: str | None) -> None:
-        self.note(('Works: ' + ' · '.join(filter(None, (value['rows'][0].get('title'), value['rows'][0].get('detail')))))
-                  if not error and value['rows'] else 'Not working: ' + (error or 'no answer').split(': ', 1)[-1], UP if not error else DOWN)
+        self.refresh()
+        self.paint_connect()
+        if error:
+            self.note('Could not check: ' + error.split(': ', 1)[-1], DOWN)
+        elif value.get('check_ok'):
+            self.note(f"Working: {value['name']} answered as {value['connected_as']}.", UP)
+        else:
+            self.note(f"Not working: {value.get('check_error') or 'no answer'}. Sign in again below.", DOWN)
+
+    def done_check_all(self, value: dict | None, error: str | None) -> None:
+        self.refresh()
+        self.paint_connect()
 
     def sign_out(self) -> None:
         key = self.selected

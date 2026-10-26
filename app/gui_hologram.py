@@ -168,6 +168,8 @@ class NeuralWorkspace(DepthNavigator):
             colour = p.GOLD_SOFT if key == self.active else blue
             r = 4 if key == self._hover else 2.5
             self.create_oval(x-r, y-r, x+r, y+r, fill=colour, outline="", tags="scene")
+        # The voice caption stays readable: a view dot drawn later sat on its first letter.
+        self.tag_raise("voice_caption")
         self._draw_cards(w, h, cx, cy, radius, compact)
         heading = "←/→ choose · Enter open · ↑/↓ tilt · Home reset" if self._focused else "HAYAT  /  NEURAL WORKSPACE"
         self.create_text(18, 16, text=heading, anchor="nw", fill=blue,
@@ -405,10 +407,11 @@ class NeuralWorkspace(DepthNavigator):
                          outline=blend(p.PANEL, colour, .25 + .75 * level), width=1 + 2.5 * level)
         # A dark pill keeps the caption readable over the mesh behind it.
         caption_y = cy + size * 1.45 + 11
-        item = self.create_text(cx, caption_y, text=caption, tags=tags,
+        caption_tags = (*tags, "voice_caption")
+        item = self.create_text(cx, caption_y, text=caption, tags=caption_tags,
                                 fill=colour, font=("Segoe UI Semibold", 8))
         left, top, right, bottom = self.bbox(item)
-        rounded(self, (left - 8, top - 2, right + 8, bottom + 2), radius=8, tags=tags,
+        rounded(self, (left - 8, top - 2, right + 8, bottom + 2), radius=8, tags=caption_tags,
                 fill=blend(p.BLACK, p.PANEL, .35), outline=blend(p.PANEL, colour, .45))
         self.tag_raise(item)
 

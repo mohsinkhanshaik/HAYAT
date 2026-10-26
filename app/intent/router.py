@@ -923,6 +923,16 @@ class IntentRouter:
         if public_contact_request(raw):
             return RequestIntent(IntentKind.ACTION, .99, raw, True, False, True,
                                  TaskComplexity.STANDARD, {'modality': 'private_networking'})
+        # "find people to contact: CTOs of fintech companies in UAE", "find top AI researchers in India".
+        # "show me onion sites for news", "is this onion link real? <address>" (app/research/onion_directory.py).
+        from app.research.onion_directory import request as onion_sites_request
+        if onion_sites_request(raw):
+            return RequestIntent(IntentKind.ACTION, .99, raw, True, False, True,
+                                 TaskComplexity.SIMPLE, {'modality': 'onion_sites'})
+        from app.research.people_finder import request as people_request
+        if people_request(raw):
+            return RequestIntent(IntentKind.ACTION, .99, raw, True, False, True,
+                                 TaskComplexity.STANDARD, {'modality': 'private_networking'})
         from app.networking_actions import request as networking_request
         if networking_request(raw):
             return RequestIntent(IntentKind.ACTION, .99, raw, True, False, True,

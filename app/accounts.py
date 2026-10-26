@@ -45,6 +45,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlsplit
 
 import httpx
 
+from app.accounts_mail import MailAccounts, mail_provider
 from app.accounts_social import NOT_OFFERED, SocialAccounts, social_providers
 from app.logging import log_swallowed
 
@@ -97,6 +98,10 @@ class Provider:
     token_basic_auth: bool = False
     #: Where the account sits in the window: Mail & calendar, Social, Messaging or Work.
     group: str = "Work"
+    #: The sign-in card's title for a "token" provider when "Paste a token" is wrong (email: your normal login).
+    token_title: str = ""
+    #: The app registers itself with the owner's server at sign-in (Mastodon): browser sign-in needs no setup.
+    dynamic_app: bool = False
 
 
 PROVIDERS: dict[str, Provider] = {provider.key: provider for provider in (
@@ -156,7 +161,9 @@ PROVIDERS: dict[str, Provider] = {provider.key: provider for provider in (
              scopes=("read:user", "repo", "notifications"),
              device_url="https://github.com/login/device/code", authorize_url="https://github.com/login/oauth/authorize",
              token_url="https://github.com/login/oauth/access_token", browser_needs_secret=True,
-             app_page="https://github.com/settings/applications/new",
+             app_page="https://github.com/settings/applications/new?oauth_application%5Bname%5D=HAYAT"
+                      "&oauth_application%5Burl%5D=https%3A%2F%2Fgithub.com%2Fmohsinkhanshaik%2FHAYAT"
+                      "&oauth_application%5Bcallback_url%5D=http%3A%2F%2F127.0.0.1%2F",
              app_steps=("Open GitHub's new OAuth app page (button below).",
                         "Application name \"HAYAT\"; Homepage URL http://127.0.0.1; Authorization callback URL "
                         "http://127.0.0.1/",
@@ -214,9 +221,47 @@ PROVIDERS: dict[str, Provider] = {provider.key: provider for provider in (
                          Operation("post_message", "Post a message to a channel", True,
                                    (("channel", "Channel (e.g. #general or its ID)", True), ("text", "Message", True))))),
     *social_providers(Provider, Operation),
+    mail_provider(Provider, Operation),
 )}
 #: The order the window shows the groups in.
 GROUPS = ("Mail & calendar", "Social", "Messaging", "Work")
+
+
+def builtin_apps(path: Path | None = None) -> dict[str, dict[str, str]]:
+    """HAYAT's own app registrations, made once by the project (config/oauth_apps.yaml), and the owner's local ones
+    (data/integrations/oauth-apps.json, which git ignores). With one, browser sign-in is a single click: no one has to
+    register a developer app. Public and desktop client IDs are not secrets; a client secret only goes in the local
+    file. An owner's own app (saved in the window) always wins over these."""
+    import yaml
+
+    from app.config import PROJECT_ROOT
+
+    apps: dict[str, dict[str, str]] = {}
+    for source in (PROJECT_ROOT / "config" / "oauth_apps.yaml", path or PROJECT_ROOT / "data" / "integrations" / "oauth-apps.json"):
+        try:
+            data = (json.loads(source.read_text(encoding="utf-8")) if source.suffix == ".json"
+                    else yaml.safe_load(source.read_text(encoding="utf-8"))) if source.is_file() else {}
+        except (OSError, ValueError, yaml.YAMLError):
+            log_swallowed(_log, f"reading built-in app registrations from {source.name}")
+            continue
+        for key, value in (data or {}).items():
+            if isinstance(value, dict) and str(value.get("client_id") or "").strip():
+                apps.setdefault(str(key), {}).update({name: str(item).strip() for name, item in value.items() if item})
+    return apps
+
+
+def redirect_address(provider: Provider) -> str:
+    """What to paste as the app's redirect (callback) address when registering it."""
+    if "browser" not in provider.methods or provider.dynamic_app:
+        return ""
+    if provider.loopback_port:
+        return f"http://{provider.loopback_host}:{provider.loopback_port}/"
+    if provider.key == "google":
+        return ""  # a Google "Desktop app" client takes any 127.0.0.1 address without listing one
+    return f"http://{provider.loopback_host}" + ("" if provider.loopback_host == "localhost" else "/")
+
+
+read_builtin_apps = builtin_apps  # the reader itself; tests replace builtin_apps so they never see the real files
 METHOD_LABELS = {"device": "Sign in with a code", "browser": "Sign in with your browser", "token": "Paste a token",
                  "webhook": "Paste an incoming webhook"}
 
@@ -273,7 +318,7 @@ def when(text: str) -> str:
     raise ValueError(f"Give the time as 2026-10-14 15:00, not {text!r}.")
 
 
-class AccountManager(SocialAccounts):
+class AccountManager(SocialAccounts, MailAccounts):
     def __init__(self, broker: Any, path: Path | str, *, request: Callable[..., Any] | None = None,
                  open_browser: Callable[[str], Any] | None = None) -> None:
         self.broker = broker
@@ -282,6 +327,7 @@ class AccountManager(SocialAccounts):
         self.open_browser = open_browser or webbrowser.open
         self._lock = threading.RLock()
         self._devices: dict[str, dict[str, Any]] = {}
+        self._browsers: dict[str, dict[str, Any]] = {}  # browser sign-ins waiting: listener and link
 
     # ------------------------------------------------------------------ local records (no secrets)
     def _records(self) -> dict[str, Any]:
@@ -324,10 +370,19 @@ class AccountManager(SocialAccounts):
             self._save_records(records)
         return self.status(key)
 
+    def _builtin(self, key: str) -> dict[str, str]:
+        if getattr(self, "_builtin_apps", None) is None:
+            self._builtin_apps = builtin_apps(getattr(self, "builtin_apps_path", None))
+        return self._builtin_apps.get(key) or {}
+
     def _client(self, key: str, *, need_secret: bool) -> tuple[str, str]:
+        """The owner's own app when saved, otherwise HAYAT's built-in one."""
         record = self._records().get(key) or {}
         if not record.get("client_id"):
-            raise ValueError(f"{self.provider(key).name} needs your app's Client ID first: follow the one-time app setup.")
+            builtin = self._builtin(key)
+            if builtin.get("client_id") and (builtin.get("client_secret") or not need_secret):
+                return builtin["client_id"], builtin.get("client_secret", "") if need_secret else ""
+            raise ValueError(f"{self.provider(key).name} needs an app registration first: follow the one-time app setup.")
         secret = ""
         if need_secret:
             if not record.get("has_client_secret"):
@@ -335,6 +390,12 @@ class AccountManager(SocialAccounts):
                                  "the app setup.")
             secret = self._secret(f"account.{key}.client", key)
         return record["client_id"], secret
+
+    def _refresh_secret(self, key: str) -> str:
+        record = self._records().get(key) or {}
+        if record.get("client_id"):
+            return self._secret(f"account.{key}.client", key) if record.get("has_client_secret") else ""
+        return self._builtin(key).get("client_secret", "")
 
     def _secret(self, name: str, key: str) -> str:
         self._need_broker()
@@ -349,20 +410,30 @@ class AccountManager(SocialAccounts):
             if key and provider.key != key:
                 continue
             record = records.get(provider.key) or {}
-            ready = {"device": bool(record.get("client_id")), "browser": bool(record.get("client_id"))
-                     and (record.get("has_client_secret") or not provider.browser_needs_secret), "token": True, "webhook": True}
+            builtin = self._builtin(provider.key)
+            own = bool(record.get("client_id"))
+            ready = {"device": own or bool(builtin.get("client_id")),
+                     "browser": provider.dynamic_app or (own and bool(record.get("has_client_secret") or not provider.browser_needs_secret))
+                     or (not own and bool(builtin.get("client_id")) and bool(builtin.get("client_secret") or not provider.browser_needs_secret)),
+                     "token": True, "webhook": True}
             rows.append({"key": provider.key, "name": provider.name, "what": provider.what, "connected": bool(record.get("connected")),
                          "connected_as": record.get("connected_as", ""), "method": record.get("method", ""),
                          "connected_at": record.get("connected_at", ""), "client_id_set": bool(record.get("client_id")),
+                         "builtin_app": bool(builtin.get("client_id")) and not own, "dynamic_app": provider.dynamic_app,
+                         "redirect_address": redirect_address(provider),
+                         # The last real check of the sign-in (check): when, whether it worked, and why not.
+                         "checked_at": record.get("checked_at", ""), "check_ok": record.get("check_ok"),
+                         "check_error": record.get("check_error", ""), "browser_waiting": provider.key in self._browsers,
                          "methods": [{"key": method, "label": METHOD_LABELS[method], "ready": ready[method]} for method in provider.methods],
                          "operations": [{"key": op.key, "label": op.label, "write": op.write,
                                          "fields": [{"name": name, "label": label, "required": required} for name, label, required in op.fields]}
                                         for op in provider.operations],
-                         "needs_app": any(method in provider.methods for method in ("device", "browser")),
+                         "needs_app": not provider.dynamic_app and not builtin.get("client_id")
+                         and any(method in provider.methods for method in ("device", "browser")),
                          "app_page": provider.app_page, "app_steps": list(provider.app_steps), "token_page": provider.token_page,
                          "token_steps": list(provider.token_steps), "browser_needs_secret": provider.browser_needs_secret,
                          "webhook_page": provider.webhook_page, "webhook_steps": list(provider.webhook_steps),
-                         "group": provider.group, "token_label": provider.token_label,
+                         "group": provider.group, "token_label": provider.token_label, "token_title": provider.token_title,
                          "token_fields": [{"name": name, "label": label, "value": (record.get("settings") or {}).get(name, "")}
                                           for name, label in provider.token_fields],
                          # Whether "post everywhere" can use it: its plain-text post operation exists.
@@ -392,7 +463,10 @@ class AccountManager(SocialAccounts):
         with self._lock:
             records = self._records()
             record = records.setdefault(key, {})
-            record.update(connected=True, connected_as=who, method=method, connected_at=datetime.now(UTC).isoformat(timespec="seconds"))
+            now = datetime.now(UTC).isoformat(timespec="seconds")
+            # Reading the account just now is the first check, so the window can say "checked" straight away.
+            record.update(connected=True, connected_as=who, method=method, connected_at=now, checked_at=now, check_ok=True,
+                          check_error="")
             self._save_records(records)
         return self.status(key)
 
@@ -411,8 +485,7 @@ class AccountManager(SocialAccounts):
             provider = self.provider(key)
             client_id, _none = self._client(key, need_secret=False)
             # Google and GitHub want the app's secret on a refresh too; Microsoft's public client has none.
-            client_secret = (self._secret(f"account.{key}.client", key)
-                             if (self._records().get(key) or {}).get("has_client_secret") else "")
+            client_secret = self._refresh_secret(key)
             form = {"grant_type": "refresh_token", "refresh_token": value["refresh_token"], "client_id": client_id}
             if client_secret:
                 form["client_secret"] = client_secret
@@ -474,6 +547,8 @@ class AccountManager(SocialAccounts):
 
     def _who(self, key: str, token: str) -> str:
         """The account a token belongs to, read once to check it works."""
+        if key == "mail":
+            return self._mail_who()
         social = self._who_social(key, token)
         if social:
             return social
@@ -496,6 +571,48 @@ class AccountManager(SocialAccounts):
         if not data.get("ok"):
             raise PermissionError(f"Slack refused the token ({data.get('error', 'unknown error')}).")
         return f"{data.get('user', 'bot')} in {data.get('team', 'a workspace')}"
+
+    def check(self, key: str) -> dict[str, Any]:
+        """Confirm a saved sign-in really works: one read of whose account it is, recorded with the time.
+
+        "Connected" used to be only a note written at sign-in. A sign-in missing from Credential Manager, revoked
+        on the provider's site or expired still showed as connected, and nothing confirmed it.
+        """
+        provider = self.provider(key)
+        record = self._records().get(key) or {}
+        if not record.get("connected"):
+            raise PermissionError(f"{provider.name} is not connected yet.")
+        who, problem, lost = record.get("connected_as", ""), "", False
+        stored = {row["name"] for row in self.broker.list()} if self.broker is not None else set()
+        if f"account.{key}" not in stored:
+            lost, problem = True, "the saved sign-in is missing from Windows Credential Manager; connect again"
+        elif record.get("method") != "webhook":  # a webhook can only be tried by posting, so it is kept as saved
+            try:
+                who = self._who(key, self._token(key)) or who
+            except Exception as exc:  # errors from _call name only the host, never a token
+                problem = str(exc).strip().rstrip(".")[:240] or type(exc).__name__
+        with self._lock:
+            records = self._records()
+            record = records.setdefault(key, {})
+            record.update(checked_at=datetime.now(UTC).isoformat(timespec="seconds"), check_ok=not problem,
+                          check_error=problem)
+            if lost:
+                record.update(connected=False, connected_as="")
+            elif not problem:
+                record["connected_as"] = who
+            self._save_records(records)
+        return self.status(key)
+
+    def check_all(self, key: str = "") -> dict[str, Any]:
+        """Check one connected account, or every connected one, and report each result."""
+        keys = [key] if key else [row["key"] for row in self.status()["accounts"] if row["connected"]]
+        results = []
+        for name in keys:
+            try:
+                results.append(self.check(name))
+            except PermissionError:
+                results.append(self.status(name))
+        return {"check_view": True, "results": results}
 
     # ------------------------------------------------------------------ way 1: a code
     def start_device(self, key: str) -> dict[str, Any]:
@@ -552,13 +669,22 @@ class AccountManager(SocialAccounts):
             self._devices.pop(key, None)
 
     # ------------------------------------------------------------------ way 2: the browser
-    def sign_in_browser(self, key: str, timeout: float = SIGN_IN_SECONDS) -> dict[str, Any]:
-        """Open the provider's page and wait (up to five minutes) for it to come back to 127.0.0.1."""
+    def sign_in_browser(self, key: str, timeout: float = SIGN_IN_SECONDS, server: str = "") -> dict[str, Any]:
+        """Open the provider's page and wait (up to five minutes) for it to come back to 127.0.0.1.
+
+        While it waits, `browser_link` gives the sign-in address to open in any browser tab, `finish_browser_from_address`
+        takes the address a tab ended on (when the tab cannot reach this computer), and `cancel_browser` stops.
+        """
         provider = self.provider(key)
         if "browser" not in provider.methods:
             raise ValueError(f"{provider.name} does not offer browser sign-in here; use {', '.join(METHOD_LABELS[m] for m in provider.methods)}.")
         self._need_broker()
-        client_id, client_secret = self._client(key, need_secret=provider.browser_needs_secret)
+        if provider.dynamic_app:
+            server = self._sign_in_server(key, server)
+        else:
+            client_id, client_secret = self._client(key, need_secret=provider.browser_needs_secret)
+        authorize_url, token_url = provider.authorize_url, provider.token_url
+        scopes = " ".join(provider.scopes)
         verifier, challenge = _pkce()
         state = secrets.token_urlsafe(24)
         try:
@@ -568,31 +694,108 @@ class AccountManager(SocialAccounts):
                                "address. Close what is using it and try again.") from exc
         try:
             redirect = f"http://{provider.loopback_host}:{listener.port}/"
-            query = {"client_id": client_id, "response_type": "code", "redirect_uri": redirect, "scope": " ".join(provider.scopes),
+            if provider.dynamic_app:
+                client_id, client_secret, authorize_url, token_url, scopes = self._register_dynamic_app(key, server, redirect)
+            query = {"client_id": client_id, "response_type": "code", "redirect_uri": redirect, "scope": scopes,
                      "state": state, **provider.extra_authorize}
             if provider.pkce:
                 query.update(code_challenge=challenge, code_challenge_method="S256")
             if key == "google":
                 query.update(access_type="offline", prompt="consent")
-            self.open_browser(provider.authorize_url + "?" + urlencode(query, quote_via=quote))
+            link = authorize_url + "?" + urlencode(query, quote_via=quote)
+            with self._lock:
+                self._browsers[key] = {"listener": listener, "link": link}
+            try:
+                self.open_browser(link)
+            except Exception:  # no default browser: the window offers the link to open in any tab
+                log_swallowed(_log, "opening the sign-in page in the default browser")
             code = listener.wait(timeout)
+            try:
+                form = {"grant_type": "authorization_code", "code": code, "redirect_uri": redirect, "client_id": client_id}
+                if provider.pkce:
+                    form["code_verifier"] = verifier
+                if client_secret:
+                    form["client_secret"] = client_secret
+                if provider.dynamic_app:
+                    form["scope"] = scopes
+                token = self._json("POST", token_url, data=form,
+                                   headers=self._token_headers(provider, client_id, client_secret))
+                if not token.get("access_token"):
+                    raise PermissionError(f"{provider.name} did not issue a token: "
+                                          f"{token.get('error_description') or token.get('error') or 'unknown'}.")
+                result = self._store_token(key, token, "browser")
+            except Exception as exc:
+                listener.finish(False, f"HAYAT could not finish connecting {provider.name}: {exc}")
+                raise
+            listener.finish(True, f"HAYAT is connected to {provider.name} as {result['connected_as']}. You can close this tab.")
+            return result
         finally:
+            with self._lock:
+                self._browsers.pop(key, None)
             listener.close()
-        form = {"grant_type": "authorization_code", "code": code, "redirect_uri": redirect, "client_id": client_id}
-        if provider.pkce:
-            form["code_verifier"] = verifier
-        if client_secret:
-            form["client_secret"] = client_secret
-        token = self._json("POST", provider.token_url, data=form, headers=self._token_headers(provider, client_id, client_secret))
-        if not token.get("access_token"):
-            raise PermissionError(f"{provider.name} did not issue a token: {token.get('error_description') or token.get('error') or 'unknown'}.")
-        return self._store_token(key, token, "browser")
+
+    def _sign_in_server(self, key: str, server: str) -> str:
+        """The owner's server for a self-registering provider (Mastodon), checked and kept with the account."""
+        if not server:
+            try:
+                server = self._setting(key, "server")  # the server used last time
+            except PermissionError:
+                server = ""
+        value = str(server or "")
+        value = re.sub(r"^https?://", "", value).strip().strip("/").lower()
+        if not re.fullmatch(r"[a-z0-9.-]+\.[a-z]{2,}", value):
+            raise ValueError("Type your server's name first, such as mastodon.social.")
+        public_server(value)
+        with self._lock:
+            records = self._records()
+            records.setdefault(key, {}).setdefault("settings", {})["server"] = value
+            self._save_records(records)
+        return value
+
+    def _register_dynamic_app(self, key: str, server: str, redirect: str) -> tuple[str, str, str, str, str]:
+        """Mastodon lets any app register itself with a server (POST /api/v1/apps): no developer account, no setup."""
+        from app.identity import PROJECT_URL
+
+        scopes = "read write:statuses"
+        app = self._json("POST", f"https://{server}/api/v1/apps",
+                         data={"client_name": "HAYAT", "redirect_uris": redirect, "scopes": scopes, "website": PROJECT_URL})
+        if not app.get("client_id") or not app.get("client_secret"):
+            raise RuntimeError(f"{server} did not register HAYAT for sign-in ({app.get('error') or 'no app came back'}).")
+        return (app["client_id"], app["client_secret"], f"https://{server}/oauth/authorize", f"https://{server}/oauth/token",
+                scopes)
+
+    def browser_link(self, key: str) -> str:
+        """The address of a browser sign-in in progress, to open in any browser tab (or another browser)."""
+        with self._lock:
+            pending = self._browsers.get(key)
+        return pending["link"] if pending else ""
+
+    def finish_browser_from_address(self, key: str, address: str) -> bool:
+        """When a tab cannot come back to this computer, the address it ended on carries the code: take it from there."""
+        with self._lock:
+            pending = self._browsers.get(key)
+        if not pending:
+            raise ValueError(f"No {self.provider(key).name} browser sign-in is waiting; start it again.")
+        return pending["listener"].feed(address, pasted=True)
+
+    def cancel_browser(self, key: str) -> None:
+        with self._lock:
+            pending = self._browsers.get(key)
+        if pending:
+            pending["listener"].cancel()
 
     # ------------------------------------------------------------------ way 3: a token
     def save_token(self, key: str, token: str, extras: dict[str, str] | None = None) -> dict[str, Any]:
         provider = self.provider(key)
         if "token" not in provider.methods:
             raise ValueError(f"{provider.name} is connected by signing in, not with a pasted token.")
+        if key == "mail":  # a password, not a token: it may be short, and app passwords come in groups of four
+            raw = str(token or "").strip()
+            # Google shows app passwords as "abcd efgh ijkl mnop"; any other password is kept exactly as typed.
+            password = raw.replace(" ", "") if re.fullmatch(r"(?:[A-Za-z]{4} ){3}[A-Za-z]{4}", raw) else raw
+            if not password:
+                raise ValueError("Type your email password (or the app password your provider asks for).")
+            return self._mail_login(str((extras or {}).get("address") or ""), password)
         token = str(token or "").strip()
         if len(token) < 10 or any(character.isspace() for character in token):
             raise ValueError(f"Paste the whole {provider.token_label}, without spaces.")
@@ -664,7 +867,7 @@ class AccountManager(SocialAccounts):
         with self._lock:
             records = self._records()
             record = records.get(key) or {}
-            for name in ("connected", "connected_as", "method", "connected_at"):
+            for name in ("connected", "connected_as", "method", "connected_at", "checked_at", "check_ok", "check_error"):
                 record.pop(name, None)
             records[key] = record
             self._save_records(records)
@@ -902,29 +1105,38 @@ def utc(text: str) -> str:
 
 
 class Loopback:
-    """A one-time listener on 127.0.0.1 (and ::1 when it is free) for a sign-in's redirect."""
+    """A one-time listener on 127.0.0.1 (and ::1 when it is free) for a sign-in's redirect.
+
+    The tab is answered only once HAYAT has exchanged the code and read the account (`finish`). It used to say
+    "HAYAT is connected" the moment the provider sent it back, before the exchange, which could still fail: the
+    tab claimed success while HAYAT stayed unconnected. If the tab cannot reach this computer at all, the
+    address it ended on can be pasted into HAYAT instead (`feed`).
+    """
 
     def __init__(self, state: str, port: int = 0) -> None:
         self.state, self.code, self.error = state, None, None
         self.done = threading.Event()
+        self.finished = threading.Event()
+        self.outcome = (False, "")
         outer = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self) -> None:  # noqa: N802 (http.server's name)
-                query = parse_qs(urlsplit(self.path).query)
-                if not query:
+                if not parse_qs(urlsplit(self.path).query):
                     self.send_response(204)
                     self.end_headers()
                     return
-                if query.get("state", [""])[0] != outer.state:
-                    outer.error = "The sign-in came back with the wrong state value; it was ignored."
-                elif query.get("error"):
-                    outer.error = query.get("error_description", query["error"])[0]
+                outer.feed(self.path)
+                if outer.code:
+                    # Hold the tab until the token is exchanged and checked, then say what really happened.
+                    outer.finished.wait(60)
+                    ok, text = outer.outcome if outer.finished.is_set() else (
+                        False, "HAYAT is still checking the sign-in; the HAYAT window shows the result.")
                 else:
-                    outer.code = query.get("code", [""])[0] or None
-                text = ("HAYAT is connected. You can close this tab." if outer.code
-                        else "The sign-in did not finish: " + html.escape(outer.error or "no code") + ".")
-                body = f"<!doctype html><meta charset=utf-8><title>HAYAT</title><body style='font-family:Segoe UI;padding:40px'><h2>{text}</h2>"
+                    ok, text = False, "The sign-in did not finish: " + (outer.error or "no code") + "."
+                colour = "#1d7a46" if ok else "#a3262f"
+                body = (f"<!doctype html><meta charset=utf-8><title>HAYAT</title><body style='font-family:Segoe UI;"
+                        f"padding:40px'><h2 style='color:{colour}'>{html.escape(text)}</h2>")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.end_headers()
@@ -946,6 +1158,38 @@ class Loopback:
             pass
         for server in self.servers:
             threading.Thread(target=server.serve_forever, name="hayat-sign-in", daemon=True).start()
+
+    def feed(self, address: str, *, pasted: bool = False) -> bool:
+        """Take the provider's answer: the redirect itself, or the address a tab ended on, pasted by the owner.
+
+        A pasted address from another sign-in is refused (ValueError) and the sign-in keeps waiting; a redirect
+        with the wrong state ends the attempt, as a forged one would.
+        """
+        if self.done.is_set():
+            return bool(self.code)
+        text = str(address or "").strip()
+        query = parse_qs(urlsplit(text).query if "?" in text else text.lstrip("?"))
+        if query.get("state", [""])[0] != self.state:
+            if pasted:
+                raise ValueError("That address is not from this sign-in. Paste the whole address shown in the tab this "
+                                 "sign-in opened (it starts with http://127.0.0.1 or http://localhost and has code= in it).")
+            self.error = "The sign-in came back with the wrong state value; it was ignored."
+        elif query.get("error"):
+            self.error = query.get("error_description", query["error"])[0]
+        else:
+            self.code, self.error = query.get("code", [""])[0] or None, None
+        self.done.set()
+        return bool(self.code)
+
+    def cancel(self) -> None:
+        if not self.done.is_set():
+            self.error = "You cancelled the sign-in."
+            self.done.set()
+
+    def finish(self, ok: bool, text: str) -> None:
+        """What the waiting tab shows: the real result of the exchange and check."""
+        self.outcome = (ok, text)
+        self.finished.set()
 
     def wait(self, timeout: float) -> str:
         if not self.done.wait(timeout):
@@ -1028,6 +1272,10 @@ def register_account_tools(registry: Any, manager: AccountManager, gate: Any) ->
                       "whom, and how to connect the others. Never shows tokens.",
                       obj({"provider": {"enum": ["", *keys]}}), "low", "system_read",
                       lambda provider="": manager.status(provider))
+    registry.register("account_check", "Check that the owner's connected accounts really work: one live read of whose account "
+                      "each sign-in belongs to, with the time. Use for 'is my bluesky connected', 'check my accounts'.",
+                      obj({"provider": {"enum": ["", *keys]}}), "low", "system_read",
+                      lambda provider="": manager.check_all(provider))
     registry.register("account_read", "Read from a connected account: Gmail or Outlook inbox, calendar events, Drive or OneDrive "
                       "files, YouTube channel and uploads, GitHub repositories, notifications and issues, LinkedIn profile, Notion "
                       "search, Slack and Discord channels, Bluesky and Mastodon timelines and notifications, Reddit inbox and "

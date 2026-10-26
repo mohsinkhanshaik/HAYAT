@@ -22,6 +22,7 @@ from app.gui_panels import ScrollableColumn
 from app.gui_resources import BooleanVar, StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 
 CHANNEL_STATUS = {
@@ -118,16 +119,18 @@ class NetworkingWindow(tk.Toplevel):
         header = tk.Frame(self, bg=p.BLACK, padx=14, pady=10)
         header.pack(fill='x')
         tk.Label(header, text='Private networking', bg=p.BLACK, fg=p.WHITE,
-                 font=('Segoe UI Semibold', 17)).pack(side='left')
+                 font=(DISPLAY, 17)).pack(side='left')
         ttk.Button(header, text='Close', command=self.close).pack(side='right')
-        self.intro = tk.Label(self, text='Your private professional contact book. Record sources and permission, '
-                              'find shared work, and prepare an introduction for your review.',
+        self.intro = tk.Label(self, text='Find people to contact for a job, business or your network, keep them in your '
+                              'private contact book, and prepare an introduction for your review.',
                               bg=p.BLACK, fg=p.MUTED, anchor='w', justify='left', wraplength=1000)
         self.intro.pack(fill='x', padx=14)
         actions = FlowRow(self, p.BLACK, gap=5, height=36)
         actions.pack(fill='x', padx=14, pady=6)
         self.buttons = {}
         for key, label, command in (
+            # Finding people comes first: the book only helped once the owner already had a name.
+            ('people', 'Find people to contact', self.find_people),
             ('new', 'New contact', self.new_contact), ('save', 'Save contact', self.save_contact),
             ('delete', 'Delete', self.delete_contact), ('revoke', 'Revoke permission', self.revoke_contact),
             ('discover', 'Find professional contacts', self.discover_contacts),
@@ -136,7 +139,7 @@ class NetworkingWindow(tk.Toplevel):
             ('restore', 'Restore from export', self.restore_export),
         ):
             button = ttk.Button(actions, text=label, command=command,
-                                style='HayatAccent.TButton' if key == 'save' else 'Hayat.TButton')
+                                style='HayatAccent.TButton' if key == 'people' else 'Hayat.TButton')
             actions.add(button)
             self.buttons[key] = button
         self.body = tk.PanedWindow(self, orient='horizontal', bg=p.BLACK, sashwidth=7, bd=0)
@@ -668,6 +671,22 @@ class NetworkingWindow(tk.Toplevel):
 
     def discover_contacts(self) -> bool:
         return self.find_professional_contacts()
+
+    def find_people(self) -> bool:
+        """Who to contact for a goal (founders, executives, researchers, developers, recruiters), from public sources."""
+        try:
+            from app.gui_people_finder import PeopleFinderWindow
+            window = getattr(self, '_people_finder', None)
+            if window is not None and window.winfo_exists():
+                window.deiconify()
+                window.lift()
+            else:
+                window = self._people_finder = PeopleFinderWindow(self)
+            self.status.set('Find people to contact opened: describe who you want to reach.')
+            return True
+        except Exception as exc:
+            self.status.set('Could not open Find people to contact: ' + str(exc)[:300])
+            return False
 
     def find_professional_contacts(self, *, name: str = '', organization: str = '', official_url: str = '') -> bool:
         try:

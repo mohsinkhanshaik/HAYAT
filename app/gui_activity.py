@@ -11,6 +11,7 @@ from app.gui_resources import StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.safety.sensitive import redact
+from app.gui_fonts import DISPLAY
 
 
 VISIBLE_EVENTS = {name for name in EVENT_TYPES if name.startswith((
@@ -75,9 +76,13 @@ def live_state_brief(gui):
     """The same state in one short line for the strip under the header; the tooltip keeps the full sentence."""
     parts = _live_parts(gui)
     short = {'stopped': 'off', 'running': 'on'}
-    return ' · '.join((f'Camera {parts["camera"]}', f'Mic {parts["mic"]}', f'Wi-Fi {parts["wifi"]}',
-                       f'Feeds {short.get(parts["monitor"], parts["monitor"])}',
-                       f'Learning {short.get(parts["learning"], parts["learning"])}', f'Privacy {parts["privacy"]}'))
+    # Grouped by state ("On: mic · Off: camera, Wi-Fi, …"): six "X off" pairs wrapped beside the tabs at 1440 px.
+    groups: dict[str, list[str]] = {}
+    for name, key in (('camera', 'camera'), ('mic', 'mic'), ('Wi-Fi', 'wifi'), ('feeds', 'monitor'),
+                      ('learning', 'learning'), ('privacy', 'privacy')):
+        groups.setdefault(short.get(parts[key], parts[key]), []).append(name)
+    order = sorted(groups, key=lambda state: (state == 'off', state))  # what is on first, "off" last
+    return ' · '.join(f'{state.capitalize()}: ' + ', '.join(groups[state]) for state in order)
 
 
 def plain_activity(summary):
@@ -127,7 +132,7 @@ class ActivityWindow(tk.Toplevel):
         header = tk.Frame(self, bg=gui.BLACK, padx=16, pady=12)
         header.pack(fill='x')
         tk.Label(header, text='What Hayat is doing', bg=gui.BLACK, fg=gui.WHITE,
-                 font=('Segoe UI Semibold', 17)).pack(side='left')
+                 font=(DISPLAY, 17)).pack(side='left')
         ttk.Button(header, text='Stop current task', command=gui._stop).pack(side='right')
         self.state = StringVar(self)
         tk.Label(self, textvariable=self.state, bg=gui.BLACK, fg=gui.GOLD_SOFT,

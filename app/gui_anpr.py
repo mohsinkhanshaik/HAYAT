@@ -11,6 +11,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from app.gui_resources import BooleanVar, StringVar
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 SCOPE = ('For your own vehicles, authorized cameras, parking sites and test footage. HAYAT reads plate text only: '
          'no owner lookup, no addresses, no police or government databases, no fines or notices.')
@@ -52,7 +53,7 @@ class AnprDashboard(tk.Toplevel):
         p = self.palette
         header = tk.Frame(self, bg=p.BLACK, padx=16, pady=10)
         header.pack(fill='x')
-        tk.Label(header, text='Plate recognition', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI Semibold', 19)).pack(side='left')
+        tk.Label(header, text='Plate recognition', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 19)).pack(side='left')
         tk.Label(header, textvariable=self.status, bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 9)).pack(side='right')
         tk.Label(self, text=SCOPE, bg=p.PANEL, fg=p.GOLD_SOFT, font=('Segoe UI', 9), anchor='w', padx=16, pady=5,
                  wraplength=1400, justify='left').pack(fill='x', padx=16)

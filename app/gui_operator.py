@@ -86,7 +86,7 @@ class BrainOperatorMixin:
         self.brain_dimensions = {}
         for mode in ("3D", "5D"):
             self.brain_dimensions[mode] = filters.add(ttk.Button(filters, text=mode,
-                style="HayatAccent.TButton" if mode == "5D" else "Hayat.TButton",
+                style="HayatChosen.TButton" if mode == "5D" else "Hayat.TButton",
                 command=lambda value=mode: self._set_brain_dimensions(value)))
         self.brain_layer = StringVar(self.root, "All layers")
         layer_picker = filters.add(ttk.Combobox(filters, textvariable=self.brain_layer, state="readonly", width=18,
@@ -467,7 +467,7 @@ class BrainOperatorMixin:
             self.brain_timeline.pack(side="bottom", fill="x", pady=(6, 0))
             self._paint_brain_heat()
         for value, button in self.brain_dimensions.items():
-            button.configure(style="HayatAccent.TButton" if value == mode else "Hayat.TButton")
+            button.configure(style="HayatChosen.TButton" if value == mode else "Hayat.TButton")
         self._layout_brain_history()
         graph.redraw()
 
@@ -475,7 +475,7 @@ class BrainOperatorMixin:
         self._brain_history_serial += 1
         self._brain_window_seconds = seconds
         for value, button in self.brain_range_buttons.items():
-            button.configure(style="HayatAccent.TButton" if value == seconds else "Hayat.TButton")
+            button.configure(style="HayatChosen.TButton" if value == seconds else "Hayat.TButton")
         self.brain_timeline.stop_replay()
         self.brain_timeline.moment = None
         self.brain_timeline.view = None

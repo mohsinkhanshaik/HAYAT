@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-TOOL_NAMES = ("account_status", "account_read", "account_prepare", "account_post_everywhere")
+TOOL_NAMES = ("account_status", "account_check", "account_read", "account_prepare", "account_post_everywhere")
 _LEAD = r"^(?:(?:hey\s+)?hayat[\s,.!:-]*)?(?:please\s+)?(?:(?:can|could|would)\s+(?:you|u)\s+)?(?:please\s+)?"
 _END = r"(?:\s*,?\s*(?:please|pls|thanks|thank\s+you))?\s*[?.!]*$"
 _SHOW = r"(?:(?:check|show(?:\s+me)?|open|read|list|get|what(?:'s|\s+is|\s+are)\s+(?:in\s+)?)\s+)?(?:my\s+|the\s+)?"
@@ -72,6 +72,13 @@ ROUTES: tuple[tuple[re.Pattern[str], str, str], ...] = (
 _NOTION = _compile(r"search\s+(?:my\s+)?notion\s+(?:for\s+)?(?P<query>.{1,120}?)")
 _STATUS = _compile(r"(?:which|what)\s+(?:of\s+my\s+)?accounts\s+(?:are|is)\s+(?:connected|linked|signed\s+in)|(?:show\s+)?my\s+connected\s+accounts"
                    r"|account\s+status")
+_PROVIDER_NAMES = (r"google|gmail|microsoft|outlook|hotmail|github|notion|slack|linkedin|bluesky|mastodon|reddit|x|twitter|telegram|"
+                   r"discord|facebook|instagram|threads|youtube")
+#: "is my bluesky connected", "check my accounts", "test my google sign-in": a live check, not the saved note.
+_CHECK = _compile(r"(?:(?:is|are)\s+(?:my\s+)?(?P<provider>" + _PROVIDER_NAMES + r")(?:\s+account)?\s+(?:really\s+|still\s+|actually\s+)?"
+                  r"(?:connected|linked|signed\s+in|working)"
+                  r"|(?:check|test|verify)\s+(?:my\s+|the\s+)?(?:(?P<one>" + _PROVIDER_NAMES + r")\s+)?(?:accounts?|connections?|sign[\s-]?ins?|login)"
+                  r"|am\s+i\s+(?:signed\s+in|logged\s+in|connected)\s+(?:to|on)\s+(?P<to>" + _PROVIDER_NAMES + r"))")
 _CONNECT = _compile(r"(?:connect|link|sign\s+in\s+to|log\s*in\s+to|login\s+to|add)\s+(?:my\s+)?(?P<provider>google|gmail|microsoft|outlook|"
                     r"hotmail|github|notion|slack|linkedin|bluesky|mastodon|reddit|x|twitter|telegram|discord|facebook|instagram|"
                     r"threads|youtube)(?:\s+(?:account|page|bot))?")
@@ -122,6 +129,9 @@ def account_request(text: str) -> dict[str, Any] | None:
         return None  # a bare "instagram" or "outlook" names the app or the site, not a read
     if _OPEN_ONLY.match(value) and not _CONTENT.search(value):
         return None
+    if match := _CHECK.match(value):
+        word = (match["provider"] or match["one"] or match["to"] or "").lower()
+        return {"tool": "account_check", "arguments": {"provider": PROVIDER_WORDS.get(word, word)} if word else {}}
     if _STATUS.match(value):
         return {"tool": "account_status", "arguments": {}}
     if match := _CONNECT.match(value):
@@ -160,6 +170,19 @@ def report(history: list[dict[str, Any]]) -> str | None:
             for item in rows[:10]:
                 lines.append("  " + ("● " if item.get("unread") else "") + " · ".join(
                     str(part) for part in (item.get("title"), item.get("detail"), str(item.get("when") or "")[:16].replace("T", " ")) if part))
+            sections.append("\n".join(lines))
+        elif value.get("check_view"):
+            rows = value.get("results") or []
+            lines = [] if rows else ["No account is connected yet. Connect one from Studios → Accounts & sign-in."]
+            for row in rows:
+                when = str(row.get("checked_at") or "")[11:16]
+                if not row["connected"]:
+                    lines.append(f"{row['name']}: not connected" + (f" ({row['check_error']})" if row.get("check_error") else "") + ".")
+                elif row.get("check_ok"):
+                    lines.append(f"{row['name']}: working, signed in as {row['connected_as']} (checked just now{', ' + when + ' UTC' if when else ''}).")
+                else:
+                    lines.append(f"{row['name']}: saved, but the check failed: {row.get('check_error') or 'no answer'}. "
+                                 f"Sign in again from Studios → Accounts & sign-in.")
             sections.append("\n".join(lines))
         elif value.get("accounts_view") and "accounts" in value:
             lines = ["Connected: " + (", ".join(value["connected"]) or "none yet") + "."]

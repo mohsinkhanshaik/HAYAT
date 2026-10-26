@@ -233,7 +233,7 @@ def test_tab_buttons_switch_tables_and_mark_the_current_one(studio):
     studio.show_tab("Leads")
     assert studio.tab_frames["Leads"].winfo_manager() == "pack"
     assert not studio.tab_frames["Invoices"].winfo_manager()
-    assert str(studio.tab_buttons["Leads"].cget("style")) == "HayatAccent.TButton"
+    assert str(studio.tab_buttons["Leads"].cget("style")) == "HayatChosen.TButton"
     studio.mark_paid()  # nothing selected: it returns to the invoices to choose one
     assert studio.current_tab == "Invoices"
 

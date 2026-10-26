@@ -162,6 +162,10 @@ def install_title_bars(root: Any, palette: Any) -> None:
             if widget.winfo_toplevel() is widget:
                 widget._hayat_title_styled = palette.BLACK
                 style_title_bar(widget, palette)
+                # New windows ease in (not the main window, not in Glass: acrylic needs a fully opaque window).
+                if not is_glass(palette):
+                    from app.gui_motion import fade_in
+                    fade_in(widget)
         except Exception:
             from app.logging import log_swallowed
 

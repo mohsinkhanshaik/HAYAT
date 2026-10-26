@@ -103,7 +103,67 @@ def register_research_tools(registry: ToolRegistry, research: ResearchManager,
                            'query': {'type': 'string', 'maxLength': 500}}, ['url']),
                       'low', 'public_web_read', onion_navigate)
 
-    def public_contact_search(name: str, organization: str, official_url: str = '', max_pages: int = 4,
+    # Onion sites to start from, what they are, and a check of any onion link (app/research/onion_directory.py).
+    from app.research.onion_directory import CREDIT, DIRECTORY_PAGE, OnionDirectory, describe_results
+    directory_holder: dict[str, OnionDirectory] = {}
+
+    def onion_directory() -> OnionDirectory:
+        if 'directory' not in directory_holder:
+            cache = research.knowledge.path.parent.parent / 'research' / 'onion-directory.json'
+            directory_holder['directory'] = OnionDirectory(
+                lambda url: research.fetcher.fetch(url, 3 * 1024 * 1024, {'text/plain'}).content.decode('utf-8', 'replace'),
+                cache)
+        return directory_holder['directory']
+
+    def onion_sites(query: str = '', category: str = '', check_url: str = '', search_index: bool = False,
+                    refresh: bool = False) -> dict[str, Any]:
+        directory = onion_directory()
+        if check_url:
+            return {'onion_check': True, **directory.check(check_url)}
+        directory.sites(refresh=refresh)
+        rows = directory.find(query, category)
+        value = {'onion_sites_view': True, 'query': query, 'category': category, 'directory': rows[:250],
+                 'categories': directory.categories(), 'credit': CREDIT, 'source': DIRECTORY_PAGE,
+                 'fetched_at': directory.fetched_at, 'directory_error': directory.error}
+        if search_index and query.strip():
+            from urllib.parse import quote_plus
+
+            from app.research.onion import AhmiaSearch, OnionPublisherWebSearch
+            ticket = registry.interlock.ticket()
+            registry.interlock.check(ticket)
+            notes = []
+            try:
+                found, origin = AhmiaSearch(research.fetcher).search(query.strip(), limit=30), 'the Ahmia onion index'
+            except Exception as exc:
+                # Ahmia's robots.txt now asks programs not to use its search, and HAYAT keeps to that. Onion addresses
+                # that organisations publish on ordinary web pages are found instead, through Tor.
+                if 'robots' in str(exc).lower():
+                    notes.append('Ahmia asks programs not to search it automatically, so HAYAT does not; search it yourself in '
+                                 'Tor Browser: https://ahmia.fi/search/?q=' + quote_plus(query.strip()) + '.')
+                else:
+                    notes.append(f'The Ahmia onion index could not be reached ({type(exc).__name__}).')
+                try:
+                    found, origin = OnionPublisherWebSearch(research.fetcher).search(query.strip(), limit=20), \
+                        'onion addresses published on ordinary web pages'
+                except Exception as fallback:  # the directory still answers when no search can
+                    found, origin = [], ''
+                    notes.append(f'Published onion addresses could not be searched either ({type(fallback).__name__}).')
+            index = describe_results(found, directory)
+            index.update(source=origin, note=' '.join(filter(None, [index['note'], *notes])))
+            value['index'] = index
+        return value
+
+    registry.register('onion_sites', 'Onion sites to start from and what they are: a verified directory of mainstream '
+                      'organisations\' onion services (news, search, social, privacy tools, government, SecureDrop) with '
+                      'category, proof link and recent reachability; optionally the Ahmia onion index for a topic, each result '
+                      'labelled by its apparent nature and marked unverified, illegal offerings withheld; or check_url to '
+                      'check whether an onion address is a listed site, a lookalike copy or unknown.',
+                      obj({'query': {'type': 'string', 'maxLength': 200}, 'category': {'type': 'string', 'maxLength': 60},
+                           'check_url': {'type': 'string', 'maxLength': 2000}, 'search_index': {'type': 'boolean'},
+                           'refresh': {'type': 'boolean'}}),
+                      'low', 'public_web_read', onion_sites)
+
+    def public_contact_search(name: str, organization: str, official_url: str = '', max_pages: int | None = None,
                               depth: str = 'normal', tor_only: bool = False):
         from app.research.public_contacts import discover_contacts
         ticket = registry.interlock.ticket()

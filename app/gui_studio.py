@@ -383,7 +383,7 @@ class ControlStudio(tk.Toplevel):
         self.status.set(self.page_status[key])
         for name, page in self.pages.items():
             page.pack_forget()
-            self.page_buttons[name].configure(style="HayatAccent.TButton" if name == key else "Hayat.TButton")
+            self.page_buttons[name].configure(style="HayatChosen.TButton" if name == key else "Hayat.TButton")
         self.pages[key].pack(fill="both", expand=True)
         if opening:
             place_over(self, self.gui.root, (1300, 860))

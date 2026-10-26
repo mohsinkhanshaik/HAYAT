@@ -17,6 +17,7 @@ from app.gui_windows import place_over
 from app.gui_rea_inputs import GuidedInputs
 from app.rea_workbench import WorkbenchSession, parse_arguments
 from app.plain_output import describe
+from app.gui_fonts import DISPLAY
 
 
 class ReverseEngineeringStudio(tk.Toplevel):
@@ -57,7 +58,7 @@ class ReverseEngineeringStudio(tk.Toplevel):
         head = tk.Frame(self, bg=p.BLACK, padx=14, pady=10)
         head.pack(fill='x')
         tk.Label(head, text='Reverse engineering', bg=p.BLACK, fg=p.WHITE,
-                 font=('Segoe UI Semibold', 16)).pack(side='left')
+                 font=(DISPLAY, 16)).pack(side='left')
         self.reload = ttk.Button(head, text='Refresh operations', command=self.load_tools)
         self.reload.pack(side='right')
         ttk.Button(head, text='Save report…', command=self.save_result).pack(side='right', padx=6)

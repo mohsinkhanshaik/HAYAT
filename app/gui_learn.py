@@ -19,6 +19,7 @@ from typing import Any
 
 from app.gui_icons import apply_icons
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 ARABIC_FONT = ("Segoe UI", 54)
 CARD_FONT = ("Segoe UI", 26)
@@ -65,7 +66,7 @@ class LearnStudio(tk.Toplevel):
         p = self.palette
         header = tk.Frame(self, bg=p.BLACK, padx=16, pady=10)
         header.pack(fill="x")
-        tk.Label(header, text="Learn Arabic", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16)).pack(side="left")
+        tk.Label(header, text="Learn Arabic", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16)).pack(side="left")
         self.unit_var = StringVar(self, "")
         tk.Label(header, textvariable=self.unit_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 10)).pack(side="left", padx=12)
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.close).pack(side="right")
@@ -328,7 +329,7 @@ class LearnStudio(tk.Toplevel):
         self.listen_button.state(["!disabled"] if channels["listen"] else ["disabled"])
         speaking = channels["speak"] and (self.exercise or {}).get("skill") == "speaking"
         self.speak_button.state(["!disabled"] if speaking else ["disabled"])
-        self.speak_button.configure(style="HayatAccent.TButton" if speaking else "Hayat.TButton")
+        self.speak_button.configure(style="HayatChosen.TButton" if speaking else "Hayat.TButton")
         self.check_button.configure(style="Hayat.TButton" if speaking else "HayatAccent.TButton")
         if channels["listen"] and channels["speak"]:
             self.setup_button.pack_forget()

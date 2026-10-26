@@ -10,10 +10,14 @@ from tests.test_accounts import Broker, Response
 
 
 @pytest.fixture
-def social():
+def social(tmp_path):
     runtime = build_runtime(use_model=False, start_background_services=False)
     accounts = runtime.accounts
     accounts.broker = Broker()  # never the owner's Windows Credential Manager
+    # Nor the owner's account records: the runtime's path is the live data/integrations/accounts.json (the test
+    # sandbox redirects only databases), and this fixture's fake "Bluesky connected" record was left there, so
+    # the real Accounts window showed a connection that had no sign-in behind it.
+    accounts.path = tmp_path / "accounts.json"
     sent = []
 
     def fake(method, url, **kwargs):

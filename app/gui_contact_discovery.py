@@ -12,6 +12,7 @@ from app.gui_intelligence_parts import FlowRow
 from app.gui_resources import StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 
 _EMPTY_BEFORE = {
@@ -98,7 +99,7 @@ class ContactDiscoveryWindow(tk.Toplevel):
         head = tk.Frame(self, bg=p.BLACK, padx=14, pady=10)
         head.pack(fill='x')
         tk.Label(head, text='Find professional contacts', bg=p.BLACK, fg=p.WHITE,
-                 font=('Segoe UI Semibold', 16)).pack(side='left')
+                 font=(DISPLAY, 16)).pack(side='left')
         ttk.Button(head, text='Close', command=self.close).pack(side='right')
         from app.gui_research_links import research_links
         self.workspace_links = research_links(head, self.gui, 'contacts', name=self.name.get, context=self.organization.get)

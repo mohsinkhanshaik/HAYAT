@@ -19,6 +19,7 @@ from tkinter import ttk
 
 from app.gui_depth import DepthSurface
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 
 def _minutes(seconds: float) -> str:
@@ -42,7 +43,7 @@ class TeamWorkspace(tk.Toplevel):
         header_surface.pack(fill='x', padx=14, pady=(8, 6))
         header = header_surface.body
         tk.Label(header, text='Team workspace', bg=palette.PANEL, fg=palette.WHITE,
-                 font=('Segoe UI Semibold', 19), anchor='w').pack(fill='x')
+                 font=(DISPLAY, 19), anchor='w').pack(fill='x')
         tk.Label(header, text='Temporary specialist agents: what this machine allows, what each team is doing, '
                               'and every worker\'s evidence.',
                  bg=palette.PANEL, fg=palette.MUTED, anchor='w', wraplength=980, justify='left').pack(fill='x', pady=(5, 8))

@@ -26,7 +26,7 @@ print plain lines. Set `HAYAT_CLI_JSON=1` if a script needs JSON instead.
 
 | Area | What it does |
 | --- | --- |
-| [Private networking](#networking) | Organize contacts privately, compare stated expertise with your goals, prepare unsent introductions and track follow-ups. |
+| [Private networking](#networking) | Find people to contact for a goal (founders, executives, researchers, developers, recruiters) from public professional sources, organize contacts privately, prepare unsent introductions and track follow-ups. |
 | [Replica app studio](#replica) | Plan and generate original app code with HAYAT, then run local parity, image, contrast, review, brand and listing checkers. |
 | [Invention and executive reasoning](#invention) | Develop testable ideas with goals, a skeptical critic and saved experiment rounds, then work the formula out and simulate it. |
 | [Learning atlas](#learning-atlas) | Explore twelve fields, find prerequisite gaps, and track your assessed understanding and review dates. |
@@ -71,14 +71,15 @@ print plain lines. Set `HAYAT_CLI_JSON=1` if a script needs JSON instead.
 
 ### Private networking
 
-Organize contacts privately, compare stated expertise with your goals, prepare unsent introductions and track follow-ups.
+Find people to contact for a goal (founders, executives, researchers, developers, recruiters) from public professional sources, organize contacts privately, prepare unsent introductions and track follow-ups.
 
-**How it works:** Open Studios > Private networking > Find professional contacts for public name/organization sources and team routes. Select deep for broader bounded discovery, or Public web through Tor for a required local Tor route. Add facts you know or public professional sources; record contact consent, inspect matching evidence and review a draft. Nothing is sent automatically.
+**How it works:** Open Studios > Private networking > Find people to contact and describe who you want to reach, e.g. "CTOs of fintech companies in UAE". Save the ones you want to the contact book. Find professional contacts gives public name/organization sources and team routes. Select deep for broader bounded discovery, or Public web through Tor for a required local Tor route. Add facts you know or public professional sources; record contact consent, inspect matching evidence and review a draft. Nothing is sent automatically.
 
 **Try saying:**
 
+- “Find people to contact: founders of fintech startups in India”
+- “Find top machine learning researchers in India”
 - “Show my private networking contacts”
-- “Find saved contacts who can help with Python projects”
 - “Draft an introduction to a saved contact”
 
 **Window:** Private networking

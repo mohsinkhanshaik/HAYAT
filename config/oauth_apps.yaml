@@ -1,0 +1,30 @@
+# HAYAT's own app registrations: with one here, "Sign in with your browser" (or "with a code") is a single
+# click for everyone. No user has to register a developer app. Leave a provider out and its users do the
+# one-time app setup shown in Accounts & sign-in instead (their own app always wins over these).
+#
+# Register each app once, as the project maintainer: docs/accounts.md, "HAYAT's own apps".
+#
+# Only client IDs of PUBLIC clients belong here: they are not secrets (they are sent in every sign-in link).
+# A client SECRET never goes in this file or the repository: keep it in data/integrations/oauth-apps.json
+# (git ignores data/), in the same shape, e.g. {"google": {"client_id": "…", "client_secret": "…"}}.
+#
+# Mastodon needs nothing here: HAYAT registers itself with each user's server at sign-in.
+
+microsoft:
+  # Microsoft Entra "public client" (personal + work accounts, http://localhost redirect, public client flows on).
+  client_id: ""
+github:
+  # GitHub OAuth app with "Enable Device Flow" ticked: the code sign-in needs only this ID.
+  client_id: ""
+google:
+  # Google "Desktop app" client. Its secret goes in data/integrations/oauth-apps.json.
+  client_id: ""
+reddit:
+  # Reddit "installed app" (no secret), redirect http://127.0.0.1:8798/
+  client_id: ""
+x:
+  # X "Native App" (public client, PKCE), callback http://127.0.0.1:8797/
+  client_id: ""
+linkedin:
+  # LinkedIn needs a client secret: put both in data/integrations/oauth-apps.json.
+  client_id: ""

@@ -19,6 +19,7 @@ from app.gui_intelligence_parts import FlowRow, blend
 from app.gui_resources import BooleanVar, StringVar
 from app.gui_windows import MARGIN, place_over, work_area
 from app.markets import QUOTES, RANGES, money, signed_pct
+from app.gui_fonts import DISPLAY
 
 UP, DOWN = '#4ADE80', '#F05D5E'
 AMBER_TC = '#E8C46A'
@@ -119,7 +120,7 @@ class TradeCenter(tk.Toplevel):
         header.pack(fill='x')
         words = tk.Frame(header, bg=p.BLACK)
         words.pack(side='left', fill='x', expand=True)
-        self.header_title = tk.Label(words, text='Trade Center', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI Semibold', 19), anchor='w')
+        self.header_title = tk.Label(words, text='Trade Center', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 19), anchor='w')
         self.header_title.pack(fill='x')
         self.header_subtitle = tk.Label(words, text='Crypto and stocks, streamed live · charts with expected ranges · world events by industry · chain state',
                  bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 9), anchor='w')
@@ -228,7 +229,7 @@ class TradeCenter(tk.Toplevel):
         frame = tk.Frame(parent, bg=p.PANEL, padx=14, pady=10)
         head = tk.Frame(frame, bg=p.PANEL)
         head.pack(fill='x')
-        self.coin_title = tk.Label(head, text='BTC', bg=p.PANEL, fg=p.WHITE, font=('Segoe UI Semibold', 16), anchor='w')
+        self.coin_title = tk.Label(head, text='BTC', bg=p.PANEL, fg=p.WHITE, font=(DISPLAY, 16), anchor='w')
         self.coin_title.pack(side='left')
         self.watch_button = ttk.Button(head, text='☆ Watch', style='Compact.Hayat.TButton', command=self.toggle_watch)
         self.watch_button.pack(side='right')
@@ -236,7 +237,7 @@ class TradeCenter(tk.Toplevel):
         ttk.Button(head, text='Price alert…', style='Compact.Hayat.TButton', command=self.alert_dialog).pack(side='right', padx=4)
         price_row = tk.Frame(frame, bg=p.PANEL)
         price_row.pack(fill='x', pady=(4, 0))
-        self.price = tk.Label(price_row, text='—', bg=p.PANEL, fg=p.WHITE, font=('Segoe UI Semibold', 26), anchor='w')
+        self.price = tk.Label(price_row, text='—', bg=p.PANEL, fg=p.WHITE, font=(DISPLAY, 26), anchor='w')
         self.price.pack(side='left')
         self.change = tk.Label(price_row, text='', bg=p.PANEL, fg=p.MUTED, font=('Segoe UI Semibold', 13), anchor='w')
         self.change.pack(side='left', padx=12, pady=(8, 0))

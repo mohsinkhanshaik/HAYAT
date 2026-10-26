@@ -20,6 +20,7 @@ from app.gui_icons import apply_icons
 from app.gui_windows import MARGIN, place_over, work_area
 from app.gui_resources import BooleanVar, StringVar
 from app.gui_intelligence_parts import FlowRow
+from app.gui_fonts import DISPLAY
 
 STATES = {"running": "Searching…", "done": "Finished", "failed": "Nothing reliable", "cancelled": "Cancelled"}
 DATA_KINDS = {'Public datasets': 'datasets', 'Public papers': 'publications', 'Data & papers': 'all', 'Life-science papers': 'literature'}
@@ -59,7 +60,7 @@ class ResearchStudio(tk.Toplevel):
         p = self.palette
         header = tk.Frame(self, bg=p.BLACK, padx=10, pady=8)
         header.pack(fill="x")
-        tk.Label(header, text="Searches", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16)).pack(side="left")
+        tk.Label(header, text="Searches", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16)).pack(side="left")
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.close).pack(side="right")
         shortcuts = self.research_shortcuts = FlowRow(header, p.BLACK, gap=4, height=32)
         shortcuts.pack(side='left', fill='x', expand=True, padx=(8, 4))

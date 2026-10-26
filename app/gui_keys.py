@@ -13,6 +13,7 @@ from typing import Any
 
 from app import keys
 from app.gui_resources import StringVar
+from app.gui_fonts import DISPLAY
 
 INTRO = ("Each key is a free sign-up you do yourself with the provider (HAYAT cannot register for you). Press Get a free key, "
          "copy the key they give you, paste it here and press Save & test. Keys stay in this computer's .env file and are never "
@@ -29,7 +30,7 @@ class KeysWindow(tk.Toplevel):
         self.configure(bg=p.BLACK)
         self.minsize(820, 560)
         self.bind("<Escape>", lambda _event: self.destroy())
-        tk.Label(self, text="Keys · unlock more", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16), anchor="w").pack(
+        tk.Label(self, text="Keys · unlock more", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16), anchor="w").pack(
             fill="x", padx=16, pady=(14, 2))
         tk.Label(self, text=INTRO, bg=p.BLACK, fg=p.MUTED, wraplength=820, justify="left", anchor="w").pack(fill="x", padx=16)
         holder = tk.Frame(self, bg=p.BLACK)

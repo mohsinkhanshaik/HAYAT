@@ -13,6 +13,7 @@ from typing import Any
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.logging import redact
+from app.gui_fonts import DISPLAY
 
 
 def evidence_text(row: dict[str, Any]) -> str:
@@ -73,7 +74,7 @@ class KnowledgeStudio(tk.Toplevel):
         header = tk.Frame(self, bg=p.BLACK, padx=18, pady=12)
         header.pack(fill="x")
         tk.Label(header, text="Knowledge Library", bg=p.BLACK, fg=p.WHITE,
-                 font=("Segoe UI Semibold", 18)).pack(side="left")
+                 font=(DISPLAY, 18)).pack(side="left")
         ttk.Button(header, text="Brain 5D", command=self.open_brain).pack(side="right")
         self.summary = StringVar(self, "Reading stored evidence…")
         self.summary_label = tk.Label(self, textvariable=self.summary, bg=p.PANEL, fg=p.HOLO, anchor="w",

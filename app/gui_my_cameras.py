@@ -10,6 +10,7 @@ from tkinter import ttk
 from typing import Any
 
 from app.gui_resources import StringVar
+from app.gui_fonts import DISPLAY
 
 HELP = ("Add a camera you own or are allowed to view, by its exact address, for example "
         "rtsp://192.168.1.20:554/stream1 or http://192.168.1.30/video.mjpg. HAYAT never scans your network. "
@@ -30,7 +31,7 @@ class MyCamerasWindow(tk.Toplevel):
         self.minsize(min(760, area[2] - area[0] - 2 * MARGIN), min(520, area[3] - area[1] - 2 * MARGIN - 40))
         self.bind("<Escape>", lambda _event: self.destroy())
         self.status = StringVar(self, HELP)
-        tk.Label(self, text="My cameras", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16), anchor="w").pack(
+        tk.Label(self, text="My cameras", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16), anchor="w").pack(
             fill="x", padx=16, pady=(14, 2))
         help_label = tk.Label(self, textvariable=self.status, bg=p.BLACK, fg=p.MUTED, wraplength=720, justify="left", anchor="w")
         help_label.pack(fill='x', padx=16)
