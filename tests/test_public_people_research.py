@@ -168,3 +168,31 @@ def test_chat_research_and_search_again_keep_the_public_person_workflow(monkeypa
     finally:
         original.close()
         runtime.close()
+
+
+def test_report_leads_with_cited_facts_ranks_own_and_reference_sources_first_and_drops_page_footnotes():
+    from types import SimpleNamespace
+
+    from app.research.models import Claim, ClaimStatus, Evidence
+    from app.research.people import PersonRequest, person_answer
+
+    def source(url, title, quality=0.5):
+        return SimpleNamespace(url=url, final_url=url, title=title, quality=quality, published_at='', retrieved_at='now')
+
+    def claim(text, url):
+        return Claim('c' + str(abs(hash((text, url)))), text, status=ClaimStatus.SUPPORTED, confidence=.6,
+                     evidence=[Evidence('e', 'c', url, 't', text, .6, 'now')])
+
+    request = PersonRequest('Linus Torvalds', '', 'https://github.com/torvalds')
+    fan = source('https://github.com/someone/Portfolio-Linus-Torvalds', 'Fan portfolio', .9)
+    wiki = source('https://en.wikipedia.org/wiki/Linus_Torvalds', 'Linus Torvalds - Wikipedia')
+    ted = source('https://www.ted.com/speakers/linus_torvalds', 'Linus Torvalds | TED')
+    fact = 'Linus Torvalds is a software engineer who created the Linux kernel [1] .'
+    claims = [claim(fact, wiki.final_url), claim(fact, ted.final_url),
+              claim('Linus Torvalds began working on a new operating system kernel in 1991.', fan.final_url)]
+    text = person_answer(request, [fan, ted, wiki], claims)
+    assert 'At a glance' in text.split('[1]')[0]
+    assert 'created the Linux kernel. [1, 2]' in text  # stated by two sources, footnote mark removed
+    order = [text.index(title) for title in ('Wikipedia', 'TED', 'Fan portfolio')]
+    assert order == sorted(order)  # someone else's repository about the person comes last
+    assert 'not merged into one identity' in text

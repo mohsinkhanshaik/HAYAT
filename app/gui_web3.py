@@ -24,6 +24,7 @@ from typing import Any
 from app.gui_intelligence_parts import blend
 from app.gui_resources import StringVar
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 UP, DOWN = '#4ADE80', '#F05D5E'
 BTC_COLOUR, ETH_COLOUR = '#F7931A', '#8B9CFF'
@@ -115,7 +116,7 @@ class Web3Center(tk.Toplevel):
         header.pack(fill='x')
         words = tk.Frame(header, bg=p.BLACK)
         words.pack(side='left', fill='x', expand=True)
-        tk.Label(words, text='Web3 & agentic web', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI Semibold', 19), anchor='w').pack(fill='x')
+        tk.Label(words, text='Web3 & agentic web', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 19), anchor='w').pack(fill='x')
         tk.Label(words, text='Blockchain networks and live blocks · explorer for addresses, transactions, blocks and ENS · DeFi · '
                              'how ready a website is for AI agents (Web 4.0)', bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 9),
                  anchor='w').pack(fill='x')
@@ -401,7 +402,7 @@ class Web3Center(tk.Toplevel):
                 self.cards.columnconfigure(column, weight=1, uniform='cards')
                 colour = BTC_COLOUR if item['key'] == 'bitcoin' else ETH_COLOUR
                 tk.Label(card, text=item['name'], bg=p.PANEL, fg=colour, font=('Segoe UI Semibold', 11), anchor='w').pack(fill='x')
-                big = tk.Label(card, text='', bg=p.PANEL, fg=p.WHITE, font=('Segoe UI Semibold', 18), anchor='w')
+                big = tk.Label(card, text='', bg=p.PANEL, fg=p.WHITE, font=(DISPLAY, 18), anchor='w')
                 big.pack(fill='x')
                 facts = tk.Label(card, text='', bg=p.PANEL, fg=p.MUTED, font=('Segoe UI', 9), anchor='w', justify='left')
                 facts.pack(fill='x')
@@ -769,7 +770,7 @@ class Web3Center(tk.Toplevel):
         if score:
             colour = UP if score >= out_of * .6 else p.GOLD if score >= out_of * .3 else DOWN
             canvas.create_arc(15, 15, 115, 115, start=90, extent=-359.9 * score / out_of, style='arc', outline=colour, width=12)
-        canvas.create_text(65, 58, text=f'{score}/{out_of}', fill=p.WHITE, font=('Segoe UI Semibold', 18))
+        canvas.create_text(65, 58, text=f'{score}/{out_of}', fill=p.WHITE, font=(DISPLAY, 18))
         canvas.create_text(65, 82, text='agent-ready', fill=p.MUTED, font=('Segoe UI', 8))
 
     def check_selected(self) -> None:

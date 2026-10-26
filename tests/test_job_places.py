@@ -29,3 +29,26 @@ def test_the_saved_jobs_filter_uses_it_with_alternatives_and_remote_mode():
     assert not matches_location(row, "Texas") and matches_location(row, "Worldwide")
     remote_row = {"location": "", "reading": {"mode": "remote", "regions": ["US"]}}
     assert matches_location(remote_row, "Remote") and matches_location(remote_row, "USA")
+
+
+@pytest.mark.parametrize("place,regions,want,expected", [
+    ("United States", ["US"], "Michigan", True),        # remote, open to US residents
+    ("Remote", [], "Michigan", True),                   # no restriction stated
+    ("Anywhere", ["Worldwide"], "India", True),
+    ("Remote - EU", ["EU"], "Germany", True),           # EU-only remote counts for EU countries
+    ("Remote - UK", ["UK"], "Michigan", False),         # restricted elsewhere
+    ("Portugal", [], "India", False),                   # an unrecognised place is a restriction, not "anywhere"
+    ("Panama", [], "Detroit", False),
+])
+def test_a_place_filter_includes_remote_jobs_you_can_do_from_there(place, regions, want, expected):
+    row = {"location": place, "reading": {"mode": "remote", "regions": regions}}
+    assert matches_location(row, want, include_remote=True) is expected
+    assert matches_location(row, want) is False  # the strict rule: only jobs located at the place
+
+
+def test_on_site_only_when_remote_jobs_are_not_wanted():
+    remote_us = {"location": "United States", "reading": {"mode": "remote", "regions": ["US"]}}
+    assert matches_location(remote_us, "Michigan", include_remote=True)
+    assert not matches_location(remote_us, "Michigan", include_remote=False)
+    office = {"location": "Detroit, MI", "reading": {"mode": "on-site", "regions": []}}
+    assert matches_location(office, "Michigan", include_remote=False)

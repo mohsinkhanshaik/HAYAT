@@ -181,7 +181,15 @@ Bengio, whose record lists "Geoffrey Hinton" as a spelling. Namesakes stay separ
 …), and a supplied institution or field only ranks them. No country, contact or photo is read. If
 OpenAlex can't be reached, the web answer stands and the error is noted.
 
-Known people-broker hosts are excluded before retrieval. Asks about where someone is or about their private life are refused before any
+**Ranking and "At a glance" (2026-10-25).** Sources are ordered by authority: encyclopedias, the person's own
+or institutional pages and established publications before fan pages and mirrors. The answer opens with an
+**At a glance** list of the facts the sources report, each cited by source number (`[1, 4]`), under the
+reminder to check that they describe the person you mean. Footnote marks copied from pages (`[12]`, `[citation
+needed]`) are removed. A GitHub profile now also shows company, bio, website, followers, the year the account
+started and the three most-starred own repositories. Location and email are never read from it. Live: Andrej
+Karpathy returned 9 sources with Wikipedia and TED first; @torvalds returned 15.
+
+Known people-broker and contact-data-broker hosts are excluded before retrieval. Asks about where someone is or about their private life are refused before any
 search, however they are worded. An attack run on 2026-10-17 found that "research person Jane Example where does she
 live", "… kids", "… daily routine", "… license plate" and a street address given as context had all got through,
 because the old check caught only phrases like "home address". The name is now checked against the full list.

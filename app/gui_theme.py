@@ -29,7 +29,7 @@ class Palette:
 
 DARK = {key: value for key, value in vars(Palette).items() if key.isupper()}
 MIDNIGHT = {**DARK, "BLACK": "#080F18", "PANEL": "#101C29", "PANEL_2": "#182737",
-            "PANEL_HOVER": "#24384B", "LINE": "#33475A", "WHITE": "#F3F6FC",
+            "PANEL_HOVER": "#24384B", "LINE": "#3A5068", "WHITE": "#F3F6FC",
             "MUTED": "#A9BACD", "GOLD": "#F1C765", "GOLD_SOFT": "#FFE1A0",
             "ROYAL": "#235ACA", "ROYAL_SOFT": "#8FC4FF", "HOLO": "#5BD3E5",
             "OLIVE": "#299D78", "OLIVE_SOFT": "#65DBA7"}
@@ -64,15 +64,17 @@ def style_controls(root, palette):
     style.configure("TLabel", font=("Segoe UI", 10))
     style.configure("TNotebook", background=palette.BLACK, borderwidth=0, tabmargins=(0, 0, 0, 6),
                     bordercolor=palette.LINE, lightcolor=palette.LINE, darkcolor=palette.LINE)
-    style.configure("TNotebook.Tab", background=palette.PANEL_2, foreground=palette.WHITE,
+    style.configure("TNotebook.Tab", background=palette.PANEL, foreground=palette.MUTED,
                     padding=(16, 9), font=("Segoe UI Semibold", 10), borderwidth=0,
-                    lightcolor=palette.PANEL_2, darkcolor=palette.PANEL_2, bordercolor=palette.LINE)
+                    lightcolor=palette.PANEL, darkcolor=palette.PANEL, bordercolor=palette.LINE)
     # clam maps a selected tab to padding "6 4 6 2", which overrode the padding above only while selected:
     # the chosen tab shrank and sat lower than the others, so the unselected one looked active. Clearing the
     # map keeps every tab its own style's size (Side and Intelligence tabs too). clam's light top edge on
     # unselected tabs drew a pale outline; only the selected tab gets an edge, in gold.
-    style.map("TNotebook.Tab", background=[("selected", palette.GOLD), ("active", palette.PANEL_HOVER)],
-              foreground=[("selected", palette.BLACK)], padding=[],
+    # Colour roles: gold is the main action, blue is "chosen". A solid gold tab looked like one more button
+    # beside the gold Save, so the chosen tab now opens into its page with a gold top edge and gold text.
+    style.map("TNotebook.Tab", background=[("selected", palette.BLACK), ("active", palette.PANEL_HOVER)],
+              foreground=[("selected", palette.GOLD_SOFT), ("active", palette.WHITE)], padding=[],
               lightcolor=[("selected", palette.GOLD)])
     # Compact tabs for narrow side panels (the Trade Center's six tabs in about 350 px).
     style.configure("Side.TNotebook", background=palette.BLACK, borderwidth=0, tabmargins=(0, 0, 0, 4))
@@ -83,8 +85,8 @@ def style_controls(root, palette):
     for name, padding in (("Chip.Toolbutton", (9, 3)), ("Segment.Toolbutton", (12, 5))):
         style.configure(name, background=palette.PANEL_2, foreground=palette.WHITE, padding=padding, relief="flat",
                         borderwidth=1, bordercolor=palette.LINE, font=("Segoe UI Semibold", 9))
-        style.map(name, background=[("selected", palette.GOLD), ("active", palette.PANEL_HOVER)],
-                  foreground=[("selected", palette.BLACK)])
+        style.map(name, background=[("selected", palette.ROYAL), ("active", palette.PANEL_HOVER)],
+                  foreground=[("selected", "#FFFFFF")], bordercolor=[("selected", palette.ROYAL_SOFT)])
     style.configure("Small.Segment.Toolbutton", padding=(8, 4))  # a long row of choices in a narrow pane
     for name in ("TButton", "TCheckbutton", "TRadiobutton"):
         style.configure(name, background=palette.PANEL_2, foreground=palette.WHITE,
@@ -100,15 +102,24 @@ def style_controls(root, palette):
         style.map(name, indicatorbackground=[("pressed", palette.PANEL_HOVER), ("selected", palette.PANEL)],
                   indicatorforeground=[("disabled", palette.MUTED)])
     # Spin boxes looked like a white form field with grey arrows; they now match the entries beside them.
+    # Fields are recessed (the panel colour with a visible edge) and buttons raised: both used the same fill,
+    # so a form such as Private networking read as a stack of buttons. The edge turns gold while typing.
     for name in ("TEntry", "TCombobox", "TSpinbox"):
-        style.configure(name, fieldbackground=palette.PANEL_2, foreground=palette.WHITE,
-                        insertcolor=palette.WHITE, padding=6, bordercolor=palette.LINE,
-                        lightcolor=palette.PANEL_2, darkcolor=palette.PANEL_2, borderwidth=1)
+        style.configure(name, fieldbackground=palette.PANEL, foreground=palette.WHITE,
+                        insertcolor=palette.GOLD, padding=6, bordercolor=palette.LINE,
+                        lightcolor=palette.PANEL, darkcolor=palette.PANEL, borderwidth=1,
+                        selectbackground=palette.ROYAL, selectforeground="#FFFFFF")
+    from app.gui_glass import blend
+    hover = blend(palette.LINE, palette.MUTED, .45)  # a hint under the pointer; gold is for the field being typed in
+    style.map("TEntry", bordercolor=[("focus", palette.GOLD), ("hover", hover)],
+              lightcolor=[("focus", palette.GOLD)], fieldbackground=[("disabled", palette.BLACK)],
+              foreground=[("disabled", palette.MUTED)])
     for name in ("TCombobox", "TSpinbox"):
         style.configure(name, background=palette.PANEL_2, arrowcolor=palette.WHITE)
         style.map(name, background=[("active", palette.PANEL_HOVER)], arrowcolor=[("disabled", palette.MUTED)])
         style.map(name, fieldbackground=[("readonly", palette.PANEL_2)], foreground=[("readonly", palette.WHITE)],
-                  bordercolor=[("focus", palette.GOLD), ("!focus", palette.LINE)])
+                  bordercolor=[("focus", palette.GOLD), ("hover", hover), ("!focus", palette.LINE)],
+                  lightcolor=[("focus", palette.GOLD)])
     for name in ("Treeview", "Workspace.Treeview"):
         style.configure(name, background=palette.PANEL_2, fieldbackground=palette.PANEL_2,
                         foreground=palette.WHITE, rowheight=32, font=("Segoe UI", 10), borderwidth=0)
@@ -179,6 +190,17 @@ def style_hayat_buttons(root, palette):
                     borderwidth=1, relief="flat", padding=(14, 7), font=("Segoe UI Semibold", 9))
     style.map("HayatRoyal.TButton", background=[("disabled", palette.PANEL), ("active", palette.ROYAL)],
               foreground=[("disabled", palette.MUTED)], bordercolor=[("focus", palette.GOLD)])
+    # The chosen option in a row of choices (a time range, a page, a mode). It used the gold main-action style,
+    # so a window could show four gold buttons and none read as the one to press.
+    from app.gui_glass import blend
+    chosen = blend(palette.PANEL_2, palette.ROYAL, .6)
+    style.configure("HayatChosen.TButton", background=chosen, foreground=palette.WHITE, bordercolor=palette.ROYAL_SOFT,
+                    lightcolor=chosen, darkcolor=chosen, focuscolor=palette.GOLD, borderwidth=1, relief="flat",
+                    padding=(12, 7), font=("Segoe UI Semibold", 9))
+    style.map("HayatChosen.TButton", background=[("disabled", palette.PANEL), ("pressed", palette.ROYAL),
+                                                 ("active", blend(palette.PANEL_2, palette.ROYAL, .75))],
+              foreground=[("disabled", palette.MUTED)], bordercolor=[("focus", palette.GOLD)],
+              relief=[("pressed", "flat"), ("!pressed", "flat")])
 
 
 def _scaled_size(base: int, scale: float) -> int:
@@ -273,7 +295,7 @@ def style_text_scale(root: tk.Misc, scale: float) -> None:
     style.configure("TLabel", font=("Segoe UI", _scaled_size(10, scale)))
     for name in ("TButton", "TCheckbutton", "TRadiobutton"):
         style.configure(name, font=("Segoe UI", _scaled_size(10, scale)))
-    for name in ("Hayat.TButton", "HayatAccent.TButton", "HayatRoyal.TButton"):
+    for name in ("Hayat.TButton", "HayatAccent.TButton", "HayatRoyal.TButton", "HayatChosen.TButton"):
         style.configure(name, font=("Segoe UI Semibold", _scaled_size(9, scale)))
     for name in ("Treeview", "Workspace.Treeview"):
         style.configure(name, font=("Segoe UI", _scaled_size(10, scale)),

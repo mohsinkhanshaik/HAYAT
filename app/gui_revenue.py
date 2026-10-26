@@ -8,6 +8,7 @@ from app.gui_windows import place_over
 from app.gui_depth import DepthSurface
 from app.revenue_catalog import CATALOG, BY_NAME
 from app.revenue_inputs import input_guide
+from app.gui_fonts import DISPLAY
 
 
 class RevenueWindow(tk.Toplevel):
@@ -28,7 +29,7 @@ class RevenueWindow(tk.Toplevel):
                  anchor='w').pack(fill='x', pady=(0, 7))
         ttk.Button(header, text='+ Build an earning plan', style='HayatAccent.TButton',
                    command=lambda: self.open_intake('income_execution_plan')).pack(side='right', padx=(12, 0))
-        tk.Label(header, text='Business command centre', font=('Segoe UI Semibold', 24),
+        tk.Label(header, text='Business command centre', font=(DISPLAY, 24),
                  bg=p.PANEL, fg=p.WHITE, anchor='w').pack(fill='x')
         tk.Label(header, text='Discover opportunities. Prepare good work. Measure what earns.',
                  bg=p.PANEL, fg=p.MUTED, anchor='w').pack(fill='x', pady=(4, 10))
@@ -58,7 +59,7 @@ class RevenueWindow(tk.Toplevel):
             stats.columnconfigure(index, weight=1, uniform='stat')
             value = self.stat_values[key] = StringVar(self, '—')
             tk.Label(card, text=title, font=('Segoe UI Semibold', 8), fg=p.MUTED, bg=p.PANEL_2).pack(anchor='w')
-            tk.Label(card, textvariable=value, font=('Segoe UI Semibold', 25), fg=p.GOLD, bg=p.PANEL_2).pack(anchor='w')
+            tk.Label(card, textvariable=value, font=(DISPLAY, 25), fg=p.GOLD, bg=p.PANEL_2).pack(anchor='w')
         self.tabs.pack(fill='both', expand=True, padx=22, pady=(0, 10))
         workflows = tk.Frame(self.tabs, bg=p.PANEL)
         self.tabs.add(workflows, text='Workflows')

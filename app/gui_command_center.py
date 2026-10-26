@@ -31,6 +31,7 @@ from typing import Any
 
 from app.gui_intelligence_parts import blend
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 UP, DOWN, AMBER, CYAN = '#4ADE80', '#F05D5E', '#E8C46A', '#38BDF8'
 # SPY and GLD are funds: their prices are a share of the fund, not the index level or an ounce of gold,
@@ -123,7 +124,7 @@ class CommandCenter(tk.Toplevel):
         self.pulse.pack(side='left', padx=(0, 10))
         words = tk.Frame(header, bg=p.BLACK)
         words.pack(side='left', fill='x', expand=True)
-        tk.Label(words, text='HAYAT Command Center', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI Semibold', 20), anchor='w').pack(fill='x')
+        tk.Label(words, text='HAYAT Command Center', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 20), anchor='w').pack(fill='x')
         self.subtitle = tk.Label(words, text='Markets, the world, trade routes, odds, chains and your accounts, live · click any tile to open it',
                                  bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 9), anchor='w')
         self.subtitle.pack(fill='x')
@@ -402,7 +403,7 @@ class CommandCenter(tk.Toplevel):
             return
         for index, (label, key, colour) in enumerate((('High', 'high', DOWN), ('Medium', 'medium', AMBER), ('Other', 'low', p.MUTED))):
             x = 8 + index * (width - 16) / 3
-            canvas.create_text(x, 16, text=f"{value['severity'][key]:,}", anchor='w', fill=colour, font=('Segoe UI Semibold', 20))
+            canvas.create_text(x, 16, text=f"{value['severity'][key]:,}", anchor='w', fill=colour, font=(DISPLAY, 20))
             canvas.create_text(x, 40, text=label, anchor='w', fill=p.MUTED, font=('Segoe UI', 8))
         largest = max([count for _kind, count in value['kinds']] or [1])
         for index, (kind, count) in enumerate(value['kinds']):
@@ -628,7 +629,7 @@ class CommandCenter(tk.Toplevel):
         first = events[0]
         days = first['days_until']
         canvas.create_text(4, 18, text='today' if days == 0 else 'tomorrow' if days == 1 else f'{days} days', anchor='w',
-                           fill=AMBER if days <= 3 else p.WHITE, font=('Segoe UI Semibold', 22))
+                           fill=AMBER if days <= 3 else p.WHITE, font=(DISPLAY, 22))
         canvas.create_text(4, 44, text=first['title'][:40], anchor='w', fill=p.WHITE, font=('Segoe UI Semibold', 9))
         canvas.create_text(4, 60, text=f"{first['date']} · {first.get('time', '')}", anchor='w', fill=p.MUTED, font=('Segoe UI', 8))
         x = 4

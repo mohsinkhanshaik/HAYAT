@@ -24,6 +24,16 @@ Run the same command with `--check` for a read-only inventory.
 
 ## Private networking
 
+**Find people to contact** (2026-10-25) finds who to reach when you don't have a
+name yet. Open **Studios → Private networking → Find people to contact**, or ask
+**Find people to contact: founders of fintech startups in India**. It reads
+public professional sources: leaders of organisations (Wikidata), researchers
+(OpenAlex), developers (GitHub) and organisations' own team pages. Each person
+comes with the source that names them and ways in (the organisation's website, a
+published profile, a LinkedIn search you open). Save the ones you want to the
+contact book; every search is kept under **Earlier searches**. See
+[finding people to contact](people-finder.md).
+
 **Find professional contacts** now has a **deep** setting (five queries, up to
 12 public pages), an explicit required-Tor public-web route, and visible source
 coverage. **Organization onion sources** prepares a separate organization-only

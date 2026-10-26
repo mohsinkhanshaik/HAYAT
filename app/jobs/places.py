@@ -102,6 +102,45 @@ def _aliases(want: str) -> set[str]:
     return {value}
 
 
+#: Countries inside the job boards' "EU" region, so an EU-only remote job counts for them.
+_EU = {"Germany", "Netherlands", "France", "Spain", "Poland"}
+
+
+def country_of(want: str) -> str | None:
+    """The country a filter place belongs to: "Michigan" -> "US", "Ontario" -> "Canada", "India" -> "India"."""
+    value = str(want or "").strip()
+    if "," in value:  # "Detroit, MI": the most specific part that names a country
+        for part in reversed(value.split(",")):
+            found = country_of(part)
+            if found:
+                return found
+        return None
+    subdivision = _subdivision(value)
+    return subdivision[0] if subdivision else _country(value)
+
+
+def remote_open_to(place: str, want: str, *, regions: list[str] | tuple[str, ...] = ()) -> bool:
+    """Whether a *remote* posting may be done from the filter place.
+
+    "data analyst in Michigan" found 114 jobs and showed none: the free boards are mostly remote, and 96 of those
+    jobs were remote, 54 of them open to US residents. Someone in Michigan can do them. A remote job with no stated
+    restriction, or one open worldwide, counts everywhere; one restricted to a region counts for its countries.
+    """
+    allowed = set(regions or ()) | _countries_in(place)
+    allowed.discard("")
+    if "Worldwide" in allowed:
+        return True
+    if not allowed:
+        # Unrestricted only when the posting names no place at all ("Remote", "Anywhere", blank). A place we do
+        # not recognise ("Portugal", "Panama") is a restriction to that place, not an open door.
+        leftover = re.sub(r"[^A-Za-z]+", " ", _REMOTE.sub(" ", str(place or ""))).strip()
+        return not leftover
+    country = country_of(want)
+    if country is None:
+        return False
+    return country in allowed or ("EU" in allowed and country in _EU)
+
+
 def place_matches(place: str, want: str, *, regions: list[str] | tuple[str, ...] = (), remote: bool = False) -> bool:
     """Whether a posting's location `place` satisfies the filter `want` (see the module rules)."""
     value = str(want or "").strip()

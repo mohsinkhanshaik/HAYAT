@@ -156,7 +156,9 @@ SAMPLE = {"subreddit": "python", "channel": "1234567890", "query": "x", "chat": 
           "to": "a@b.c", "subject": "s", "body": "b", "start": "2026-10-20 10:00", "end": "2026-10-20 11:00"}
 
 
-@pytest.mark.parametrize("key", sorted(PROVIDERS))
+# Every account that talks to its provider over the web; email speaks IMAP/SMTP and has its own tests
+# (tests/test_session_2026_10_26.py).
+@pytest.mark.parametrize("key", sorted(key for key in PROVIDERS if key != "mail"))
 def test_every_read_of_every_account_survives_random_replies(tmp_path, key, monkeypatch):
     monkeypatch.setattr(accounts_module, "public_server", lambda host, resolve=None: host)
     rng = random.Random(key)

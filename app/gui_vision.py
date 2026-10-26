@@ -4,6 +4,7 @@ from tkinter import ttk
 
 from app.gui_depth import DepthSurface
 from app.gui_icons import apply_icons
+from app.gui_fonts import DISPLAY
 
 
 def show_vision_controls(gui) -> None:
@@ -36,7 +37,7 @@ def show_vision_controls(gui) -> None:
     heading = tk.Frame(surface.body, bg=gui.PANEL)
     heading.pack(fill="x")
     tk.Label(heading, text="Camera eye", bg=gui.PANEL, fg=gui.WHITE,
-             font=("Segoe UI Semibold", 16), anchor="w").pack(side="left")
+             font=(DISPLAY, 16), anchor="w").pack(side="left")
     gui.vision_close_button = ttk.Button(heading, text="✕  Close", width=0, style="Hayat.TButton",
                                           command=gui._close_vision_controls)
     gui.vision_close_button.pack(side="right")

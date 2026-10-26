@@ -14,6 +14,7 @@ from app.gui_resources import BooleanVar, StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.research.investigations import build_report, export_report, profile_seed, report_text
+from app.gui_fonts import DISPLAY
 
 
 class PersonResearchStudio(tk.Toplevel):
@@ -35,7 +36,7 @@ class PersonResearchStudio(tk.Toplevel):
         self.status = StringVar(self, 'Enter a name or an explicit GitHub handle / profile. Candidates remain separate.')
         top = tk.Frame(self, bg=p.BLACK, padx=12, pady=10)
         top.pack(fill='x')
-        tk.Label(top, text='Professional research', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI Semibold', 16)).pack(side='left')
+        tk.Label(top, text='Professional research', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16)).pack(side='left')
         ttk.Button(top, text='Close', command=self.close).pack(side='right')
         from app.gui_research_links import research_links
         self.workspace_links = research_links(top, self.gui, 'professional', name=lambda: self.query.get(), context=lambda: self.context.get())

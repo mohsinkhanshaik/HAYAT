@@ -80,7 +80,8 @@ class JobCenter:
         return browse(self, platform, query, location, scan, engine, resume, check)
 
     def search(self, query: str = "", location: str = "", remote: bool | None = None, force: bool = False,
-               depth: str = "normal", limit: int = 100, check=None, progress=None) -> dict[str, Any]:
+               depth: str = "normal", limit: int = 100, check=None, progress=None,
+               include_remote: bool = True) -> dict[str, Any]:
         """Refresh explicit queries; reuse the hourly cache for background rounds, then filter all saved matches."""
         from app.jobs.search_depth import DEPTHS
         if depth not in DEPTHS:
@@ -127,7 +128,7 @@ class JobCenter:
                 peers.append(row)
         new = self.store.upsert(unique)
         self.rescore()  # Existing postings can change pay, requirements or sponsorship on a later fetch.
-        matches = [row for row in self.store.iter_matches() if relevant(row, terms) and matches_location(row, location)
+        matches = [row for row in self.store.iter_matches() if relevant(row, terms) and matches_location(row, location, include_remote=include_remote)
                    and (remote is None or (row["reading"].get("mode") == "remote" if remote else
                                           row["reading"].get("mode") in ("on-site", "hybrid")))]
         failed = sum(bool(item.get("error")) for item in found["sources"])
@@ -188,7 +189,7 @@ class JobCenter:
 
     def matches(self, min_score: int = 0, limit: int = 15, include_blocked: bool = False, query: str = "",
                 sort_by: str = "score", sponsorship: str = "all", remote_only: bool = False, location: str = "",
-                offset: int = 0) -> dict[str, Any]:
+                offset: int = 0, include_remote: bool = True) -> dict[str, Any]:
         if sort_by not in ("score", "newest", "pay") or sponsorship not in ("all", "offered", "not stated", "not offered", "conflicting"):
             raise ValueError("Choose score, newest or pay; sponsorship can be all, offered, not stated, not offered or conflicting.")
         rows = list(self.store.iter_matches(min_score, include_blocked))
@@ -196,7 +197,8 @@ class JobCenter:
             terms = [term.strip() for term in re.split(r"\s*(?:,|\bor\b)\s*", query, flags=re.IGNORECASE) if term.strip()]
             rows = [row for row in rows if relevant(row, terms) or any(term.casefold() in row["company"].casefold() for term in terms)]
         rows = [row for row in rows if (not remote_only or row["reading"].get("mode") == "remote")
-                and (sponsorship == "all" or row["reading"].get("sponsorship") == sponsorship) and matches_location(row, location)]
+                and (sponsorship == "all" or row["reading"].get("sponsorship") == sponsorship)
+                and matches_location(row, location, include_remote=include_remote)]
         currency = self.profile.load()["preferences"]["salary_currency"]
         if sort_by == "newest":
             rows.sort(key=lambda row: row.get("posted_at") or "", reverse=True)

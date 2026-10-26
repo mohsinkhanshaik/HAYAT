@@ -224,6 +224,8 @@ class TorMask:
         """Running and fully bootstrapped. Checked on every masked request, so a confirmed bootstrap is
         remembered for the life of the process instead of re-reading Tor's ever-growing log each time."""
         process = self.process
+        if process is None and time.monotonic() < getattr(self, "_shared_until", 0.0):
+            return True  # another HAYAT process's Tor, confirmed within the last minute
         if process is None or process.poll() is not None:
             return False
         if getattr(self, "_ready_process", None) is process:
@@ -232,6 +234,17 @@ class TorMask:
             self._ready_process = process
             return True
         return False
+
+    def _shared(self) -> bool:
+        """Tor already answers on this port and its log says it is fully connected: another HAYAT process runs it."""
+        import socket
+
+        try:
+            with socket.create_connection(("127.0.0.1", self.port), timeout=1):
+                pass
+        except OSError:
+            return False
+        return self.bootstrapped() >= 100
 
     def ensure_started(self, timeout: float = 90) -> None:
         """Bring Tor up for a masked request that found it down; raise a plain reason when it cannot.
@@ -327,7 +340,19 @@ class TorMask:
             if not self.installed():
                 return {"masked": False, "reason": 'Tor is not set up yet: say "set up tor" first (about 21 MB).'}
             if not self.running():
-                self.log.unlink(missing_ok=True)
+                # The HAYAT window and a second HAYAT process (the command line, a live check) share one Tor: the
+                # second one used to delete the first one's tor.log before starting its own, and Windows refused
+                # (WinError 32, "used by another process"), so every masked read in it failed.
+                if self._shared():
+                    self._shared_until = time.monotonic() + 60
+                    return {"masked": True, "proxy": self.route.proxy, "shared": True,
+                            "note": "Another HAYAT process already runs Tor on this port; this one uses it too."}
+                try:
+                    self.log.unlink(missing_ok=True)
+                except PermissionError:
+                    return {"masked": False, "routing_required": True,
+                            "reason": "Tor's log is held by another program that is not answering as Tor; close it and "
+                                      "try again. Public reads remain routed to Tor and fail closed."}
                 self.process = self.launch([str(self.folder / "tor.exe"), "-f", str(self._torrc())],
                                            cwd=str(self.folder), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))

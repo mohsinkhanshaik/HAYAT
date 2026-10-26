@@ -11,6 +11,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from app.logging import redact
+from app.gui_fonts import DISPLAY
 
 
 PAGE_SIZE = 30
@@ -132,8 +133,9 @@ class WorkspaceExplorer(tk.Frame):
                         foreground=palette.WHITE, rowheight=32, font=("Segoe UI", 10), borderwidth=0)
         style.configure("Workspace.Treeview.Heading", background=palette.PANEL, foreground=palette.WHITE,
                         font=("Segoe UI Semibold", 10), padding=8)
-        style.map("Workspace.Treeview", background=[("selected", palette.GOLD)],
-                  foreground=[("selected", palette.BLACK)])
+        # Selected rows are blue in every table (app/gui_theme.py); gold here changed them app-wide once opened.
+        style.map("Workspace.Treeview", background=[("selected", palette.ROYAL)],
+                  foreground=[("selected", "#FFFFFF")])
         self.runtime, self.kind = runtime, kind
         self.page = 1
         self._pending = False
@@ -146,7 +148,7 @@ class WorkspaceExplorer(tk.Frame):
         self.metric_vars = {}
         if kind == 'background':
             tk.Label(self, text='Background intelligence', bg=palette.BLACK, fg=palette.WHITE,
-                     font=('Segoe UI Semibold', 22), anchor='w').pack(fill='x', pady=(12, 6))
+                     font=(DISPLAY, 22), anchor='w').pack(fill='x', pady=(12, 6))
             cards = tk.Frame(self, bg=palette.BLACK)
             cards.pack(fill='x', pady=(0, 8))
             for index, (key, label) in enumerate((('learned', 'VERIFIED TOPICS'), ('pending', 'WAITING'),
@@ -160,7 +162,7 @@ class WorkspaceExplorer(tk.Frame):
                 variable = self.metric_vars[key] = StringVar(self, '—')
                 tk.Label(card, textvariable=variable, bg=palette.PANEL_2,
                          fg=palette.ALERT if key == 'failed' else palette.GOLD,
-                         font=('Segoe UI Semibold', 23)).pack(anchor='w')
+                         font=(DISPLAY, 23)).pack(anchor='w')
         search = tk.Frame(self, bg=palette.BLACK)
         search.pack(fill="x", pady=(8, 5))
         ttk.Label(search, text="Search " + kind, style="Workspace.TLabel").pack(side="left", padx=(0, 8))

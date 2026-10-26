@@ -63,6 +63,14 @@ class Planner:
         contacts = contact_plan(goal, names)
         if contacts:
             return [PlanStep(**contacts)]
+        from app.research.people_finder import plan as people_plan
+        people = people_plan(goal, names)
+        if people:
+            return [PlanStep(**people)]
+        from app.research.onion_directory import plan as onion_sites_plan
+        onion_sites = onion_sites_plan(goal, names)
+        if onion_sites:
+            return [PlanStep(**onion_sites)]
         from app.networking_actions import plan as networking_plan
         networking = networking_plan(goal, names)
         if networking:

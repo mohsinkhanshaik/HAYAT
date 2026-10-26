@@ -2067,6 +2067,14 @@ class AssistantService:
         contacts = contact_report(getattr(outcome, 'history', []))
         if contacts:
             return contacts
+        from app.research.people_finder import report as people_report
+        people = people_report(getattr(outcome, 'history', []))
+        if people:
+            return people
+        from app.research.onion_directory import report as onion_sites_report
+        onion_sites = onion_sites_report(getattr(outcome, 'history', []))
+        if onion_sites:
+            return onion_sites
         from app.networking_actions import report as networking_report
         networking = networking_report(getattr(outcome, 'history', []))
         if networking:

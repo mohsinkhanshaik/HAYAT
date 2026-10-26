@@ -41,14 +41,19 @@ class Capability:
 
 CATALOG: tuple[Capability, ...] = (
     Capability('networking', 'Private networking', 'N',
-               'Organize contacts privately, compare stated expertise with your goals, prepare unsent introductions and track follow-ups.',
-               'Open Studios > Private networking > Find professional contacts for public name/organization sources and team routes. '
+               'Find people to contact for a goal (founders, executives, researchers, developers, recruiters) from public '
+               'professional sources, organize contacts privately, prepare unsent introductions and track follow-ups.',
+               'Open Studios > Private networking > Find people to contact and describe who you want to reach, e.g. "CTOs of '
+               'fintech companies in UAE". Save the ones you want to the contact book. '
+               'Find professional contacts gives public name/organization sources and team routes. '
                'Select deep for broader bounded discovery, or Public web through Tor for a required local Tor route. '
                'Add facts you know or public professional sources; record contact consent, '
                'inspect matching evidence and review a draft. Nothing is sent automatically.',
-               ('Show my private networking contacts', 'Find saved contacts who can help with Python projects',
-                'Draft an introduction to a saved contact'),
-               tools=('networking_*', 'public_contact_search'), keywords=('networking', 'saved contacts', 'collaboration', 'introductions',
+               ('Find people to contact: founders of fintech startups in India', 'Find top machine learning researchers in India',
+                'Show my private networking contacts', 'Draft an introduction to a saved contact'),
+               tools=('networking_*', 'public_contact_search', 'people_find'),
+               keywords=('networking', 'saved contacts', 'collaboration', 'introductions', 'people to contact', 'find people',
+                         'founders', 'recruiters', 'investors',
                                                  'outreach', 'follow-ups', 'friendship', 'professional network',
                                                  'professional contacts', 'team contacts', 'directory'),
                opens='_open_networking', opens_label='Private networking'),
@@ -196,7 +201,7 @@ CATALOG: tuple[Capability, ...] = (
         ("Research the best laptop under 800 dollars",
          "What is the latest version of Python?",
          "Find research papers about sleep and memory"),
-        tools=("web_search", "wide_web_search", "onion_research", "onion_navigate", "tor_web_research", "research_browser_handoff", "research_topic", "public_web_fetch", "public_api_get", "public_download", "bounded_crawl",
+        tools=("web_search", "wide_web_search", "onion_research", "onion_navigate", "onion_sites", "tor_web_research", "research_browser_handoff", "research_topic", "public_web_fetch", "public_api_get", "public_download", "bounded_crawl",
                "capture_web_page", "github_research", "open_source_search", "paper_research", "learn_public_document",
                "public_document_learning_status", "track_public_source", "check_public_source_change",
                "public_source_profile", "public_person_research", "public_data_sources", "public_data_search", "public_indicator_read",

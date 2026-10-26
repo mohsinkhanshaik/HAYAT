@@ -19,6 +19,18 @@ Type a place the way you would say it; HAYAT matches it the way job boards write
 - **Remote** matches "Remote - US", "Remote (Worldwide)", work-from-home and remote-mode postings.
 - **City, State** needs both parts: *Paris, TX* does not match Paris, France.
 - Separate alternatives with `;` (*Texas; Michigan*); *Worldwide* or an empty box shows every location.
+- **Include remote jobs I can do from this location** (on by default in the Jobs window) also keeps remote jobs
+  open to that place: a remote job naming no place, or one open to the place's country ("Remote - US" for
+  *Michigan*; "Remote - EU" for *Berlin*). A remote job limited to another country stays out. Untick it to see
+  only jobs located in the place. Chat searches include them the same way.
+
+Why: most of the free job boards list remote work only. A live "data analyst, Michigan" search on 2026-10-25
+collected 114 real jobs and showed 0, because none was located in Michigan; with remote jobs included it showed
+59, each with a **Where** column such as "Remote · US".
+
+The window was also tidied: the status line reads "Found N new jobs from X of Y sources · M match your search",
+followed by any failure in one plain sentence and a tip when nothing matched. The browser and verification
+controls are folded under **More ways to search ▸** and open by themselves when a verification is waiting.
 
 If every source fails, the status line now says so in one sentence ("Every search source tried (RemoteOK, Jobicy …)
 failed: the connection was refused …"); the full errors are in **Sources**. With Tor turned on for HAYAT, the first

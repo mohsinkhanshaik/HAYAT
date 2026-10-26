@@ -4,6 +4,7 @@ from __future__ import annotations
 import queue
 import threading
 import tkinter as tk
+import webbrowser
 from tkinter import ttk
 from typing import Any
 
@@ -13,6 +14,7 @@ from app.gui_resources import BooleanVar, StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.research.onion_navigation import navigation_controls
+from app.gui_fonts import DISPLAY
 
 
 class OnionNavigationWindow(tk.Toplevel):
@@ -38,13 +40,17 @@ class OnionNavigationWindow(tk.Toplevel):
         self.url, self.query = StringVar(self), StringVar(self)
         self.follow = BooleanVar(self, False)
         self.pages, self.depth = StringVar(self, '3'), StringVar(self, '1')
-        self.status = StringVar(self, 'Paste a known public v3 onion URL, then Read. No network access starts automatically.')
+        self.status = StringVar(self, 'Choose a site in Find onion sites, or paste a v3 onion URL, then Read.')
+        self.site_filter, self.site_category = StringVar(self, ''), StringVar(self, 'All categories')
+        self.check_text = StringVar(self, '')
+        self._site_rows: dict[str, dict[str, Any]] = {}
+        self._check_job = None
         self.link_detail = StringVar(self, 'Select a link to inspect its destination. External links are reference-only.')
 
         head = tk.Frame(self, bg=p.BLACK, padx=14, pady=10)
         head.pack(fill='x')
         tk.Label(head, text='Onion navigator', bg=p.BLACK, fg=p.WHITE,
-                 font=('Segoe UI Semibold', 16)).pack(side='left')
+                 font=(DISPLAY, 16)).pack(side='left')
         ttk.Button(head, text='Close', command=self.close).pack(side='right')
         self.guidance = tk.Label(self, text='Read public HTML/text through Tor. Inspect source hashes and timestamps, then follow a selected same-site link.',
                                  bg=p.BLACK, fg=p.MUTED, anchor='w', justify='left', wraplength=750)
@@ -53,8 +59,12 @@ class OnionNavigationWindow(tk.Toplevel):
         address.pack(fill='x', padx=14)
         tk.Label(address, text='Public .onion URL', bg=p.PANEL, fg=p.WHITE, anchor='w').pack(fill='x')
         self.address = ttk.Entry(address, textvariable=self.url)
-        self.address.pack(fill='x', pady=(4, 6))
+        self.address.pack(fill='x', pady=(4, 2))
         self.address.bind('<Return>', lambda _event: self.read())
+        self.check_label = tk.Label(address, textvariable=self.check_text, bg=p.PANEL, fg=p.MUTED, anchor='w', justify='left',
+                                    wraplength=900, font=('Segoe UI', 9))
+        self.check_label.pack(fill='x', pady=(0, 4))
+        self.url.trace_add('write', lambda *_args: self._schedule_check())
         topic = tk.Frame(address, bg=p.PANEL)
         topic.pack(fill='x')
         tk.Label(topic, text='Optional topic', bg=p.PANEL, fg=p.MUTED).pack(side='left', padx=(0, 8))
@@ -96,6 +106,7 @@ class OnionNavigationWindow(tk.Toplevel):
         self.body.add(workspace, minsize=300)
         self.tabs = ttk.Notebook(workspace)
         self.tabs.pack(fill='both', expand=True)
+        self._build_sites_tab()
         text_tab = tk.Frame(self.tabs, bg=p.BLACK)
         self.tabs.add(text_tab, text='Page evidence')
         self.text = DarkScrolledText(text_tab, wrap='word', bg=p.PANEL, fg=p.WHITE, state='disabled',
@@ -125,6 +136,175 @@ class OnionNavigationWindow(tk.Toplevel):
         self.lift()
         self._paint_empty()
         self._poll()
+
+    # ------------------------------------------------------------------ find onion sites
+    def _build_sites_tab(self):
+        """Verified onion sites by category, an onion-index search with each result's nature, and a details pane."""
+        p = self.palette
+        tab = tk.Frame(self.tabs, bg=p.BLACK)
+        self.tabs.add(tab, text='Find onion sites')
+        row = tk.Frame(tab, bg=p.BLACK)
+        row.pack(fill='x', pady=(6, 4))
+        entry = ttk.Entry(row, textvariable=self.site_filter, width=30)
+        entry.pack(side='left', fill='x', expand=True)
+        entry.bind('<Return>', lambda _event: self.load_sites())
+        self.category_box = ttk.Combobox(row, textvariable=self.site_category, values=['All categories'], state='readonly', width=30)
+        self.category_box.pack(side='left', padx=6)
+        self.category_box.bind('<<ComboboxSelected>>', lambda _event: self.load_sites())
+        ttk.Button(row, text='Show sites', command=self.load_sites).pack(side='left')
+        ttk.Button(row, text='Search the onion index too', command=lambda: self.load_sites(search_index=True)).pack(side='left', padx=6)
+        frame = tk.Frame(tab, bg=p.BLACK)
+        frame.pack(fill='both', expand=True)
+        self.site_table = ttk.Treeview(frame, columns=('kind', 'up', 'trust'), show='tree headings', selectmode='browse', height=8)
+        for key, title, width in (('#0', 'Site', 230), ('kind', 'What it is', 190), ('up', 'Reachable', 90),
+                                  ('trust', 'Verified', 110)):
+            self.site_table.heading(key, text=title)
+            self.site_table.column(key, width=width, minwidth=70, stretch=key in {'#0', 'kind'})
+        bar = ttk.Scrollbar(frame, orient='vertical', command=self.site_table.yview, style='Hayat.Vertical.TScrollbar')
+        self.site_table.configure(yscrollcommand=bar.set)
+        self.site_table.pack(side='left', fill='both', expand=True)
+        bar.pack(side='right', fill='y')
+        self.site_table.bind('<<TreeviewSelect>>', lambda _event: self.show_site())
+        self.site_table.bind('<Double-1>', lambda _event: self.read_site())
+        self.site_detail = tk.Label(tab, text='Press Show sites: verified onion services of news organisations, search engines, '
+                                              'social networks, privacy tools, public bodies and newsrooms\' SecureDrop inboxes.',
+                                    bg=p.PANEL, fg=p.WHITE, anchor='w', justify='left', wraplength=700, padx=10, pady=8)
+        self.site_detail.pack(fill='x', pady=(6, 4))
+        actions = FlowRow(tab, p.BLACK, gap=5)
+        actions.pack(fill='x')
+        actions.add(ttk.Button(actions, text='Read it here', command=self.read_site))
+        actions.add(ttk.Button(actions, text='Copy address', command=self.copy_site))
+        actions.add(ttk.Button(actions, text='Open the proof page', command=self.open_proof))
+        self.site_credit = tk.Label(tab, text='', bg=p.BLACK, fg=p.MUTED, anchor='w', font=('Segoe UI', 8))
+        self.site_credit.pack(fill='x', pady=(4, 0))
+
+    def load_sites(self, search_index=False):
+        if self._closed:
+            return
+        try:
+            self._allowed()
+            registry = self.gui.runtime.registry
+        except Exception as exc:
+            self.status.set(str(exc))
+            return
+        category = self.site_category.get()
+        arguments = {'query': self.site_filter.get().strip(), 'category': '' if category.startswith('All') else category.rsplit(' (', 1)[0],
+                     'search_index': bool(search_index)}
+        if search_index and not arguments['query']:
+            self.status.set('Type a topic first (for example: news, privacy, books), then search the onion index.')
+            return
+        self.status.set('Searching the onion index through Tor…' if search_index else 'Reading the verified onion directory…')
+        results = self._results
+
+        def work():
+            try:
+                result = registry.execute('onion_sites', arguments)
+                if not result.success:
+                    raise RuntimeError(result.error)
+                results.put((self._generation, 'sites', result.output))
+            except Exception as exc:
+                results.put((self._generation, 'sites_error', str(exc)))
+        threading.Thread(target=work, name='hayat-onion-sites', daemon=True).start()
+
+    def show_sites(self, value):
+        self.site_table.delete(*self.site_table.get_children())
+        self._site_rows = {}
+        categories = ['All categories'] + [f'{name} ({count})' for name, count in value.get('categories') or []]
+        self.category_box.configure(values=categories)
+        for number, site in enumerate(value.get('directory') or []):
+            key = f'd{number}'
+            self._site_rows[key] = {**site, 'verified': True}
+            reach = f"{site['up']} of {site['checks']} days" if site.get('checks') else 'not checked'
+            self.site_table.insert('', 'end', iid=key, text=site['name'], values=(site['category'], reach, 'Yes, with proof'))
+        index = value.get('index') or {}
+        for number, item in enumerate(index.get('results') or []):
+            key = f'i{number}'
+            self._site_rows[key] = item
+            self.site_table.insert('', 'end', iid=key, text=item['name'][:80],
+                                   values=(item['nature'], 'unknown', 'Yes: ' + item['listed_as'] if item['verified'] else 'No (index)'))
+        found = len(value.get('directory') or [])
+        text = f"{found} verified site{'s' if found != 1 else ''}"
+        if 'index' in value:
+            text += f", {len(index.get('results') or [])} onion-index results ({index.get('note') or index.get('error', '')})"
+        if value.get('directory_error'):
+            text += f". The directory could not be refreshed ({value['directory_error']}); showing the kept copy"
+        self.status.set(text + '. Choose one to see what it is; Read it here opens it through Tor.')
+        self.site_credit.configure(text=f"Directory: {value.get('credit', '')} · {value.get('source', '')}")
+        if self._site_rows:
+            first = next(iter(self._site_rows))
+            self.site_table.selection_set(first)
+
+    def _site(self):
+        selection = self.site_table.selection()
+        return self._site_rows.get(selection[0]) if selection else None
+
+    def show_site(self):
+        site = self._site()
+        if not site:
+            return
+        if site.get('verified') and 'category' in site:
+            text = (f"{site['name']} · {site['category']}\n{site['about']}\nAddress: {site['url']}\n"
+                    f"Proof from the organisation: {site.get('proof') or 'listed in the directory'}")
+        else:
+            text = (f"{site['name']} · looks like: {site['nature']}"
+                    + (f" (listed as {site['listed_as']})" if site.get('verified') else ' · unverified: anyone can run an onion site')
+                    + f"\n{site.get('about', '')}\nAddress: {site['url']}")
+        self.site_detail.configure(text=text)
+
+    def read_site(self):
+        site = self._site()
+        if site:
+            self.url.set(site['url'])
+            self.tabs.select(1)
+            self.read(site['url'])
+
+    def copy_site(self):
+        site = self._site()
+        if site:
+            self.clipboard_clear()
+            self.clipboard_append(site['url'])
+            self.status.set('Address copied.')
+
+    def open_proof(self):
+        site = self._site()
+        if site and site.get('proof'):
+            webbrowser.open(site['proof'])
+        elif site:
+            self.status.set('This one has no proof page: it came from the onion index, not the verified directory.')
+
+    def _schedule_check(self):
+        if self._check_job is not None:
+            self.after_cancel(self._check_job)
+        self._check_job = self.after(400, self.check_address)
+
+    def check_address(self):
+        """Under the address: listed (with proof), a lookalike copy of a listed site, or unknown."""
+        self._check_job = None
+        url = self.url.get().strip()
+        if '.onion' not in url:
+            self.check_text.set('')
+            return
+        registry = getattr(self.gui.runtime, 'registry', None)
+        if registry is None:
+            return
+        results, generation = self._results, self._generation
+
+        def work():  # the first check may read the directory through Tor: never on the window's thread
+            try:
+                result = registry.execute('onion_sites', {'check_url': url})
+                value = result.output if result.success else {'verdict': 'unknown', 'text': result.error or ''}
+            except Exception as exc:
+                value = {'verdict': 'unknown', 'text': f'Could not check this address: {exc}'}
+            results.put((generation, 'check', {**value, 'for': url}))
+        threading.Thread(target=work, name='hayat-onion-check', daemon=True).start()
+
+    def show_check(self, value):
+        if value.get('for') != self.url.get().strip():
+            return  # the address changed since
+        colours = {'listed': '#4ADE80', 'lookalike': '#F05D5E'}
+        self.check_text.set(('✓ ' if value.get('verdict') == 'listed' else '⚠ ' if value.get('verdict') == 'lookalike' else '')
+                            + str(value.get('text', '')))
+        self.check_label.configure(fg=colours.get(value.get('verdict'), self.palette.MUTED))
 
     def _paint_empty(self):
         show_empty(self.source_list, 'No public page was retrieved. Open Report / errors to see why; nothing was fabricated.'
@@ -254,6 +434,15 @@ class OnionNavigationWindow(tk.Toplevel):
                 continue
             if kind == 'progress':
                 self.status.set(value.get('message', 'Reading public source…'))
+                continue
+            if kind == 'sites':
+                self.show_sites(value)
+                continue
+            if kind == 'sites_error':
+                self.status.set('Could not load onion sites: ' + value[:400])
+                continue
+            if kind == 'check':
+                self.show_check(value)
                 continue
             self._pending = False
             if kind == 'error':

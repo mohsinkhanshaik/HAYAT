@@ -24,6 +24,7 @@ from app.gui_resources import StringVar
 from app.logging import log_swallowed
 from app.gui_windows import place_over
 from app.transfers import transfers
+from app.gui_fonts import DISPLAY
 
 _log = logging.getLogger(__name__)
 UP, DOWN, AMBER = '#4ADE80', '#F05D5E', '#E8C46A'
@@ -111,7 +112,7 @@ class DownloadsWindow(tk.Toplevel):
         self.bind('<Escape>', lambda _event: self.close())
         header = tk.Frame(self, bg=p.BLACK, padx=16, pady=10)
         header.pack(fill='x')
-        tk.Label(header, text='Downloads & web activity', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI Semibold', 18), anchor='w').pack(fill='x')
+        tk.Label(header, text='Downloads & web activity', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 18), anchor='w').pack(fill='x')
         self.totals = tk.Label(header, text='', bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 9), anchor='w')
         self.totals.pack(fill='x')
         self.tabs = ttk.Notebook(self)

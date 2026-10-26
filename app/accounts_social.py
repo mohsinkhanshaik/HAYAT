@@ -54,7 +54,8 @@ def social_providers(Provider: Any, Operation: Any) -> tuple[Any, ...]:
                              Operation("notifications", "My notifications"),
                              Operation("post", "Post to Bluesky", True, post))),
         Provider("mastodon", "Mastodon", "Your home timeline and notifications on your server, and posting once you confirm",
-                 ("token",), token_fields=(("server", "Your server, e.g. mastodon.social"),),
+                 # The browser first: HAYAT registers itself with your server, so it is one click with no setup.
+                 ("browser", "token"), token_fields=(("server", "Your server, e.g. mastodon.social"),), dynamic_app=True,
                  token_page="https://mastodon.social/settings/applications/new", group="Social",
                  token_steps=("On your server open Preferences → Development → New application (Make a token opens it on "
                               "mastodon.social; use your own server's address if it is another).",

@@ -2200,7 +2200,7 @@ def test_the_system_map_travels_through_time(gui, monkeypatch):
     monkeypatch.setattr(gui, "_load_brain_history", lambda: loads.append(gui._brain_window_seconds))
     gui._set_brain_window(21600)
     assert loads == [21600] and gui.brain_graph.moment is None
-    assert str(gui.brain_range_buttons[21600].cget("style")) == "HayatAccent.TButton"
+    assert str(gui.brain_range_buttons[21600].cget("style")) == "HayatChosen.TButton"
     gui.show_view("chat")
 
 
@@ -3435,7 +3435,7 @@ def test_tick_boxes_and_spin_boxes_are_dark_like_the_fields_beside_them(gui):
     palette = type(gui)
     assert style.lookup("TCheckbutton", "indicatorbackground") == palette.PANEL
     assert style.lookup("TCheckbutton", "indicatorforeground") == palette.GOLD
-    assert style.lookup("TSpinbox", "fieldbackground") == palette.PANEL_2
+    assert style.lookup("TSpinbox", "fieldbackground") == palette.PANEL  # recessed field, raised buttons
     assert style.lookup("TSpinbox", "arrowcolor") == palette.WHITE
 
 

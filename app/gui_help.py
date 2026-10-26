@@ -18,6 +18,7 @@ from app import capabilities
 from app.gui_icons import apply_icons
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 #: What each button does, in a sentence a beginner understands. Keyed by the
 #: button's visible text.
@@ -260,7 +261,7 @@ class CapabilityGuide(tk.Toplevel):
         titles = tk.Frame(header, bg=p.BLACK)
         titles.pack(side="left")
         tk.Label(titles, text="What can HAYAT do?", bg=p.BLACK, fg=p.WHITE,
-                 font=("Segoe UI Semibold", 17)).pack(anchor="w")
+                 font=(DISPLAY, 17)).pack(anchor="w")
         from app.identity import CREATOR, PROJECT_URL
         # The creator's credit, kept by the licence's attribution term (NOTICE) in every copy.
         tk.Label(titles, text=f"Created by {CREATOR} · free, open-source software (AGPL-3.0) · {PROJECT_URL}",

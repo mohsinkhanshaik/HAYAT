@@ -7,6 +7,7 @@ from app.gui_resources import StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.learning.atlas import learning_atlas
+from app.gui_fonts import DISPLAY
 
 
 class LearningAtlas(tk.Toplevel):
@@ -26,7 +27,7 @@ class LearningAtlas(tk.Toplevel):
         header = tk.Frame(self, bg=p.BLACK, padx=18, pady=12)
         header.pack(fill='x')
         tk.Label(header, text='Your learning atlas', bg=p.BLACK, fg=p.WHITE,
-                 font=('Segoe UI Semibold', 21)).pack(anchor='w')
+                 font=(DISPLAY, 21)).pack(anchor='w')
         self.status = StringVar(self)
         tk.Label(header, textvariable=self.status, bg=p.BLACK, fg=p.MUTED,
                  font=('Segoe UI', 10)).pack(anchor='w', pady=4)

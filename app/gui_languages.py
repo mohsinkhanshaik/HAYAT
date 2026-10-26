@@ -25,6 +25,7 @@ from typing import Any
 from app.gui_theme import DarkScrolledText
 from app.gui_icons import apply_icons
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 
 class LanguagesStudio(tk.Toplevel):
@@ -64,7 +65,7 @@ class LanguagesStudio(tk.Toplevel):
         p = self.palette
         header = tk.Frame(self, bg=p.BLACK, padx=16, pady=10)
         header.pack(fill="x")
-        tk.Label(header, text="Languages & persona", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16)).pack(side="left")
+        tk.Label(header, text="Languages & persona", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16)).pack(side="left")
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.destroy).pack(side="right")
 
         persona = self._section(self, "Persona", "On: HAYAT talks with you like a real person -- natural, warm, with "

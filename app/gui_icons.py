@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 
 
-def icon_kind(label: str) -> str:
+def icon_kind(label: str, fallback: str = "tool") -> str:
     text = label.casefold()
     if text.startswith('zoom'):
         return 'zoom_out' if '−' in text or '-' in text else 'zoom_in'
@@ -53,7 +53,7 @@ def icon_kind(label: str) -> str:
     ):
         if any(re.search(rf"(?<!\w){re.escape(word)}(?!\w)", text) for word in words):
             return kind
-    return "tool"
+    return fallback
 
 
 def icon_image(widget: tk.Misc, kind: str, colour: str, size: int = 18):
@@ -228,7 +228,13 @@ def apply_icons(widget: tk.Misc, palette) -> None:
             text = str(item.cget("text"))
             if text and len(text.strip()) > 1:
                 # A window may choose a button's icon; a later app-wide pass keeps that choice.
-                kind = getattr(item, "_hayat_icon", None) or icon_kind(text)
+                # A button whose words match no icon gets none: the generic one had spread to "Previous", "Hide",
+                # "Markets" and dozens more, where it meant nothing and made rows look busy.
+                kind = getattr(item, "_hayat_icon", None) or icon_kind(text, fallback="")
+                if not kind:
+                    for child in item.winfo_children():
+                        visit(child)
+                    return
                 accent = isinstance(item, ttk.Button) and str(item.cget("style")).endswith("HayatAccent.TButton")
                 if accent:
                     colour = palette.BLACK

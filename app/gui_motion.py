@@ -5,8 +5,11 @@ Tk scrolls a text or canvas by whole lines or units, so every wheel notch was a 
 each frame, which reads as one continuous glide; further notches extend the target
 instead of queueing jumps. Dragging the scrollbar cancels a glide in progress.
 
+`fade_in` eases a newly opened window in from transparent (about 0.15 s) instead of
+having it pop up fully drawn.
+
 Motion follows Windows' own "Animation effects" setting, and `set_motion(False)`
-turns every glide into an instant move.
+turns every glide into an instant move and every window entrance into an instant one.
 """
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from __future__ import annotations
 import logging
 import itertools
 import sys
+import time
 import tkinter as tk
 from contextlib import contextmanager
 from typing import Any
@@ -128,6 +132,44 @@ class SmoothScroller:
             except tk.TclError:
                 pass
         self.job, self.target, self.last_set = None, None, None
+
+
+FADE_MS = 150
+FRAME_MS = 15
+
+
+def fade_in(window: Any, duration_ms: int = FADE_MS) -> bool:
+    """Ease a window in from transparent the first time it appears; True when a fade started.
+
+    Skipped when motion is off and in the Glass appearance: its acrylic blur needs a fully
+    opaque window, and a colour-keyed window (`-transparentcolor`) is already layered.
+    """
+    if not MOTION["enabled"] or getattr(window, "_hayat_faded", False):
+        return False
+    window._hayat_faded = True
+    try:
+        if str(window.wm_attributes("-transparentcolor") or ""):
+            return False
+        window.wm_attributes("-alpha", 0.0)
+    except tk.TclError:  # not Windows, or the window is already gone
+        return False
+    started = time.monotonic()
+
+    def step() -> None:
+        try:
+            if not window.winfo_exists():
+                return
+            progress = min(1.0, (time.monotonic() - started) * 1000 / max(1, duration_ms))
+            # Ease-out cubic: quick to appear, gentle to settle. The end is exactly 1.0, which also
+            # drops Windows' layered style so nothing stays half-transparent.
+            window.wm_attributes("-alpha", 1.0 if progress >= 1 else 1 - (1 - progress) ** 3)
+            if progress < 1:
+                window.after(FRAME_MS, step)
+        except tk.TclError:
+            pass
+
+    window.after_idle(step)
+    return True
 
 
 def attach(widget: Any) -> SmoothScroller:

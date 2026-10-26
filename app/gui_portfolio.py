@@ -20,6 +20,7 @@ from typing import Any, Callable
 
 from app.gui_resources import StringVar
 from app.portfolio import KINDS, usd
+from app.gui_fonts import DISPLAY
 
 KIND_COLOURS = {"cash": "#7DD3FC", "stock": "#A3E635", "crypto": "#E8C46A"}
 GAIN, LOSS = "#4ADE80", "#F05D5E"
@@ -42,7 +43,7 @@ class PortfolioWindow(tk.Toplevel):
         self.value: dict[str, Any] | None = None
         head = tk.Frame(self, bg=p.BLACK)
         head.pack(fill="x", padx=16, pady=(14, 2))
-        tk.Label(head, text="Portfolio & net worth", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16), anchor="w").pack(side="left")
+        tk.Label(head, text="Portfolio & net worth", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16), anchor="w").pack(side="left")
         self.status = tk.Label(head, text="", bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9))
         self.status.pack(side="right")
         ttk.Button(head, text="Refresh prices", style="Hayat.TButton", command=self.reload).pack(side="right", padx=8)
@@ -51,7 +52,7 @@ class PortfolioWindow(tk.Toplevel):
                  bg=p.BLACK, fg=p.MUTED, wraplength=1100, justify="left", anchor="w").pack(fill="x", padx=16)
         summary = tk.Frame(self, bg=p.BLACK)
         summary.pack(fill="x", padx=16, pady=(10, 4))
-        self.net = tk.Label(summary, text="—", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 24), anchor="w")
+        self.net = tk.Label(summary, text="—", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 24), anchor="w")
         self.net.pack(side="left")
         self.split = tk.Label(summary, text="", bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 10), anchor="w", justify="left")
         self.split.pack(side="left", padx=16)

@@ -15,6 +15,7 @@ from tkinter import filedialog, ttk
 from app.gui_resources import StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 
 PERSON_LOOKUP = re.compile(
@@ -54,7 +55,7 @@ class ImageResearchStudio(tk.Toplevel):
         head = tk.Frame(self, bg=p.BLACK, padx=16, pady=10)
         head.pack(fill='x')
         tk.Label(head, text='Research an image', bg=p.BLACK, fg=p.WHITE,
-                 font=('Segoe UI Semibold', 16)).pack(side='left')
+                 font=(DISPLAY, 16)).pack(side='left')
         ttk.Button(head, text='Close', command=self.close, style='Hayat.TButton').pack(side='right')
         from app.gui_research_links import research_links
         self.workspace_links = research_links(head, self.gui, 'sources', image=lambda: self._image_path)

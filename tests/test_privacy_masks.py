@@ -286,3 +286,39 @@ def test_the_assistant_answers_how_untrackable_am_i(monkeypatch):
         assert "Proton" not in reply and "Riseup" not in reply
     finally:
         runtime.close()
+
+
+def test_a_second_hayat_process_shares_the_running_tor_instead_of_failing(tmp_path, monkeypatch):
+    """The HAYAT window ran Tor; a second HAYAT process deleted its locked tor.log and failed every masked read."""
+    import socket
+    from pathlib import Path
+
+    from app.privacy_masks import Route
+
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen()
+    route = Route()
+    launched = []
+    tor = TorMask(tmp_path / "tor", tmp_path / "state", route=route, settings=tmp_path / "masks.json",
+                  launch=lambda *a, **k: launched.append(a), port=listener.getsockname()[1])
+    monkeypatch.setattr(TorMask, "installed", lambda self: True)
+    tor.log.parent.mkdir(parents=True, exist_ok=True)
+    tor.log.write_text("[notice] Bootstrapped 100% (done): Done\n")
+    real_unlink = Path.unlink
+
+    def locked(self, *args, **kwargs):  # Windows: the other process's Tor holds its log open
+        if self == tor.log:
+            raise PermissionError("[WinError 32] The process cannot access the file")
+        return real_unlink(self, *args, **kwargs)
+    monkeypatch.setattr(Path, "unlink", locked)
+    try:
+        route.set(f"socks5://127.0.0.1:{tor.port}")
+        tor.ensure_started(timeout=2)  # no exception: the running Tor is used
+        assert launched == [] and tor.ready() and route.proxy.endswith(str(tor.port))
+    finally:
+        listener.close()
+    # Nothing answering on the port and the log still locked: a plain reason, still failing closed.
+    tor._shared_until = 0.0
+    status = tor.start(timeout=1)
+    assert not status["masked"] and "held by another program" in status["reason"] and launched == []

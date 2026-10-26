@@ -43,6 +43,9 @@ CHAT = [
     ("assistant", "HAYAT\nSurah Ya-Seen (Ya Sin) · 36:1-7 of 83 ayahs\n\nBismillaahir Rahmaanir Raheem\n\n"
                   "1. Yaa-Seeen\n   Ya, Seen.\n\n2. Wal-Qur'aanil Hakeem\n   By the wise Qur'an,\n\n"
                   "3. Innaka laminal mursaleen\n   Indeed you, [O Muhammad], are from among the messengers,"),
+    ("user", "You\nhow are you today? 😊"),
+    ("assistant", "HAYAT\nDoing well, thanks 🙂 Ready when you are: research 🔎, jobs 💼 or markets 📈. "
+                  "Yesterday's search finished ✅"),
 ]
 
 

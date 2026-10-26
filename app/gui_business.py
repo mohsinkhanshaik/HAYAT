@@ -24,6 +24,7 @@ from typing import Any
 from app.gui_icons import apply_icons
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 PERIODS = ("this month", "last month", "this year", "last year", "all")
 
@@ -142,7 +143,7 @@ class BusinessStudio(tk.Toplevel):
             logo.create_oval(8, top, 36, top + 12, outline=p.GOLD, width=2, fill=p.BLACK)
         words = tk.Frame(header, bg=p.BLACK)
         words.pack(side="left")
-        tk.Label(words, text="Business", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 19), anchor="w").pack(fill="x")
+        tk.Label(words, text="Business", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 19), anchor="w").pack(fill="x")
         tk.Label(words, text="Your income, clients, invoices and expenses, from your own books", bg=p.BLACK, fg=p.MUTED,
                  font=("Segoe UI", 9), anchor="w").pack(fill="x")
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.destroy).pack(side="right")
@@ -181,7 +182,7 @@ class BusinessStudio(tk.Toplevel):
             badge = tk.Label(top, bg=p.PANEL, image=icon_image(top, icon, accent, 22))
             badge.pack(side="right")
             self.tile_vars[key] = StringVar(self, "--")
-            tk.Label(card, textvariable=self.tile_vars[key], bg=p.PANEL, fg=p.WHITE, font=("Segoe UI Semibold", 18),
+            tk.Label(card, textvariable=self.tile_vars[key], bg=p.PANEL, fg=p.WHITE, font=(DISPLAY, 18),
                      anchor="w").pack(fill="x", pady=(2, 0))
             self.trend_vars[key] = StringVar(self, "")
             self.trend_labels[key] = tk.Label(card, textvariable=self.trend_vars[key], bg=p.PANEL, fg=p.MUTED,
@@ -422,7 +423,7 @@ class BusinessStudio(tk.Toplevel):
                 frame.pack(fill="both", expand=True)
             else:
                 frame.pack_forget()
-            self.tab_buttons[name].configure(style="HayatAccent.TButton" if name == title else "Hayat.TButton")
+            self.tab_buttons[name].configure(style="HayatChosen.TButton" if name == title else "Hayat.TButton")
         self.current_tab = title
         if title in ("Business model", "Deep review"):  # both need the room more than the quick actions do
             self.quick.pack_forget()

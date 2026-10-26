@@ -11,6 +11,7 @@ from app.gui_intelligence_parts import FlowRow
 from app.gui_resources import BooleanVar, StringVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 
 class EnrolledFacesWindow(tk.Toplevel):
@@ -41,7 +42,7 @@ class EnrolledFacesWindow(tk.Toplevel):
         header = tk.Frame(self, bg=p.BLACK, padx=14, pady=10)
         header.pack(fill='x')
         tk.Label(header, text='Enrolled people · local only', bg=p.BLACK, fg=p.WHITE,
-                 font=('Segoe UI Semibold', 16)).pack(side='left')
+                 font=(DISPLAY, 16)).pack(side='left')
         ttk.Button(header, text='Close', command=self.close, style='Hayat.TButton').pack(side='right')
         from app.gui_research_links import research_links
         self.workspace_links = research_links(header, gui, 'faces', image=self.image_path.get)

@@ -62,11 +62,11 @@ def test_deep_uses_wide_search_and_reports_provider_coverage_without_search_snip
     parent.search.last_errors = ['index_two: TimeoutError: password=hush fake@elsewhere.example']
     report = contacts.discover_contacts(parent, 'Ada Example', 'Example Institute', depth='deep', max_pages=12)
     queries = [row for row in events if row[0] == 'wide']
-    assert len(queries) == report['searches_completed'] == report['coverage']['queries_planned'] == 5
-    assert len({row[1] for row in queries}) == 5
+    assert len(queries) == report['searches_completed'] == report['coverage']['queries_planned'] == 7  # five name queries + press and investor contacts
+    assert len({row[1] for row in queries}) == 7
     assert report['pages_checked'] == 1 and len(report['candidates']) == 1
     assert report['coverage']['queries'][0]['providers'][0]['provider'] == 'index_one'
-    assert report['coverage']['duplicate_leads'] == 4
+    assert report['coverage']['duplicate_leads'] == 6  # the same lead from each of the seven queries after the first
     assert 'hush' not in str(report) and 'fake@elsewhere' not in str(report)
     assert report['route'] == 'direct_public_web' and not report['scope']['exhaustive']
     assert report['coverage']['absence_of_data'] == 'unknown'
@@ -81,7 +81,7 @@ def test_selected_source_is_read_before_index_timeouts_and_queries_are_site_scop
     report = contacts.discover_contacts(parent, 'Ada Example', 'Example Institute', PROFILE, depth='deep')
     assert events[0][0] == 'fetch' and events[0][1] == PROFILE
     assert report['candidates'] and report['outcome'] == 'evidence_found'
-    assert report['searches_attempted'] == 5 and report['searches_completed'] == 0
+    assert report['searches_attempted'] == 7 and report['searches_completed'] == 0
     assert any(row[1].startswith('site:institute.example ') for row in events if row[0] == 'search')
     assert 'private diagnostics' not in str(report)
     assert report['sources'][0]['discovered_via'] == 'selected_organization_url'
@@ -196,7 +196,7 @@ def test_valid_onion_records_are_outside_this_professional_discovery_workflow():
     parent, events = manager({}, [SearchResult('Onion', onion()), SearchResult('Broker', 'https://whitepages.com/ada')])
     report = contacts.discover_contacts(parent, 'Ada Example', 'Example Institute', depth='deep')
     assert not [row for row in events if row[0] == 'fetch']
-    assert report['coverage']['rejected_leads'] == 10
+    assert report['coverage']['rejected_leads'] == 14  # two rejected leads from each of seven queries
 
 
 def test_leaked_record_pages_never_create_public_contact_evidence():
@@ -334,3 +334,46 @@ def test_final_url_deduplication_retains_one_source_without_merging_namesake_rec
     report = contacts.discover_contacts(parent, 'Ada Example', 'Example Institute')
     assert len(report['sources']) == len(report['candidates']) == 1
     assert report['coverage']['duplicate_pages'] == 1 and report['pages_checked'] == 2
+
+
+def test_relevant_leads_are_read_before_unrelated_ones():
+    """Live, "Lisa Su, AMD" read only a German tourism site while AMD's own pages waited unvisited."""
+    score = contacts._lead_score
+    official = score('Lisa Su', 'AMD', 'https://ir.amd.com/governance/management', 'Management | AMD', 'Dr. Lisa Su, Chair and CEO')
+    news = score('Lisa Su', 'AMD', 'https://news.example/lisa-su-interview', 'Lisa Su on AMD chips', '')
+    unrelated = score('Lisa Su', 'AMD', 'https://www.live-in-sachsen.de/', 'Live in Sachsen', 'Tourism and events')
+    assert official > news > 0 > unrelated
+
+
+def test_failed_reads_are_replaced_within_a_fixed_allowance():
+    urls = [f'https://site-{i}.example/ada' for i in range(9)]
+    pages = {url: (PermissionError('blocked') if i < 2 else PERSON) for i, url in enumerate(urls)}
+    parent, events = manager(pages, [SearchResult('Ada Example', url) for url in urls])
+    report = contacts.discover_contacts(parent, 'Ada Example', 'Example Institute', max_pages=3)
+    assert report['coverage']['pages_failed'] == 2 and report['coverage']['pages_retrieved'] == 3
+    # Never more than the page budget plus the spare reads, even when every page fails.
+    parent, events = manager({url: PermissionError('blocked') for url in urls}, [SearchResult('Ada', url) for url in urls])
+    report = contacts.discover_contacts(parent, 'Ada Example', 'Example Institute', max_pages=3)
+    assert len([row for row in events if row[0] == 'fetch']) == 3 + contacts._SPARE_READS
+
+
+@pytest.mark.parametrize('host', ['derrick-app.com', 'rocketreach.co', 'www.zoominfo.com', 'contactout.com'])
+def test_contact_data_brokers_are_never_read(host):
+    url = f'https://{host}/company/example/ada-example'
+    parent, events = manager({url: PERSON}, [SearchResult('Ada Example email', url)])
+    report = contacts.discover_contacts(parent, 'Ada Example', 'Example Institute')
+    assert not [row for row in events if row[0] == 'fetch'] and report['coverage']['rejected_leads'] >= 1
+
+
+def test_a_third_party_sites_own_contact_page_is_not_followed():
+    aggregator = 'https://orgcharts.example/org/example-institute/ada'
+    page = ('<article class="person-card"><h1>Ada Example</h1><p>Example Institute</p></article>'
+            '<a href="/contact">Contact us</a>')
+    parent, events = manager({aggregator: page}, [SearchResult('Ada Example', aggregator)])
+    contacts.discover_contacts(parent, 'Ada Example', 'Example Institute', depth='deep')
+    assert [row[1] for row in events if row[0] == 'fetch'] == [aggregator]
+    own = 'https://exampleinstitute.example/people/ada'
+    parent, events = manager({own: page, 'https://exampleinstitute.example/contact': '<p>Example Institute</p>'},
+                             [SearchResult('Ada Example', own)])
+    contacts.discover_contacts(parent, 'Ada Example', 'Example Institute', depth='deep')
+    assert 'https://exampleinstitute.example/contact' in [row[1] for row in events if row[0] == 'fetch']

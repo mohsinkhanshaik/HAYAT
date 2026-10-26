@@ -96,7 +96,7 @@ def test_levels_pipeline_and_settings_follow_the_voice_system(voice_page):
     assert page.cards["input"]["level"].get() == "-6 dB" and page.cards["output"]["level"].get() == "-∞ dB"
     assert page.cards["input"]["state"].get() == "Listening…" and page._stage == 0
     assert page.toggle.cget("text") == "Stop voice"
-    assert str(page.mode_buttons["continuous"].cget("style")) == "HayatAccent.TButton"
+    assert str(page.mode_buttons["continuous"].cget("style")) == "HayatChosen.TButton"
     assert page.config_vars["tts"].get() == "piper · en_US-lessac-medium" and page.config_vars["stt"].get() == "faster_whisper · tiny.en"
     assert page.config_vars["mode"].get() == "Hands-free" and page.config_vars["hotkey"].get() == "ctrl+space"
     page.update({}, status("speaking"))

@@ -601,6 +601,7 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     # tokens in the secret broker, reads direct, anything sent or changed only after the owner confirms.
     from app.accounts import AccountManager, register_account_tools
     accounts = AccountManager(secret_broker, memory.path.parent.parent / 'integrations' / 'accounts.json')
+    accounts.email_sender = email  # an email login also sets up sending from chat and Business
     register_account_tools(registry, accounts, confirmations)
     # Jobs: public postings read and matched to the owner's CV; applications prepared automatically and
     # sent only after the owner confirms each one in the confirmation window (app/jobs/).
@@ -615,6 +616,9 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     from app.tools.networking import register_networking_tools
     networking = NetworkingBook(memory.path.parent.parent / 'networking')
     register_networking_tools(registry, networking)
+    # Finding people to contact for a goal, from public professional sources (app/research/people_finder.py).
+    from app.research.people_finder import register_people_tools
+    people_finder = register_people_tools(registry, research, memory.path.parent.parent / 'networking' / 'people-finds', jobs)
     # The deep review of the owner's books, with the market from the jobs HAYAT collected (app/business_deep.py).
     from app.business_deep import register_business_deep_tools
     register_business_deep_tools(registry, business, jobs)
@@ -1067,6 +1071,7 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     runtime.confirmations = confirmations
     runtime.accounts = accounts
     runtime.jobs, runtime.job_watcher = jobs, job_watcher
+    runtime.people_finder = people_finder  # make(check) -> PeopleFinder, for the Find people window
     runtime.brief = brief
     runtime.publisher = publisher
     runtime.email = email

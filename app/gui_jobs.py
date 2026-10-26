@@ -26,10 +26,26 @@ from tkinter import filedialog, ttk
 from typing import Any, Callable
 
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_fonts import DISPLAY
 
 VERDICT_COLOURS = {"strong": "#4ADE80", "good": "#A3E635", "stretch": "#E8C46A", "weak": "#9AA4AE", "not eligible": "#F05D5E"}
 TABS = ("Matches", "Applications", "Profile", "CV review", "Learn", "Sources")
 
+
+
+#: Long country names that crowd the Where column ("remote · United S…").
+_SHORT_PLACES = {"United States": "US", "United States of America": "US", "USA": "US", "United Kingdom": "UK",
+                 "United Arab Emirates": "UAE"}
+
+
+def where_label(row: dict) -> str:
+    """'Remote · US', 'On-site · Detroit, MI', 'Hybrid · London, UK' for the matches table."""
+    mode = str(row.get("mode") or "").replace("-", " ")
+    place = str(row.get("location") or "").strip()
+    for long, short in _SHORT_PLACES.items():
+        place = place.replace(long, short)
+    label = mode[:1].upper() + mode[1:] if mode else ""
+    return " · ".join(part for part in (label.replace("On site", "On-site"), place[:30]) if part)
 
 class JobsWindow(tk.Toplevel):
     def __init__(self, gui: Any) -> None:
@@ -58,7 +74,7 @@ class JobsWindow(tk.Toplevel):
         self.selected: int | None = None
         head = tk.Frame(self, bg=p.BLACK)
         head.pack(fill="x", padx=16, pady=(14, 2))
-        tk.Label(head, text="Jobs", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16), anchor="w").pack(side="left")
+        tk.Label(head, text="Jobs", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16), anchor="w").pack(side="left")
         self.status = tk.Label(head, text="", bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9))
         self.status.pack(side="right")
         introduction = tk.Label(self, text="HAYAT searches public job boards, reads each posting and your CV, scores the fit with every part shown, and "
@@ -152,7 +168,10 @@ class JobsWindow(tk.Toplevel):
                 self.search_button.configure(state="normal")
                 self.stop_search_button.configure(state="disabled")
             if kind == "browser_search":
-                self.continue_browser_button.configure(state="normal" if getattr(self.center, "_job_browser_pending", None) else "disabled")
+                pending = getattr(self.center, "_job_browser_pending", None)
+                self.continue_browser_button.configure(state="normal" if pending else "disabled")
+                if pending and not self._browser_tools_open:
+                    self._show_browser_tools(True)
                 if "search" not in self._busy_actions:
                     self.stop_search_button.configure(state="disabled")
             if kind in self._coalesced and request != self._request_ids.get(kind):
@@ -221,13 +240,15 @@ class JobsWindow(tk.Toplevel):
             show_blocked = self.show_blocked.get()
             sort_by, sponsorship, remote, query = self.sort_by.get(), self.sponsor_filter.get(), self.remote.get(), self.query.get().strip()
             location = self.location.get().strip()
-            active_filter = (show_blocked, sort_by, sponsorship, remote, query, location)
+            include_remote = self.include_remote.get()
+            active_filter = (show_blocked, sort_by, sponsorship, remote, query, location, include_remote)
             if active_filter != self._match_filter:
                 self._match_offset = 0
                 self._match_filter = active_filter
             offset = self._match_offset
             self.run("matches", lambda: center.matches(limit=200, offset=offset, include_blocked=show_blocked, sort_by=sort_by,
-                                                       sponsorship=sponsorship, remote_only=remote, query=query, location=location))
+                                                       sponsorship=sponsorship, remote_only=remote, query=query, location=location,
+                                                       include_remote=include_remote))
         elif tab == "Applications":
             self.run("applications", center.applications)
         elif tab == "Profile":
@@ -282,9 +303,14 @@ class JobsWindow(tk.Toplevel):
         tk.Label(options, text="Depth", bg=p.BLACK, fg=p.MUTED).pack(side="left")
         self.search_depth = StringVar(self, "deep")
         ttk.Combobox(options, textvariable=self.search_depth, values=("normal", "deep", "maximum"), state="readonly", width=10).pack(side="left", padx=6)
+        # Most free boards list remote jobs: "data analyst, Michigan" found 114 and showed 0 until remote jobs open to
+        # US residents counted. Untick to see only jobs located at the place.
+        self.include_remote = BooleanVar(self, True)
+        ttk.Checkbutton(options, text="Include remote jobs I can do from this location", variable=self.include_remote,
+                        command=self.refresh_tab).pack(side="left", padx=(8, 0))
         self.stop_search_button = self._button(options, "Stop search", self.stop_search, "stop")
         self.stop_search_button.configure(state="disabled")
-        tk.Label(options, text="Blank / Worldwide = all locations. Type any city or country; separate alternatives with ;", bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 8)).pack(side="left")
+        tk.Label(options, text="Blank = everywhere · use ; between places", bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 8)).pack(side="left")
         browser = tk.Frame(frame, bg=p.BLACK)
         browser.pack(fill="x", pady=(0, 5))
         self.browser_platform = StringVar(self, "Employer boards")
@@ -300,9 +326,13 @@ class JobsWindow(tk.Toplevel):
         self.continue_browser_button = self._button(verification, "Continue after verification", self.continue_browser)
         self.continue_browser_button.configure(state="disabled")
         self._button(verification, "Search free APIs", self.search, "search")
+        # Browsing job sites in a browser is the less common path: it folds away so results start higher up.
+        self._browser_rows = (browser, verification)
+        self.browser_tools_button = self._button(options, "More ways to search ▸", self.toggle_browser_tools)
         self.search_progress = ttk.Progressbar(frame, mode="indeterminate", maximum=100)
         self.search_note = tk.Label(frame, text="Search public boards, or filter the jobs already saved below. Set your own roles and pay target in Profile.",
                                     bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 8), anchor="w", justify="left", wraplength=1000)
+        self._show_browser_tools(False)
         self.search_note.pack(fill="x", pady=(0, 5))
         self.search_note.bind("<Configure>", lambda event: self.search_note.configure(wraplength=max(250, event.width - 4)))
         self.show_blocked = BooleanVar(self, False)
@@ -397,7 +427,7 @@ class JobsWindow(tk.Toplevel):
     #: leave a narrow table. Every hidden one is in the selected job's detail.
     MATCH_MIN_WIDTHS = {"score": 56, "verdict": 110, "title": 180, "company": 110, "where": 100,
                         "source": 80, "posted": 76, "pay": 110}
-    MATCH_DROP_ORDER = ("source", "where", "posted")
+    MATCH_DROP_ORDER = ("source", "posted", "where")  # Where matters once remote jobs count; Posted is in the detail
 
     def _fit_match_columns(self, width: int) -> None:
         """Show whole columns that fit rather than slicing the last one in half.
@@ -437,6 +467,7 @@ class JobsWindow(tk.Toplevel):
             return
         center, query, remote = self.center, self.query.get().strip(), self.remote.get() or None
         location = self.location.get().strip()
+        include_remote = self.include_remote.get()
         self._search_stop.clear()
         depth = self.search_depth.get()
         self.search_button.configure(state="disabled")
@@ -446,8 +477,22 @@ class JobsWindow(tk.Toplevel):
         self.search_note.configure(text="Reading configured public boards. Results will include source failures so you can see what was actually checked.",
                                    fg=self.p.MUTED)
         self.run("search", lambda: center.search(query=query, location=location, remote=remote, force=True, depth=depth,
+                                                    include_remote=include_remote,
                                                     check=lambda: not self._closed and not self._search_stop.is_set(),
                                                     progress=lambda value: self._results.put(("search_progress", 0, value, None))), "Searching the job boards…")
+
+    def _show_browser_tools(self, show: bool) -> None:
+        """Fold or unfold the browser-search rows (Employer boards, LinkedIn, Indeed, web engine, verification)."""
+        self._browser_tools_open = show
+        for row in self._browser_rows:
+            if show:
+                row.pack(fill="x", pady=(0, 5), before=self.search_note)
+            else:
+                row.pack_forget()
+        self.browser_tools_button.configure(text="Fewer search options ▾" if show else "More ways to search ▸")
+
+    def toggle_browser_tools(self) -> None:
+        self._show_browser_tools(not self._browser_tools_open)
 
     def stop_search(self) -> None:
         self._search_stop.set()
@@ -480,6 +525,8 @@ class JobsWindow(tk.Toplevel):
 
     def show_browser_search(self, value: dict[str, Any]) -> None:
         self.continue_browser_button.configure(state="normal" if value.get("manual_interaction_required") else "disabled")
+        if value.get("manual_interaction_required"):
+            self._show_browser_tools(True)  # never hide "Continue after verification" while a site waits
         self.search_note.configure(text=value["next_step"], fg=self.p.GOLD if value.get("manual_interaction_required") else self.p.MUTED)
         # Keep the continuation button visible while the user completes the check.
         self.tabs.select(TABS.index("Matches" if value.get("manual_interaction_required") else "Sources"))
@@ -500,33 +547,36 @@ class JobsWindow(tk.Toplevel):
         self.refresh_tab()
 
     def show_search(self, value: dict[str, Any]) -> None:
+        # A headline, then only what needs attention. The old note stacked counts, every source's raw error, a
+        # per-source "Coverage: remoteok: 0 page(s), partial results | ..." line and advice into a yellow wall.
         sources = value.get("read", [])
         good = [item for item in sources if not item.get("error")]
         failed = [item for item in sources if item.get("error")]
-        summary = f"Search finished: {value.get('new', 0)} new jobs; {len(good)} source(s) read"
-        if "matching_total" in value:
-            summary += f"; {value['matching_total']} match the search"
-        if failed:
-            summary += f"; {len(failed)} source(s) unavailable."
-            # One plain sentence, not "remoteok: ConnectError: [WinError 10061] ..." for every source.
-            from app.research.jobs import plain_source_errors
-            summary += "\n" + plain_source_errors([(item.get("source", "Source"), str(item["error"])[:300]) for item in failed]) \
-                + " Details are in Sources."
+        total = value.get("matching_total")
+        lines = [f"Found {value.get('new', 0)} new jobs from {len(good)} of {len(sources)} sources"
+                 + (f" · {total} match your search" if total is not None else "")]
         if coverage := value.get("coverage"):
-            summary += f"\n{coverage.get('depth', 'normal')} search - {coverage.get('requests', 'unknown')} requests - {coverage.get('stop_reason', 'configured sources checked')}. Not every platform is searchable by API."
-        limited = [item for item in sources if item.get("limited")]
-        if limited:
-            summary += "\nCoverage: " + " | ".join(f"{item['source']}: {item.get('pages', 0)} page(s), {item.get('stop_reason', 'partial results')}" for item in limited)
-        retries = [item for item in failed if item.get("retry_at")]
-        if retries:
-            summary += "\nRetry after: " + " | ".join(f"{item['source']}: {item['retry_at']}" for item in retries)
-        if value.get("empty_reason"):
-            summary += "\n" + value["empty_reason"]
-        elif not sources and not value.get("deferred_sources"):
-            summary += ". No boards were read; choose sources or discover an employer in Sources."
+            stop = str(coverage.get("stop_reason") or "")
+            lines[0] += f" · {coverage.get('depth', 'normal')} search"
+            if "stopped" in stop:
+                lines.append(f"Search {stop}.")  # "Search stopped by user."
+        if failed:
+            from app.research.jobs import plain_source_errors
+            lines.append(plain_source_errors([(item.get("source", "Source"), str(item["error"])[:300]) for item in failed])
+                         + " Details are in Sources.")
         if value.get("deferred_sources"):
-            summary += "\nSource cooldowns: " + " | ".join(f"{item['source']}: {item['reason']}, retry after {item['retry_at']}" for item in value["deferred_sources"])
-        self.search_note.configure(text=summary, fg=self.p.GOLD if failed else self.p.MUTED)
+            lines.append("Source cooldowns: " + ", ".join(f"{item['source']} until {str(item['retry_at'])[11:16] or item['retry_at']}"
+                                                          for item in value["deferred_sources"])
+                         + " (those boards asked HAYAT to wait).")
+        if value.get("empty_reason"):
+            tip = value["empty_reason"]
+            if self.location.get().strip() and not self.include_remote.get():
+                tip += " Tip: tick “Include remote jobs I can do from this location”."
+            lines.append(tip)
+        elif not sources and not value.get("deferred_sources"):
+            lines.append("No boards were read; choose sources or discover an employer in Sources.")
+        colour = self.p.GOLD if failed or not total else self.p.OLIVE_SOFT if hasattr(self.p, "OLIVE_SOFT") else self.p.MUTED
+        self.search_note.configure(text="\n".join(lines), fg=colour)
         self.refresh_tab()
 
     def show_matches(self, value: dict[str, Any]) -> None:
@@ -538,7 +588,7 @@ class JobsWindow(tk.Toplevel):
             iid = str(row["number"])
             self.match_rows[iid] = row
             tree.insert("", "end", iid=iid, values=(row["score"], row["verdict"] + (f" · {row['application']}" if row.get("application") else ""),
-                                                    row["title"], row["company"], (row.get("mode") or "") + (" · " + row["location"][:30] if row["location"] else ""),
+                                                    row["title"], row["company"], where_label(row),
                                                     row["source_name"], (row["posted_at"] or "")[:10], row.get("pay") or "Not stated"),
                         tags=(row["verdict"],))
         counts = value["counts"]

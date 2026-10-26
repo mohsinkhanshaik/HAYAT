@@ -38,6 +38,7 @@ _CHALLENGE = re.compile(r'(?i)\b(?:captcha|verify (?:you are|that you are) human
 _SOCIAL = {'facebook.com', 'instagram.com', 'tiktok.com', 'snapchat.com', 'twitter.com', 'x.com',
            'threads.net', 'pinterest.com', 'reddit.com', 't.me', 'telegram.me', 'discord.com'}
 _SECRET_QUERY = re.compile(r'(?i)(?:^|[_-])(?:password|passwd|secret|token|api[_-]?key|authorization|session|auth)(?:$|[_-])')
+_SPARE_READS = 3  # failed or duplicate reads may be replaced, but never more than this many times
 _RECORD_DUMPS = re.compile(r'(?i)\b(?:leaked (?:database|records|credentials|passwords)|credential dumps?|stolen (?:data|records)|dox(?:xing|bin)|breach (?:database|records|dump))\b')
 
 
@@ -251,7 +252,10 @@ def _extract(resource, name, organization, official_url):
                 route = _route('website', target, source, local, scope='team', label=label)
                 route.update(team_name=organization + ' — ' + label, organization=organization)
                 teams.append(route)
-        if org_present and len(follow) < 12 and (_mentions(label, name) or _ROUTE_LABEL.fullmatch(label.strip())
+        # A generic "Contact" link on a third-party site (theorg.com/contact) is that site's own inbox, not the
+        # organization's: follow it only on the organization's own or the selected site.
+        if org_present and len(follow) < 12 and (_mentions(label, name)
+                or (_ROUTE_LABEL.fullmatch(label.strip()) and (selected_origin or _org_host(organization, resource.final_url)))
                 or (selected_origin and _DIRECTORY_LABEL.fullmatch(label.strip()))):
             follow.append(target)
     # Plain-text correspondence is common on official directories. Require
@@ -306,6 +310,36 @@ def _provider_issue(value):
     return {'stage': 'search_provider', 'provider': provider, 'error': provider + ': ' + reason + '.'}
 
 
+_ROUTE_PATH = re.compile(r'(?i)/(?:people|team|leadership|management|executives?|about|contact|press|media|newsroom|'
+                         r'investor|ir|staff|directory|faculty|board|officers|speakers?)(?:[/?#.-]|$)')
+
+
+def _org_host(organization, url):
+    """Whether the URL's host carries the organization's name (amd.com, ir.amd.com), a hint it is its own site."""
+    slug = re.sub(r'[^a-z0-9]', '', organization.casefold())
+    host = (urlsplit(url).hostname or '').lower().replace('-', '').replace('.', '')
+    return len(slug) >= 3 and slug in host
+
+
+def _lead_score(name, organization, url, title='', snippet=''):
+    """How likely a search lead is to hold a published professional route for this person at this organization.
+
+    Leads were read in arrival order: for "Lisa Su, AMD" the only page read was a German tourism site, while AMD's
+    own pages waited unvisited. Pages naming neither the person nor the organization score below zero.
+    """
+    text = f'{title} {snippet} {url}'
+    score = 0.0
+    if _mentions(text, name):
+        score += 3
+    if _mentions(text, organization):
+        score += 2
+    if _org_host(organization, url):
+        score += 3  # the organization's own site (amd.com, ir.amd.com)
+    if _ROUTE_PATH.search(urlsplit(url).path or ''):
+        score += 1
+    return score if score > 0 else -1.0
+
+
 def _query_plan(person, official_url, depth):
     name = person.name.replace(chr(34), '')
     organization = person.context.replace(chr(34), '')
@@ -314,7 +348,10 @@ def _query_plan(person, official_url, depth):
     if depth == 'deep':
         host = urlsplit(official_url).hostname if official_url else ''
         queries += [f'site:{host} "{name}"' if host else subject + ' official professional profile',
-                    subject + ' faculty people biography', subject + ' office contact representative']
+                    subject + ' faculty people biography', subject + ' office contact representative',
+                    # An executive's bio page rarely lists a route; the organization's published press and investor
+                    # contacts are how such a person is professionally reached. Organizational channels, not personal.
+                    f'"{organization}" press media relations contact', f'"{organization}" investor relations contact']
     return list(dict.fromkeys(queries))
 
 
@@ -331,8 +368,8 @@ def _tor_resources(manager, check):
     return fetcher, search
 
 
-def discover_contacts(manager, name, organization, official_url='', *, max_pages=4, depth='normal',
-                      tor_only=False, check=None, progress=None):
+def discover_contacts(manager, name, organization, official_url='', *, max_pages=None, depth='normal',
+                      tor_only=False, check=None, progress=None, relevant_only=False):
     """Read bounded professional evidence; deep mode broadens queries, never personal records.
 
     A budget exhaustion returns explicitly partial evidence. Stop, privacy and
@@ -343,6 +380,8 @@ def discover_contacts(manager, name, organization, official_url='', *, max_pages
     person = PersonRequest(name, organization)
     if not 3 <= len(person.context) <= 240:
         raise ValueError('A public organization or professional context is required to constrain this discovery.')
+    if max_pages is None:  # deep reads twice as far: it used to read the same 4 pages as normal
+        max_pages = 8 if depth == 'deep' else 4
     if type(max_pages) is not int or not 1 <= max_pages <= 12:
         raise ValueError('Public contact discovery reads between 1 and 12 pages.')
     if not isinstance(depth, str) or depth not in {'normal', 'deep'}:
@@ -384,7 +423,7 @@ def discover_contacts(manager, name, organization, official_url='', *, max_pages
                          'Search leads alone are never contact evidence. Missing or ambiguous channels remain unknown.',
                          'Coverage is bounded, not all of the web. No result does not establish that data is absent elsewhere.',
                          'Tor reads ordinary public websites; this workflow does not harvest onion, leaked or breach identity records.',
-                         f'At most {len(queries)} search queries, {max_pages} fetched pages, 2 MiB per page and a cooperative {seconds}-second run budget.']}
+                         f'At most {len(queries)} search queries, {max_pages} read pages ({max_pages + _SPARE_READS} attempts), 2 MiB per page and a cooperative {seconds}-second run budget.']}
     def guard(*, budget=True):
         for callback in checks:
             if callback() is False:
@@ -400,12 +439,12 @@ def discover_contacts(manager, name, organization, official_url='', *, max_pages
             callback({'stage': stage, 'message': message, 'pages_checked': report['pages_checked'],
                       'searches_completed': report['searches_completed'], **fields})
     queue, queued, visited, final_urls = [], set(), set(), set()
-    def enqueue(url, *, origin, link_depth=0, parent='', first=False):
+    def enqueue(url, *, origin, link_depth=0, parent='', first=False, score=0.0):
         if url in queued or url in visited:
             report['coverage']['duplicate_leads'] += 1
             return False
         queued.add(url)
-        entry = {'url': url, 'discovered_via': origin, 'link_depth': link_depth, 'parent_url': parent}
+        entry = {'url': url, 'discovered_via': origin, 'link_depth': link_depth, 'parent_url': parent, 'score': score}
         queue.insert(0, entry) if first else queue.append(entry)
         report['coverage']['eligible_leads'] += 1
         return True
@@ -413,15 +452,21 @@ def discover_contacts(manager, name, organization, official_url='', *, max_pages
         enqueue(official_url, origin='selected_organization_url')
     fetcher, search, owns_fetcher = manager.fetcher, manager.search, False
     def read_pages(limit):
-        while queue and len(visited) < limit:
+        # The budget counts pages actually read; a page that fails to load is replaced by the next lead, up to a
+        # small fixed allowance, so a few blocked sites no longer use up a deep search.
+        while (queue and report['coverage']['pages_retrieved'] < limit
+               and len(visited) < max_pages + _SPARE_READS):
             guard()
             # Prefer selected same-site links, then balance independent source hosts.
             counts = {}
             for url in visited:
                 host = urlsplit(url).hostname
                 counts[host] = counts.get(host, 0) + 1
+            # Then search leads: spread across hosts first, and among the least-read hosts the most relevant lead
+            # (person, organization, its own site) first. Irrelevant leads are not dropped, only read last.
             index = 0 if queue[0]['discovered_via'] in {'selected_organization_url', 'same_site_link'} else min(
-                range(len(queue)), key=lambda number: (counts.get(urlsplit(queue[number]['url']).hostname, 0), number))
+                range(len(queue)), key=lambda number: (counts.get(urlsplit(queue[number]['url']).hostname, 0),
+                                                       -queue[number].get('score', 0), number))
             entry = queue.pop(index)
             target = entry['url']
             if target in visited:
@@ -504,13 +549,20 @@ def discover_contacts(manager, name, organization, official_url='', *, max_pages
                 except (ValueError, TypeError, AttributeError):
                     report['coverage']['rejected_leads'] += 1
                     continue
-                if enqueue(target, origin='public_search'):
+                score = _lead_score(person.name, person.context, target, str(getattr(row, 'title', '') or ''),
+                                    str(getattr(row, 'snippet', '') or ''))
+                if relevant_only and score < 0:
+                    # A page naming neither the person nor the organisation (a long organisation string once
+                    # brought back a German telecom's pages): skipped when the caller asks for relevant pages only.
+                    report['coverage']['rejected_leads'] += 1
+                    continue
+                if enqueue(target, origin='public_search', score=score):
                     coverage['eligible_new_leads'] += 1
             issues = [_provider_issue(error) for error in getattr(search, 'last_errors', [])[:8]]
             report['errors'].extend(issues)
             if not rows and issues and any('no usable indexed results' not in issue['error'] for issue in issues):
                 coverage['status'] = 'provider_unavailable'
-            read_pages(min(max_pages, len(visited) + 1))
+            read_pages(min(max_pages, report['coverage']['pages_retrieved'] + 1))
         read_pages(max_pages)
         guard()
         report['completed'] = True

@@ -15,6 +15,7 @@ from typing import Any
 
 from app.gui_resources import StringVar
 from app.gui_windows import place_over
+from app.gui_fonts import DISPLAY
 
 WATCH, INFO = "#F2A541", "#7D8B99"
 
@@ -73,7 +74,7 @@ class LocationPrivacyWindow(tk.Toplevel):
         p = self.palette
         header = tk.Frame(self, bg=p.BLACK, padx=16, pady=10)
         header.pack(fill="x")
-        tk.Label(header, text="Location privacy", bg=p.BLACK, fg=p.WHITE, font=("Segoe UI Semibold", 16)).pack(side="left")
+        tk.Label(header, text="Location privacy", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16)).pack(side="left")
         tk.Label(header, text="Location protections · Tor readiness · exposure checks and coverage limits",
                  bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9)).pack(side="left", padx=10, pady=(5, 0))
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.destroy).pack(side="right")
