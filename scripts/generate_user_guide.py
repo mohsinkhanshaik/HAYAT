@@ -7,6 +7,7 @@ the file is out of date; run this script to refresh it.
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -94,10 +95,20 @@ scrolls horizontally where content supports it. Reduced motion settles active gl
 """
 
 
+_DOC_LINK = re.compile(r"\[([^\]]+)\]\(([^)#:\s]+\.md)\)")
+
+
+def _live_links(text: str) -> str:
+    """Keep a link to another doc only while that doc exists: the public release removes dated documents and
+    flattens links to them, so the generated guide must read the same there as the flattened copy."""
+    return _DOC_LINK.sub(lambda match: match.group(0) if (TARGET.parent / match.group(2)).is_file()
+                         else match.group(1), text)
+
+
 def render() -> str:
     from app.capabilities import CATALOG
 
-    lines = [INTRO]
+    lines = [_live_links(INTRO)]
     lines.append("| Area | What it does |\n| --- | --- |")
     for capability in CATALOG:
         anchor = capability.key.replace("_", "-")
