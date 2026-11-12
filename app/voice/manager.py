@@ -8,6 +8,7 @@ import re
 import threading
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
 from app.config import PROJECT_ROOT
@@ -207,7 +208,15 @@ class VoiceManager:
         self.hotkey = WindowsHotkey(str(config.get("push_to_talk_key", "ctrl+space")),
                                     exclusive=bool(config.get("push_to_talk_exclusive", True)))
         wake_config = config.get("wake_word", {})
-        self.wakeword = WakeWordDetector(str(wake_config.get("phrase", "hey ai")), list(wake_config.get("aliases", [])))
+        # What the owner chose on this computer (wake mode, the names it answers to) outlives a restart.
+        from app.voice.preferences import VoicePreferences
+
+        memory_path = getattr(getattr(runtime, "memory", None), "path", None)
+        self.preferences = VoicePreferences(Path(memory_path).parent / "voice-preferences.json") if memory_path else None
+        remembered = self.preferences.load() if self.preferences is not None else {}
+        names = remembered.get("wake_names") or wake_config.get("names")
+        self.wakeword = WakeWordDetector(str(wake_config.get("phrase", "hey hayat")), list(wake_config.get("aliases", [])),
+                                         names=list(names) if names else None)
         # Opt-in low-power gate: a tiny model scores audio frames and only a
         # detection starts recording and transcription. None means phrase mode.
         self.wake_gate = None
@@ -217,7 +226,7 @@ class VoiceManager:
 
             self.wake_gate = OpenWakeWordGate(str(wake_config.get("model", "hey_jarvis")),
                                               float(wake_config.get("threshold", 0.5)))
-        self.mode = str(config.get("mode", "push_to_talk"))
+        self.mode = str(remembered.get("mode") or config.get("mode", "push_to_talk"))
         #: Set when the mode changes, so a listener parked in a blocking
         #: wait ends that wait instead of ignoring the change.
         self.mode_changed = threading.Event()
@@ -866,7 +875,21 @@ class VoiceManager:
             self.submit_transcript(command)
         else:
             self._wake_armed = True
-            self._speak("Yes?")
+            self._speak(self._summon_reply())
+
+    def _summon_reply(self) -> str:
+        """Called by name only: answer like a person ("Yes, Mohsin?"), and say what happened if he was away."""
+        try:
+            from app import presence
+            from app.away import last_seen, note
+
+            reply = presence.summoned()
+            session_id = getattr(getattr(self.runtime, "session", None), "session_id", "")
+            away = note(self.runtime, last_seen(self.runtime.memory, session_id))
+            return f"{reply} {away}" if away else reply
+        except Exception:
+            log_swallowed(_log, "building the reply to being called by name")
+            return "Yes?"
 
     def _gated_wake_cycle(self, vad: dict) -> None:
         """Wait for the wake model, then record and transcribe one command."""
@@ -875,7 +898,7 @@ class VoiceManager:
         if not heard or self.cancellation.shutdown.is_set():
             return
         self._log("wake_word_detected", engine="openwakeword", model=self.wake_gate.model)
-        self._speak("Yes?")
+        self._speak(self._summon_reply())
         audio = self.recorder.record_until_silence(self.cancellation.shutdown, float(vad.get("speech_start_timeout", 5)),
                                                    float(vad.get("silence_seconds", 0.8)))
         if not len(audio.samples):
@@ -1001,6 +1024,20 @@ class VoiceManager:
             # hands-free from the window or the CLI appeared to do nothing at
             # all -- the mode had changed and nothing was looking at it.
             self.mode_changed.set()
+        preferences = getattr(self, "preferences", None)
+        if changed and preferences is not None:
+            preferences.save(mode=normalized)
+
+    def set_wake_names(self, names: list[str]) -> str:
+        """Change the names HAYAT answers to (kept on this computer); returns them in plain words."""
+        cleaned = [" ".join(str(name).lower().split()) for name in names if str(name).strip()][:6]
+        if not cleaned:
+            raise ValueError("Give at least one name to listen for.")
+        current = self.wakeword
+        self.wakeword = WakeWordDetector(current.phrase, [], names=cleaned)
+        if getattr(self, "preferences", None) is not None:
+            self.preferences.save(wake_names=cleaned)
+        return self.wakeword.describe()
 
     def set_input_device(self, requested: str | int | None) -> int | None:
         self.recorder.device = self.devices.resolve(requested, "input")

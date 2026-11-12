@@ -11,6 +11,7 @@ keeps its previous wording when nothing is recognised at all.
 """
 from __future__ import annotations
 
+import re
 import time
 from pathlib import PurePath
 from typing import Any, Callable
@@ -797,6 +798,16 @@ def report(history: list[dict[str, Any]]) -> str | None:
     return "\n\n".join(sections) or None
 
 
+#: A required argument a tool was called without, said as what it is.
+_MISSING_DETAIL = {
+    "to": "who to send it to (an email address or a saved contact)", "recipient": "who to send it to",
+    "path": "which file or folder", "url": "the web address", "query": "what to search for",
+    "phone": "the phone number", "number": "the phone number", "subject": "a subject line", "body": "what to say",
+    "text": "the text", "name": "a name", "amount": "the amount", "date": "the date", "time": "the time",
+    "application": "which app", "message": "what to say",
+}
+
+
 def _plain_error(tool: str, arguments: dict[str, Any], error: str) -> str:
     """One failure, said the way a person would say it."""
     kind, _, message = error.partition(":")
@@ -821,13 +832,36 @@ def _plain_error(tool: str, arguments: dict[str, Any], error: str) -> str:
         return f"I'm not allowed to access {name or 'that'} ({message.strip() or kind})"
     if kind in {"TimeoutError"} or "timed out" in error.lower():
         return f"{tool.replace('_', ' ')} took too long and was stopped"
+    from app.agent.core import OWNER_INPUT_ERRORS
+
+    if OWNER_INPUT_ERRORS.search(message):
+        # Already written for the owner ("Email is not set up yet. Open Business -> Email setup ...").
+        return " ".join(message.split()).rstrip(".")
+    required = re.search(r"'(?P<name>[\w-]+)' is a required property", message)
+    if kind == "ValidationError" and required:
+        # Live chat, 2026-11-11: the reply showed jsonschema's "Failed validating 'required' in schema: {...}".
+        detail = _MISSING_DETAIL.get(required["name"], f"the {required['name'].replace('_', ' ')}")
+        return f"to {tool.replace('_', ' ')} I need {detail}, and I don't have it yet"
+    if kind == "ValidationError":
+        return f"{tool.replace('_', ' ')} was given details in the wrong form, so it did not run"
     readable = message.strip() or kind
     return f"{tool.replace('_', ' ')} failed: {readable[:220]}"
 
 
 def explain_failure(goal: str, history: list[dict[str, Any]]) -> str | None:
-    """Why a task failed, from its last failed step, or None if nothing says."""
-    for event in reversed(history or []):
+    """Why a task failed, from its last failed step, or None if nothing says.
+
+    A failure only the owner can resolve (no email account, no such contact) is named first: it is the one he can
+    act on, where a later step's validation error is only a consequence of it.
+    """
+    from app.agent.core import OWNER_INPUT_ERRORS
+
+    events = list(history or [])
+    owner_side = [event for event in events if not (event.get("result") or {}).get("success")
+                  and OWNER_INPUT_ERRORS.search(str((event.get("result") or {}).get("error") or ""))]
+    if owner_side:
+        events = owner_side[:1]
+    for event in reversed(events):
         result = event.get("result") or {}
         output = result.get("output")
         if ((event.get("verification") or {}).get("passed") is False
@@ -838,6 +872,8 @@ def explain_failure(goal: str, history: list[dict[str, Any]]) -> str | None:
         if error and not result.get("success"):
             reason = _plain_error(str(event.get("tool") or "the step"), event.get("arguments") or {}, error)
             request = " ".join(str(goal or "that").split()).rstrip(".!?")
+            # "..., then tell me you sent it" is how he wanted to hear about it, not part of the task.
+            request = re.sub(r"(?i),?\s*(?:and\s+)?then\s+(?:tell|let|show)\s+me\b.*$", "", request).rstrip(" ,")
             request = request[:1].lower() + request[1:] if request else "that"
             return f"I couldn't {request}: {reason}."
     return None

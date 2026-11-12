@@ -39,10 +39,10 @@ def test_real_brain_questions_itself_on_hard_questions_only(monkeypatch):
         answer = chat.reply(HARD)
         hard_seconds = time.monotonic() - started
         report = chat.last_inquiry
-        print(f"\ngreeting {greeting_seconds:.1f}s; hard question {hard_seconds:.1f}s")
-        print("self-inquiry:", report)
-        print("review:", chat.last_dual_review)
-        print("answer:", answer[:1200])
+        # Console-safe: a redirected Windows console is cp1252, and an arrow in the report crashed the print.
+        for line in (f"\ngreeting {greeting_seconds:.1f}s; hard question {hard_seconds:.1f}s",
+                     f"self-inquiry: {report}", f"review: {chat.last_dual_review}", f"answer: {answer[:1200]}"):
+            print(line.encode("ascii", "replace").decode("ascii"))
 
         assert report is not None and report["state"] == "examined" and report["questions"] >= 1
         assert len(answer.split()) >= 60

@@ -201,3 +201,35 @@ def test_a_real_turn_routes_the_topic_reading_and_records_the_owners_words(tmp_p
     topic = reply.response.metadata["topic"]
     assert topic["relation"] == "continue" and year in topic["query"] and topic["title"].startswith("GDP growth")
     assert [item["role"] for item in rt.topics.messages(topic["topic_id"])] == ["user", "assistant"] * 2
+
+
+def test_someone_joining_the_plan_stays_in_the_plans_topic(tmp_path):
+    """Live chat 2026-11-11: "my wife is coming too. How many of us now?" became a topic about the wife, the trip's
+    history was set aside, and the answer was two instead of four."""
+    store = ConversationTopics(tmp_path / "t.db")
+    trip, count, joined = _talk(store, ["I'm planning a trip to Lisbon in May with my two kids.",
+                                        "How many people are going on this trip, counting me?",
+                                        "Actually, my wife is coming too. How many of us now?"])
+    assert joined.relation == "continue" and joined.topic_id == trip.topic_id and not joined.set_aside
+    other = ConversationTopics(tmp_path / "o.db")
+    _plan, sister = _talk(other, ["Plan a dinner party for six on Saturday.", "My sister is joining us as well."])
+    assert sister.relation == "continue"
+    # A person named without joining anything is still their own subject.
+    third = ConversationTopics(tmp_path / "p.db")
+    _first, nurse = _talk(third, ["Plan a dinner party for six on Saturday.", "my brother Omar works as a nurse in Dubai"])
+    assert nurse.relation == "other_person"
+
+
+def test_calendar_and_arithmetic_questions_never_lean_on_the_previous_topic(tmp_path):
+    """Live chat 2026-11-11: both questions were re-read as "…, about the exactly five words describing the ocean",
+    and the first was sent to a web search for that text."""
+    for message in ("What date will it be 45 days from today?", "What day of the week was 1 January 2000?",
+                    "How many days are there from March 3, 2026 to July 19, 2026?", "What's 15% of 240?",
+                    "what is 17*23 now?"):
+        assert leans_on_topic(message) == "", message
+    store = ConversationTopics(tmp_path / "t.db")
+    decisions = _talk(store, ["Give me exactly five words describing the ocean, separated by commas, nothing else.",
+                              "What date will it be 45 days from today?", "What day of the week was 1 January 2000?"])
+    assert not any(decision.anchored for decision in decisions)
+    # A message that really leans on its topic is still read through it.
+    assert leans_on_topic("and for 2028?") and leans_on_topic("what about china?")

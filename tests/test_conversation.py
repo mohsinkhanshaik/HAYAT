@@ -524,6 +524,20 @@ def test_internal_review_talk_never_reaches_the_owner():
     assert without_internal_talk(leaked, "Which country?") == "Canada."
     assert without_internal_talk("An advisor can help you plan retirement.", "Should I hire someone?") == (
         "An advisor can help you plan retirement.")
+    # Live chat 2026-11-11: a train-speed answer opened with the planner's internal note.
+    train = ("Given the data from your goal contract and the advisor's input, the speed follows. "
+             "Average speed is 120 km / 1.5 h = 80 km/h.")
+    assert without_internal_talk(train, "If a train travels 120 km in 1.5 hours, what is its average speed?") == (
+        "Average speed is 120 km / 1.5 h = 80 km/h.")
+
+
+def test_the_planning_note_is_never_presented_as_the_owners_own_data():
+    from types import SimpleNamespace
+
+    from app.executive import ExecutiveCortex
+
+    note = ExecutiveCortex.brief(SimpleNamespace(goal="answer", constraints=[], criteria=[]))
+    assert "user data" not in note and "not by the owner" in note and "never mention" in note
 
 
 def test_links_written_from_memory_are_marked_unchecked():
@@ -604,3 +618,25 @@ def test_code_whose_repair_still_replaces_input_is_not_published(tmp_path):
     with pytest.raises(ModelError, match="could not complete"):
         chat.reply("Write a Python one-liner that reverses a string s.")
     assert [row["role"] for row in memory.conversation_history('one-liner-2')] == ["user"]
+
+
+def test_back_and_forth_talk_is_answered_like_a_person_and_never_the_same_way_twice(tmp_path):
+    """Reflex turns get a plain-chat note and the openings of the last replies, so "what about you?" does not get a
+    lecture or the same sentence again (2026-11-12)."""
+    seen = []
+
+    class Recorder(CountingAnswer):
+        def generate(self, messages, **kwargs):
+            seen.append(list(messages))
+            return ModelResponse("Pretty good, honestly.", self.name, self.name)
+
+    memory = MemoryDatabase(tmp_path / "conversation.db"); memory.initialize()
+    memory.record_message("chat", "user", "I'm so tired today")
+    memory.record_message("chat", "assistant", "Long day? Want to tell me about it?")
+    chat = ConversationService(Recorder(), memory, "chat")
+    chat.reply("what about you?", modes=["FAST"])
+    notes = [item.content for item in seen[0] if "quick back-and-forth turn" in item.content]
+    assert notes and "“Long day? Want to tell me about it?”" in notes[0] and "no bullet lists" in notes[0]
+    seen.clear()
+    chat.reply("Explain how a fridge works", modes=["FAST"])
+    assert not any("quick back-and-forth turn" in item.content for item in seen[0])

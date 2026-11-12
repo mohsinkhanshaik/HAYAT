@@ -111,8 +111,9 @@ class ContactBook:
             names = ", ".join(item["name"] for item in (exact or partial))
             raise ContactError(f"'{name}' could be {names}. Which one?")
         raise ContactError(
-            f"I don't have {name} in your contacts. Tell me their number with the country code, "
-            f"for example: save {name}'s number as +44 7700 900123."
+            f"I don't have {name} in your contacts. Tell me their number with the country code or their email "
+            f"address, for example: save {name}'s number as +44 7700 900123, or save {name}'s email as "
+            "name@example.com."
         )
 
     def remove(self, name: str) -> bool:

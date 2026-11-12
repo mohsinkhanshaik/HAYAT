@@ -140,6 +140,22 @@ class ModeManager:
                     resolved = [ExecutionMode.INCIDENT, ExecutionMode.DEEP]
                 else:
                     resolved = [ExecutionMode.DEEP if complexity == TaskComplexity.COMPLEX else ExecutionMode.BALANCED]
+            # The speed setting is the default; the message decides within it (app/reply_speed.py). Reflex talk is
+            # conversational in every setting, deep work gets more than Fast gives, the rest follows the setting.
+            # Specialists (coder, research, computer, vision...) and privacy modes are kept as they are.
+            from app import reply_speed
+
+            text = getattr(intent, "goal", "") or ""
+            setting = reply_speed.setting_of([mode.value for mode in self.configured])
+            kind = reply_speed.pace(text, intent)
+            depth_modes = {ExecutionMode.FAST, ExecutionMode.BALANCED, ExecutionMode.DEEP, ExecutionMode.ADVERSARIAL}
+            resolved = [mode for mode in resolved if mode not in depth_modes]
+            for name in reply_speed.depth_for(setting, kind):
+                if ExecutionMode(name) not in resolved:
+                    resolved.append(ExecutionMode(name))
+            if getattr(intent, "entities", None) is not None:
+                intent.entities["pace"] = {"setting": setting, "message": kind,
+                                            "why": reply_speed.explain(setting, kind)}
             # "Think harder", "overthink this", "take your time": this one turn gets the full deliberate path --
             # self-questioning before the draft (DEEP) and the skeptical review after it (ADVERSARIAL) -- whatever
             # the configured depth. The owner asked to be able to say so in plain words (2026-11-09).
@@ -156,13 +172,18 @@ class ModeManager:
             return list(resolved)
 
     def snapshot(self) -> dict[str, Any]:
-        return {"configured": [mode.value for mode in self.configured], "effective": [mode.value for mode in self.effective], "available": self.available}
+        from app.reply_speed import setting_of
+
+        return {"configured": [mode.value for mode in self.configured], "effective": [mode.value for mode in self.effective],
+                "available": self.available, "speed": setting_of([mode.value for mode in self.configured])}
 
     def set_reasoning(self, profile: str) -> list[ExecutionMode]:
         """Change depth while retaining fixed specialists and local/privacy preferences."""
-        profiles = {"automatic": ["AUTO"], "balanced": ["BALANCED"], "deep": ["DEEP", "ADVERSARIAL"]}
+        profiles = {"automatic": ["AUTO"], "auto": ["AUTO"], "fast": ["FAST"], "balanced": ["BALANCED"],
+                    "medium": ["BALANCED"], "deep": ["DEEP", "ADVERSARIAL"]}
+        profile = str(profile or "").strip().lower()
         if profile not in profiles:
-            raise ValueError("Choose automatic, balanced or deep reasoning.")
+            raise ValueError("Choose auto, fast, medium or deep.")
         with self._lock:
             retained = [mode.value for mode in self.configured
                         if mode.value not in {"AUTO", "FAST", "BALANCED", "DEEP", "ADVERSARIAL"}]

@@ -26,7 +26,7 @@
     "app/runtime.py": "e698f837353e8f7d4f66b46ac8e2f9ca4f47611c020bd386ace959a6e921f244",
     "app/safety/container_sandbox.py": "af24a9dd1ddabfadaf25bd193a953dae1bac061b326972cfe0c24d46f21d6761",
     "app/tools/terminal.py": "f20996918d38349f11419df67da1f6471e6562c0876d18b6f5e67b81d36fcc00",
-    "app/topics.py": "ba0c0ddfad7f781a96c873ea4f6e62946152d8887f91b5ffec7b7653b8b8ab03",
+    "app/topics.py": "56f98184723b56469df60943f98226f6c796d94bfa06dfe65819917aa7229072",
     "app/training/pipeline.py": "1dede24cd34c495a49716d2619e4349952fe67308390f5edd8d956ef891c57ec",
     "app/web/server.py": "591a2f4cde2be60f61392674c7c546a2a3b4f9bffde54448ab61cec2a8317267",
     "scripts/evaluate_hayat_open.py": "4b6eb5f4254c35c060fde7f5731e6e3dac87631cb5278d4954d0a78dd3e66335",
@@ -84,6 +84,10 @@
       "path": "app/research/knowledge.py",
       "rule": "B608"
     },
+    "2016897355415a5a7ae05852ee037979f5d40ab902b4a56573b8e5624aac900e": {
+      "path": "app/topics.py",
+      "rule": "B608"
+    },
     "248b53f0bc529b519d65c876af2c6c9a009aba638bb5c4c146afc7237f30f965": {
       "path": "app/web/server.py",
       "rule": "B104"
@@ -91,10 +95,6 @@
     "26dbab8bae70aadcac28915c7480a44bfa262b578aab2f2586e05aed7c6637e8": {
       "path": "scripts/export_hayat_open_ollama.py",
       "rule": "B615"
-    },
-    "272a066e50ed2d03c1ffa87ef6314e778b3e0ef5c0b1b927f7ab752773481efa": {
-      "path": "app/topics.py",
-      "rule": "B608"
     },
     "2873c044c071de43f04330f2959b3a8167d5b48073f871f9d16a2b0fb8228b23": {
       "path": "app/intelligence/discovery.py",
@@ -124,7 +124,7 @@
       "path": "app/memory/plasticity.py",
       "rule": "B608"
     },
-    "3fa234eb2c4e7981caffc63b8d90c0efc212a8bf091987ab663b68c14b065b58": {
+    "47e2acb29bb6e4409abdfb923f4ffede9285a49234414478e558be22d541bb69": {
       "path": "app/topics.py",
       "rule": "B608"
     },
@@ -163,6 +163,10 @@
     "7beb19ba584ffa513f672cca3bbec729d5849bd2e9a9e6a32d1374a93ee161ac": {
       "path": "app/csi.py",
       "rule": "B104"
+    },
+    "7d0eadfd0f124d3e4aaf38f2b07435d3d3e18702ef7ef4ebeba971236adb0f8d": {
+      "path": "app/topics.py",
+      "rule": "B608"
     },
     "7f86ddd1aa6e4bfa256521f6f09241fd79897839846d695b4482cb63963a88e4": {
       "path": "scripts/evaluate_hayat_open.py",
@@ -256,16 +260,12 @@
       "path": "app/memory/database.py",
       "rule": "B608"
     },
-    "ca67578b7e5b595a96520c35d497ef3cf1935837580762472f3562696b492aa6": {
+    "cd08486d9f42384512887685dd5e451b7551351388d2004c371c88e8b08891a5": {
       "path": "app/topics.py",
       "rule": "B608"
     },
     "cfee281194c9d020754e52aeb1b7cffe0f700c54c2acd8a4d0b2ef19c57aae32": {
       "path": "app/research/knowledge.py",
-      "rule": "B608"
-    },
-    "d0b957f1074043a398f235ecb130dc45e2c7811136b4e2211b5163160118208e": {
-      "path": "app/topics.py",
       "rule": "B608"
     },
     "d36acbc53cca6d684615dd1dc2e79cc22d06d6bf16192bc4899882b937d7c331": {
@@ -275,10 +275,6 @@
     "dc978f3bfb8d0808cfdcb8720a97b48a128f7c9a17638aa4e155bbc35cccd0b0": {
       "path": "app/network.py",
       "rule": "B310"
-    },
-    "df8ba92e72e936369f6b99323204e9e3c88304a292800d1fd889626afa465f37": {
-      "path": "app/topics.py",
-      "rule": "B608"
     },
     "dfdf308865f481d256cea7079954805422e10ba75a38ebf55f97f4ccf7649d02": {
       "path": "app/research/knowledge.py",
@@ -308,6 +304,10 @@
       "path": "app/anpr/store.py",
       "rule": "B608"
     },
+    "e8c2b146d730a6db342539b9b68645c4fe7762c13ebbaf5261602b27c1df17da": {
+      "path": "app/topics.py",
+      "rule": "B608"
+    },
     "e976b4312d242554c65464d2967162c1504bb0d04771961defc818d4a8cb7903": {
       "path": "scripts/probe_hayat_open_offload.py",
       "rule": "B615"
@@ -318,10 +318,6 @@
     },
     "eb43ff5d0f39e35aa1ed03f94b1da1febe37c366b103192a238d02851ff6e913": {
       "path": "app/training/pipeline.py",
-      "rule": "B608"
-    },
-    "ed264ae53f778989345c97d6b5a5a258fafe396df7b1873cfe30f88a3d1cd7eb": {
-      "path": "app/topics.py",
       "rule": "B608"
     },
     "f2f2d9be16d7ff2fc3b4058511020c4e408b52110d2e7f528cd01f8725a4f71c": {
@@ -343,6 +339,10 @@
     "fe44b646dd8c785c6ce64a574bb0683e67fb6f4f1c0a8fac38f1d5fbf31ecaf6": {
       "path": "app/tools/terminal.py",
       "rule": "B604"
+    },
+    "fef26c7bf27dcc05319324a0baffac17efc7e448d18e3b9a11b7f6106f0b5329": {
+      "path": "app/topics.py",
+      "rule": "B608"
     }
   },
   "scope": "Applicability snapshot of the existing November 10 recorded reviews. Not a new review or proof of security.",

@@ -85,8 +85,8 @@ scrolls horizontally where content supports it. Reduced motion settles active gl
 | [Accounts & sign-in](#accounts) | Connect your own Google, Microsoft, GitHub, LinkedIn, Notion and Slack accounts, then read your mail, calendar, files, repositories and channels. Sending or creating anything waits for your confirmation. |
 | [Jobs & applications](#jobs) | Search public jobs, compare CV evidence, simulate skills and plan practice in Career radar. Track applications and conditional interview forecasts. Sending requires your confirmation. |
 | [Web3 explorer & agentic web](#web3) | Blockchain networks, blocks, any address, transaction or ENS name, DeFi totals, and how ready a website is for AI agents (Web 4.0). Read-only: nothing is signed or sent. |
-| [Talk and get answers](#chat) | Ask anything in your own words. HAYAT answers with an AI model that runs on this computer. |
-| [Talk out loud](#voice) | Speak to HAYAT and hear it answer, with push-to-talk or hands-free listening. |
+| [Talk and get answers](#chat) | Ask anything in your own words, in English, Hinglish, Hindi, Urdu, Arabic or Telugu. HAYAT answers with an AI model on this computer: quick when you chat, careful when it matters. |
+| [Talk out loud](#voice) | Speak to HAYAT and hear it answer, with push-to-talk, hands-free listening, or wake words: it answers to "Hayat" and "Jarvis", in English, Hindi, Urdu, Arabic and Telugu. |
 | [Search the internet](#research) | Look things up on the web, read pages and papers, and report back with sources you can check. |
 | [Remember and recall](#memory) | Keep what you tell it and what it learns, bring it back when it matters, and keep a running understanding of what you are doing, what worked before and what is likely next. |
 | [Files and documents](#files) | Read, write, find and organise files, and make PDF or Word documents. |
@@ -346,27 +346,30 @@ Blockchain networks, blocks, any address, transaction or ENS name, DeFi totals, 
 
 ### Talk and get answers
 
-Ask anything in your own words. HAYAT answers with an AI model that runs on this computer.
+Ask anything in your own words, in English, Hinglish, Hindi, Urdu, Arabic or Telugu. HAYAT answers with an AI model on this computer: quick when you chat, careful when it matters.
 
-**How it works:** Type in the box at the bottom and press Send, or press Enter.
+**How it works:** Type in the box at the bottom and press Send, or press Enter. You can also ask ChatGPT, Claude or Gemini a single question once you connect them. The Speed button beside the box chooses Auto, Fast, Medium or Deep; casual talk stays quick in every setting, and "think harder" gets more thought for one message. "Ask Claude: ..." sends just that question through Studios -> Connected AI.
 
 **Try saying:**
 
 - “Explain how compound interest works, simply”
 - “Help me write a polite message asking for a day off”
-- “Give me three ideas for a birthday present for my dad”
+- “Fast mode”
+- “Ask Claude: what is a good name for a bakery?”
+- “kya haal hai bhai”
 
 <a id="voice"></a>
 
 ### Talk out loud
 
-Speak to HAYAT and hear it answer, with push-to-talk or hands-free listening.
+Speak to HAYAT and hear it answer, with push-to-talk, hands-free listening, or wake words: it answers to "Hayat" and "Jarvis", in English, Hindi, Urdu, Arabic and Telugu.
 
-**How it works:** Press Start voice below the chat. Hold Ctrl+Space to talk, or turn on hands-free in Voice settings.
+**How it works:** Press Start voice below the chat. Hold Ctrl+Space to talk, or say "listen for Jarvis" and then just say "Jarvis, ..." or "Hayat, ...". Saying only the name gets "Yes?" and, if you were away, what happened.
 
 **Try saying:**
 
 - “Start voice”
+- “Listen for Jarvis”
 - “Talk to me in Arabic”
 - “Stop listening”
 

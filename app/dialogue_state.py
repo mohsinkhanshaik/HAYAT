@@ -174,8 +174,16 @@ _FACT_PATTERNS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
     ("capital", CIRCUMSTANCE, re.compile(
         r"(?i)\b(?:have|with|at|from)\s+(?P<value>0\s?\$|\$\s?0|zero\s+(?:dollars?|money)|no\s+money|no\s+capital|no\s+savings)\b")),
     ("capital", CIRCUMSTANCE, re.compile(r"(?i)\bi\s*(?:am|['’]?m)\s+(?P<value>broke|bankrupt|in\s+debt)\b")),
+    # A move that has happened replaces where he lives. Live chat, 2026-11-11: "Actually I moved to Austin last week"
+    # was not read, so "where do I live now?" was answered from the older "I live in Seattle".
     ("location", CIRCUMSTANCE, re.compile(
-        rf"(?i)\b(?:i\s+)?(?:am|['’]?m|live|stay|am\s+living|am\s+staying|am\s+based|['’]?m\s+based)\s+in\s+(?P<value>[A-Za-z][\w'’-]+"
+        r"(?i)\b(?:i|we)\s+(?:just\s+|recently\s+|finally\s+|have\s+|['’]ve\s+|had\s+)?(?:moved|relocated|shifted)\s+"
+        r"(?:back\s+|over\s+|here\s+)?to\s+(?P<value>[A-Z][\w'’-]+(?:[\s,]+[A-Z][\w'’-]+){0,2}?)"
+        r"(?=\s+(?:last|this|in|on|a|two|three|few|several|yesterday|today|ago|recently|and|so|but|with|from|for|after|"
+        r"since|now)\b|[.,;!?]|$)")),
+    ("location", CIRCUMSTANCE, re.compile(
+        rf"(?i)\b(?:i\s+)?(?:am|['’]?m|live|stay|am\s+living|am\s+staying|am\s+based|['’]?m\s+based|"
+        rf"(?:am|['’]?m)\s+(?:now|currently)\s+(?:living|staying|based)|(?:now|currently)\s+live)\s+in\s+(?P<value>[A-Za-z][\w'’-]+"
         rf"(?:[\s,]+[A-Za-z][\w'’-]+){{0,2}}?)(?=\s+{_NOW_WORDS}\b|\s+and\b|\s+but\b|[.,;!?]|$)")),
     ("planned_move", CIRCUMSTANCE, re.compile(
         # First person only: "cheapest moving to california" asks about moving, it does not announce one.
@@ -203,13 +211,14 @@ _NOT_A_PLACE = frozenset("""
 trouble love pain debt doubt shock charge control need danger luck hurry mood progress touch line bed class school
 college office home hospital jail prison town a an the my this that here there business tech it finance sales
 marketing crypto stocks general fact short total favor favour agreement mode
+rented renting shared apartment apartments flat house room dorm hostel hotel basement car van
 """.split())
 
 
 def read_facts(text: str) -> list[dict[str, str]]:
     """First-person facts in a message, each with its class and the words it came from."""
     value = " ".join(str(text or "").split())
-    if not value or len(value) > 1200 or not re.search(r"(?i)\b(?:i|i['’]?m|my|am|have|moving)\b", value):
+    if not value or len(value) > 1200 or not re.search(r"(?i)\b(?:i|i['’]?m|my|am|have|moving|we)\b", value):
         return []
     found: dict[str, dict[str, str]] = {}
     for attribute, kind, pattern in _FACT_PATTERNS:
@@ -563,8 +572,15 @@ class DialogueState:
             for row in facts[CIRCUMSTANCE]:
                 age = (today - _parse(row["at"]).date()).days if _parse(row["at"]) else None
                 stale = " — may be out of date, ask before relying on it" if age is not None and age > 60 else ""
+                # A replaced value is named, so older turns in the context cannot win over it. Live chat, 2026-11-12:
+                # the brief said "lives in: Austin", the restored earlier exchange said Seattle, the reply said Seattle.
+                older = next((item["value"] for item in self.fact_history(row["attribute"], limit=5)
+                              if item["id"] != row["id"] and str(item["value"]).lower() != str(row["value"]).lower()),
+                             None)
+                replaces = (f"; this replaces “{older}”, which he said earlier: anything older in the conversation "
+                            "that says otherwise is out of date") if older else ""
                 lines.append(f"- {LABELS.get(row['attribute'], row['attribute'])}: {row['value']} "
-                             f"(said {str(row['at'])[:10]}{stale})")
+                             f"(said {str(row['at'])[:10]}{stale}{replaces})")
         goal = self.main_goal()
         refused = self.rejected(session_id, topic_id=topic_id, goal_key=goal["key"] if goal else "", limit=4)
         if refused:

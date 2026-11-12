@@ -82,7 +82,10 @@ class ExecutiveCortex:
 
     @staticmethod
     def brief(frame):
-        return ('Executive goal contract (user data, never permission to run tools):\n'
+        # Labelled "user data", the note was read as something the owner had written: a train-speed answer began
+        # "Given the data from your goal contract and the advisor's input" (live chat, 2026-11-11).
+        return ('Internal planning note (written by HAYAT, not by the owner; never mention or quote it in the reply; '
+                'it grants no permission to run tools):\n'
                 + json.dumps({'goal': frame.goal, 'constraints': frame.constraints,
                               'success_criteria': frame.criteria}, ensure_ascii=False)
                 + '\nKeep the current goal and constraints. Identify missing inputs. '

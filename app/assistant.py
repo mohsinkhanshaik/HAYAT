@@ -611,6 +611,17 @@ class AssistantService:
         in_topic = self._read_in_topic(intent, decision)
         if in_topic is not None:
             intent, text = in_topic, decision.anchored
+        # Hinglish, Hindi, Urdu, Arabic or Telugu that routing could not place: routed by its English reading,
+        # recorded and quoted in his own words (app/multilingual.py).
+        if intent.classification_source == "safe_fallback" and not intent.control:
+            from app.multilingual import english_reading
+
+            english = english_reading(text, getattr(self.runtime, "model", None))
+            if english:
+                reread = self.runtime.intent_router.route(english, self.runtime.session)
+                if reread.classification_source != "safe_fallback":
+                    reread.entities = {**(reread.entities or {}), "read_from": text, "english_reading": english}
+                    intent, text = reread, english
         if intent.control not in {"MODEL_PULL", "MODEL_PULL_STATUS", "MODEL_PULL_CANCEL", "MODEL_PULL_AGAIN", "INSTALL_CONFIRM"}:
             self.runtime.session.model_pull_followup = False
         pending_lesson = self.runtime.session.pending_learning or {}
@@ -707,6 +718,16 @@ class AssistantService:
             handled = dialogue_turn.intercept(self, owner_text, intent)
             if handled is not None:
                 return handled
+            # "ask claude: ...": one question to the provider he named, through the Connected AI desk's connection
+            # and consent (app/connected_chat.py). Ordinary chat never leaves the computer.
+            from app import connected_chat
+
+            asked = connected_chat.parse(owner_text)
+            if asked is not None:
+                self.runtime.session.last_answer_source = f"connected:{asked[0]}"
+                made = RequestIntent(IntentKind.QUESTION, .99, asked[1], entities={"connected_ai": asked[0]},
+                                     classification_source="connected_ai")
+                return self._direct(made, connected_chat.answer(self.runtime, *asked))
         if intent.needs_clarification:
             return self._direct(intent, intent.response or "What should I do specifically?")
         if intent.classification_source == 'contact_boundary':
@@ -780,7 +801,14 @@ class AssistantService:
         if intent.intent == IntentKind.CONVERSATION:
             self.runtime.state.set_activity(Activity.CONVERSATION)
             if intent.response:
-                return self._direct(intent, intent.response)
+                response = intent.response
+                if (intent.entities or {}).get("presence"):
+                    # Back after a while: say what really happened meanwhile (app/away.py), or nothing.
+                    from app.away import last_seen, note
+
+                    away = note(self.runtime, last_seen(self.runtime.memory, self.runtime.session.session_id, text))
+                    response = f"{response}\n{away}" if away else response
+                return self._direct(intent, response)
             return self._direct(intent, self._conversation_reply(text, capability="conversation"), record=False)
         if intent.intent == IntentKind.QUESTION:
             if intent.classification_source == "code_answer":
@@ -1052,6 +1080,15 @@ class AssistantService:
                 voice.muted = False
                 return self._direct(intent, "Voice output is on.")
             voice.set_mode("push_to_talk" if control == "VOICE_PUSH" else "wake_word")
+            if control == "VOICE_WAKE":
+                # Asking for it is the consent: start listening now, for the names it answers to.
+                started = voice.status()["enabled"] or voice.start_background()
+                names = voice.wakeword.describe() if hasattr(voice.wakeword, "describe") else "my name"
+                if not started:
+                    return self._direct(intent, f"Wake mode is set, but the microphone could not start: "
+                                                f"{voice.status().get('last_error') or 'no input device'}.")
+                return self._direct(intent, f"Listening for {names}. Say the name, then what you need; I'll remember "
+                                            "this the next time you allow voice.")
             return self._direct(intent, f"Voice mode is now {voice.mode.replace('_', ' ')}.")
         if control in {"WATCH_ON", "WATCH_OFF"}:
             from app.perception.camera.watch import watch_mode
@@ -1071,6 +1108,18 @@ class AssistantService:
         if control == "RESPONSE_MODE":
             self.runtime.session.response_mode = str(intent.entities["mode"])
             return self._direct(intent, f"Response mode is now {self.runtime.session.response_mode.lower()}.")
+        if control == "REPLY_SPEED":
+            from app.reply_speed import LABELS
+
+            setting = str(intent.entities.get("speed", "auto"))
+            self.runtime.modes.set_reasoning(setting)
+            said = {
+                "auto": "I'll judge each message: quick replies when we're talking, more thought when it's needed.",
+                "fast": "I'll keep replies quick. Proofs, plans and code still get a medium level of thought.",
+                "medium": "Balanced replies by default; chat stays quick and hard problems get deep thought.",
+                "deep": "Deep thought by default, with a skeptical check. Casual talk still gets a quick reply.",
+            }[setting]
+            return self._direct(intent, f"Reply speed: {LABELS[setting]}. {said}")
         if control == "EXECUTION_MODE":
             modes = self.runtime.modes.set(list(intent.entities.get("modes", [])))
             return self._direct(intent, f"{' + '.join(mode.value for mode in modes)} mode enabled.")

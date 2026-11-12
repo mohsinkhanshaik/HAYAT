@@ -249,12 +249,12 @@ voice:
     normalize_audio: true
     maximum_gain: 8.0
     target_peak: 0.8
-    initial_prompt: This is a command to a Windows assistant named HAYAT.
+    initial_prompt: This is a command to a Windows assistant named HAYAT, also called Jarvis.
     download_root: data/models/whisper
     # HAYAT is not an English word, so without help it is transcribed as
     # "hayaat", "hyatt" or "high at" -- the proper-noun failure that made
     # earlier voice sessions misfire. Mohsin is here for the same reason.
-    hotwords: HAYAT Hayat Mohsin Chrome Edge PowerShell Python GitHub YouTube Kubernetes
+    hotwords: HAYAT Hayat Jarvis Mohsin Chrome Edge PowerShell Python GitHub YouTube Kubernetes
     # Hear other languages too: when the multilingual model (faster-whisper
     # small, python -m scripts.setup_arabic) is installed, speech is transcribed
     # in whatever language it is in, so Urdu or Spanish is understood and
@@ -309,6 +309,12 @@ voice:
     engine: phrase
     model: hey_jarvis
     threshold: 0.5
+    # The names HAYAT answers to, alone at the start ("Jarvis, ...") or after a greeting ("hey hayat ..."), in
+    # Latin, Devanagari, Urdu/Arabic and Telugu script (app/voice/wakeword.py). Say "listen for Jarvis" to turn wake
+    # mode on; the choice is remembered on this computer (data/memory/voice-preferences.json).
+    names:
+      - hayat
+      - jarvis
     phrase: hey hayat
     aliases:
       - hey hayat

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 import threading
 import uuid
@@ -30,11 +31,28 @@ _log = logging.getLogger(__name__)
 #: ValueError/TypeError/KeyError for arguments they cannot use, PermissionError for a refusal (robots.txt,
 #: authority). Network timeouts and connection errors are not here: those can pass.
 DETERMINISTIC_ERRORS = ("FileNotFoundError", "NotADirectoryError", "IsADirectoryError", "UnsafeUrlError",
-                        "ValueError", "TypeError", "KeyError", "PermissionError")
+                        "ValueError", "TypeError", "KeyError", "PermissionError", "ValidationError", "ContactError")
+#: Failures only the owner can resolve: something not set up, a contact HAYAT does not have. Live chat, 2026-11-11:
+#: "Email my landlord ..." found no landlord contact and no email account, then re-planned email_send seven more
+#: times without an address. The task now stops at the first of these and asks him.
+OWNER_INPUT_ERRORS = re.compile(
+    r"(?i)\bnot set up\b|\bnot configured\b|\bisn't connected\b|\bis not connected\b|"
+    r"\bdon't have [\w\s'-]{1,40} in your contacts\b|\bno contact (?:named|called)\b")
+_REQUIRED = re.compile(r"'(?P<name>[\w-]+)' is a required property")
 
 
 def last_error_deterministic(result) -> bool:
     return result is not None and str(getattr(result, "error", "") or "").startswith(DETERMINISTIC_ERRORS)
+
+
+def needs_owner(result) -> bool:
+    return result is not None and bool(OWNER_INPUT_ERRORS.search(str(getattr(result, "error", "") or "")))
+
+
+def still_missing(step, error: str) -> bool:
+    """A retry of the same tool that still lacks the argument the last call was refused for."""
+    found = _REQUIRED.search(str(error or ""))
+    return bool(found) and not (step.arguments or {}).get(found["name"])
 
 
 @dataclass(slots=True)
@@ -152,6 +170,7 @@ class Agent:
         all_passed = True
         executed = 0
         needs_user_input = False
+        owner_must_act = False
         last_error = ''
 
         index = 0
@@ -233,6 +252,12 @@ class Agent:
                     needs_user_input = True
                     last_error = str(result.output.get("reason") or "The action requires an explicit user choice.")
                     break
+                if not verification.passed and needs_owner(result):
+                    # Missing setup or an unknown contact: re-planning cannot supply it, the owner can. (Not
+                    # needs_user_input: that flag means "unsaved changes: save, discard or cancel?".)
+                    owner_must_act = True
+                    last_error = str(result.error).partition(":")[2].strip() or str(result.error)
+                    break
                 if verification.passed:
                     passed = True
                     break
@@ -242,7 +267,7 @@ class Agent:
                 if str(result.error or "").startswith(DETERMINISTIC_ERRORS):
                     break
             if not passed:
-                if needs_user_input:
+                if needs_user_input or owner_must_act:
                     all_passed = False
                     break
                 if self._cancel_event.is_set():
@@ -262,9 +287,11 @@ class Agent:
                     last_error = f"Replanning failed: {type(exc).__name__}: {exc}"
                     logger.log("replanning_failed", error=last_error)
                 if recovery and last_error_deterministic(result):
-                    # A recovery that repeats the very call that just failed for good is no recovery.
+                    # A recovery that repeats the very call that just failed for good is no recovery, and neither is
+                    # the same tool again without the argument it was refused for.
                     recovery = [item for item in recovery
-                                if not (item.tool == step.tool and item.arguments == step.arguments)]
+                                if not (item.tool == step.tool and (item.arguments == step.arguments
+                                                                    or still_missing(item, last_error)))]
                     if not recovery:
                         last_error += " (re-planning only repeated the same call, so it was not run again)"
                 if recovery:

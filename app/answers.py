@@ -283,12 +283,19 @@ _FORMAT_DIRECTIVE_START = re.compile(
     r"(?:just )?between (?:us|you and me)|tell me the truth|quick question|real talk|no offen[cs]e(?: but)?)\s*[,:-]?\s*")
 _FORMAT_DIRECTIVE_END = re.compile(
     r"(?i)[\s,.;:-]*(?:keep it (?:short|brief)|in (?:one|a|two|three|a single) (?:word|line|sentence|paragraph)s?|"
-    r"briefly|in short)[\s.!?]*$")
+    r"briefly|in short|"
+    # "Check the free disk space and tell me the number": how to answer, not a second topic (live, 2026-11-12: a
+    # correct "3.15 TB" ended "I could not properly cover: tell me the number").
+    r"(?:and\s+)?(?:just\s+)?(?:tell|give|show)\s+me\s+(?:the|that|just\s+the)\s+(?:number|answer|result|figure|amount|"
+    r"total|value)s?)[\s.!?]*$")
 #: One-answer lookups. Deep mode still reasons carefully about them, but the
 #: answer is a fact, a name, a number or a translation, not an essay: "Which
 #: country does she live in?" came back as "Canada" plus 296 padded words.
 _LOOKUP = re.compile(
-    r"(?i)^\s*(?:(?:and|so|ok(?:ay)?|also|then)[,\s]+)?(?:"
+    # "And roughly how many people live there?" got three padded paragraphs for one number (live chat, 2026-11-11):
+    # a hedge before the question word does not make it an essay question.
+    r"(?i)^\s*(?:(?:and|so|ok(?:ay)?|also|then)[,\s]+)?(?:(?:roughly|about|approximately|around|exactly|just|"
+    r"so)\s+)?(?:"
     # "What currency will I need?", "What language do people speak there?", "What colour is a banana?"
     r"what\s+(?!is\b|are\b|was\b|were\b|does\b|do\b|did\b|if\b|about\b|happens\b|causes\b|makes\b|would\b|should\b|"
     r"can\b|could\b|might\b)\w+\s+(?:is|are|was|were|do|does|did|will|would|should|can)\b|"
@@ -298,7 +305,8 @@ _LOOKUP = re.compile(
     # Creative pieces have their own natural length: a haiku is three lines, not 220 words.
     r"(?:please\s+)?(?:write|compose|tell|give|make\s+up)\s+(?:me\s+)?(?:a|an|one|some)?\s*(?:\w+\s+)?"
     r"(?:haiku|poem|limerick|sonnet|joke|riddle|story|song|tagline|slogan|toast|tongue\s+twister)s?\b"
-    r")|^\s*(?:(?:and|so|ok(?:ay)?|also|then)[,\s]+)?(?:which\b|how (?:many|much|long|old|far|tall|big|fast)\b|translate\b|convert\b|"
+    r")|^\s*(?:(?:and|so|ok(?:ay)?|also|then)[,\s]+)?(?:(?:roughly|about|approximately|around|exactly|just)\s+)?"
+    r"(?:which\b|how (?:many|much|long|old|far|tall|big|fast)\b|translate\b|convert\b|"
     r"name (?:one|a|an|two|three|the)\b|what (?:day|date|time|year|month)\b|what does .{1,60} mean\b|"
     r"who (?:is|was) the\b|when (?:is|was|did)\b|where (?:is|was|does|do)\b|did you\b|have you\b|"
     r"is (?:it|there|this)\b|are (?:there|you)\b|can you\b|do you\b|did i\b|what did i\b|where did i\b|"
@@ -466,6 +474,14 @@ def _has_subject(part: str) -> bool:
     return any(word not in _FILLER_WORDS for word in words)
 
 
+_TOPIC_LEAD = re.compile(
+    r"(?i)^\s*(?:(?:going\s+)?back\s+to|returning\s+to|about|regarding|re|as\s+for|on)\s+(?:the\s+|my\s+|our\s+|that\s+)?"
+    r"[\w\s'-]{1,30}?\s*[:,-]\s*")
+_MONEY_QUESTION = re.compile(r"(?i)\b(?:budget|cost|costs|price|prices|spend|spent|salary|pay|paid|fee|fees|"
+                             r"how\s+much\s+(?:money|did|does|do|is|was|will))\b")
+_AMOUNT = re.compile(r"(?:[$€£¥₹]\s?\d|\b\d[\d,.]*\s?(?:dollars?|usd|eur|euros?|pounds?|rupees?|k)\b)", re.I)
+
+
 def _mentions(answer: str, topic: str) -> bool:
     """Whether the answer actually addresses this topic.
 
@@ -480,6 +496,12 @@ def _mentions(answer: str, topic: str) -> bool:
     grammar = _FILLER_WORDS | {'what', 'when', 'where', 'which', 'would', 'could', 'should', 'might',
                              'will', 'does', 'have', 'been', 'than', 'into', 'only', 'very',
                              'answer', 'response', 'short', 'brief', 'state'}
+    # "Back to the trip: what was my budget" -- the lead-in says which topic, not what to answer, and a budget is
+    # answered by an amount, not by the word "budget". "$1,500 for 3 days" ended "I could not properly cover: Back to
+    # the trip: what was my budget" (live chat, 2026-11-11).
+    topic = _TOPIC_LEAD.sub("", topic)
+    if _MONEY_QUESTION.search(topic) and _AMOUNT.search(answer):
+        return True
     words = [word for word in re.findall(r"[a-z]{4,}", topic.lower()) if word not in grammar]
     if not words:
         return True

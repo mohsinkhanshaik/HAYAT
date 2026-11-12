@@ -150,6 +150,9 @@ _CHANGING_RECORD = re.compile(
     r"how\s+many\s+(?:confirmed\s+|known\s+|discovered\s+|recorded\s+|named\s+)?"
     r"(?:moons|exoplanets|planets\s+outside|satellites\s+in\s+orbit|species|subscribers|followers|users|employees|"
     r"members\s+states?|countries\s+(?:are\s+)?in)|"
+    # Populations change every year, and the brain mixes cities up: "And roughly how many people live there?" after
+    # "Canberra" was answered "Roughly 5 million in the metropolitan area", Sydney's figure (live, 2026-11-12).
+    r"population(?:s)?\s+(?:of|in)|how\s+many\s+(?:people|residents|inhabitants|citizens)\s+(?:live|are|reside|lived)|"
     r"(?:the\s+)?most\s+(?:moons|satellites|followers|subscribers|downloaded|streamed|viewed|valuable|populous|"
     r"medals|titles|goals|wins|oscars|grammys)|"
     r"(?:world|all[- ]time|olympic)\s+record|record\s+(?:for|holder)|"
@@ -290,6 +293,11 @@ _QUERY_PREFIX = re.compile(
     r"(?:google|search\s+(?:the\s+)?(?:web|internet|online|net)(?:\s+(?:for|about))?|"
     r"search\s+(?:for|about)|search|"
     r"look\s+(?:this|that|it)\s+up|look\s+up|"
+    # "look all ways to make money ..." was searched with its "look", and a dictionary page for "look" came back as
+    # evidence (live chat, 2026-11-11).
+    r"look\s+(?:again\s+)?(?:(?:but\s+)?deeper\s+)?(?:into|at|for|around)|"
+    r"look(?!\s+(?:it|this|that)\b)(?:\s+again)?(?:\s+(?:but\s+)?deeper)?|"
+    r"tell\s+me(?:\s+about)?|i\s+want\s+to\s+know(?:\s+about)?|"
     r"browse\s+(?:for|the\s+(?:web|internet))|"
     r"web\s+scrape|scrape|crawl|"
     r"find(?:\s+me)?|fetch(?:\s+me)?|get(?:\s+me)?|show(?:\s+me)?|dig\s+up|pull\s+up|"

@@ -30,7 +30,9 @@ from app.intent.emoji import contains_emoji, translate
 
 #: How Mohsin addresses HAYAT. Stripped from the front so the verb can lead,
 #: and from the end because "open notepad hayat" is just as common in speech.
-_ADDRESS = r"(?:hayat|hyatt|hayaat|haiyat|high at|ai|assistant|bro|dude|man|buddy|mate)"
+#: Names HAYAT answers to (both wake words) and the ways it is addressed; "Jarvis, what's 15% of 240?" was routed with
+#: the name still in it.
+_ADDRESS = r"(?:hayat|hyatt|hayaat|haiyat|high at|jarvis|jervis|jarvas|ai|assistant|bro|dude|man|buddy|mate)"
 
 #: A leading address, with whatever punctuation the recogniser attached to it.
 #: The recogniser reliably emits "HAYAT." as its own sentence, which is what

@@ -168,6 +168,106 @@ def ollama_install_hint() -> str:
     return "  curl -fsSL https://ollama.com/install.sh | sh"
 
 
+#: The brains HAYAT can be built on. ``hayat:latest`` is always the name the app uses; only its FROM differs.
+BRAINS = {
+    "35b": {"label": "HAYAT 35B-A3B (uncensored, vision; the full brain)",
+            "pull": "hf.co/Mohsinkhanshaik/HAYAT-35B-A3B-Uncensored-GGUF:Q4_K_M",
+            "base": "qwen3.6-35b-a3b-uncensored:q4_k_m", "download": "22 GB", "min_ram_gib": 30},
+    "4b": {"label": "HAYAT Open 4B (small and fast; text only)",
+           "pull": "hf.co/Mohsinkhanshaik/HAYAT-Open-4B:Q4_K_M",
+           "base": "hf.co/Mohsinkhanshaik/HAYAT-Open-4B:Q4_K_M", "download": "2.5 GB", "min_ram_gib": 0},
+}
+
+
+def total_ram_gib() -> float | None:
+    """This computer's installed memory, with the standard library only (None when it cannot be read)."""
+    try:
+        if IS_WINDOWS:
+            import ctypes
+
+            class MemoryStatus(ctypes.Structure):
+                _fields_ = [("length", ctypes.c_ulong), ("load", ctypes.c_ulong), ("total", ctypes.c_ulonglong),
+                            ("available", ctypes.c_ulonglong), ("page_total", ctypes.c_ulonglong),
+                            ("page_available", ctypes.c_ulonglong), ("virtual_total", ctypes.c_ulonglong),
+                            ("virtual_available", ctypes.c_ulonglong), ("extended", ctypes.c_ulonglong)]
+
+            status = MemoryStatus()
+            status.length = ctypes.sizeof(MemoryStatus)
+            if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+                return None
+            return status.total / 1024**3
+        if platform.system() == "Darwin":
+            output = subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True, check=False)
+            return int(output.stdout.strip()) / 1024**3
+        return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 1024**3
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def installed_models() -> set[str]:
+    """Model names Ollama already has (`ollama list`); empty when it cannot be asked."""
+    try:
+        output = subprocess.run(["ollama", "list"], capture_output=True, text=True, check=False, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    names = set()
+    for line in output.stdout.splitlines()[1:]:
+        if line.split():
+            name = line.split()[0]
+            names.add(name.lower())
+            if name.lower().endswith(":latest"):
+                names.add(name.lower().removesuffix(":latest"))
+    return names
+
+
+def choose_brain(ram_gib: float | None, installed: set[str], wanted: str = "") -> tuple[str, str]:
+    """Which brain to build, and why: a brain already installed wins; otherwise the machine's memory decides.
+
+    HAYAT_BRAIN=35b or HAYAT_BRAIN=4b overrides the choice.
+    """
+    wanted = (wanted or "").strip().lower()
+    if wanted in BRAINS:
+        return wanted, f"you chose it (HAYAT_BRAIN={wanted})"
+    if BRAINS["35b"]["base"] in installed:
+        return "35b", "its model is already installed"
+    if ram_gib is None:
+        return "4b", "this computer's memory could not be read, so the small brain is the safe start"
+    if ram_gib >= BRAINS["35b"]["min_ram_gib"]:
+        return "35b", f"this computer has {ram_gib:.0f} GB of memory (the full brain needs about 30)"
+    return "4b", (f"this computer has {ram_gib:.0f} GB of memory; the full brain needs about 30, so the small "
+                  "one runs well instead (set HAYAT_BRAIN=35b to try the full one anyway)")
+
+
+def brain_modelfile(key: str) -> Path:
+    """HAYAT's Modelfile built on the chosen brain: the same identity and settings, only FROM changes."""
+    source = ROOT / "models" / "hayat" / "Modelfile"
+    if key == "35b":
+        return source
+    lines = source.read_text(encoding="utf-8").splitlines()
+    swapped = [f"FROM {BRAINS[key]['base']}" if line.startswith("FROM ") else line for line in lines]
+    # The full brain's vision projector has no counterpart on the small model: keep one FROM line only.
+    first = next(index for index, line in enumerate(swapped) if line.startswith("FROM "))
+    swapped = [line for index, line in enumerate(swapped) if not line.startswith("FROM ") or index == first]
+    target = ROOT / "data" / "models" / f"hayat-{key}.Modelfile"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("\n".join(swapped) + "\n", encoding="utf-8")
+    return target
+
+
+def provision_brain() -> None:
+    key, reason = choose_brain(total_ram_gib(), installed_models(), os.environ.get("HAYAT_BRAIN", ""))
+    brain = BRAINS[key]
+    print(f"    Brain: {brain['label']} - {reason}.")
+    if brain["base"] not in installed_models():
+        print(f"    Downloading it ({brain['download']}); this is the longest step and can be resumed by rerunning.")
+        if run(["ollama", "pull", brain["pull"]], check=False) != 0:
+            print("    The download did not finish. Rerun setup to resume it.")
+            return
+        if brain["base"] != brain["pull"]:
+            run(["ollama", "cp", brain["pull"], brain["base"]], check=False)
+    run(["ollama", "create", "hayat:latest", "-f", str(brain_modelfile(key))], check=False)
+
+
 def provision_models() -> None:
     say("Checking for Ollama (the local model runtime)")
     if shutil.which("ollama") is None:
@@ -180,11 +280,9 @@ def provision_models() -> None:
     # nomic-embed-text is the embedding model (about 270 MB); all-minilm (46 MB) is its fallback.
     run(["ollama", "pull", "nomic-embed-text"], check=False)
     run(["ollama", "pull", "all-minilm"], check=False)
-    # Build HAYAT's identity model from its Modelfile. `ollama create` pulls the
-    # FROM base automatically when it is a registry model.
-    modelfile = ROOT / "models" / "hayat" / "Modelfile"
-    if modelfile.exists():
-        run(["ollama", "create", "hayat:latest", "-f", str(modelfile)], check=False)
+    # Build HAYAT's identity model (hayat:latest) on the brain this computer can run.
+    if (ROOT / "models" / "hayat" / "Modelfile").exists():
+        provision_brain()
     print("    If any model failed, see config/models.yaml for what HAYAT expects and")
     print("    pull/build them with `ollama pull <name>` / `ollama create`.")
 

@@ -162,7 +162,9 @@ def test_busy_reply_blocks_mode_change_and_decision_preparation(desk, monkeypatc
 def test_fixed_fast_profile_is_not_mislabelled_as_balanced(desk):
     window, _gui = desk
     window.render({**window.snapshot, 'modes': {'configured': ['FAST', 'PRIVATE']}})
-    assert all(button.cget('style') != 'HayatChosen.TButton' for button in window.mode_buttons.values())
+    # Fast has its own button since the reply-speed setting (2026-11-12); it is never shown as Medium/Balanced.
+    chosen = [key for key, button in window.mode_buttons.items() if str(button.cget('style')) == 'HayatChosen.TButton']
+    assert chosen == ['fast']
 
 
 @pytest.mark.skipif(os.environ.get('HAYAT_SHOTS') != '1', reason='opt-in native visual review')

@@ -465,3 +465,24 @@ def test_a_complaint_recalls_memories_for_its_question_not_for_its_own_words(tmp
     chat.topic_decision = store.decide("s", SAME_REPLY, now=START + timedelta(minutes=1))
     chat.reply(SAME_REPLY)
     assert "same reply" not in looked_up[-1] and "money" in looked_up[-1]
+
+
+def test_a_different_tip_is_asked_of_the_model_with_the_refused_one_not_searched(tmp_path):
+    """Live chat 2026-11-11: "you already said that, give me a different one" about a one-sentence sleep tip went to
+    a deep web search and came back as study excerpts. A different answer is the model's job; it is told what was
+    refused and to keep the format."""
+    rt = _runtime(tmp_path)
+    rt.research = None  # no live-facts search configured in this runtime
+    seen: list[str] = []
+
+    def reply(text, **kwargs):
+        seen.append(text)
+        return "Keep the bedroom cool and dark." if len(seen) > 1 else "Keep the same sleep and wake time every day."
+
+    rt.assistant._conversation_reply = reply
+    rt.assistant.handle("Give me one tip to sleep better. One sentence.")
+    second = rt.assistant.handle("you already said that, give me a different one").display_response
+    assert rt.research_jobs.started == []  # no web search for a different tip
+    assert "Keep the bedroom cool and dark." in second
+    assert "Keep the same sleep and wake time every day." in seen[-1] and "genuinely different" in seen[-1]
+    assert "Keep any length or format" in seen[-1]

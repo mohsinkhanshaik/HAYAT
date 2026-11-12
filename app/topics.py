@@ -243,6 +243,28 @@ _PERSON = re.compile(
     r"wife|husband|son|daughter|friend|cousin|uncle|aunt|boss|colleague|coworker|co-worker|neighbou?r|grandmother|"
     r"grandfather|grandma|grandpa|nephew|niece|fiance|fiancée|partner|teacher|student|client|manager|roommate))\b"
     r"(?:\s+(?P<name>[A-Z][a-z]{2,}))?")
+#: Someone or something joining the plan under discussion ("my wife is coming too. How many of us now?"). Live chat,
+#: 2026-11-11: that message shared no word with "a trip to Lisbon with my two kids", so it became a new topic about
+#: the wife, the trip's history was set aside, and "how many of us" was answered as two instead of four.
+_JOINING = re.compile(
+    r"(?i)\b(?:is|are|'s|'re|will\s+be|was|were)\s+(?:also\s+)?(?:coming|joining|going|travel(?:l)?ing|tagging\s+along|"
+    r"in)\s+(?:too|as\s+well|also|with\s+(?:us|me|them))\b"
+    r"|\b(?:coming|joining|going)\s+(?:too|as\s+well)\b|\bjoin(?:s|ing)?\s+us\b|\bhow\s+many\s+of\s+us\b"
+    r"|\b(?:add|include|bring(?:ing)?)\s+(?:my|our)\s+\w+\s+(?:too|as\s+well|also)\b")
+#: A first-person update to what was just said: "Actually I moved to Austin", "Correction: we have $800".
+_UPDATE = re.compile(
+    r"(?i)^\s*(?:actually|correction|update|no\s+wait|wait|oh\s+and|scratch\s+that|change\s+of\s+plans?)[,:\s-]+"
+    r"(?:now\s+|i\s+mean\s+)?(?:i|i['’]m|i['’]ve|we|we['’]re|we['’]ve|my|our)\b")
+#: A message that carries its own calendar or arithmetic subject never leans on a topic: "What date will it be 45
+#: days from today?" was read as pointing at "it", and "What day of the week was 1 January 2000?" as asking about a
+#: year of the subject; both were re-read as "…, about the exactly five words describing the ocean" and searched.
+_SELF_CONTAINED = re.compile(
+    r"(?i)\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?,?\s+\d{4}\b"
+    r"|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\b"
+    r"|\b\d{4}-\d{2}-\d{2}\b"
+    r"|\b\d+\s+(?:days?|weeks?|months?|years?|hours?|minutes?)\s+(?:from|after|before|since|ago|until|till)\b"
+    r"|\b(?:from|since|until|till)\s+(?:today|now|tomorrow|yesterday)\b|\bday\s+of\s+the\s+week\b"
+    r"|\d\s*[-+*/x×÷^]\s*\d|\b\d+(?:\.\d+)?\s*%\s+of\s+\d")
 #: Messages that start by pointing at the topic instead of naming a subject.
 _LEANING_START = re.compile(
     r"(?i)^\s*(?:(?:and|but|also|so|or|plus|ok(?:ay)?|then|hmm+)[,\s]+)*(?:"
@@ -308,7 +330,8 @@ def _about_the_last_answer(text: str) -> bool:
 def leans_on_topic(text: str) -> str:
     """Why a message cannot be read on its own ('' when it names its own subject or is a command)."""
     value = " ".join(expand(text).split())
-    if not value or _DEVICE_COMMAND.match(value) or is_small_talk(value) or _about_the_last_answer(text):
+    if (not value or _DEVICE_COMMAND.match(value) or is_small_talk(value) or _SELF_CONTAINED.search(value)
+            or _about_the_last_answer(text)):
         return ""
     own = own_subject_words(value)
     if _LEANING_START.match(value) and len(own) <= 3:
@@ -603,6 +626,16 @@ class ConversationTopics:
                 else:
                     relation, confidence = "small_talk", 0.9
                 reasons.append("a few words of conversation")
+            if (not relation and active is not None and not fresh and gap is not None and gap <= ANCHOR_WINDOW
+                    and _UPDATE.match(value)):
+                # "Actually I moved to Austin last week" updates what was just said. Filed as a new topic, it was set
+                # aside when "where do I live now?" went back to "I live in Seattle ...", and the reply said Seattle.
+                relation, topic, confidence = "continue", active, 0.8
+                reasons.append("updates something the owner said in this topic")
+            if (not relation and active is not None and not fresh and gap is not None and gap <= ANCHOR_WINDOW
+                    and _JOINING.search(value)):
+                relation, topic, confidence = "continue", active, 0.8
+                reasons.append("adds someone or something to the plan under discussion")
             lean = "" if relation else leans_on_topic(value)
             if not relation and lean and active is not None and gap is not None and gap <= ANCHOR_WINDOW:
                 relation, topic, confidence = "continue", active, 0.8

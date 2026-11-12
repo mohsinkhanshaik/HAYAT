@@ -195,20 +195,28 @@ CATALOG: tuple[Capability, ...] = (
     ),
     Capability(
         "chat", "Talk and get answers", "💬",
-        "Ask anything in your own words. HAYAT answers with an AI model that runs on this computer.",
-        "Type in the box at the bottom and press Send, or press Enter.",
+        "Ask anything in your own words, in English, Hinglish, Hindi, Urdu, Arabic or Telugu. HAYAT answers with an AI "
+        "model on this computer: quick when you chat, careful when it matters.",
+        "Type in the box at the bottom and press Send, or press Enter. You can also ask ChatGPT, Claude or Gemini a "
+        "single question once you connect them. The Speed button beside the box chooses Auto, Fast, "
+        "Medium or Deep; casual talk stays quick in every setting, and \"think harder\" gets more thought for one "
+        "message. \"Ask Claude: ...\" sends just that question through Studios -> Connected AI.",
         ("Explain how compound interest works, simply",
          "Help me write a polite message asking for a day off",
-         "Give me three ideas for a birthday present for my dad"),
+         "Fast mode", "Ask Claude: what is a good name for a bakery?", "kya haal hai bhai"),
         keywords=("explain", "answer", "question", "write", "summarise", "summarize", "chat", "talk", "advice",
-                  "idea", "ideas", "help me write"),
+                  "idea", "ideas", "help me write", "fast mode", "deep mode", "speed", "chatgpt", "claude", "gemini",
+                  "hinglish", "hindi", "urdu", "telugu"),
     ),
     Capability(
         "voice", "Talk out loud", "🎙",
-        "Speak to HAYAT and hear it answer, with push-to-talk or hands-free listening.",
-        "Press Start voice below the chat. Hold Ctrl+Space to talk, or turn on hands-free in Voice settings.",
-        ("Start voice", "Talk to me in Arabic", "Stop listening"),
-        keywords=("voice", "speak", "microphone", "mic", "listen", "hear", "out loud", "say it"),
+        "Speak to HAYAT and hear it answer, with push-to-talk, hands-free listening, or wake words: it answers to "
+        "\"Hayat\" and \"Jarvis\", in English, Hindi, Urdu, Arabic and Telugu.",
+        "Press Start voice below the chat. Hold Ctrl+Space to talk, or say \"listen for Jarvis\" and then just say "
+        "\"Jarvis, ...\" or \"Hayat, ...\". Saying only the name gets \"Yes?\" and, if you were away, what happened.",
+        ("Start voice", "Listen for Jarvis", "Talk to me in Arabic", "Stop listening"),
+        keywords=("voice", "speak", "microphone", "mic", "listen", "hear", "out loud", "say it", "wake word", "jarvis",
+                  "hey hayat"),
         opens="studio:voice", opens_label="Voice settings",
     ),
     Capability(

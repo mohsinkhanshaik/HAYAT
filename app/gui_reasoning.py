@@ -93,7 +93,7 @@ class ReasoningDesk(tk.Toplevel):
         self.mode_row = FlowRow(self.overview, self.p.BLACK, gap=6)
         self.mode_row.pack(fill='x', pady=8)
         self.mode_buttons = {}
-        for key, label in (('automatic', 'Automatic'), ('balanced', 'Balanced'), ('deep', 'Deep review')):
+        for key, label in (('automatic', 'Auto'), ('fast', 'Fast'), ('medium', 'Medium'), ('deep', 'Deep')):
             self.mode_buttons[key] = self.mode_row.add(ttk.Button(
                 self.mode_row, text=label, command=lambda profile=key: self.set_mode(profile)))
         self.mode_row.add(ttk.Button(self.mode_row, text='Startup details', command=self.gui._show_startup_readiness))
@@ -190,8 +190,9 @@ class ReasoningDesk(tk.Toplevel):
         self.snapshot = value
         report = value['startup']
         configured = value['modes']['configured']
-        active = ('deep' if {'DEEP', 'ADVERSARIAL'} <= set(configured) else 'automatic' if configured == ['AUTO']
-                  else 'balanced' if 'BALANCED' in configured else None)
+        from app.reply_speed import setting_of
+
+        active = {'auto': 'automatic'}.get(setting_of(configured), setting_of(configured))
         for key, button in self.mode_buttons.items():
             button.configure(style='HayatChosen.TButton' if active == key else 'Hayat.TButton')
         lines = ['REASONING PROFILE · ' + ' + '.join(configured), '', 'LAST ANSWER', *value['answer'], '', 'LOCAL READINESS']

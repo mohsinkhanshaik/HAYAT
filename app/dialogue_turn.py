@@ -81,7 +81,8 @@ def intercept(service: Any, text: str, intent: RequestIntent) -> Any | None:
 
     words = owner_words(text)
     try:
-        return (_feedback_turn(service, words, intent) or _investigation_turn(service, words, intent)
+        return (_feedback_turn(service, words, intent) or _frustration_turn(service, words, intent)
+                or _unclear_action_turn(service, words, intent) or _investigation_turn(service, words, intent)
                 or _ambition_turn(service, words, intent))
     except Exception:
         # The ordinary path still answers; a fault here must never cost the owner his reply.
@@ -192,17 +193,26 @@ def _feedback_turn(service: Any, text: str, intent: RequestIntent) -> Any | None
         service._record("user", text, intent=intent.intent.value, repair=True)
         return service._handle_inner(question, turn=getattr(service._turn_state, "turn", None))
     made = _intent(IntentKind.RESEARCH, question, "answer_feedback", feedback=feedback.to_dict())
+    # A search helps when the answer needs knowledge from outside: a research question, a fixed rule's answer, current
+    # facts, or "go deeper" on a factual question. "You already said that, give me a different one" about a one-line
+    # sleep tip was sent to a deep web search and came back as a list of study excerpts (live chat, 2026-11-11); a
+    # different answer from the model, told what was refused, is what he asked for.
     searchable = (again.intent in {IntentKind.RESEARCH, IntentKind.BROWSER} or same_source
-                  or service._wants_current_facts(question) or bool(feedback.kinds & {"deeper", "repeated", "generic"}))
+                  or service._wants_current_facts(question)
+                  or ("deeper" in feedback.kinds and again.intent is IntentKind.QUESTION))
     if searchable:
         if same_source:
             preface.append(f"Last time this went to {_source_label(refused.get('source', ''))}, which gives the same "
                            "answer every time. This time I'm searching for it.")
         body = service._research_in_background(question, query=service._research_query(question), level="deep")
         return service._direct(made, "\n".join(preface) + "\n\n" + body)
+    refused_text = " ".join(str(refused.get("reply") or "").split())[:700]
     body = service._conversation_reply(
-        f"{question}\n\n(The owner refused your previous answer to this: {feedback.describe()}. Answer the question "
-        "itself again, differently and more carefully, and say plainly what you are unsure of.)",
+        f"{question}\n\n(The owner refused your previous answer to this: {feedback.describe()}. "
+        + (f"The refused answer was: “{refused_text}”. Do not repeat it or reword it; give a genuinely different "
+           "one. " if refused_text else "")
+        + "Keep any length or format he asked for in the question. Answer the question itself again, and say plainly "
+        "what you are unsure of.)",
         capability=service._question_model_capability(question))
     made.intent = IntentKind.QUESTION
     return service._direct(made, "\n".join(preface) + "\n\n" + body)
@@ -243,6 +253,58 @@ def note_failure_reported(service: Any) -> None:
         service.runtime.session.failure_reported_at = datetime.now(UTC)
     except Exception:
         log_swallowed(_log, "noting that a failure was reported")
+
+
+def _frustration_turn(service: Any, text: str, intent: RequestIntent) -> Any | None:
+    """'You broke everything again' with nothing named: answered from the failure log, never with an invented error."""
+    from app.frustration import general_complaint, reply
+
+    if not general_complaint(text):
+        return None
+    failures: list[dict[str, Any]] = []
+    try:
+        log = getattr(service.runtime, "failures", None)
+        failures = list(log.recent(20)) if log is not None else []
+    except Exception:
+        log_swallowed(_log, "reading recent failures for a complaint")
+    session_id = service.runtime.session.session_id
+    last = ""
+    try:
+        history = service.runtime.memory.conversation_history(session_id, limit=6)
+        last = next((str(row.get("content") or "") for row in reversed(history) if row.get("role") == "assistant"), "")
+    except Exception:
+        log_swallowed(_log, "reading the last reply for a complaint")
+    body, named_failure = reply(failures, last)
+    if named_failure:
+        note_failure_reported(service)  # "fix it" next means this failure
+    service.runtime.session.last_answer_source = "frustration"
+    made = _intent(IntentKind.CONVERSATION, "Answer a general complaint from the records", "frustration")
+    return service._direct(made, body)
+
+
+def _unclear_action_turn(service: Any, text: str, intent: RequestIntent) -> Any | None:
+    """'Book it' with nothing bookable in the last few turns: ask what, instead of letting the model invent it."""
+    from app.unclear_action import LOOK_BACK, unclear_action
+
+    if not text or len(text) > 160:
+        return None
+    memory = service.runtime.memory
+    try:
+        history = memory.conversation_history(service.runtime.session.session_id, limit=LOOK_BACK + 2)
+    except Exception:
+        log_swallowed(_log, "reading recent turns for an unclear action")
+        return None
+    rows = [row for row in history if row.get("role") in ("user", "assistant")]
+    if rows and " ".join(str(rows[-1].get("content") or "").split()) == " ".join(text.split()):
+        rows = rows[:-1]  # this message, already recorded
+    turns = [str(row.get("content") or "") for row in rows]
+    asked = next((str(row.get("content") or "") for row in reversed(rows) if row.get("role") == "user"), "")
+    question = unclear_action(text, turns, asked)
+    if question is None:
+        return None
+    service.runtime.session.last_answer_source = "clarification"
+    made = _intent(IntentKind.CONVERSATION, "Ask what the command refers to", "unclear_action", clarification=True)
+    return service._direct(made, question)
 
 
 def _investigation_turn(service: Any, text: str, intent: RequestIntent) -> Any | None:

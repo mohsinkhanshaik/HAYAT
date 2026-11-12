@@ -29,8 +29,9 @@ video, track markets and jobs, and remember what matters — with a local langua
 
 ## Why HAYAT
 
-- **Private by default.** The language model, memory, files and camera stay on your machine. Nothing leaves it unless
-  you ask. Web reading can go through Tor.
+- **Private by default.** The language model, your conversations, memory, files and camera stay on your machine, and
+  no analytics are sent anywhere. It goes online for web research (which can go through Tor), the live feeds you
+  open, and background learning on topics it could not answer (`/learn stop` turns that off).
 - **Zero-cost.** No paid APIs, no subscriptions. Paid fallbacks are blocked by policy, not by promise.
 - **It acts, and proves it.** HAYAT runs real tools — files, browser, Windows apps, research, media — and only says
   something was done when the tool result shows it. Anything that touches the outside world waits for your approval.
@@ -42,8 +43,8 @@ video, track markets and jobs, and remember what matters — with a local langua
 
 | Area | Highlights |
 | --- | --- |
-| **Talk and think** | Natural chat with a local 35B mixture-of-experts model; deep reasoning mode; corrections remembered |
-| **Voice** | Push-to-talk or hands-free, local speech recognition and speech output |
+| **Talk and think** | Natural chat with a local 35B mixture-of-experts model; reply speed Auto/Fast/Medium/Deep with casual talk always quick; corrections remembered; understands English, Hinglish, Hindi, Urdu, Arabic and Telugu; optional "ask Claude/ChatGPT/Gemini" with your own key |
+| **Voice** | Push-to-talk, hands-free, or wake words "Hayat" and "Jarvis"; local speech recognition and speech output |
 | **Research** | Background web research with cited sources, freshness and conflict checks; optional Tor and onion research |
 | **See** | Webcam and screen understanding, text reading (OCR), person detection, consent-only face enrollment |
 | **Use your computer** | Open and drive Windows apps by control name, browse websites, fill forms with your OK |
@@ -83,27 +84,21 @@ with today's test results. The full list of 40 areas, each with words to say and
 
 ## Quick start
 
-**You need:** Windows 10/11, Python 3.11 or newer (developed and tested on 3.14), [Ollama](https://ollama.com),
-about 30 GB free disk for the default model, and ideally an NVIDIA GPU with 8 GB VRAM (CPU works, slower; RAM 32 GB+
-recommended for the 35B model).
+**You need:** Windows 10/11, Python 3.11 or newer (developed and tested on 3.14) and [Ollama](https://ollama.com).
+Any machine with 8 GB of memory can start; an NVIDIA GPU helps but is not required.
 
 ```powershell
-# 1. Get the code
 git clone https://github.com/mohsinkhanshaik/HAYAT.git
 cd HAYAT
-
-# 2. Install Ollama and HAYAT's brain from Hugging Face (22 GB, includes vision)
 winget install Ollama.Ollama
-ollama pull hf.co/Mohsinkhanshaik/HAYAT-35B-A3B-Uncensored-GGUF:Q4_K_M
-ollama cp hf.co/Mohsinkhanshaik/HAYAT-35B-A3B-Uncensored-GGUF:Q4_K_M qwen3.6-35b-a3b-uncensored:q4_k_m
-
-# 3. Set up and start
-.\setup.ps1          # virtual environment, dependencies, embeddings, and the hayat model
+.\setup.ps1          # everything else, including the brain that fits this computer
 python run.py        # opens the desktop app
 ```
 
-On a smaller machine, use the 4B model instead:
-`ollama pull hf.co/Mohsinkhanshaik/HAYAT-Open-4B:Q4_K_M` and select it in **Models**. Run
+**Setup picks the brain for your machine.** With about 30 GB of memory or more it downloads the full brain,
+HAYAT 35B-A3B (22 GB, uncensored, with vision). Below that it downloads HAYAT Open 4B (2.5 GB, text only),
+which runs well on an ordinary laptop. It prints which one it chose and why. To choose yourself, set
+`$env:HAYAT_BRAIN = "35b"` or `"4b"` before running setup; a brain already installed is kept. Run
 `python scripts/doctor.py` any time to see what is installed and what is missing. More detail:
 [getting started](docs/getting-started.md) and [troubleshooting](docs/troubleshooting.md).
 

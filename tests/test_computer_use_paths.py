@@ -76,3 +76,24 @@ def test_a_call_that_cannot_succeed_is_not_repeated(tmp_path):
     agent.run("Fetch it")
     assert agent.executor.execute.call_count == 3  # a passing failure still gets its retries
     assert "FileNotFoundError" in DETERMINISTIC_ERRORS
+
+
+def test_missing_setup_or_contact_stops_the_task_without_replanning(tmp_path):
+    """Live chat 2026-11-11: "Email my landlord ..." re-planned email_send seven more times after "Email is not set
+    up yet" and an unknown contact. Only the owner can supply those, so the task stops and says so."""
+    from app.agent.planner import PlanStep
+
+    agent = make_agent(tmp_path, [PlanStep("Send it", "email_send", {"to": "landlord"}, max_retries=2)], 10)
+    agent.executor.execute.return_value = ToolResult(
+        "email_send", False, error="RuntimeError: Email is not set up yet. Open Business -> Email setup.")
+    outcome = agent.run("Email my landlord")
+    assert agent.executor.execute.call_count == 1 and agent.planner.replan.call_count == 0
+    assert not outcome.complete and not outcome.needs_user_input  # not the unsaved-changes question
+    assert "Email is not set up yet" in outcome.summary
+    agent = make_agent(tmp_path, [PlanStep("Send it", "email_send", {"subject": "Rent"}, max_retries=2)], 10)
+    agent.executor.execute.return_value = ToolResult(
+        "email_send", False, error="ValidationError: 'to' is a required property")
+    agent.planner.replan.return_value = [PlanStep("Send again", "email_send", {"subject": "Rent late"})]
+    agent.run("Email my landlord")
+    assert agent.executor.execute.call_count == 1  # a retry still without 'to' is not run
+    assert "ValidationError" in DETERMINISTIC_ERRORS

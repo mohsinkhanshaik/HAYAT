@@ -76,13 +76,26 @@ def ambition_request(text: str, *, today: date | None = None) -> Ambition | None
     amount = parse_amount(value)
     if amount is not None and amount >= 1e6:
         return Ambition(amount, parse_horizon(value, today), "names an amount", value)
-    if _SCALE_WORDS.search(value) and not _SMALL_START.search(value):
+    if _SCALE_WORDS.search(value) and not _asks_small(value):
         return Ambition(None, parse_horizon(value, today), "asks for larger ways than a small start", value)
     return None
 
 
+#: "not small ones", "nothing small", "instead of side hustles", "beyond freelancing": a small start he turned down.
+_DECLINED_SMALL = re.compile(
+    r"(?i)\b(?:not|no|nothing|never|don['’]?t\s+want|dont\s+want|instead\s+of|rather\s+than|beyond|bigger\s+than|"
+    r"more\s+than|other\s+than|apart\s+from|except)\s+(?:the\s+|any\s+|those\s+|these\s+|just\s+|a\s+|some\s+)?"
+    r"(?:\w+\s+){0,2}?" + _SMALL_START.pattern.removeprefix("(?i)"))
+
+
+def _asks_small(value: str) -> bool:
+    """He asked for the small list, not merely mentioned it to turn it down. Live chat, 2026-11-11: "i want higher
+    ways not small ones" counted as asking for small ones, and the starter list came back."""
+    return bool(_SMALL_START.search(_DECLINED_SMALL.sub(" ", value)))
+
+
 def wants_small_start(text: str) -> bool:
-    return bool(_SMALL_START.search(" ".join(str(text or "").split())))
+    return _asks_small(" ".join(str(text or "").split()))
 
 
 # ------------------------------------------------------------------------------------------------ the arithmetic

@@ -1531,8 +1531,10 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         from app.gui_help import Tooltip
         activity_tip = Tooltip(self._activity_label, self.activity_var.get(), type(self))
         self.activity_var.trace_add('write', lambda *_: setattr(activity_tip, 'text', self.activity_var.get()))
-        self.reasoning_button = ttk.Button(hint, text='Deep review', style='Hayat.TButton',
-                                          command=self._toggle_god_mode)
+        # Reply speed: Auto / Fast / Medium / Deep (app/reply_speed.py). A menu, not an on/off: the old "Deep review"
+        # toggle could only choose between deep and automatic.
+        self.reasoning_button = ttk.Button(hint, text='Speed: Auto', style='Hayat.TButton',
+                                          command=self._open_speed_menu)
         self.reasoning_button.grid(row=0, column=3, padx=(8, 0))
         self._paint_reasoning_mode()
         self.activity_progress_var = DoubleVar(master=self.root, value=0.0)
@@ -3049,10 +3051,37 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         manager = getattr(self.runtime, 'modes', None)
         if manager is None or not hasattr(self, 'reasoning_button'):
             return
-        current = manager.snapshot()['configured']
-        god = 'DEEP' in current and 'ADVERSARIAL' in current
-        self.reasoning_button.configure(text='Deep review: on' if god else 'Deep review',
-                                        style='HayatChosen.TButton' if god else 'Hayat.TButton')
+        from app.reply_speed import LABELS
+
+        speed = manager.snapshot().get('speed', 'auto')
+        self.reasoning_button.configure(text=f'Speed: {LABELS.get(speed, "Auto")}',
+                                        style='Hayat.TButton' if speed == 'auto' else 'HayatChosen.TButton')
+
+    #: What each speed does, said in the menu so the choice is informed.
+    _SPEED_CHOICES = (
+        ('auto', 'Auto: HAYAT decides for each message'),
+        ('fast', 'Fast: quick replies; proofs and plans get medium'),
+        ('medium', 'Medium: balanced; chat stays quick'),
+        ('deep', 'Deep: careful, with a skeptical check; chat stays quick'),
+    )
+
+    def _open_speed_menu(self) -> None:
+        manager = getattr(self.runtime, 'modes', None)
+        if manager is None:
+            return
+        current = manager.snapshot().get('speed', 'auto')
+        menu = tk.Menu(self.root, tearoff=False, bg=self.PANEL, fg=self.WHITE, activebackground=self.GOLD,
+                       activeforeground=self.BLACK)
+        choice = tk.StringVar(master=self.root, value=current)
+        for key, label in self._SPEED_CHOICES:
+            menu.add_radiobutton(label=label, value=key, variable=choice,
+                                 command=lambda profile=key: self._set_reasoning_profile(profile))
+        self._speed_menu = menu
+        button = self.reasoning_button
+        try:
+            menu.tk_popup(button.winfo_rootx(), button.winfo_rooty() - 8 - 26 * len(self._SPEED_CHOICES))
+        finally:
+            menu.grab_release()
 
     def _paint_reply_controls(self) -> None:
         busy = self._working_since is not None
@@ -3299,8 +3328,14 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             manager = self.runtime.modes
             manager.set_reasoning(profile)
             self._post(self._paint_reasoning_mode)
-            return ('Deep review enabled: self-questioning and a skeptical check. Replies may take longer; accuracy still needs evidence.'
-                    if profile == 'deep' else 'Reasoning updated: ' + ' + '.join(manager.snapshot()['configured']) + '.')
+            from app.reply_speed import LABELS
+
+            speed = manager.snapshot().get('speed', 'auto')
+            return (f'Reply speed: {LABELS.get(speed, speed)}. '
+                    + {'deep': 'Careful replies with a skeptical check; casual talk stays quick.',
+                       'fast': 'Quick replies; proofs, plans and code still get a medium level of thought.',
+                       'medium': 'Balanced replies; casual talk stays quick, hard problems get deep thought.',
+                       'auto': 'I judge each message: quick when we are talking, deeper when it is needed.'}.get(speed, ''))
         self._background('Reasoning mode', change)
 
     def _open_reasoning_desk(self) -> None:
