@@ -72,6 +72,22 @@ def test_projection_centres_the_origin_and_depth_grows_toward_the_viewer(scene):
     assert inside(5, 5, [(0, 0), (10, 0), (10, 10), (0, 10)]) and not inside(15, 5, [(0, 0), (10, 0), (10, 10), (0, 10)])
 
 
+def test_shared_camera_bookmark_restores_the_visible_pan_and_zoom(scene):
+    widget, _selected, _opened = scene
+    widget.camera_view('Right')
+    widget.zoom_at(120, 100, 1.8)
+    saved = widget.yaw, widget.pitch, widget.zoom, widget.pan
+    widget.remember_camera()
+    widget.camera_view('Home')
+    assert widget.pan == (0.0, 0.0)
+    widget.restore_camera()
+    assert (widget.yaw, widget.pitch, widget.zoom, widget.pan) == saved
+    widget.camera_view('Above')
+    assert widget.pitch == 1.5
+    with pytest.raises(ValueError, match='Unknown'):
+        widget.camera_view('invalid')
+
+
 def test_click_selects_drag_turns_and_double_click_opens_or_resets(scene):
     widget, selected, opened = scene
     widget.redraw()

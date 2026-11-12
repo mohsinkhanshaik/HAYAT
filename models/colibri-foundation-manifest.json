@@ -1,0 +1,19 @@
+{
+  "recorded_at": "2026-11-12T05:01:58+00:00",
+  "engine": {
+    "path": "runtime/colibri-v2.1.0",
+    "version": "2.1.0"
+  },
+  "brain_model": "hayat:latest",
+  "brain_blob_digest": "sha256:bbef58c37ce88820be9d98b6437f1cf4bac890c947bd55fc7b68e22098574231",
+  "gguf_bytes": 21166758016,
+  "import": {
+    "mode": "link",
+    "arch": "qwen35moe",
+    "model_dir": "models/colibri/hayat-foundation-q4km",
+    "model_id": "hayat-foundation-q4km-colibri",
+    "mtp": false
+  },
+  "same_file_as_brain": true,
+  "note": "Link mode reads the GGUF in place: identical weights to Ollama, no conversion or re-quantization."
+}

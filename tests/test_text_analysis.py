@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -21,11 +20,14 @@ REAL_DATA = PROJECT_ROOT / "data" / "nltk_data"
 
 
 @pytest.fixture
-def guarded():
+def guarded(tmp_path_factory):
     nltk_guard.install()
     import nltk
 
-    allowed = Path(tempfile.mkdtemp(prefix="hayat-nltk-allowed-"))
+    # NLTK's patched path sandbox intentionally rejects Windows 8.3 aliases.
+    # The system TEMP can be spelled MOHSIN~1; use pytest's canonical project
+    # path while retaining an explicitly scoped allowed data directory.
+    allowed = tmp_path_factory.mktemp('nltk-allowed').resolve()
     nltk.data.path.append(str(allowed))
     try:
         yield allowed

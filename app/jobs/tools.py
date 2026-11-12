@@ -9,13 +9,20 @@ from app.jobs.understand import pay_text
 
 TOOL_NAMES = ("job_search", "job_matches", "job_detail", "job_hide", "job_profile", "job_application_prepare", "job_application_send",
               "job_open", "job_applications", "job_sources", "job_insight", "job_cv_review", "job_learning_plan",
-              "job_prospects", "job_discover_company", "job_application_fill", "job_sponsorship", "job_browser_search", "job_source_open")
+              "job_prospects", "job_discover_company", "job_application_fill", "job_sponsorship", "job_browser_search", "job_source_open", "job_career_radar")
 
 
 def register_job_tools(registry: Any, center: Any, watcher: Any = None) -> None:
     def obj(properties: dict[str, Any], required: tuple[str, ...] = ()) -> dict[str, Any]:
         return {"type": "object", "properties": properties, "required": list(required), "additionalProperties": False}
     number = {"type": "integer", "minimum": 1}
+    registry.register("job_career_radar", "Inspect saved jobs, requirement evidence, eligibility, missing skills and a weekly practice sprint. "
+                      "Simulate up to 12 skills with real rescoring without changing the CV or profile. Report conditional interview-response "
+                      "forecasts only from complete matured application windows, plus source recovery and search suggestions.",
+                      obj({"proposed_skills": {"type": "array", "items": {"type": "string"}, "maxItems": 12},
+                           "weekly_hours": {"type": "number", "minimum": 1, "maximum": 40},
+                           "query": {"type": "string", "maxLength": 120}, "location": {"type": "string", "maxLength": 120}}),
+                      "low", "filesystem_read", center.career_radar)
     registry.register("job_source_open", "Open the official website of a known job feed or supported employer board for manual reading/verification. "
                       "Does not alter API permissions, override cooldowns, import jobs or apply.",
                       obj({"source": {"type": "string", "maxLength": 100}}, ("source",)), "low", "application_launch", center.open_source)
@@ -114,9 +121,9 @@ def register_job_tools(registry: Any, center: Any, watcher: Any = None) -> None:
                       "weak openings, length, the skills their matches ask for most that the CV lacks, and what to put first for the best "
                       "fits. Suggestions only; never rewrites facts.", obj({}), "low", "filesystem_read", center.cv_review)
     registry.register("job_learning_plan", "What the owner should learn to reach more of their matched jobs: across their current "
-                      "matches, the missing skills ranked by how many jobs each unlocks (where it is the only required skill still "
-                      "missing), how many ask for it, the pay those jobs offer, and where and how to learn each, plus how ready the "
-                      "owner already is and what learning the top few would open. Patterns from collected jobs, never a promise.",
+                      "matches, missing skills ranked by sole required-skill gaps and demand, with advertised pay, official guides "
+                      "and practice exercises. Recompute the suggested skill scenario before counting new good/strong matches. "
+                      "Does not change the CV or establish mastery; patterns from collected jobs, never a promise.",
                       obj({}), "low", "filesystem_read", center.learning_plan)
     registry.register("job_application_fill", "Fill an employer's web application form in HAYAT's visible browser with facts from the owner's "
                       "profile and prepared letter, then stop: HAYAT attaches no file, answers no personal or legal question and presses "
@@ -137,9 +144,9 @@ def register_job_tools(registry: Any, center: Any, watcher: Any = None) -> None:
     registry.register("job_sources", "Which job sources HAYAT reads, when each was last read and how many jobs it gave, the companies "
                       "followed, and the automatic round. Pass source to inspect its observed access state, cooldown and official browser route.",
                       obj({"source": {"type": "string", "maxLength": 100}}), "low", "filesystem_read", sources)
-    registry.register("job_prospects", "The owner's own reply record: of the applications they sent, how many drew an interview or "
-                      "offer, overall and split by match strength, with a plain projection (about one reply per N applications). "
-                      "Only the owner's history; never a guess about a particular employer or invented offer odds.",
+    registry.register("job_prospects", "Inspect recorded applications and retained interview/offer milestones, grouped by frozen "
+                      "submission-time fit when known. A conditional 14-day interview-response count forecast requires at least ten "
+                      "complete observation windows and reports a predictive range and assumptions. Never predicts an employer's hiring decision.",
                       obj({}), "low", "filesystem_read", center.prospects)
     registry.register("job_discover_company", "Find a company's own public careers board (Greenhouse, Lever or Ashby) from its name, public HTTPS "
                       "ATS board URL or employer careers page linking to a board, and "
@@ -239,6 +246,10 @@ def job_request(text: str) -> dict[str, Any] | None:
     raw = " ".join(str(text or "").split())
     if not raw or len(raw) > 300:
         return None
+    if re.fullmatch(_LEAD + r"(?:show\s+)?(?:my\s+)?(?:career\s+radar|job\s+search\s+strategy|job\s+skill\s+scenario)" + _END, raw, re.I):
+        return {"tool": "job_career_radar", "arguments": {}}
+    if match := re.fullmatch(_LEAD + r"what\s+if\s+i\s+learn\s+(?P<skills>.+?)\s+(?:for\s+(?:these\s+)?jobs|for\s+my\s+career)" + _END, raw, re.I):
+        return {"tool": "job_career_radar", "arguments": {"proposed_skills": [part.strip() for part in re.split(r",|\band\b", match["skills"], flags=re.I) if part.strip()]}}
     if re.fullmatch(_LEAD + r"(?:find|show|list)\s+(?:me\s+)?(?:h[ -]?1[ -]?b\s+)?(?:sponsors|sponsoring\s+employers)" + _END, raw, re.IGNORECASE):
         return {"tool": "job_sponsorship", "arguments": {}}
     if match := re.fullmatch(_LEAD + r"(?:check\s+)?(?:sponsorship|stem[ -]?opt|h[ -]?1[ -]?b)(?:\s+(?:eligibility|research))?\s+(?:for\s+)?job\s+" + _N + _END, raw, re.IGNORECASE):
@@ -450,6 +461,12 @@ def report_lines(value: dict[str, Any]) -> list[str]:
         lines.append(f"Job {job['number']}: {job['title']} at {job['company']} · {value['score']} ({value['verdict']}) · "
                      f"{job['source_name']}{posted} · {job['url']}")
         lines.append(reading["summary"])
+        listing = value.get('listing_evidence') or {}
+        if listing:
+            lines.append('Listing evidence: ' + listing['state'].replace('_', ' ')
+                         + (' · last seen ' + listing['last_seen'] if listing.get('last_seen') else '')
+                         + (' · publisher expiry ' + listing['expires_at'] if listing.get('expires_at') else '')
+                         + '. ' + listing['basis'])
         skills = reading["skills"]
         if skills["required"]:
             lines.append("Required: " + ", ".join(skills["required"]))
@@ -542,6 +559,9 @@ def report_lines(value: dict[str, Any]) -> list[str]:
                          + (f" · error: {seen['error']}" if seen.get("error") else ""))
         lines.append("  Company boards followed: " + (", ".join(value["companies"]) or "none (say “follow stripe on greenhouse”)"))
         lines.append(value["basis"])
+    elif value.get("career_radar"):
+        from app.jobs.career import radar_lines
+        lines += radar_lines(value)
     elif value.get("insight"):
         lines += insight_lines(value)
     elif value.get("learning_plan"):

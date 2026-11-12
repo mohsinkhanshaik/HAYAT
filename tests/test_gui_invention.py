@@ -41,7 +41,7 @@ def test_workbench_gui_creates_runs_and_reloads_a_measured_project(shared_tk, tm
         panel.refresh(); finish()
         panel.projects.selection_set(identifier)
         panel.open_project(); finish()
-        assert panel.project_id == identifier and 'TESTED' in panel.status.get()
+        assert panel.project_id == identifier and 'Example cases passed' in panel.status.get()
     finally:
         close_window(root)
 
@@ -72,7 +72,7 @@ def test_the_journal_tabs_chart_cases_trial_and_export(shared_tk, tmp_path):
         panel.cycles.set('2')
         panel.work_out_first.set(False)  # this test reads the model's two rounds
         panel.run_button.invoke(); finish()
-        assert len(panel.data['rounds']) == 2 and panel.state_badge.cget('text') == 'TESTED'
+        assert len(panel.data['rounds']) == 2 and panel.state_badge.cget('text') == 'Example cases passed'
         assert 'Numeric prototype' in panel.overview.get('1.0', 'end') and '2 of 2 cases passed' in panel.overview.get('1.0', 'end')
         root.update()
         panel.draw_chart()

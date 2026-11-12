@@ -3,9 +3,9 @@
   "associations": 201,
   "queries": 100,
   "complete_linked_recall_rate": 1.0,
-  "mean_latency_ms": 53.448,
-  "p95_latency_ms": 61.651,
-  "maximum_latency_ms": 88.952,
+  "mean_latency_ms": 45.504,
+  "p95_latency_ms": 48.459,
+  "maximum_latency_ms": 52.079,
   "bounded_depth": 2,
   "passed": true
 }

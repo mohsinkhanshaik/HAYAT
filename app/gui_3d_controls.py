@@ -10,6 +10,11 @@ def camera_menu(parent, scene):
     menu.add_separator()
     menu.add_command(label='Remember this angle', command=scene.remember_camera)
     menu.add_command(label='Restore remembered angle', command=scene.restore_camera)
-    menu.add_command(label='Pause / resume motion', command=lambda: scene.set_motion(not scene.motion))
+    # Orbit scenes spin on request; the brain navigator has ambient motion.
+    # Toggling a market view must not change the global reduced-motion preference.
+    if hasattr(scene, 'set_spin'):
+        menu.add_command(label='Spin / stop', command=lambda: scene.set_spin(not scene.spinning))
+    else:
+        menu.add_command(label='Pause / resume motion', command=lambda: scene.set_motion(not scene.motion))
     button.configure(menu=menu)
     return button

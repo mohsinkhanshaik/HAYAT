@@ -69,8 +69,10 @@ class WorkspaceTools(tk.Toplevel):
         box.configure(state="disabled")
         box.yview_moveto(position[0] if position else 0)
 
-    def button(self, parent, title, action, *, allow_busy=False):
-        button = ttk.Button(parent, text=title, command=action)
+    def button(self, parent, title, action, *, allow_busy=False, primary=False):
+        # The shared HAYAT button look (plain ttk buttons here were a size larger than every other window's), and
+        # gold for the one action each tab is for.
+        button = ttk.Button(parent, text=title, command=action, style="HayatAccent.TButton" if primary else "Hayat.TButton")
         button.pack(side="left", padx=(0, 6), pady=4)
         if not allow_busy:
             self._action_buttons.append(button)
@@ -109,7 +111,7 @@ class WorkspaceTools(tk.Toplevel):
         self.screen_window = self.field(frame, "Window title (optional)")
         bar = self.bar(frame)
         self.method = self.choice(bar, ("auto", "accessibility", "ocr"))
-        self.button(bar, "Read once", lambda: self.run("screen_read", self.screen_args(), "screen"))
+        self.button(bar, "Read once", lambda: self.run("screen_read", self.screen_args(), "screen"), primary=True)
         self.button(bar, "Start live (10 min)", lambda: self.run("screen_read_start", self.screen_args(), "screen"))
         self.button(bar, "Stop", self.stop_screen, allow_busy=True)
         self.button(bar, "Computer readiness", lambda: self.run("computer_status", {}, "screen"))
@@ -135,7 +137,7 @@ class WorkspaceTools(tk.Toplevel):
         self.image_path = self.field(frame, "Image path")
         bar = self.bar(frame)
         self.button(bar, "Choose image...", self.choose_image)
-        self.button(bar, "Detect people", lambda: self.detect_people())
+        self.button(bar, "Detect people", lambda: self.detect_people(), primary=True)
         self.button(bar, "Read camera once", lambda: self.detect_people(camera=True))
         self.button(bar, "Detector readiness", lambda: self.run("people_status", {}, "people"))
         self.people_confidence = StringVar(self, '0.50')
@@ -241,7 +243,7 @@ class WorkspaceTools(tk.Toplevel):
         bar = self.bar(frame)
         self.stage = self.choice(bar, STAGES)
         self.button(bar, "Prepare workflow", lambda: self.run("replica_prepare", self.replica_args(), "replica"))
-        self.button(bar, "Generate files", self.generate)
+        self.button(bar, "Generate files", self.generate, primary=True)
         self.button(bar, "Catalog", lambda: self.run("replica_catalog", {}, "replica"))
         self.note(frame, "Workflow goal (required to generate): describe the app, behavior and constraints.")
         self.goal = self.text(frame, 3)

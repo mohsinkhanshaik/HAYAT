@@ -65,10 +65,17 @@ class JobWatcher:
         # The first round waits a few minutes, so starting HAYAT stays quick.
         if self._stop.wait(300):
             return
+        from app.nervous_system import BODY
+
         while True:
+            BODY.yield_to_owner("job watcher", self._stop)
+            if self._stop.is_set():
+                return
             try:
                 self.run_once()
+                BODY.ran("job watcher")
             except Exception:  # offline or a source changed: try again next round
+                BODY.ran("job watcher", ok=False)
                 log_swallowed(_log, "the background job round")
             if self._stop.wait(self.interval):
                 return

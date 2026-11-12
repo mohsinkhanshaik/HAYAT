@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 import threading
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from pathlib import Path
@@ -81,7 +82,7 @@ class FormDialog(tk.Toplevel):
                 # A password is masked and never echoed back into the form.
                 ttk.Entry(self, textvariable=var, width=42, show="•" if ("password" in key or "token" in key) else "").pack(fill="x")
             self.values[key] = var
-        self.error = StringVar(self, "")
+        self.error = DisplayVar(self, "")
         tk.Label(self, textvariable=self.error, bg=p.BLACK, fg=p.ALERT, font=("Segoe UI", 9), anchor="w",
                  justify="left", wraplength=420).pack(fill="x", pady=(8, 0))
         row = tk.Frame(self, bg=p.BLACK)
@@ -158,7 +159,7 @@ class BusinessStudio(tk.Toplevel):
         picker = ttk.Combobox(picker_box, textvariable=self.period, values=PERIODS, state="readonly", width=12)
         picker.pack(fill="x")
         picker.bind("<<ComboboxSelected>>", lambda _event: self.refresh())
-        self.range_var = StringVar(self, "")
+        self.range_var = DisplayVar(self, "")
         tk.Label(picker_box, textvariable=self.range_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 8)).pack(fill="x")
 
         # Headline cards in the main currency. Other currencies are listed in
@@ -194,14 +195,14 @@ class BusinessStudio(tk.Toplevel):
         self.goal_bar = ttk.Progressbar(self.goal_holder, maximum=100, style="Hayat.Horizontal.TProgressbar")
         # The goal sentence (goal_var) is read by chat and tests; the card shows the bar and the trend line.
         self.goal_label = self.trend_labels["target"]
-        self.summary_var = StringVar(self, "")
+        self.summary_var = DisplayVar(self, "")
         tk.Label(self, textvariable=self.summary_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9), anchor="w",
                  justify="left").pack(fill="x", padx=18)
-        self.actions_var = StringVar(self, "")
+        self.actions_var = DisplayVar(self, "")
 
         footer = tk.Frame(self, bg=p.BLACK, padx=18, pady=6)
         footer.pack(fill="x", side="bottom")
-        self.status_var = StringVar(self, "")
+        self.status_var = DisplayVar(self, "")
         tk.Label(footer, textvariable=self.status_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9),
                  anchor="w", justify="left", wraplength=1200).pack(fill="x")
         self.split = tk.PanedWindow(self, orient="horizontal", bg=p.BLACK, sashwidth=6, bd=0)
@@ -440,10 +441,10 @@ class BusinessStudio(tk.Toplevel):
         self.tab_buttons["Income streams"] = button
         frame = tk.Frame(self.body, bg=p.PANEL, padx=10, pady=8)
         self.tab_frames["Income streams"] = frame
-        self.streams_var = StringVar(self, "")
+        self.streams_var = DisplayVar(self, "")
         tk.Label(frame, textvariable=self.streams_var, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI Semibold", 12),
                  anchor="w", justify="left", wraplength=880).pack(fill="x")
-        self.streams_note = StringVar(self, "")
+        self.streams_note = DisplayVar(self, "")
         tk.Label(frame, textvariable=self.streams_note, bg=p.PANEL, fg=p.GOLD_SOFT, font=("Segoe UI", 10),
                  anchor="w", justify="left", wraplength=880).pack(fill="x", pady=(4, 6))
         self.streams_tree = self._tree(frame, (("#0", "Source", 240), ("kind", "Kind", 160), ("amount", "Amount", 150),
@@ -503,7 +504,7 @@ class BusinessStudio(tk.Toplevel):
         self.tab_frames["Wallet"] = frame
         top = tk.Frame(frame, bg=p.PANEL)
         top.pack(fill="x")
-        self.wallet_var = StringVar(self, "")
+        self.wallet_var = DisplayVar(self, "")
         tk.Label(top, textvariable=self.wallet_var, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI Semibold", 12),
                  anchor="w", justify="left").pack(side="left")
         for label, command in (("Record income", self.record_income_form), ("Record withdrawal", self.withdraw_form),
@@ -514,7 +515,7 @@ class BusinessStudio(tk.Toplevel):
             # Pots, bills, rules and HAYAT's money decisions to approve (app/gui_money_desk.py).
             ttk.Button(top, text="Decisions & pots", style="HayatAccent.TButton",
                        command=self.gui._open_money_desk).pack(side="right", padx=(6, 0))
-        self.payout_var = StringVar(self, "")
+        self.payout_var = DisplayVar(self, "")
         tk.Label(frame, textvariable=self.payout_var, bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 9), anchor="w",
                  justify="left", wraplength=860).pack(fill="x", pady=(4, 6))
         tables = tk.PanedWindow(frame, orient="vertical", bg=p.PANEL, sashwidth=6, bd=0)
@@ -809,6 +810,8 @@ class BusinessStudio(tk.Toplevel):
                 for widget in (line, words, *words.winfo_children()):
                     widget.configure(cursor="hand2")
                     widget.bind("<Button-1>", lambda _event, value=number: self.select_invoice(value))
+                from app.gui_a11y import activatable
+                activatable(line, lambda value=number: self.select_invoice(value), p, keys_only=True)
 
     def select_invoice(self, number: str) -> None:
         self.show_tab("Invoices")

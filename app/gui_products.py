@@ -9,6 +9,7 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 
@@ -81,7 +82,7 @@ class ProductsTab:
         delivery.pack(fill='x', pady=(0, 4))
         for text, action in [('Build delivery ZIP', self.package), ('Verify delivery', self.verify), ('Show delivery folder', self.open_folder)]:
             self._button(delivery, text, action)
-        self.state = StringVar(self.frame, 'Loading catalog…')
+        self.state = DisplayVar(self.frame, 'Loading catalog…')
         tk.Label(self.frame, textvariable=self.state, bg=p.PANEL, fg=p.HOLO, anchor='w', justify='left', wraplength=830).pack(fill='x')
         self.tree.bind('<<TreeviewSelect>>', lambda _event: self.select())
         self.query.trace_add('write', lambda *_args: self.filter())
@@ -285,12 +286,12 @@ class ProductForm(tk.Toplevel):
         self.multiline = {}
         for row, key, label in [(4, 'description', 'Product brief'), (5, 'license_text', 'Your license terms')]:
             tk.Label(self, text=label, bg=p.BLACK, fg=p.WHITE).grid(row=row, column=0, sticky='nw', padx=(0, 12), pady=5)
-            text = self.multiline[key] = DarkScrolledText(self, height=4, wrap='word', bg=p.PANEL_2, fg=p.WHITE, insertbackground=p.GOLD, font=('Segoe UI', 10))
+            text = self.multiline[key] = DarkScrolledText(self, protect_output=False, height=4, wrap='word', bg=p.PANEL_2, fg=p.WHITE, insertbackground=p.GOLD, font=('Segoe UI', 10))
             text.grid(row=row, column=1, sticky='nsew', pady=5)
             text.insert('1.0', product.get(key, ''))
             self.rowconfigure(row, weight=1)
             self.controls.append(text)
-        self.message = StringVar(self, 'Local draft. Add explicit license terms; checkout setup can wait.')
+        self.message = DisplayVar(self, 'Local draft. Add explicit license terms; checkout setup can wait.')
         tk.Label(self, textvariable=self.message, bg=p.BLACK, fg=p.MUTED, wraplength=550, anchor='w').grid(row=6, column=0, columnspan=2, sticky='ew', pady=7)
         self.save_button = ttk.Button(self, text='Save product', command=self.save, style='HayatAccent.TButton')
         self.save_button.grid(row=7, column=1, sticky='e')

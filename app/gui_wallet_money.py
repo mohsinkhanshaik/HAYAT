@@ -11,6 +11,7 @@ from tkinter import ttk
 from typing import Any
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.wallet_money import KINDS, KIND_NAMES, WalletMoney, qr_matrix
 
 CURRENCIES = ("INR", "USD", "EUR", "GBP", "AED", "SAR", "CAD", "AUD")
@@ -85,7 +86,7 @@ class MoneyMethodsWindow(tk.Toplevel):
         ttk.Button(row, text="Save method", style="HayatAccent.TButton", command=self.save).pack(side="left")
         ttk.Button(row, text="Remove selected", style="Hayat.TButton", command=self.remove).pack(side="left", padx=6)
         ttk.Button(row, text="Close", style="Hayat.TButton", command=self.destroy).pack(side="right")
-        self.message = StringVar(self, "")
+        self.message = DisplayVar(self, "")
         tk.Label(self, textvariable=self.message, bg=p.BLACK, fg=p.GOLD_SOFT, font=("Segoe UI", 9), anchor="w", justify="left",
                  wraplength=760).pack(fill="x", pady=(6, 0))
         self.refresh()
@@ -172,7 +173,7 @@ class PayNowWindow(tk.Toplevel):
             if option["link"].startswith("https://"):
                 ttk.Button(buttons, text="Open", style="Compact.Hayat.TButton",
                            command=lambda link=option["link"]: webbrowser.open(link)).pack(side="left", padx=6)
-        self.message = StringVar(self, value["note"] + (f" QR picture: {value['qr_picture']}" if value["qr_picture"] else ""))
+        self.message = DisplayVar(self, value["note"] + (f" QR picture: {value['qr_picture']}" if value["qr_picture"] else ""))
         tk.Label(self, textvariable=self.message, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9), anchor="w", justify="left",
                  wraplength=460).pack(fill="x", pady=(8, 0))
         from app.gui_windows import place_over

@@ -18,6 +18,26 @@ _FIXED = {
 
 
 def describe(runtime: Any) -> list[str]:
+    lines = _describe(runtime)
+    session = getattr(runtime, "session", None)
+    spelling = getattr(session, "last_spelling", None) or []
+    if spelling and lines != ["No answer yet."]:
+        read = ", ".join(f"“{typed}” as “{meant}”" for typed, meant in spelling[:6])
+        lines = [*lines, f"Read your words {read}."]
+    reviewed = getattr(session, "last_self_review", None)
+    if reviewed and lines != ["No answer yet."]:
+        from app.self_review import lines as review_lines
+
+        lines = [*lines, *review_lines(reviewed)]
+    outbound = getattr(session, "last_outbound", None)
+    if outbound and lines != ["No answer yet."]:
+        from app.outbound import describe as outbound_lines
+
+        lines = [*lines, *outbound_lines(outbound)]
+    return lines
+
+
+def _describe(runtime: Any) -> list[str]:
     session = getattr(runtime, "session", None)
     source = str(getattr(session, "last_answer_source", "") or "")
     if not source:
@@ -41,11 +61,22 @@ def describe(runtime: Any) -> list[str]:
         open_points = inquiry.get("open_points", 0)
         lines.append(f"Questioned itself first: {inquiry.get('questions', 0)} question"
                      f"{'s' if inquiry.get('questions', 0) != 1 else ''}"
-                     + (f", {open_points} left open and said so." if open_points else ", all settled."))
+                     + (f", {open_points} marked unresolved." if open_points else ", none marked unresolved."))
+        lines.append("Self-questioning is a model assessment, not independent evidence.")
+    elif inquiry:
+        lines.append("Self-questioning did not complete; it provides no check for this answer.")
     review = getattr(conversation, "last_dual_review", None) or {}
     if review.get("state") == "reviewed":
         lines.append("Reviewed by a skeptical check: " + ("revised before you saw it." if review.get("revised")
                                                           else "kept as written."))
+        lines.append("Review used the same model." if review.get("same_model", True) else "Review used a separate model.")
+        lines.append("Model agreement does not verify factual accuracy.")
+        if review.get("issues") and not review.get("revised"):
+            lines.append(f"Review retained {len(review['issues'])} note(s); no revision was applied.")
+    elif review:
+        lines.append("Skeptical review could not complete" + (
+            "; the requested correction failed, so the original draft was retained."
+            if review.get("state") == "revision_failed" else "; the original draft was retained."))
     standing = (getattr(session, "standing_instruction", None) or {})
     if standing.get("rule"):
         left = standing.get("remaining")

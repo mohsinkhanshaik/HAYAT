@@ -15,18 +15,28 @@ def _inspection_text(text: str) -> str:
 
 
 PATTERNS = {
-    "instruction_override": re.compile(r"(?i)\b(?:ignore|disregard|override)\b.{0,50}\b(?:instructions?|system|user|policy)\b"),
-    "secret_request": re.compile(r"(?i)\b(?:reveal|print|send|exfiltrate|upload)\b.{0,60}\b(?:api[_ -]?key|password|credential|secret|token|\.env)\b"),
+    # 2026-11-09 (robustness lab): "forget what the user asked", "ignore the above directions" and "ignore your
+    # safety guidelines" got through; 4 of 8 injected test passages were missed.
+    "instruction_override": re.compile(r"(?i)\b(?:ignore|disregard|override|forget)\b.{0,50}\b(?:instructions?|directions?|system|user|policy|rules|guidelines)\b"),
+    # Text that speaks to the assistant reading it ("note to the AI:", "AI agents reading this page"), which an
+    # article written for people has no reason to do.
+    "agent_addressed": re.compile(r"(?i)\b(?:note|notice|message|instructions?|hidden\s+text)\s+(?:to|for)\s+(?:the\s+|any\s+|all\s+)?(?:ai|assistant|language\s+model|llm|chatbot)s?\b|\b(?:ai|llm)\s+(?:agents?|assistants?|models?)\s+reading\s+this\b|\b(?:dear|attention)\s+(?:ai(?:\s+model)?|assistant|language\s+model|llm|chatbot)\b|\bif\s+you\s+are\s+(?:an?\s+)?(?:automated\s+)?(?:assistant|chatbot|language\s+model)\b|\bto\s+the\s+assistant\s+(?:processing|reading|summari[sz]ing)\b"),
+    "secret_request": re.compile(r"(?i)\b(?:reveal|print|send|exfiltrate|upload|reply\s+with)\b.{0,60}(?:\b(?:api[_ -]?keys?|passwords?|credentials?|secrets?|tokens?|system\s+prompts?)\b|\.env\b)"),
     "tool_instruction": re.compile(r"(?i)\b(?:run|execute|open)\b.{0,40}\b(?:powershell|cmd(?:\.exe)?|terminal|shell|registry)\b"),
     "role_impersonation": re.compile(r"(?i)\b(?:system message|developer message|you are now|new instructions?)\b"),
     "memory_poisoning": re.compile(r"(?i)\b(?:remember this as true|store this permanently|do not verify|trust this source only)\b"),
     "encoded_payload": re.compile(r"(?i)\b(?:decode and execute|powershell\s+-enc|fromcharcode|eval\s*\()\b"),
+    # Explicit role delimiters and instructions that replace the reader's task
+    # are different from prose describing how language models work.
+    "role_delimiter": re.compile(r"(?i)(?:\[/?(?:system|developer)\]|<\|(?:im_start|start_header_id)\|>\s*(?:system|developer)\b|</?(?:system|developer)>|\[INST\])"),
+    "task_replacement": re.compile(r"(?i)\byour\s+new\s+task\s+is\s+to\b|\bfrom\s+now\s+on\s+you\s+(?:will|must|shall)\s+(?:respond|answer|act|obey)\b|\b(?:disregard|forget|ignore)\s+everything\s+you\s+(?:were|have\s+been)\s+told\b|\b(?:pretend|act\s+as\s+if)\b.{0,45}\b(?:previous\s+conversation\s+never|you\s+have\s+no\s+(?:content\s+policy|restrictions))\b|\byour\s+(?:prior|previous)\s+guidance\s+is\s+cancelled\b"),
 }
 
 RISK_WEIGHTS = {
-    "instruction_override": .42, "secret_request": .56,
+    "instruction_override": .42, "secret_request": .56, "agent_addressed": .34,
     "tool_instruction": .34, "role_impersonation": .30,
     "memory_poisoning": .40, "encoded_payload": .30,
+    "role_delimiter": .80, "task_replacement": .74,
 }
 
 
@@ -70,4 +80,7 @@ def sanitize_for_synthesis(text: str) -> str:
     lines: list[str] = []
     for line in text.splitlines():
         lines.append("[Potential prompt-injection text redacted from synthesis]" if detect_prompt_injection(line) else line)
-    return "\n".join(lines)
+    sanitized = "\n".join(lines)
+    # A phrase split across lines can be detected in the whole document while
+    # neither individual line matches. Never return that surviving instruction.
+    return "" if detect_prompt_injection(sanitized) else sanitized

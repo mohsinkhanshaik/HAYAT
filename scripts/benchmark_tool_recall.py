@@ -131,8 +131,23 @@ def evaluate(planner, cases=CASES) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--semantic", action="store_true",
+                        help="also match tools by meaning with the configured local embedding model (OLLAMA_BASE_URL)")
     args = parser.parse_args()
     runtime, planner = build_planner()
+    if args.semantic:
+        import os
+
+        from app.memory.embeddings import OllamaEmbeddingProvider
+        from app.tools.relevance import use_embeddings
+
+        from app.models.router import ModelRouter
+        model = ModelRouter().config["embedding_model"]["model"]
+        provider = OllamaEmbeddingProvider(os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434"), model)
+        if not provider.available:
+            print("No local embedding model at", provider.base_url)
+            return 2
+        use_embeddings(provider, Path(tempfile.mkdtemp(prefix="tool-vectors-")) / "tools.json")
     try:
         report = {"tuning": evaluate(planner), "held_out": evaluate(planner, HELD_OUT)}
     finally:

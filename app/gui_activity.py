@@ -8,10 +8,12 @@ from tkinter import ttk
 
 from app.events import EVENT_TYPES
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.safety.sensitive import redact
 from app.gui_fonts import DISPLAY
+from app.gui_presentation import safe_text
 
 
 VISIBLE_EVENTS = {name for name in EVENT_TYPES if name.startswith((
@@ -43,7 +45,7 @@ class ActivityMonitor:
         rendered = json.dumps(safe, ensure_ascii=False, indent=2, default=str)  # exported as data; shown as plain lines
         row = {'id': safe.get('event_id') or str(safe.get('id')),
                'timestamp': safe.get('timestamp', ''), 'event_type': safe.get('event_type', ''),
-               'summary': event_summary(safe), 'details': rendered[:24000]}
+               'summary': safe_text(event_summary(safe)), 'details': safe_text(rendered)[:24000]}
         with self.lock:
             self.rows.appendleft(row)
             kind = safe.get('event_type')
@@ -134,7 +136,7 @@ class ActivityWindow(tk.Toplevel):
         tk.Label(header, text='What Hayat is doing', bg=gui.BLACK, fg=gui.WHITE,
                  font=(DISPLAY, 17)).pack(side='left')
         ttk.Button(header, text='Stop current task', command=gui._stop).pack(side='right')
-        self.state = StringVar(self)
+        self.state = DisplayVar(self)
         tk.Label(self, textvariable=self.state, bg=gui.BLACK, fg=gui.GOLD_SOFT,
                  anchor='w', wraplength=900, justify='left').pack(fill='x', padx=16)
         controls = tk.Frame(self, bg=gui.BLACK, padx=16, pady=8)
@@ -167,7 +169,7 @@ class ActivityWindow(tk.Toplevel):
         self.body = DarkScrolledText(self, height=7, wrap='word', bg=gui.PANEL,
                                     fg=gui.WHITE, font=('Segoe UI', 10))
         self.body.pack(fill='x', padx=16, pady=(0, 8))
-        self.note = StringVar(self, 'Live events since this window session began · latest 500 retained on screen · credentials redacted. Select an action for recorded arguments and scope. Stop current task does not pause background monitors.')
+        self.note = DisplayVar(self, 'Live events since this window session began · latest 500 retained on screen · credentials redacted. Select an action for recorded arguments and scope. Stop current task does not pause background monitors.')
         tk.Label(self, textvariable=self.note, bg=gui.BLACK, fg=gui.MUTED,
                  wraplength=900, justify='left', anchor='w').pack(fill='x', padx=16, pady=(0, 12))
         self.query.trace_add('write', lambda *_: self.refresh())

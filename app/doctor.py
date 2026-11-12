@@ -32,6 +32,10 @@ def inspect_runtime(runtime) -> dict[str, Any]:
     run("research", lambda: {"database": str(runtime.research.knowledge.path), "search_provider": getattr(runtime.research.search, "name", type(runtime.research.search).__name__)})
     run("cost_policy", lambda: _cost_check(runtime))
     run("camera", lambda: runtime.camera.status())
+    run("camera_playback", _camera_playback_check)
+    run("jobs", lambda: _jobs_check(runtime))
+    run("invention", lambda: _invention_check(runtime))
+    run("reasoning", lambda: _reasoning_check(runtime))
     run("displays", lambda: runtime.displays.status())
     run("clipboard", lambda: runtime.clipboard.status())
     run("observability", lambda: runtime.observability.health(runtime))
@@ -48,6 +52,39 @@ def inspect_runtime(runtime) -> dict[str, Any]:
     return {"ready": not counts["degraded"] and not counts["error"], "checks": checks, "summary": counts,
             "attention": [name for name, item in checks.items() if item["status"] != "ready"],
             "scope": "Configuration and component checks; live media, speech quality and model reasoning require their integration benchmarks."}
+
+
+def _camera_playback_check() -> dict[str, Any]:
+    from app.video_player_worker import native_player_available
+    return {"available": native_player_available(),
+            "scope": "Native decoder discovery only; a publisher stream must actually decode to establish playback."}
+
+
+def _jobs_check(runtime) -> dict[str, Any]:
+    jobs = getattr(runtime, 'jobs', None)
+    if jobs is None:
+        return {'available': False, 'why': 'Job center is unavailable.'}
+    profile = jobs.profile.load()
+    return {'available': True, 'counts': jobs.store.counts(), 'profile_skills': len(jobs.profile.skills(profile)),
+            'public_sources': profile['preferences']['sources'], 'employer_boards': profile['preferences']['companies'],
+            'scope': 'Local profile and job-store read; no live search or application sent.'}
+
+
+def _invention_check(runtime) -> dict[str, Any]:
+    invention = getattr(runtime, 'invention', None)
+    if invention is None:
+        return {'available': False, 'why': 'Invention workbench is unavailable.'}
+    measured = invention._experiment('x * 2', [{'inputs': {'x': 3}, 'expected': 6}])
+    return {**invention.status(), 'healthy': measured['passed'] == 1 and measured['total'] == 1,
+            'scope': 'Journal read and one deterministic numeric engine check; no model or physical validation.'}
+
+
+def _reasoning_check(runtime) -> dict[str, Any]:
+    executive, review = getattr(runtime, 'executive', None), getattr(runtime, 'dual_brain', None)
+    return {'available': executive is not None and review is not None,
+            'executive': executive.status() if executive is not None else None,
+            'review': review.status() if review is not None else None,
+            'scope': 'Controller and review state only; model agreement does not establish correctness.'}
 
 
 def _model_check(runtime) -> dict[str, Any]:

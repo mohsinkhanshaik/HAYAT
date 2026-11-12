@@ -629,6 +629,7 @@ def shapes(tests: list[dict[str, Any]]) -> list[tuple[str, str, list[list[float]
             size = max(abs(y) for y in ys) or 1.0
             found.append((f'a damped oscillation in {x}', f'{c[0]}*exp({c[1]}*{x})*cos({c[2]}*{x} + {c[3]})',
                           [[size, -0.2, omega, phase] for omega in (0.5, 1.0, 2.0, 3.0, 5.0, 8.0) for phase in (0.0, -1.5)]))
+        found += _single_input_shapes(x, column[x], ys, c, positive[x], nonzero[x], y_positive)
     if len(inputs) > 1:
         terms = ' + '.join(f'{c[index + 1]}*{x}' for index, x in enumerate(inputs))
         found.append(('a straight line in every input', f'{c[0]} + {terms}', []))
@@ -662,6 +663,13 @@ def shapes(tests: list[dict[str, Any]]) -> list[tuple[str, str, list[list[float]
                     if inverse_line and inverse_line[1]:
                         found.append((f'{first} over {second} plus a constant', f'{c[0]}*{first}/({second} + {c[1]})',
                                       [[1 / inverse_line[1], inverse_line[0] / inverse_line[1]]]))
+                if first < second:
+                    # Reciprocal sums: resistors in parallel (b = 1), the thin-lens image distance u·f/(u − f) (b = −1).
+                    found.append((f'{first} and {second} combined as reciprocals', f'{c[0]}*{first}*{second}/({first} + {c[1]}*{second})',
+                                  [[1.0, 1.0], [1.0, -1.0], [-1.0, -1.0]]))
+                    # A distance or magnitude: the root of a sum of squares.
+                    found.append((f'the root of a sum of squares of {first} and {second}',
+                                  f'sqrt({c[0]}*{first}**2 + {c[1]}*{second}**2)', [[1.0, 1.0]]))
                 # Compound growth: amount * (1 + rate) ** periods.
                 for third in inputs:
                     if third not in (first, second):
@@ -672,6 +680,53 @@ def shapes(tests: list[dict[str, Any]]) -> list[tuple[str, str, list[list[float]
                                           f'{c[0]}*{third} + {c[1]}*{first}*{second}', []))
                         found.append((f'{first} compounded at rate {second} over {third} periods',
                                       f'{c[0]}*{first}*(1 + {second})**{third}', [[1.0]]))
+                        if len(inputs) <= 4 and all(0 < value < 1 for value in column[second]):
+                            # A loan or annuity payment: amount × rate / (1 − (1 + rate)^−periods).
+                            found.append((f'the payment on {first} at rate {second} over {third} periods',
+                                          f'{c[0]}*{first}*{second}/(1 - (1 + {second})**(-{third}))', [[1.0]]))
+    return found
+
+
+def _single_input_shapes(x: str, xs: list[float], ys: list[float], c: list[str], positive: bool, nonzero: bool,
+                         y_positive: bool) -> list[tuple[str, str, list[list[float]]]]:
+    """Shapes in one input added 2026-11-07, when a harder benchmark tier (scripts/benchmark_invention.py --tier 2)
+    found 5/16: offset power laws, waves with a phase and a level, saturation, Arrhenius and a·(1 + b·x²)^k.
+    Each gets starting points worked out from the data; a fit only finds what it starts near."""
+    found: list[tuple[str, str, list[list[float]]]] = []
+    size = max(abs(y) for y in ys) or 1.0
+    if positive:
+        # a + b·x^p (a background plus a power law: inverse square plus background, Kleiber, Kepler with an offset).
+        # For each exponent on a grid the line in x^p is solved exactly; the best few seed the full fit.
+        seeds = []
+        for power in (-3.0, -2.0, -1.5, -1.0, -0.5, 0.5, 1.5, 1.7, 2.0, 2.5, 3.0):
+            line = _line([[value ** power for value in xs]], ys)
+            if line:
+                error = sum((line[0] + line[1] * value ** power - y) ** 2 for value, y in zip(xs, ys))
+                seeds.append((error, [line[0], line[1], power]))
+        found.append((f'a power law in {x} on top of a constant', f'{c[0]} + {c[1]}*{x}**{c[2]}',
+                      [start for _error, start in sorted(seeds)[:3]]))
+    if len(ys) >= 6:
+        # A wave about a level, with a phase: tides, seasons, alternating current with an offset.
+        level = statistics.fmean(ys)
+        amplitude = (max(ys) - min(ys)) / 2 or 1.0
+        found.append((f'a wave in {x} about a level', f'{c[0]} + {c[1]}*sin({c[2]}*{x} + {c[3]})',
+                      [[level, amplitude, omega, phase] for omega in (0.5, 1.0, 1.5, 2.0, 3.0, 5.0) for phase in (0.0, 1.0, 2.5)]))
+    # Saturation through zero: magnetisation, terminal velocity, tanh activation.
+    found.append((f'saturating (tanh) in {x}', f'{c[0]}*tanh({c[1]}*{x})',
+                  [[size * 1.05, rate / ((max(xs) - min(xs)) or 1.0)] for rate in (0.5, 1.5, 4.0)]))
+    if nonzero and y_positive and all(value > 0 for value in xs):
+        # a·x/(b + x): enzyme kinetics, Langmuir adsorption. Start from the double-reciprocal line 1/y = 1/a + (b/a)/x.
+        line = _line([[1 / value for value in xs]], [1 / y for y in ys])
+        starts = [[1 / line[0], line[1] / line[0]]] if line and line[0] else []
+        found.append((f'saturating (a·{x}/(b + {x})) in {x}', f'{c[0]}*{x}/({c[1]} + {x})', starts + [[size, statistics.fmean(xs)]]))
+    if nonzero and y_positive:
+        # Arrhenius: a·exp(b/x), a straight line of log y against 1/x.
+        line = _line([[1 / value for value in xs]], [math.log(y) for y in ys])
+        found.append((f'Arrhenius-like (exp of 1/{x})', f'{c[0]}*exp({c[1]}/{x})',
+                      [[math.exp(line[0]), line[1]]] if line else []))
+    # a·(1 + b·x²)^k: the Lorentz factor (b = −1, k = −½), Lorentzian peaks, lens and pendulum corrections.
+    found.append((f'a power of (1 + b·{x}²)', f'{c[0]}*(1 + {c[1]}*{x}**2)**{c[2]}',
+                  [[ys[0] if ys else 1.0, sign, power] for sign in (-1.0, 1.0) for power in (-0.5, 0.5, -1.0)]))
     return found
 
 

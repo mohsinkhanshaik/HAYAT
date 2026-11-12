@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -25,7 +26,7 @@ class LaunchTab:
 
         top = tk.Frame(self.frame, bg=p.PANEL)
         top.pack(fill="x")
-        self.name_var = StringVar(studio, "")
+        self.name_var = DisplayVar(studio, "")
         tk.Label(top, textvariable=self.name_var, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI Semibold", 13),
                  anchor="w").pack(side="left")
         self.venture_var = StringVar(studio, "")
@@ -46,7 +47,7 @@ class LaunchTab:
 
         progress = tk.Frame(self.body, bg=p.PANEL)
         progress.pack(fill="x", pady=(6, 0))
-        self.progress_var = StringVar(studio, "")
+        self.progress_var = DisplayVar(studio, "")
         tk.Label(progress, textvariable=self.progress_var, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI Semibold", 10)
                  ).pack(side="left")
         self.bar = ttk.Progressbar(progress, maximum=100, length=220, style="Hayat.Horizontal.TProgressbar")
@@ -56,7 +57,7 @@ class LaunchTab:
                                ("Make website", self.make_website),
                                ("Undo step", self.undo_step), ("Mark step done", self.mark_done)):
             ttk.Button(progress, text=label, style="Hayat.TButton", command=command).pack(side="right", padx=(6, 0))
-        self.next_var = StringVar(studio, "")
+        self.next_var = DisplayVar(studio, "")
         tk.Label(self.body, textvariable=self.next_var, bg=p.PANEL, fg=p.GOLD_SOFT, font=("Segoe UI", 10), anchor="w",
                  justify="left", wraplength=880).pack(fill="x", pady=(4, 6))
 

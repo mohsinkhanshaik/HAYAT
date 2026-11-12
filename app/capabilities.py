@@ -70,12 +70,20 @@ CATALOG: tuple[Capability, ...] = (
                'formula out and simulate it.',
                'Open Invention, create a goal and optionally supply numeric acceptance cases, then run bounded cycles. '
                'With cases, Work it out fits standard shapes without a model, unknown constants in a proposal are '
-               'fitted, and Simulate sweeps each input, ranks what matters most and runs a Monte Carlo of every case.',
+               'fitted, and Simulate sweeps each input, ranks what matters most and runs a Monte Carlo of every case. '
+               'Experiment Lab checks declared dimensions and unit scales, converts units, and tests unseen cases '
+               'without refitting or changing frozen acceptance cases. Theory proves each case exactly, works out the '
+               'units every constant must carry and names the physical constant it matches, derives the law from units '
+               'alone, proves properties and claims with sympy, and picks the measurement that tells rival formulas apart.',
                ('Create invention project: design a low-cost water monitor', 'List invention projects',
-                'Prefrontal cortex status', 'Dual brain status'),
+                'Prefrontal cortex status', 'Dual brain status',
+                'Has anyone patented a solar water purifier made from clay?',
+                'Check prior art and feasibility for a bicycle that charges a phone from braking'),
                tools=('invention_*', 'prefrontal_cortex_status', 'dual_brain_status'),
                keywords=('invention', 'invent', 'prototype', 'prefrontal', 'dual brain', 'simulate', 'simulation',
-                         'work it out', 'fit a formula', 'sensitivity', 'monte carlo'),
+                         'prior art', 'patent', 'patented', 'novelty', 'feasibility', 'feasible',
+                         'work it out', 'fit a formula', 'sensitivity', 'monte carlo', 'theory', 'proof', 'prove',
+                         'derive the law', 'dimensional analysis'),
                opens='view:invention', opens_label='Invention Workbench'),
     Capability('learning_atlas', 'Learning atlas', '◈',
         'Explore twelve fields, find prerequisite gaps, and track your assessed understanding and review dates.',
@@ -85,18 +93,25 @@ CATALOG: tuple[Capability, ...] = (
         opens='_open_learning_atlas', opens_label='Learning atlas'),
     Capability(
         'public_intelligence', 'Global intelligence workspace', '🌍',
-        'Public feeds, about 37,200 cameras with video in chat, maps, weather, alerts, launches, satellites and ISS passes, fires, satellite images, directions and bike share.',
+        'Public feeds, about 42,200 cameras, maps, weather, alerts, space, fires, live buses and trains, GPS jamming signs, US airspace, whales, street photos, directions and bike share.',
         'Ask "Play live camera in Delaware in chat" for a public stream, then "Pause camera", "Next camera" or "Stop camera". After "Find public cameras in London", say "play" or "play the second one". Dead streams are skipped; London plays clips and New York refreshing stills, labelled as not live. Global intelligence also provides maps, publisher directories, weather and retained evidence. Everyday questions work too: planes over a city, rain tomorrow, earthquakes or storms near a place, space weather, a world brief, and watching a place for a hazard. Also: "next rocket launch", "when can I see the ISS?", "radar over Chicago", "satellite image of Dubai", "fire hotspots near Los Angeles", "directions from Detroit to Ann Arbor", "bike share near Paris", "what plane is UAE1".',
         ('Play live camera in Delaware in chat', 'Next camera', 'Stop camera', 'Show global intelligence', 'Open world atlas', 'Find public cameras in London', 'Which planes are flying over Dubai?', 'Will it rain in Lahore tomorrow?', 'Any earthquakes near Tokyo right now?', 'Give me a world brief', 'Watch Istanbul for earthquakes', 'Show camera directories', 'Recall intelligence knowledge about floods', 'Analyze intelligence in Europe', 'Refresh intelligence feeds',
          'What new sources did you find?', 'Discover new camera sources', 'When is the next rocket launch?', 'When can I see the ISS?',
          'Show me the weather radar over Chicago', 'Satellite image of Dubai', 'Any fire hotspots near Los Angeles?',
          'Directions from Detroit to Ann Arbor', 'Bike share near Paris', 'What plane is UAE1?', 'Deep look at Denver',
-         'Deep analysis of Chicago', 'Which fires are growing near Los Angeles?'),
+         'Deep analysis of Chicago', 'Which fires are growing near Los Angeles?', 'Where are the buses in Toronto?',
+         'Is there GPS jamming near Gdansk?', 'Can I fly a drone in Washington DC?', 'Show fire perimeters near Fresno',
+         'Any orca sightings near Friday Harbor?', 'Street view of the Eiffel Tower', 'Test the public cameras',
+         'Are the cameras in Delaware working?', 'How high is La Paz above sea level?', 'Is Miami in the hurricane cone?', 'Data centres near Frankfurt', 'Are there licence plate readers near Atlanta?'),
         tools=('intelligence_*', 'discovery_*', 'space_launches', 'satellites_overhead', 'satellite_pass', 'aircraft_info', 'weather_map',
-               'satellite_image', 'fire_hotspots', 'fire_clusters', 'route_directions', 'bike_share', 'traffic_count'), keywords=('global intelligence', 'discovery', 'new sources', 'discover', 'intelligence feeds', 'intelligence alerts',
+               'satellite_image', 'fire_hotspots', 'fire_clusters', 'route_directions', 'bike_share', 'traffic_count',
+               'transit_vehicles', 'gps_interference', 'airspace_check', 'fire_perimeters', 'whale_sightings', 'street_photo',
+               'place_elevation', 'tropical_cyclones', 'mapped_infrastructure', 'plate_readers'), keywords=('global intelligence', 'discovery', 'new sources', 'discover', 'intelligence feeds', 'intelligence alerts',
             'osiris', 'earthquake', 'natural events', 'space weather', 'watch region', 'zoom', 'pan', 'world situation', 'event revisions', 'cctv', 'webcam', 'camera', 'street map', 'world atlas', 'weather', 'source recall', 'planes', 'flights', 'air traffic', 'forecast', 'rain', 'storm', 'hurricane', 'wildfire', 'flood', 'world brief',
             'rocket', 'launch', 'satellite', 'iss', 'space station', 'radar', 'directions', 'route', 'bike share', 'fire hotspots', 'traffic',
-            'deep look', 'sitrep', 'situation report', 'growing fires'),
+            'deep look', 'sitrep', 'situation report', 'growing fires', 'buses', 'trams', 'public transport', 'gps jamming', 'elevation', 'above sea level', 'hurricane cone', 'tropical storm forecast', 'data centres', 'dams', 'military bases', 'plate readers', 'alpr',
+            'gps interference', 'spoofing', 'drone', 'no fly zone', 'airspace', 'tfr', 'fire perimeter', 'whales', 'orca',
+            'street view', 'street photo', 'test cameras', 'cameras working', 'broken cameras'),
         opens='_open_intelligence', opens_label='Global intelligence',
     ),
     Capability(
@@ -117,7 +132,10 @@ CATALOG: tuple[Capability, ...] = (
          'Apple stock price', 'How are stocks doing?', 'Bitcoin forecast', 'Which markets are affected by today’s events?',
          'What are the chances bitcoin goes up this week?', 'Why is NVDA down?', 'How is world trade?',
          'When is the next fed meeting?', 'Any rumors about NVDA?', 'Will bitcoin go up next year?',
-         'Compare my watchlist over a month', 'Which signals work for bitcoin?', 'What drives bitcoin?'),
+         'Compare my watchlist over a month', 'Which signals work for bitcoin?', 'What drives bitcoin?',
+         'Give me a full bitcoin brief', 'How good have your market predictions been?',
+         'How are big funds positioned in bitcoin futures?', 'How does bitcoin react to earthquakes?',
+         'Is the news about nvidia negative?'),
         tools=('market_*',), keywords=('crypto', 'bitcoin', 'btc', 'ethereum', 'eth', 'coin', 'token', 'price', 'chart',
             'order book', 'trade center', 'trading', 'market', 'watchlist', 'price alert', 'gas', 'fees', 'mempool', 'web3',
             'blockchain', 'solana', 'dogecoin', 'stock', 'stocks', 'shares', 'forecast', 'outlook', 'prediction', 'industry',
@@ -144,19 +162,19 @@ CATALOG: tuple[Capability, ...] = (
     ),
     Capability(
         'jobs', 'Jobs & applications', '💼',
-        'Find jobs on public boards, read your CV, score each fit with the reasons, prepare applications on its own, track '
-        'them, and work out what to learn to reach more of them. Sending waits for your confirmation.',
+        'Search public jobs, compare CV evidence, simulate skills and plan practice in Career radar. Track applications '
+        'and conditional interview forecasts. Sending requires your confirmation.',
         'Say "read my CV from C:\\path\\cv.pdf" (or use Studios → Jobs), then "find data analyst jobs", "show my job matches", '
         '"show job 12", "what should I learn", "find hidden jobs at Stripe", "what are my chances", "prepare an application for '
         'job 12" and "send my application for job 12". Say "I will relocate" to keep on-site roles elsewhere. Every few hours '
         'HAYAT searches on its own and tells you about strong matches; it never sends an application without your confirmation.',
         ('Find python jobs', 'Show my job matches', 'What should I learn', 'Find hidden jobs at Stripe',
-         'What are my chances', 'Prepare an application for job 3'),
+         'What are my chances', 'Prepare an application for job 3', 'Show my career radar'),
         tools=('job_*',), keywords=('jobs', 'career', 'cv', 'resume', 'résumé', 'job application', 'job applications',
             'my applications', 'apply for', 'apply to job', 'cover letter', 'vacancy', 'vacancies', 'hiring', 'recruiter',
             'job matches', 'job search', 'remote jobs', 'what to learn', 'what should i learn', 'skills to learn',
             'learning plan', 'skill gap', 'hidden jobs', 'careers page', 'company jobs', 'my chances', 'response rate',
-            'reply rate', 'my odds', 'relocate', 'willing to relocate'),
+            'reply rate', 'my odds', 'relocate', 'willing to relocate', 'career radar', 'job skill scenario', 'job search strategy'),
         opens='_open_jobs', opens_label='Jobs',
     ),
     Capability(
@@ -205,7 +223,7 @@ CATALOG: tuple[Capability, ...] = (
                "capture_web_page", "github_research", "open_source_search", "paper_research", "learn_public_document",
                "public_document_learning_status", "track_public_source", "check_public_source_change",
                "public_source_profile", "public_person_research", "public_data_sources", "public_data_search", "public_indicator_read",
-               "mcp_zero_cost_web_research"),
+               "mcp_zero_cost_web_research", "tax_authorities", "state_agencies"),
         keywords=("research", "search", "internet", "web", "online", "latest", "news", "look up", "find out",
                   "paper", "papers", "github", "source", "sources", "current", "today"),
         opens="_open_searches", opens_label="Searches",
@@ -219,11 +237,19 @@ CATALOG: tuple[Capability, ...] = (
         ("Remember that my sister's birthday is on 12 May",
          "What do you remember about my project?",
          "What do you know about solar panels, and where did you learn it?",
-         "Where did we leave off?", "What have you learned from mistakes?"),
+         "Where did we leave off?", "What have you learned from mistakes?",
+         "How connected is your memory network?",
+         "Import my ChatGPT history from D:/Downloads/chatgpt-export",
+         "Forget what I told you about my old address",
+         "How reliable are your answers, by my verdicts?", "What are my goals?"),
         tools=("recall_memory_page", "knowledge_search", "knowledge_conflicts", "explain_knowledge",
-               "export_knowledge", "import_knowledge", "situation_report"),
+               "export_knowledge", "import_knowledge", "situation_report", "memory_network", "import_chat_history",
+               "memory_forget_find", "memory_forget", "self_review_report", "conversation_topics",
+               "dialogue_state", "cognitive_development", "memory_retention", "cognitive_scorecard", "forecast_ledger"),
         keywords=("remember", "memory", "recall", "know", "knowledge", "forget", "remind me what",
-                  "leave off", "working on", "situation", "learned from", "next"),
+                  "leave off", "working on", "situation", "learned from", "next", "memory network",
+                  "neural connections", "neurons", "topics", "talked about", "development stage", "scorecard",
+                  "retention", "forecast record"),
         opens="_open_knowledge", opens_label="Knowledge Library",
     ),
     Capability(
@@ -445,6 +471,29 @@ CATALOG: tuple[Capability, ...] = (
         opens="_open_reverse_engineer", opens_label="Reverse engineering",
     ),
     Capability(
+        "research_lab", "Robustness, code security and model discovery", "🧪",
+        "Measure how HAYAT holds up against noisy and deceptive input, review its own code and packages for "
+        "security weaknesses, and find out whether something in a table can be predicted.",
+        "Ask in plain words, or open the Research lab. Robustness runs four measured suites. Code security scans "
+        "HAYAT's own code (or a project you registered) and tests a patch on an isolated copy; it never applies one. "
+        "Model discovery compares models against a baseline and says so when nothing predictable is found. Cause "
+        "and effect estimates how much one column changes another after allowing for the rest, with refutation "
+        "tests; it is an observational estimate, never a proof. The graph network learns to predict missing links "
+        "and is scored against simple rules on links it never saw. Fuzzing tries generated inputs on HAYAT's own "
+        "text handlers in a child process and keeps the smallest input that breaks one. The skill laboratory measures "
+        "whether learned strategies, a small trained network and discovered concepts each solve problems they "
+        "never saw, in a small exact domain, and learns a named skill from your own examples.",
+        ("How robust are you?", "Scan your code for security problems",
+         "Check your packages for known vulnerabilities", "Predict revenue from D:/data/sales.csv",
+         "Discover a model for BTC", "Show the robustness report",
+         "What is the effect of discount on sales in D:/data/sales.csv"),
+        tools=("robustness_lab", "code_defense", "model_discover", "causal_analyze", "graph_learn", "fuzz_lab", "skill_lab"),
+        keywords=("robustness", "adversarial", "injection guard", "vulnerabilities", "security findings",
+                  "security review", "model discovery", "predictable", "automl", "causal", "cause and effect",
+                  "graph neural network", "link prediction"),
+        opens="_open_research_lab", opens_label="Research lab",
+    ),
+    Capability(
         "privacy_masks", "Masks: Tor and a masked browser", "🎭",
         "Layers that hide where your connection comes from, run by HAYAT itself: Tor and a masked browser.",
         "Tor covers HAYAT's own web reading: set it up once (21 MB), then mask HAYAT; it is remembered. The masked "
@@ -480,10 +529,11 @@ CATALOG: tuple[Capability, ...] = (
          "Show my income streams", "Show my business brief", "Do a deep review of my business", "When will I get paid?",
          "Add 5000 to my wallet from HDFC savings", "Create a payment QR for INV-2026-0001",
          "What should I do with my money?", "Can I afford a 300 dollar laptop?", "Set aside 25% of income for tax",
-         "Find solar installers in Austin, Texas and make a lead list"),
+         "Find solar installers in Austin, Texas and make a lead list",
+         "I want to make 1 billion by 2030, what would it take?"),
         tools=("business_*", "client_*", "customer_*", "time_*", "quote_*", "invoice_*", "expense_*", "lead_*", "income_*",
                "wallet_*", "product_*", "venture_*", "service_*", "rate_calculator", "landing_page_create",
-               "marketing_kit_create", "find_prospects", "money_method*", "payment_request"),
+               "marketing_kit_create", "find_prospects", "money_method*", "payment_request", "ambition_evaluate"),
         keywords=("money", "earn", "income", "invoice", "invoices", "client", "clients", "customer", "prospect", "prospects", "lead list", "leads", "inquiry", "business", "wallet",
                   "withdraw", "withdrawal", "sell", "product", "freelance", "gig", "expense", "profit", "quote",
                   "payment", "paid", "start a business", "side hustle", "service", "services", "launch", "marketing",
@@ -563,13 +613,15 @@ CATALOG: tuple[Capability, ...] = (
     Capability(
         "health", "Check itself and stay healthy", "🩺",
         "Check its own parts, models and resources, explain its tools, and back up its data.",
-        "Ask for a self check, or open Health or Brain 5D.",
+        "Ask for a self check, or open Health or Brain 5D. Startup readiness lists configured parts, deferred engines and skill dependency issues.",
         ("Run a self check", "What tools do you have?", "Back up your database", "What can't you do?",
-         "How do you work?", "Which tool would you use to make an invoice?"),
-        tools=("system_status", "get_agent_state", "explain_my_tools", "audit_tool_contracts", "brain_mesh_*", "metacognition_status",
-               "incident_snapshot", "create_database_backup", "model_delegation_map", "my_capabilities", "about_hayat"),
+         "How do you work?", "Which tool would you use to make an invoice?", "What are your parts doing right now?",
+         "Investigate why the last reply failed"),
+        tools=("system_status", "startup_readiness", "get_agent_state", "explain_my_tools", "audit_tool_contracts", "brain_mesh_*", "metacognition_status",
+               "incident_snapshot", "investigate_incident", "create_database_backup", "model_delegation_map", "my_capabilities", "about_hayat",
+               "body_status"),
         keywords=("health", "status", "check", "backup", "back up", "diagnose", "brain", "self check", "tools",
-                  "capabilities", "working"),
+                  "capabilities", "working", "parts doing", "coordinat", "background parts"),
         opens="view:operator", opens_label="Brain 5D",
     ),
     Capability(
@@ -629,6 +681,19 @@ def readiness(capability: Capability, runtime: Any) -> tuple[str, str]:
     authority = getattr(runtime, "authority", None)
     privacy = bool(getattr(authority, "privacy_mode", False))
     key = capability.key
+    if key == "research_lab":
+        missing = [name for name in ("robustness", "code_defense", "model_discovery")
+                   if getattr(runtime, name, None) is None]
+        if len(missing) == 3:
+            return "off", "The research laboratories are unavailable in this runtime."
+        if missing:
+            return "setup", "Some laboratories are unavailable: " + ", ".join(name.replace("_", " ") for name in missing) + "."
+        return "ready", "Laboratory services are connected. Run a measured suite or inspect a saved result; registration alone does not verify outcomes."
+    if key == "reverse_engineer":
+        backend = getattr(runtime, "reverse_engineer", None)
+        if backend is None:
+            return "off", "The reverse-engineering service is unavailable in this runtime."
+        return "ready", "The local analysis service is connected. Check its engine in Reverse engineering; this catalog does not start it."
     if key == 'invention':
         if getattr(runtime, 'invention', None) is None:
             return 'off', 'The invention workbench is unavailable in this runtime.'
@@ -721,7 +786,12 @@ def overview(runtime: Any) -> str:
 
 def can_you(question: str, runtime: Any) -> str | None:
     """Answer "can you X?" from the catalog, or None when no area matches."""
-    found = match(question, limit=2)
+    from app.tools.introspection import ability_words, word_forms
+    words = ability_words(question)
+    # The catalog is a discovery index. A broad keyword hit alone cannot
+    # establish that the requested target or promised outcome is supported.
+    found = [item for item in match(question, limit=2)
+             if words <= word_forms(' '.join(item.keywords) + ' ' + item.title)]
     if not found:
         return None
     names = sorted(runtime.registry.names())

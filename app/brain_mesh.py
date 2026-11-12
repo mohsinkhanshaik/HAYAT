@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import copy
 import math
 import time
 from dataclasses import asdict, dataclass
@@ -258,8 +259,11 @@ class BrainMesh:
         excused = {"training_dataset", "contradictions_resolved"}
         hard = [name for name in report.get("blockers", []) if name not in excused]
         training = getattr(self.runtime, "training", None)
-        return self._result(not hard, "learning layers are separate and permission-bounded",
+        inventory = self.runtime.skills.inventory()
+        return self._result(not hard and not inventory['issues'], "learning layers are separate and permission-bounded",
                             alignment=report.get("status"), blockers=report.get("blockers", []),
+                            trusted_skills=inventory['trusted'], inactive_untrusted_skills=inventory['untrusted'],
+                            skill_issues=inventory['issues'],
                             # Read, not asserted. A status field that cannot
                             # report a change is how automatic_training stayed
                             # "False" on screen over a config that said true.
@@ -379,7 +383,57 @@ class BrainMesh:
         if deep:
             result["topology"] = self.topology()
         result["evidence_layer"] = self.evidence_layer(independent["nodes"], result["generated_at"])
+        self._last_self_check = copy.deepcopy(result)
         return result
+
+    def last_check(self) -> dict[str, Any] | None:
+        """The most recent check in this process, without running a new probe."""
+        return copy.deepcopy(getattr(self, "_last_self_check", None))
+
+    def insight(self, *, area: str = "", tool: str = "", offset: int = 0, limit: int = 10) -> dict[str, Any]:
+        """A bounded page for model calls; the GUI uses the complete snapshot directly."""
+        from app.capabilities import BY_KEY
+        from app.system_insight import build_snapshot
+
+        if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+            raise ValueError("offset must be a nonnegative integer.")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 50:
+            raise ValueError("limit must be an integer between 1 and 50.")
+        if not isinstance(area, str) or not isinstance(tool, str):
+            raise ValueError("area and tool must be strings.")
+        area, tool = area.strip().casefold(), tool.strip().casefold()
+        if area and area not in BY_KEY:
+            raise ValueError("area must be a capability key from the catalog.")
+        snapshot = build_snapshot(self.runtime)
+        matches = [row for row in snapshot["tools"] if (not area or area in row["capabilities"])
+                   and (not tool or tool in row["name"].casefold())]
+        page = matches[offset:offset + limit]
+        total = len(matches)
+        next_offset = offset + len(page) if offset + len(page) < total else None
+        keys = {key for row in page for key in row["capabilities"]} | ({area} if area else set())
+        capabilities = [{**{key: value for key, value in row.items() if key != "tools"},
+                         "tool_count": len(row["tools"])} for row in snapshot["capabilities"] if row["key"] in keys]
+        mesh_ids = {node for row in page for node in row["mesh_nodes"]}
+        edges = [edge for edge in snapshot["edges"] if edge["source"] in mesh_ids or edge["target"] in mesh_ids]
+        mesh_ids.update(node for edge in edges for node in (edge["source"], edge["target"]))
+        component_ids = {row["component_id"] for row in page}
+        wiring_ids = component_ids | {end for link in snapshot["connections"]
+                                      if link["a"] in component_ids or link["b"] in component_ids
+                                      for end in (link["a"], link["b"])}
+        page_names = {row["name"] for row in page}
+        gaps = [{**{key: value for key, value in gap.items() if key != "tools"},
+                 **({"tools": [name for name in gap["tools"] if name in page_names], "tool_count": len(gap["tools"])}
+                    if "tools" in gap else {})} for gap in snapshot["gaps"]
+                if not gap.get("tools") or page_names.intersection(gap["tools"])]
+        health = snapshot["health"]
+        return {"generated_at": snapshot["generated_at"], "scope": snapshot["scope"], "summary": snapshot["summary"],
+                "filters": {"area": area, "tool": tool}, "total": total, "offset": offset, "limit": limit,
+                "next_offset": next_offset, "truncated": len(page) < total,
+                "tools": page, "capabilities": capabilities,
+                "nodes": [node for node in snapshot["nodes"] if node["node_id"] in mesh_ids], "edges": edges,
+                "connections": [link for link in snapshot["connections"] if link["a"] in wiring_ids or link["b"] in wiring_ids],
+                "health": {**health, "nodes": {key: value for key, value in health["nodes"].items() if key in mesh_ids}},
+                "observations": snapshot["observations"], "gaps": gaps, "gaps_total": len(snapshot["gaps"])}
 
     @staticmethod
     def evidence_layer(nodes: dict[str, Any], checked_at: str) -> dict[str, Any]:
@@ -403,6 +457,8 @@ class BrainMesh:
                 gaps.append(f"{evidence['unverified_claims']} claims retained as unverified")
             if evidence.get("blockers"):
                 gaps.extend(str(item) for item in evidence["blockers"])
+            if node.node_id == 'learning' and evidence.get('skill_issues'):
+                gaps.extend(item['name'] + ': ' + item['reason'] for item in evidence['skill_issues'])
             if node.node_id == "router" and not evidence.get("verified_outcomes"):
                 gaps.append("No verified model outcomes recorded yet.")
             if node.node_id == "research" and not evidence.get("claims"):

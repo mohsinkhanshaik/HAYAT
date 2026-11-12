@@ -10,6 +10,7 @@ from tkinter import ttk
 from app.gui_empty import show_empty
 from app.gui_intelligence_parts import FlowRow
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
@@ -94,7 +95,7 @@ class ContactDiscoveryWindow(tk.Toplevel):
         self.max_pages = StringVar(self, '4')
         self.depth = StringVar(self, 'normal')
         self.route = StringVar(self, 'Public web')
-        self.status = StringVar(self, 'Enter a known name and organization/work context. Search starts only when you press Find.')
+        self.status = DisplayVar(self, 'Enter a known name and organization/work context. Search starts only when you press Find.')
 
         head = tk.Frame(self, bg=p.BLACK, padx=14, pady=10)
         head.pack(fill='x')

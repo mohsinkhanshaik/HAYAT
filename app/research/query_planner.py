@@ -11,6 +11,12 @@ from app.research.ranking import technical_question
 from app.research.text import jaccard, tokens
 
 
+#: A claim that travels as a rumour: answered from the record and fact-checks, not retellings.
+RUMOUR_QUERY = re.compile(
+    r"(?i)\b(?:conspirac\w*|hoax\w*|myths?|debunk\w*|fake[ds]?|faking|staged|cover[- ]?ups?|inside job|false flag|"
+    r"chemtrails?|flat earth|earth (?:is |really )?flat|is it true|really (?:happen\w*|real|true)|fact[ -]?check)\b")
+
+
 @dataclass(slots=True)
 class PlannedQuery:
     text: str
@@ -42,6 +48,19 @@ class ResearchQueryPlanner:
         disputed = mode == "ADVERSARIAL" or any(word in lower for word in ("opposing", "against", "controvers", "conflict", "contradict", "disputed", "whether", "does"))
         comparison = any(word in lower for word in ("compare", "versus", " vs ", "difference", "approaches"))
         comparison_entities = self._comparison_entities(clean)
+        # A tax question is answered by the state's or country's own revenue agency.
+        from app.research.tax_sources import planned_queries as tax_queries
+        candidates.extend(PlannedQuery(text, "primary", 1.005, why) for text, why in tax_queries(clean, subject))
+        # So is a state's business, unemployment, labor, contracting or legal question, by its own agency.
+        from app.research.state_agencies import planned_queries as state_queries
+        candidates.extend(PlannedQuery(text, "primary", 1.004, why) for text, why in state_queries(clean, subject))
+        if RUMOUR_QUERY.search(lower):
+            # Claims that travel as rumours: seek the official record and the
+            # fact-checkers' work as well as pages repeating the claim.
+            candidates.extend([
+                PlannedQuery(f"{subject} fact check", "counter_evidence", 0.97, "Published fact-checks of this claim"),
+                PlannedQuery(f"{subject} official record evidence", "primary", 0.96, "Primary records, not retellings"),
+            ])
         if technical:
             candidates.extend([
                 PlannedQuery(f"{versioned_subject} official documentation", "primary", 0.98, "Version-matched official documentation"),

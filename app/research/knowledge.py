@@ -21,6 +21,24 @@ def now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
+# Compare instants, not ISO strings: equivalent timestamps can have different
+# offsets. Invalid deadlines require review instead of looking permanently fresh.
+_CLAIM_HAS_EVIDENCE = (
+    "EXISTS(SELECT 1 FROM evidence e JOIN sources s ON s.id=e.source_id "
+    "WHERE e.claim_id=claims.id AND e.id NOT LIKE 'cross-%' "
+    "AND e.support_type='DIRECT' AND trim(e.excerpt)<>'' AND trim(s.final_url)<>'')"
+)
+_CLAIM_HAS_CONFLICT = (
+    "EXISTS(SELECT 1 FROM claim_conflicts cc WHERE cc.resolution_status='unresolved' "
+    "AND (cc.claim_id=claims.id OR cc.conflicting_claim_id=claims.id))"
+)
+_CLAIM_CURRENT = (
+    "status='SUPPORTED' AND valid_until IS NOT NULL "
+    "AND julianday(valid_until)>julianday(?) AND " + _CLAIM_HAS_EVIDENCE
+    + " AND NOT " + _CLAIM_HAS_CONFLICT
+)
+
+
 #: Words that appear in every question and identify none of them. Dropped
 #: before comparing, so "explain me in detail about X" and "tell me about X"
 #: are recognised as the same question about X.
@@ -895,7 +913,7 @@ class KnowledgeStore:
                 "JOIN sources s ON s.id=e.source_id "
                 "WHERE c.run_id=? AND c.status='SUPPORTED' "
                 "AND e.stance='supporting' AND e.support_type='DIRECT' "
-                "AND (c.valid_until IS NULL OR c.valid_until>?) "
+                "AND (c.valid_until IS NULL OR julianday(c.valid_until)>julianday(?)) "
                 "ORDER BY s.quality DESC LIMIT 8",
                 (knowledge_id, run_id, now_iso()),
             ).fetchall()
@@ -919,19 +937,33 @@ class KnowledgeStore:
                 db.executemany("UPDATE knowledge SET retrieval_count=retrieval_count+1,last_used=? WHERE id=?", [(now_iso(), item["id"]) for item in ranked])
         return ranked
 
-    def search_claims(self, query: str, limit: int = 20, include_history: bool = False, min_confidence: float = 0.0, *, lexical_only: bool = False) -> list[dict[str, Any]]:
+    def search_claims(self, query: str, limit: int = 20, include_history: bool = False, min_confidence: float = 0.0, *, lexical_only: bool = False, quality: str = "all") -> list[dict[str, Any]]:
+        filters = {
+            "all": ("1=1", []),
+            "verified_current": (_CLAIM_CURRENT, [now_iso()]),
+            "needs_refresh": ("valid_until IS NOT NULL AND (julianday(valid_until) IS NULL OR julianday(valid_until)<=julianday(?))", [now_iso()]),
+            "conflicts": (_CLAIM_HAS_CONFLICT, []),
+            "missing_evidence": ("NOT " + _CLAIM_HAS_EVIDENCE, []),
+        }
+        if quality not in filters:
+            raise ValueError("Unknown evidence quality filter")
+        quality_sql, quality_args = filters[quality]
         statuses = "('SUPPORTED','PARTIALLY_SUPPORTED','DISPUTED')" if not include_history else "('SUPPORTED','PARTIALLY_SUPPORTED','DISPUTED','SUPERSEDED')"
+        if quality == "missing_evidence":
+            statuses = "('SUPPORTED','PARTIALLY_SUPPORTED','DISPUTED','UNVERIFIED')"
+        where = f"confidence>=? AND status IN {statuses} AND ({quality_sql})"
+        params = [min_confidence, *quality_args]
         with self.connect() as db:
-            rows = db.execute(f"SELECT * FROM claims WHERE confidence>=? AND status IN {statuses} ORDER BY updated_at DESC LIMIT 1000", (min_confidence,)).fetchall()
+            rows = db.execute(f"SELECT * FROM claims WHERE {where} ORDER BY updated_at DESC LIMIT 1000", params).fetchall()
             words = sorted(token_set(query), key=len, reverse=True)[:12]
             if words:
-                conditions, arguments = [], [min_confidence]
+                conditions, arguments = [], list(params)
                 for word in words:
                     pattern = "%" + word.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
                     conditions.append("(lower(claim_text) LIKE ? ESCAPE '\\' OR lower(topic) LIKE ? ESCAPE '\\')")
                     arguments.extend((pattern, pattern))
                 matches = db.execute(
-                    f"SELECT * FROM claims WHERE confidence>=? AND status IN {statuses} AND ("
+                    f"SELECT * FROM claims WHERE {where} AND ("
                     + " OR ".join(conditions) + ") ORDER BY updated_at DESC LIMIT 1000", arguments,
                 ).fetchall()
                 # Recent-only recall made older learned facts disappear once
@@ -1140,7 +1172,9 @@ class KnowledgeStore:
 
     def stale_entries(self, limit: int = 20) -> list[dict[str, Any]]:
         with self.connect() as db:
-            rows = db.execute("SELECT * FROM knowledge WHERE status='active' AND valid_until IS NOT NULL AND valid_until<=? ORDER BY valid_until LIMIT ?", (now_iso(), limit)).fetchall()
+            rows = db.execute("SELECT * FROM knowledge WHERE status='active' AND valid_until IS NOT NULL "
+                              "AND (julianday(valid_until) IS NULL OR julianday(valid_until)<=julianday(?)) "
+                              "ORDER BY julianday(valid_until) LIMIT ?", (now_iso(), limit)).fetchall()
         return [dict(row) | {"stale": True} for row in rows]
 
     def retire(self, knowledge_id: int, reason: str) -> None:
@@ -1185,8 +1219,8 @@ class KnowledgeStore:
                         (winner, "exact duplicate resolved during optimization", now, row[0]),
                     )
                     duplicates += 1
-            expired_queries = db.execute("DELETE FROM query_cache WHERE expires_at<=?", (now,)).rowcount
-            expired_sources = db.execute("DELETE FROM source_cache WHERE expires_at<=?", (now,)).rowcount
+            expired_queries = db.execute("DELETE FROM query_cache WHERE julianday(expires_at) IS NULL OR julianday(expires_at)<=julianday(?)", (now,)).rowcount
+            expired_sources = db.execute("DELETE FROM source_cache WHERE julianday(expires_at) IS NULL OR julianday(expires_at)<=julianday(?)", (now,)).rowcount
             db.execute("PRAGMA optimize")
         return {
             "duplicates_resolved": duplicates,
@@ -1202,7 +1236,7 @@ class KnowledgeStore:
 
     def get_cached_query(self, key: str) -> list[dict[str, Any]] | None:
         with self.connect() as db:
-            row = db.execute("SELECT * FROM query_cache WHERE cache_key=? AND expires_at>?", (key, now_iso())).fetchone()
+            row = db.execute("SELECT * FROM query_cache WHERE cache_key=? AND julianday(expires_at)>julianday(?)", (key, now_iso())).fetchone()
             if not row:
                 return None
             db.execute("UPDATE query_cache SET hit_count=hit_count+1 WHERE cache_key=?", (key,))
@@ -1216,7 +1250,7 @@ class KnowledgeStore:
 
     def get_cached_source(self, url: str) -> SourceDocument | None:
         with self.connect() as db:
-            row = db.execute("SELECT * FROM source_cache WHERE canonical_url=? AND expires_at>?", (url, now_iso())).fetchone()
+            row = db.execute("SELECT * FROM source_cache WHERE canonical_url=? AND julianday(expires_at)>julianday(?)", (url, now_iso())).fetchone()
             if not row:
                 return None
             db.execute("UPDATE source_cache SET hit_count=hit_count+1 WHERE canonical_url=?", (url,))
@@ -1317,9 +1351,19 @@ class KnowledgeStore:
 
     def stats(self) -> dict[str, Any]:
         with self.connect() as db:
+            measured_at = now_iso()
             providers = [dict(row) for row in db.execute("SELECT * FROM provider_stats ORDER BY searches DESC,provider LIMIT 10").fetchall()]
             sources = [dict(row) for row in db.execute("SELECT * FROM source_stats ORDER BY requests DESC,domain LIMIT 10").fetchall()]
             return {
+                "measured_at": measured_at,
+                "active_knowledge": db.execute("SELECT COUNT(*) FROM knowledge WHERE status='active'").fetchone()[0],
+                "verified_current_claims": db.execute("SELECT COUNT(*) FROM claims WHERE " + _CLAIM_CURRENT, (measured_at,)).fetchone()[0],
+                "stale_claims": db.execute("SELECT COUNT(*) FROM claims WHERE status IN ('SUPPORTED','PARTIALLY_SUPPORTED','DISPUTED') "
+                    "AND valid_until IS NOT NULL AND (julianday(valid_until) IS NULL OR julianday(valid_until)<=julianday(?))", (measured_at,)).fetchone()[0],
+                "undated_claims": db.execute("SELECT COUNT(*) FROM claims WHERE status IN ('SUPPORTED','PARTIALLY_SUPPORTED','DISPUTED') AND valid_until IS NULL").fetchone()[0],
+                "invalid_deadlines": db.execute("SELECT COUNT(*) FROM claims WHERE status IN ('SUPPORTED','PARTIALLY_SUPPORTED','DISPUTED') "
+                    "AND valid_until IS NOT NULL AND julianday(valid_until) IS NULL").fetchone()[0],
+                "claims_missing_direct_evidence": db.execute("SELECT COUNT(*) FROM claims WHERE status IN ('SUPPORTED','PARTIALLY_SUPPORTED','DISPUTED','UNVERIFIED') AND NOT " + _CLAIM_HAS_EVIDENCE).fetchone()[0],
                 "database": str(self.path), "runs": db.execute("SELECT COUNT(*) FROM research_runs").fetchone()[0],
                 "sources": db.execute("SELECT COUNT(*) FROM sources").fetchone()[0], "knowledge": db.execute("SELECT COUNT(*) FROM knowledge").fetchone()[0],
                 "claims": db.execute("SELECT COUNT(*) FROM claims").fetchone()[0], "evidence": db.execute("SELECT COUNT(*) FROM evidence").fetchone()[0],
@@ -1332,7 +1376,8 @@ class KnowledgeStore:
                 # Only entries still in use can be stale. Counting superseded
                 # and retired rows kept this number from ever going down, so
                 # the self-review asked for a refresh that could not satisfy it.
-                "stale": db.execute("SELECT COUNT(*) FROM knowledge WHERE status='active' AND valid_until IS NOT NULL AND valid_until<=?", (now_iso(),)).fetchone()[0],
+                "stale": db.execute("SELECT COUNT(*) FROM knowledge WHERE status='active' AND valid_until IS NOT NULL "
+                    "AND (julianday(valid_until) IS NULL OR julianday(valid_until)<=julianday(?))", (measured_at,)).fetchone()[0],
                 "superseded": db.execute("SELECT COUNT(*) FROM knowledge WHERE status='superseded'").fetchone()[0],
                 "disputed_claims": db.execute("SELECT COUNT(*) FROM claims WHERE status='DISPUTED'").fetchone()[0],
                 "unresolved_conflicts": db.execute("SELECT COUNT(*) FROM claim_conflicts WHERE resolution_status='unresolved'").fetchone()[0],

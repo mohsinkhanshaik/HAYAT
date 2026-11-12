@@ -28,11 +28,12 @@ NOT_PLACES = frozenset({'my', 'your', 'our', 'his', 'her', 'their', 'front', 'ba
                         'house', 'door', 'doorbell', 'baby', 'room', 'office', 'next', 'another', 'other'})
 # Places people say that the catalogs spell differently select a publisher network.
 PLACE_FEEDS = {
+    'northern ireland': ('cameras_northern_ireland',), 'belfast': ('cameras_northern_ireland',),
     'luxembourg': ('cameras_luxembourg',), 'luxemburg': ('cameras_luxembourg',),
     'los angeles': ('cameras_caltrans_7',), 'la': ('cameras_caltrans_7',), 'l.a.': ('cameras_caltrans_7',),
     'san francisco': ('cameras_caltrans_4',), 'sf': ('cameras_caltrans_4',), 'bay area': ('cameras_caltrans_4',),
     'orange county': ('cameras_caltrans_12',), 'nyc': ('cameras_nyc',), 'new york city': ('cameras_nyc',),
-    'uk': ('cameras_london',), 'england': ('cameras_london',), 'britain': ('cameras_london',),
+    'uk': ('cameras_london', 'cameras_northern_ireland'), 'england': ('cameras_london',), 'britain': ('cameras_london',),
     'bc': ('cameras_drivebc',), 'vancouver': ('cameras_drivebc',), 'washington state': ('cameras_washington', 'cameras_seattle'),
     'india': ('livestreams',), 'indian': ('livestreams',),
 }

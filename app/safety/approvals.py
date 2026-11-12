@@ -212,21 +212,28 @@ class CallBudget:
     counts: dict[str, int] = field(default_factory=dict)
     total: int = 0
 
+    # Independent read-only plan steps run at the same time (app/agent/parallel.py), so the counters are updated
+    # under a lock: "+= 1" from two threads can otherwise lose a call and let a task exceed its budget.
+    _lock: Any = field(default_factory=threading.Lock, repr=False, compare=False)
+
     def reset(self) -> None:
-        self.counts.clear()
-        self.total = 0
+        with self._lock:
+            self.counts.clear()
+            self.total = 0
 
     def check(self, tool: str) -> str | None:
         """Return a refusal reason when the budget is exhausted, else None."""
-        if self.total >= self.max_total_calls:
-            return f"Tool-call budget exhausted for this task ({self.max_total_calls} calls)."
-        if self.counts.get(tool, 0) >= self.max_calls_per_tool:
-            return f"Repeated-call budget exhausted for {tool} ({self.max_calls_per_tool} calls)."
-        return None
+        with self._lock:
+            if self.total >= self.max_total_calls:
+                return f"Tool-call budget exhausted for this task ({self.max_total_calls} calls)."
+            if self.counts.get(tool, 0) >= self.max_calls_per_tool:
+                return f"Repeated-call budget exhausted for {tool} ({self.max_calls_per_tool} calls)."
+            return None
 
     def consume(self, tool: str) -> None:
-        self.counts[tool] = self.counts.get(tool, 0) + 1
-        self.total += 1
+        with self._lock:
+            self.counts[tool] = self.counts.get(tool, 0) + 1
+            self.total += 1
 
     def status(self) -> dict[str, Any]:
         return {

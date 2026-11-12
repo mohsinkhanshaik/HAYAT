@@ -11,6 +11,7 @@ in mainloop() and nothing flashes on screen.
 """
 from __future__ import annotations
 
+import os
 import threading
 import time
 from types import SimpleNamespace
@@ -69,7 +70,7 @@ def _release(window) -> None:
 
 
 @pytest.fixture(scope="module")
-def _window():
+def _window(shared_tk):
     """One window for the module.
 
     Building a Tk root per test exhausts Tk part-way through the file -- it
@@ -95,6 +96,8 @@ def gui(_window):
         _window.chat.configure(state="normal")
         _window.chat.delete("1.0", "end")
         _window.chat.configure(state="disabled")
+        _window._unread_messages = 0
+        _window.latest_button.configure(text='Latest ↓')
         _window._transcript.seek(0)
         _window._transcript.truncate()
         _window.console.clear()
@@ -280,15 +283,19 @@ def test_ui_queue_yields_after_time_budget_and_keeps_remaining_callbacks(gui, mo
         now[0] += .010
     for i in range(3):
         pending.put((slow_callback, (i,)))
-    monkeypatch.setattr(gui, "_ui_queue", pending)
-    monkeypatch.setattr(gui, "_schedule", lambda *args: None)
-    monkeypatch.setattr("app.gui.time.monotonic", lambda: now[0])
-    gui._drain_ui()
-    assert callbacks == [0]
-    assert pending.qsize() == 2
-    gui._drain_ui()
-    gui._drain_ui()
-    assert callbacks == [0, 1, 2]
+    # Undone inside the test: the fixture's teardown pumps Tk, and a real drain firing
+    # while _schedule is the no-op stub never rescheduled itself -- every later test
+    # that waits for a worker's result then timed out.
+    with monkeypatch.context() as patch:
+        patch.setattr(gui, "_ui_queue", pending)
+        patch.setattr(gui, "_schedule", lambda *args: None)
+        patch.setattr("app.gui.time.monotonic", lambda: now[0])
+        gui._drain_ui()
+        assert callbacks == [0]
+        assert pending.qsize() == 2
+        gui._drain_ui()
+        gui._drain_ui()
+        assert callbacks == [0, 1, 2]
 
 
 def test_copy_chat_contains_voice_turns_and_unicode(gui, monkeypatch):
@@ -308,6 +315,14 @@ def test_copy_chat_contains_voice_turns_and_unicode(gui, monkeypatch):
 def test_new_assistant_reply_preserves_reading_position_and_counts_unread(gui, monkeypatch):
     seen = []
     restored = []
+    # Start from a laid-out, still transcript: "near the bottom" is measured from the chat area's height (1 px
+    # before the first layout, when this test runs alone) and from any scroll animation still in flight (left by
+    # the previous test when the machine is busy). Either one read the owner as following the newest reply.
+    gui.root.update()
+    scroller = getattr(gui.chat, "_smooth_scroller", None)
+    if scroller is not None:
+        scroller.cancel()
+    assert gui.chat.winfo_height() > 100
     monkeypatch.setattr(gui.chat, "yview", lambda *args: restored.append(args) if args else (0.1, 0.5))
     monkeypatch.setattr(gui.chat, "see", seen.append)
     gui._append("assistant", "HAYAT\nHere is the answer.")
@@ -502,7 +517,7 @@ def test_activity_line_restores_phase_countdown_and_elapsed_time():
 
     thinking = format_activity_countdown({"running": []}, 90.0, now=100.0,
                                          fallback_estimate=30.0)
-    assert thinking == "Thinking · ~20s left · 10.0s elapsed"
+    assert thinking == "Thinking · 10.0s elapsed"
     assert activity_progress({"running": [{
         "seconds": 25.0, "remaining_seconds": 75.0,
     }]}, None) == 25.0
@@ -1035,7 +1050,7 @@ def test_neural_workspace_toggle_preserves_conversation_and_unsent_draft(gui):
     gui._toggle_core()
     gui._append("assistant", "HAYAT\nA new answer.")
     assert not gui._welcome.winfo_manager()
-    assert gui.core_button.cget("text") == "3D workspace"
+    assert gui.core_button.cget("text") == "Home"
     gui.input.delete("1.0", "end")
 
 
@@ -1330,8 +1345,11 @@ def test_clearing_the_chat_clears_the_view_and_summarizes_in_the_background(gui,
     monkeypatch.setattr(gui.runtime.conversation, "summarize_and_reset",
                         lambda: calls.append(1) or {"summarized": True})
     gui._append("user", "You\nremember this")
+    gui._unread_messages = 4
+    gui.latest_button.configure(text='Latest ↓ (4 new)')
 
     gui.clear_chat()
+    assert gui._unread_messages == 0 and gui.latest_button.cget('text') == 'Latest ↓'
     gui.root.update()  # the view clears synchronously
     text = gui.chat.get("1.0", "end")
     assert "remember this" not in text
@@ -1543,12 +1561,13 @@ def test_every_displayed_value_belongs_to_this_window(gui):
             f"{variable} is bound to a different interpreter and will never display")
 
 
-def test_the_header_says_who_it_belongs_to(gui):
+def test_the_header_greets_without_exposing_the_owner_name(gui):
     gui._tick()
     gui.root.update()
     from app.identity import IDENTITY
 
-    assert IDENTITY.owner_short in gui.greeting_var.get()
+    assert IDENTITY.owner_short not in gui.greeting_var.get()
+    assert "HAYAT" in gui.greeting_var.get()
     assert any(part in gui.greeting_var.get()
                for part in ("morning", "afternoon", "evening"))
     assert gui.header_clock.get()
@@ -1884,7 +1903,8 @@ def test_file_editor_saves_a_backup_and_rejects_a_stale_save(gui, tmp_path):
         editor.text.delete('1.0', 'end')
         editor.text.insert('1.0', 'Stale\n')
         editor.save()
-        _wait_until(gui, lambda: not editor._busy, 'stale file editor save')
+        # The same save as above, so the same 20 s: 5 s failed three full runs on a loaded machine (2026-11-07).
+        _wait_until(gui, lambda: not editor._busy, 'stale file editor save', timeout=20)
         assert path.read_text() == 'External change\n'
         assert 'changed since' in editor.status.get()
     finally:
@@ -2141,7 +2161,7 @@ def test_notices_behind_the_workspace_are_counted_and_the_idle_bar_is_hidden(gui
     gui._append("system", "Another one.")
     assert gui.core_button.cget("text") == "Conversation (2 new)"
     gui._toggle_core()
-    assert gui.core_button.cget("text") == "3D workspace"
+    assert gui.core_button.cget("text") == "Home"
     gui._core_requested = False
     gui.show_view("chat")
 
@@ -2750,7 +2770,7 @@ def test_the_security_window_lists_bans_and_lifts_them(gui, monkeypatch):
 def test_the_studios_menu_holds_every_launcher_and_the_row_stays_compact(gui):
     menu = gui._studios_menu
     labels = [menu.entrycget(i, "label") for i in range(menu.index("end") + 1)]
-    assert labels == ["What can HAYAT do?", "Switch window… (Ctrl+`)", "Command Center (everything live)", "Voice", "Models", "Learn a language", "Learning atlas", "Languages & persona",
+    assert labels == ["What can HAYAT do?", "Switch window… (Ctrl+`)", "Command Center (everything live)", "Voice", "Models", "Learn a language", "Learning atlas", "Mind: topics, growth, scorecard", "Tools & connections", "Research lab: robustness, security, models", "Scientific Workbench: data, statistics, relationships", "Connected AI: OpenAI, Anthropic, Gemini", "Languages & persona",
                       "Searches", 'Reverse engineering (REA)', 'Screen & computer', 'Operation view', 'Private networking', 'Onion page navigator', 'Person detection', 'Enrolled people (local)', 'Local image tools', 'Replica app studio', 'Global intelligence', 'Explore & deep look', 'World atlas & video wall', 'My cameras',
                       'Wi-Fi sensing (CSI, movement, camera check)', 'Router & home network', 'Around me (hazard radar)', 'Location privacy (who can see where you are)', 'Keys (unlock cameras and stock prices)',
                       'Trade Center (crypto, stocks, world events)', 'Web3 explorer & agentic web (Web 4.0)',
@@ -2775,6 +2795,24 @@ def test_knowledge_library_launcher_reuses_one_window(gui):
         gui._open_knowledge()
         assert gui._knowledge_studio is window
         assert window.title() == "HAYAT · Knowledge Library"
+    finally:
+        window.close()
+
+
+def test_connected_ai_launcher_reuses_window_and_respects_runtime_guards(gui):
+    gui._open_connected_ai()
+    window = gui._connected_ai_studio
+    try:
+        gui._open_connected_ai()
+        assert gui._connected_ai_studio is window
+        assert window.title() == "HAYAT · Connected AI"
+        before = gui.runtime.session.effective_modes
+        gui.runtime.session.effective_modes = ["PRIVATE"]
+        assert window.manager.private()
+        gui.runtime.session.effective_modes = ["LOCAL_ONLY"]
+        assert window.manager.private()
+        gui.runtime.session.effective_modes = before
+        assert window.manager.halted() == bool(gui.runtime.registry.interlock.halted)
     finally:
         window.close()
 
@@ -2838,17 +2876,17 @@ def test_report_views_say_what_is_coming_instead_of_sitting_blank(gui, monkeypat
     assert "Gathering" not in gui._transcript.read()
 
 
-def test_the_header_shows_what_can_be_withdrawn_and_opens_the_books(gui, tmp_path, monkeypatch):
+def test_the_header_keeps_balances_private_and_opens_the_books(gui, tmp_path, monkeypatch):
     from app.safety.permissions import PermissionManager
     from app.tools.business import BusinessLedger
 
     ledger = BusinessLedger(tmp_path / "b.db", tmp_path / "out", PermissionManager({"default": "ALLOW"}, tmp_path))
     monkeypatch.setattr(gui.runtime, "business", ledger)
     gui.refresh_wallet_badge()
-    assert gui.wallet_var.get() == "Wallet 0.00"
+    assert gui.wallet_var.get() == "Open wallet"
     ledger.record_income("80", "Fiverr", "Gig")
     gui.refresh_wallet_badge()
-    assert gui.wallet_var.get() == "Wallet 80.00 USD"
+    assert gui.wallet_var.get() == "Open wallet"
     opened = []
     monkeypatch.setattr(gui, "_open_business", lambda: opened.append(True))
     gui.root.geometry("1540x920-4000-4000")
@@ -3037,10 +3075,16 @@ def test_a_running_conversation_folds_the_starting_points_and_keeps_them_reachab
         assert not gui._conversation_header.winfo_manager()
         gui._append("user", "You\nhello")
         assert not chips.winfo_manager() and not controls.winfo_manager()
-        assert gui._chat_tabs.winfo_manager() and gui._conversation_header.winfo_manager()
+        # The mode row repeats the composer's buttons; the transcript gets its room, and
+        # every entry is still one click away under Chat actions > Open.
+        assert not gui._chat_tabs.winfo_manager() and gui._conversation_header.winfo_manager()
+        opened = [gui.open_menu.entrycget(index, "label") for index in range(gui.open_menu.index("end") + 1)]
+        assert {"Documents", "Web search", "Code", "PowerShell", "CMD", "Research", "Vision", "Voice"} == set(opened)
+        assert gui.chat_actions_menu.entrycget(0, "label") == "Open"
         gui._window_height = gui.TALL_WINDOW + 100
         gui._fit_conversation()
         assert controls.winfo_manager() and not chips.winfo_manager()  # a tall window has room for the quick row
+        assert gui._chat_tabs.winfo_manager()  # and for the mode row
         labels = [gui.shortcut_menu.entrycget(index, "label") for index in range(gui.shortcut_menu.index("end") + 1)
                   if gui.shortcut_menu.type(index) != "separator"]
         assert {"Attach file", "Create image", "Start voice", "All tools & controls"} <= set(labels)
@@ -3530,3 +3574,402 @@ def test_the_masks_cards_show_each_layer_and_mask_and_unmask_hayat(gui, monkeypa
     finally:
         window.destroy()
         gui.root.withdraw()
+
+
+def test_every_reply_has_feedback_buttons_that_record_the_verdict(gui, monkeypatch):
+    from app.owner_feedback import OwnerFeedback
+
+    gui._append("user", "You\nWhat is the capital of Australia?")
+    gui._append("assistant", "HAYAT\nSydney.")
+    bar = gui._reply_feedback.bars[-1]
+    assert (bar.request, bar.reply) == ("What is the capital of Australia?", "Sydney.")
+    # The bar is a widget, so the conversation text itself is unchanged.
+    assert "Helpful" not in gui.chat.get("1.0", "end")
+    store = OwnerFeedback.beside(gui.runtime.memory)
+    before = len(store.rows())
+    monkeypatch.setattr(gui._reply_feedback, "ask_correction", lambda: "Canberra")
+    gui._reply_feedback.mark(bar, -1)
+    assert bar.status.cget("text").startswith("Marked wrong"), bar.status.cget("text")
+    row = store.rows()[0]
+    assert len(store.rows()) == before + 1
+    assert (row["rating"], row["correction"], row["reply"]) == (-1, "Canberra", "Sydney.")
+    assert "use your correction" in bar.status.cget("text")
+    # One verdict per reply: the buttons stop responding once used.
+    assert not bar.up.bind("<Button-1>")
+    gui._append("assistant", "HAYAT\nCanberra is the capital.")
+    monkeypatch.setattr(gui._reply_feedback, "ask_correction", lambda: None)
+    gui._reply_feedback.mark(gui._reply_feedback.bars[-1], -1)
+    assert len(store.rows()) == before + 1  # cancelled: nothing recorded
+    gui._reply_feedback.mark(gui._reply_feedback.bars[-1], 1)
+    assert store.rows()[0]["rating"] == 1
+
+
+def test_wrong_marks_the_reply_refused_and_try_another_way_asks_again_from_the_newest_reply(gui, monkeypatch, tmp_path):
+    """2026-11-11: 👎 now reaches the refusal record, and one click replaces typing "not what I asked, look deeper"."""
+    from app.dialogue_state import DialogueState
+    from app.gui_feedback import TRY_ANOTHER_WAY
+
+    state = DialogueState(tmp_path / "dialogue.db")
+    monkeypatch.setattr(gui.runtime, "dialogue", state)
+    session = gui.runtime.session.session_id
+    state.note_reply(session, "ways to make money", "1. Freelance writing. 2. Logo design.")
+    gui._append("user", "You\nways to make money")
+    gui._append("assistant", "HAYAT\n1. Freelance writing. 2. Logo design.")
+    first = gui._reply_feedback.bars[-1]
+    assert first.again.winfo_manager() == "pack"
+    monkeypatch.setattr(gui._reply_feedback, "ask_correction", lambda: "")
+    gui._reply_feedback.mark(first, -1)
+    assert "won't give this answer again" in first.status.cget("text")
+    assert state.refused_copy("1. Freelance writing. 2. Logo design.") is not None
+    gui._append("assistant", "HAYAT\nA second answer.")
+    newest = gui._reply_feedback.bars[-1]
+    assert first.again.winfo_manager() == "" and newest.again.winfo_manager() == "pack"  # only the newest
+    if os.environ.get('HAYAT_SHOTS') == '1':
+        from tests.test_gui_screenshots import _grab, _pump
+
+        gui.root.geometry('1536x900+0+0')
+        gui.root.deiconify()
+        gui.root.attributes('-topmost', True)
+        gui.chat.see("end")
+        _pump(gui, .6)
+        _grab(gui, '126-chat-reply-bar-try-another-way')
+    sent: list[str] = []
+    monkeypatch.setattr(gui, "send", lambda: sent.append(gui.input.get("1.0", "end").strip()))
+    monkeypatch.setattr(gui, "_working_since", None)
+    gui._reply_feedback.try_again(newest)
+    assert sent == [TRY_ANOTHER_WAY] and newest.again.winfo_manager() == ""
+    from app.answer_feedback import read
+
+    reading = read(TRY_ANOTHER_WAY)
+    assert reading is not None and reading.rejects and reading.wants_more  # the assistant reads it as a complaint
+
+
+def test_the_mind_window_shows_goals_facts_and_refused_answers_and_can_correct_them(gui, monkeypatch, tmp_path):
+    from app.dialogue_state import DialogueState
+    from app.topics import ConversationTopics
+
+    state = DialogueState(tmp_path / "dialogue.db")
+    monkeypatch.setattr(gui.runtime, "dialogue", state)
+    monkeypatch.setattr(gui.runtime, "topics", ConversationTopics(tmp_path / "topics.db"))
+    session = gui.runtime.session.session_id
+    state.observe(session, "i have $0 and i want to make 1 billion by 2030")
+    state.observe(session, "my name is Test Owner")
+    state.note_reply(session, "ways to make money", "The starter list.", source="tool:business_ideas")
+    state.reject(session, {"repeated"}, "same reply")
+    gui._open_mind()
+    window = gui._mind_window
+    try:
+        page = window.goals
+        assert window.tabs.tab(window.pages["Goals & facts"], "text") == "Goals & facts"
+        assert len(page.goal_tree.get_children()) == 1
+        kinds = {page.fact_tree.item(iid, "values")[0] for iid in page.fact_tree.get_children()}
+        assert kinds == {"permanent", "can change"}
+        assert "a starting point, not a limit" in " ".join(
+            str(page.fact_tree.item(iid, "values")[2]) for iid in page.fact_tree.get_children())
+        assert len(page.refused_tree.get_children()) == 1
+        assert "1 refused answer(s)" in page.summary.cget("text")
+        if os.environ.get('HAYAT_SHOTS') == '1':
+            from tests.test_gui_screenshots import _grab, _pump
+
+            gui.root.geometry('1536x900+0+0')
+            gui.root.deiconify()
+            window.deiconify()
+            window.tabs.select(window.pages["Goals & facts"])
+            for size, name in (("1080x760", "124-mind-goals-and-facts"), ("820x600", "125-mind-goals-and-facts-smallest")):
+                window.geometry(size + "+0+0")
+                window.attributes('-topmost', True)
+                _pump(gui, .6)
+                _grab(gui, name, widget=window)
+        capital = next(iid for iid in page.fact_tree.get_children() if "money in hand" in page.fact_tree.item(iid, "text"))
+        page.fact_tree.selection_set(capital)
+        page.forget_fact()
+        assert "Forgot" in window.status.cget("text") and capital not in page.fact_tree.get_children()
+        page.goal_tree.selection_set(page.goal_tree.get_children()[0])
+        page.drop_goal()
+        assert state.goals() == [] and not page.goal_tree.get_children()
+    finally:
+        window.close()
+
+
+def test_the_chat_says_how_a_misspelt_message_was_read_and_keeps_the_owners_spelling(gui, monkeypatch, tmp_path):
+    """2026-11-09: the reading was recorded every turn but never shown; one click now keeps the word as written."""
+    import json
+    from pathlib import Path
+
+    import app.gui_reading as reading
+    from app.intent import spelling
+
+    # The window's memory path names the owner's real data folder (only sqlite connections are sandboxed).
+    assert reading.words_file(gui.runtime).name == "owner-words.json"
+    path = tmp_path / "owner-words.json"
+    monkeypatch.setattr(reading, "words_file", lambda runtime: path)
+    before_kept, before_accepted = set(spelling._kept), set(spelling._accepted)
+    try:
+        gui._append("user", "You\nreserach quantam computing")
+        gui._append("assistant", "HAYAT\nHere is what I found.")
+        note = gui._reading_notes.attach("reserach quantam computing", [("quantam", "quantum")])
+        assert note.label.cget("text") == "✎ I read “quantam” as “quantum”."
+        assert "Keep my spelling" not in gui.chat.get("1.0", "end")  # a widget, not conversation text
+        assert gui._reading_notes.attach("anything", []) is None  # read as typed: no note
+        gui._reading_notes.keep(note)
+        assert "Kept “quantam”" in note.status.cget("text")
+        assert json.loads(Path(path).read_text(encoding="utf-8"))["kept"] == ["quantam"]
+        assert spelling.correct("quantam").changes == []
+        sent = []
+        monkeypatch.setattr(gui, "send", lambda: sent.append(gui.input.get("1.0", "end").strip()))
+        gui._reading_notes.ask_again(note)
+        assert sent == ["reserach quantam computing"]
+    finally:
+        spelling._kept.clear()
+        spelling._kept.update(before_kept)
+        spelling._accepted.clear()
+        spelling._accepted.update(before_accepted)
+        spelling._correct_word.cache_clear()
+        if path is not None:
+            Path(path).unlink(missing_ok=True)
+        gui.input.delete("1.0", "end")
+
+
+def test_the_chat_says_how_a_message_was_placed_among_topics_and_undoes_it(gui, monkeypatch, tmp_path):
+    """2026-11-09: a follow-up read through its topic, or a new topic, is shown under the reply with its undo."""
+    from app.gui_reading import topic_line
+    from app.topics import ConversationTopics
+
+    store = ConversationTopics(tmp_path / "topics.db")
+    monkeypatch.setattr(gui.runtime, "topics", store)
+    first = store.decide("gui-s", "What is the GDP growth forecast for India in 2026?")
+    follow = store.decide("gui-s", "Look at the latest and predict for nxt year")
+    gui._append("assistant", "HAYAT\nHere is the forecast.")
+    note = gui._reading_notes.attach_topic(follow.to_dict())
+    assert note.label.cget("text").startswith("↪ Read in the topic “GDP growth forecast for India in 2026” as “Look at")
+    assert "Not this topic" not in gui.chat.get("1.0", "end")  # a widget, not conversation text
+    gui._reading_notes.fix_topic(note)
+    assert "Kept apart as its own topic" in note.status.cget("text")
+    assert store.stats()["owner_fixes"] == {"separate": 1}
+    plain = store.decide("gui-s", "is the forecast reliable?")
+    assert topic_line(plain.to_dict()) == ("", "") and gui._reading_notes.attach_topic(plain.to_dict()) is None
+    assert [item["text"] for item in store.messages(first.topic_id)] == [first.original]
+
+
+def test_the_mind_window_shows_measured_records_and_its_controls_change_them(gui, monkeypatch, tmp_path):
+    """2026-11-09: topics, stages, scorecard, forecasts and retention in one window, all from real stores."""
+    from app.forecasts import ForecastLedger
+    from app.memory.retention import RetentionPractice
+    from app.topics import ConversationTopics
+
+    topics = ConversationTopics(tmp_path / "topics.db")
+    ledger = ForecastLedger(tmp_path / "forecasts.db")
+    monkeypatch.setattr(gui.runtime, "topics", topics)
+    monkeypatch.setattr(gui.runtime, "forecasts", ledger)
+    monkeypatch.setattr(gui.runtime, "retention", RetentionPractice(gui.runtime.memory, tmp_path / "retention.db"))
+    session = gui.runtime.session.session_id
+    gdp = topics.decide(session, "What is the GDP growth forecast for India in 2026?")
+    gpu = topics.decide(session, "Which GPU should I buy for running local LLMs?")
+    kept = ledger.record("predict india's growth next year", "Growth is likely to stay near 6.5% next year, with risks "
+                         "from oil prices and weaker exports.")
+    monkeypatch.setattr(gui.runtime.development, "assess", lambda: {
+        "stage_reached": 1, "stage_name": "Observation", "working_on": "Recognition", "rule": "rule",
+        "stages": [{"number": 1, "name": "Observation", "measure": "messages", "value": 120, "threshold": 100,
+                    "passed": True, "detail": "120 messages.", "source": "agent.db", "next_step": "talk"}]})
+    gui._open_mind()
+    window = gui._mind_window
+    try:
+        assert set(window.topic_tree.get_children()) == {gdp.topic_id, gpu.topic_id}
+        assert "2 messages placed in 2 topics" in window.topic_stats.cget("text")
+        window.topic_tree.selection_set(gdp.topic_id)
+        window.make_current()
+        assert window.topic_tree.item(gdp.topic_id, "text").startswith("● ")
+        window.decision_tree.selection_set(f"m{gpu.message_id}")
+        window.join_message()
+        assert topics.stats()["owner_fixes"] == {"reactivate": 1, "same_topic": 1}
+        assert window.forecast_tree.get_children() == (str(kept),)
+        window.forecast_tree.selection_set(str(kept))
+        window.judge("right")
+        assert ledger.stats()["hit_rate"] == 1.0
+        for _ in range(100):  # development is measured off the window's thread
+            gui.root.update()
+            if window.stage_tree.get_children():
+                break
+            time.sleep(0.02)
+        assert window.stage_tree.get_children() == ("1",)
+        assert window.stage_summary.cget("text").startswith("Stage reached: 1 of 1")
+        assert "No retention reviews yet" in window.retention_text.get("1.0", "end")
+    finally:
+        window.close()
+
+
+def test_the_chat_header_names_the_current_topic_and_switches_topic(gui, monkeypatch, tmp_path):
+    """2026-11-09: the badge said "Active" whatever was discussed; it now follows the topic record."""
+    from app.topics import ConversationTopics
+
+    topics = ConversationTopics(tmp_path / "topics.db")
+    monkeypatch.setattr(gui.runtime, "topics", topics)
+    chip = gui._topic_chip
+    try:
+        assert chip.refresh() == "Active"  # nothing recorded yet: nothing claimed
+        session = gui.runtime.session.session_id
+        gdp = topics.decide(session, "What is the GDP growth forecast for India in 2026?")
+        pasta = topics.decide(session, "btw give me a quick pasta recipe for dinner")
+        assert chip.refresh(pasta.to_dict()) == "◈ Quick pasta recipe for dinner"
+        assert gui.view_badge.cget("text") == "◈ Quick pasta recipe for dinner"
+        said = chip.go_to(gdp.topic_id)
+        assert said.startswith("Back on “GDP growth forecast for India in 2026”")
+        assert gui.view_badge.cget("text").startswith("◈ GDP growth forecast for India")
+        assert topics.status()["current_topic"] == gdp.title
+        chip.show(False)  # another page keeps its own badge text
+        gui.view_badge.configure(text="Report")
+        assert chip.refresh() == "" and gui.view_badge.cget("text") == "Report"
+    finally:
+        chip.show(False)
+        chip.shown = True
+        gui.view_badge.configure(text="Active")
+
+
+def test_the_mind_window_reads_the_system_and_explains_a_recall(gui, monkeypatch, tmp_path):
+    from app.memory.retention import RetentionPractice
+    from app.topics import ConversationTopics
+
+    monkeypatch.setattr(gui.runtime, "topics", ConversationTopics(tmp_path / "topics.db"))
+    monkeypatch.setattr(gui.runtime, "retention", RetentionPractice(gui.runtime.memory, tmp_path / "retention.db"))
+    monkeypatch.setattr(gui.runtime.development, "assess", lambda: {
+        "stage_reached": 0, "stage_name": "None yet", "working_on": "Observation", "rule": "rule", "stages": []})
+    monkeypatch.setattr("app.cognitive_telemetry.snapshot", lambda runtime: {
+        "model": {"name": "hayat:latest", "provider": "ollama"},
+        "inference": {"tokens": 120, "tokens_per_second": 41.5, "model": "hayat:latest", "at": "2026-11-09T10:00:00+00:00"}})
+    monkeypatch.setattr("app.cognitive_telemetry.explain_recall", lambda memory, question, limit=5: [
+        {"memory_id": 7, "type": "semantic", "text": "Canberra is the capital.", "score": 0.8,
+         "because": ["shares the question's words (0.90)"], "linked_from": None}])
+    gui._open_mind()
+    window = gui._mind_window
+
+    def wait(done):
+        for _ in range(150):
+            gui.root.update()
+            if done():
+                return True
+            time.sleep(0.02)
+        return False
+
+    try:
+        assert window._system_timer is None  # not in view: nothing is polled
+        window.tabs.select(window.pages["System"])
+        assert wait(lambda: len(window.system_tree.get_children()) == 2)
+        assert window.system_tree.item("s1", "values")[0].startswith("120 tokens at 41.5 tokens/s")
+        assert window._system_timer is not None
+        window.tabs.select(window.pages["Memory & learning"])
+        gui.root.update()
+        assert window._system_timer is None  # leaving the tab stops the readings
+        window.recall_question.insert(0, "capital of Australia")
+        window.explain_recall()
+        assert wait(lambda: "because: shares the question's words" in window.memory_detail.get("1.0", "end"))
+    finally:
+        window.close()
+
+
+def test_the_research_lab_runs_each_laboratory_and_shows_where_results_came_from(gui, monkeypatch, tmp_path):
+    """2026-11-09: robustness, code defence, software analysis and model discovery in one window, from real tools."""
+    import numpy as np
+    import pandas as pd
+
+    from app.code_defense import CodeDefense
+    from app.gui_research_lab import provenance
+    from app.model_discovery import ModelDiscovery
+    from app.robustness import RobustnessLab
+
+    rng = np.random.default_rng(3)
+    table = pd.DataFrame({"a": rng.normal(size=300), "b": rng.normal(size=300)})
+    table["y"] = 2 * table["a"] - table["b"] + rng.normal(scale=0.3, size=300)
+    path = tmp_path / "t.csv"
+    table.to_csv(path, index=False)
+    discovery = ModelDiscovery(tmp_path / "md.db")
+    monkeypatch.setattr(gui.runtime, "model_discovery", discovery)
+    monkeypatch.setattr(gui.runtime, "robustness", RobustnessLab(tmp_path / "rob.db", discovery))
+    monkeypatch.setattr(gui.runtime, "code_defense", CodeDefense(tmp_path / "cd.db"))
+    gui._open_research_lab()
+    window = gui._research_lab
+
+    def wait(done):
+        for _ in range(600):
+            gui.root.update()
+            if done():
+                return True
+            time.sleep(0.02)
+        return False
+
+    try:
+        assert wait(lambda: "Ghidra" in window.software_text.get("1.0", "end"))
+        assert "Limits: Static analysis only" in window.software_text.get("1.0", "end")
+        window.discovery_fields["source"].insert(0, str(path))
+        window.discovery_fields["target"].insert(0, "y")
+        window.discover()
+        assert wait(lambda: len(window.candidate_tree.get_children()) == 4)
+        shown = window.discovery_text.get("1.0", "end")
+        assert "predicts y better than the baseline" in shown and "Tool: scikit-learn pipelines" in shown
+        assert "Limits:" in shown and "Next:" in shown and len(window.experiment_tree.get_children()) == 1
+        window.run_robustness("injection")
+        assert wait(lambda: len(window.robust_tree.get_children()) == 1)
+        assert "8 of 8 injected passages caught" in window.robust_tree.item(window.robust_tree.get_children()[0], "text")
+        assert "Not scanned yet." in window.defense_stats.cget("text")
+        assert provenance({"tool": "t", "source": "s", "seconds": 1.5, "limits": "l", "next": "n"}) == (
+            "Tool: t · Source: s · Took: 1.5 s\nLimits: l\nNext: n")
+    finally:
+        window.close()
+
+
+def test_recent_chats_list_the_latest_conversations_and_reopen_one_as_a_question(gui):
+    from app.gui_home import ago, recent_conversations
+
+    memory = gui.runtime.memory
+    memory.record_message("recent-a", "user", "Plan my trip to Lisbon")
+    memory.record_message("recent-a", "assistant", "Here is a plan.")
+    memory.record_message("recent-b", "user", "Compare two laptops under 800 dollars")
+    items = recent_conversations(memory)
+    assert [item["title"] for item in items[:2]] == ["Compare two laptops under 800 dollars", "Plan my trip to Lisbon"]
+    assert ago(items[0]["last"]) in {"now", "1m ago"}
+    gui.recent_chats.show(items)
+    labels = [child for row in gui.recent_chats.rows.winfo_children() for child in row.winfo_children()
+              if "💬" in str(child.cget("text"))]
+    assert "Compare two laptops" in labels[0].cget("text")
+    assert labels[1].bind("<Button-1>")  # each row is clickable
+    gui.recent_chats.open(items[1]["title"])
+    assert gui.input.get("1.0", "end").strip() == 'What did we discuss about "Plan my trip to Lisbon"?'
+    gui.input.delete("1.0", "end")
+
+
+def test_a_short_home_folds_its_subtitle_and_actions_so_the_3d_core_keeps_room(gui):
+    from types import SimpleNamespace
+
+    gui._set_home_mode('3d')
+    subtitle, actions = gui._home_extras
+    gui._fit_home(SimpleNamespace(height=400))
+    assert not actions.winfo_manager() and not subtitle.winfo_manager()
+    gui._fit_home(SimpleNamespace(height=700))
+    assert actions.winfo_manager() and subtitle.winfo_manager()
+    # Back in its place: directly under the title, above the 3D scene.
+    slaves = gui._welcome.pack_slaves()
+    assert slaves.index(actions) == slaves.index(subtitle.master) + 1
+    gui._set_home_mode('tasks')
+
+
+def test_a_generated_picture_in_chat_offers_folder_copy_and_make_another(gui, tmp_path, monkeypatch):
+    import json
+    from PIL import Image
+
+    png = tmp_path / "lighthouse-1.png"
+    Image.new("RGB", (1344, 768), (40, 90, 160)).save(png)
+    (tmp_path / "manifest.jsonl").write_text(json.dumps({"path": str(png), "prompt": "a lighthouse at dusk"}) + "\n",
+                                             encoding="utf-8")
+    gui.chat.configure(state="normal")
+    gui._embed_image_file(png)
+    gui.chat.configure(state="disabled")
+    text = gui.chat.get("1.0", "end")
+    assert "Open full size  (1344x768" in text
+    assert "Show in folder" in text and "Copy image" in text and "Make another" in text
+    # The preview is no longer a 380 px stamp when the conversation has room.
+    assert gui._inline_images[-1].width() >= 380
+    again = next(tag for tag in gui.chat.tag_names() if tag.startswith("imgact_") and gui.chat.tag_ranges(tag)
+                 and gui.chat.get(*gui.chat.tag_ranges(tag)[:2]) == "Make another")
+    monkeypatch.setattr(gui, "use_example", lambda text: setattr(gui, "_example_used", text))
+    assert str(gui.chat.tk.call(gui.chat._w, "tag", "bind", again, "<Button-1>")).strip()  # clickable
+    gui._link_actions[again]()
+    assert getattr(gui, "_example_used", "") == "Generate an image of a lighthouse at dusk"

@@ -62,8 +62,8 @@ def test_the_brain_is_not_preloaded_when_warm_or_when_it_would_not_fit():
 
     warm, _ = _brain_runtime(already_warm=True)
     assert ResourceController(warm).preload_brain(poster=poster, wait=True)["reason"] == "already loaded"
-    full, _ = _brain_runtime(allowed=False)
-    assert ResourceController(full).preload_brain(poster=poster, wait=True)["reason"] == "not enough free memory"
+    full, _ = _brain_runtime(allowed=False)  # larger than the whole machine (no fits_machine)
+    assert ResourceController(full).preload_brain(poster=poster, wait=True)["reason"] == "the model is larger than this machine's memory"
     cloud, provider = _brain_runtime()
     provider.name = "openai"
     assert ResourceController(cloud).preload_brain(poster=poster, wait=True)["preloading"] is False

@@ -179,6 +179,36 @@ Each constant is written as a whole number or simple fraction when it is one (1/
 otherwise with the fewest digits that grade no worse. `x ** -1` reads as a division, `x ** (1/2)` as
 `sqrt(x)`, and `-1 * x` as `-x`.
 
+### A harder tier (2026-11-07)
+
+Sixteen more laws whose shapes the first tier never needed (`--tier 2`, or `--tier all` for both):
+the thin-lens image distance, resistors in parallel, a Pythagorean distance, Michaelis–Menten enzyme
+kinetics, an Arrhenius rate, a sine wave with a phase and a level, a power law on top of a constant,
+tanh saturation, the relativistic Lorentz factor, Stefan–Boltzmann, a loan payment from three inputs,
+the Doppler shift, an inverse square plus a background, drag with 5 % noise, mixed powers of two
+inputs, and an RC circuit charging.
+
+It first solved **5 of 16**. The work-out had no rational forms, no offset power law, no phase-shifted
+wave, no saturation curves and no root of a sum of squares. Each is now a standard shape with a
+starting point worked out from the data. A fit only finds what it starts near, so:
+
+| Shape | Covers | Starting point |
+|---|---|---|
+| `a + b·xᵖ` | inverse square plus background, any power law with an offset | exponents on a grid, the line in xᵖ solved exactly for each |
+| `a + b·sin(ω·x + φ)` | waves about a level: tides, seasons, offset AC | a grid of frequencies and phases |
+| `a·x/(b + x)` | enzyme kinetics, Langmuir adsorption | the double-reciprocal line 1/y = 1/a + (b/a)/x |
+| `a·exp(b/x)` | Arrhenius rates | the straight line of log y against 1/x |
+| `a·tanh(b·x)` | saturation through zero | the largest value, a few rates |
+| `a·(1 + b·x²)ᵏ` | the Lorentz factor, Lorentzian peaks | b = ±1, k = ±½, −1 |
+| `a·x·y/(x + b·y)` | resistors in parallel (b = 1), the thin lens (b = −1) | b = ±1 |
+| `√(a·x² + b·y²)` | distances, magnitudes | a = b = 1 |
+| `a·P·r/(1 − (1 + r)^−n)` | loan and annuity payments | a = 1, only when one input is a rate below 1 |
+
+Both tiers now solve **32 of 32**, each passing its held-out cases with the textbook formula:
+`R1 * R2 / (R1 + R2)`, `-f * u / (f - u)`, `sqrt(x ** 2 + y ** 2)`, `12 * S / (3 + S)`,
+`10000000 * exp(-5000 / T)`, `3 + 2 * sin(3 / 2 * t + 2 / 5)`, `(1 - b ** 2) ** (-(1 / 2))` and
+`P * r / (1 - (1 + r) ** (-n))`. The larger shape list costs time: 1–8 s per law instead of 0.2–5 s.
+
 When two fits explain the cases equally well, the one with the smaller constants wins. Fitting
 `c1*sin(c2*x)/x` to cases at multiples of 0.5 returned `-sin(11.57x)/x`, which matches sin(x)/x at
 every one of those points (aliasing); it now returns `sin(x) / x`. A formula that fails inside Python
@@ -206,6 +236,63 @@ measured. Two changes followed:
 In the second trial every task was solved in its first model round, 20–55 s each. One run doesn't
 prove the change caused that. Evidence: `.test-runs/live-invention-20261017-144619.json` and
 `-145040.json`.
+
+## Theory and proof (2026-11-07)
+
+Code: [app/invention_theory.py](../app/invention_theory.py). Tests:
+[tests/test_invention_theory.py](../tests/test_invention_theory.py).
+
+Fitting says *what* the numbers do. **Theory** asks why the formula should hold and what would prove it
+wrong. Open a project, then the **Theory** tab. Optionally give the units of each input (`L=m, g=m/s**2`,
+`1` for none), the unit of the result and claims separated by `;`. Press **Prove and explain best
+formula**. In chat: "prove invention invent-…" or "explain why invention invent-… works". The tool is
+`invention_theory`. Units can also be given when the project is created (`units`, `output_unit`); they
+describe the quantities and are **not** part of the frozen contract. Every work-out or run then theorises
+its best formula on its own.
+
+| Check | What it does | Status words |
+|---|---|---|
+| Cases | Each frozen case in exact rational arithmetic; π, e and roots to 50 significant digits | proved / verified to 50 digits / fails |
+| Units | Every number in the formula is a coefficient that may carry units. Linear algebra over the seven SI base dimensions works out the units each must carry, or names the sum or function that breaks them (`x + t` with metres and seconds; `exp(t)` with seconds) | consistent / NOT consistent |
+| Named constants | A coefficient whose units and value match a physical constant (or 2, ½, π, 2π, 4π times it, its root or square) within 0.5 % is named | "consistent with …, x % off" |
+| Derived from units | Buckingham's pi theorem: the law the inputs' and result's units allow, before looking at any data, which inputs cannot matter and the dimensionless groups left. When the units cannot balance, or the derived shape fits badly, the constant a coefficient matched is brought in and the derivation is tried again. The derived shape is then fitted to the cases | passes n of N; agrees / open / does not agree |
+| Proofs | sympy, under the sign of each input in the cases: rises/falls with each input, an exact power law (x·∂ln f/∂x constant), exponential, Arrhenius-like or saturating behaviour, limits at 0 and ∞, scaling (only for inputs with the same units), symmetry, sign | proved / observed (sampled, not a proof) / undecided |
+| Claims | "increases with L", "is positive", "symmetric in a and b", "inverse square in r", "zero when x = 0", "at most 3", "independent of m". Constraints that read as claims are checked too | proved / disproved with a counterexample / not understood |
+| Decisive experiment | The point, inside or up to half a range beyond the cases, where the best formula and its closest rivals (from the work-out, earlier rounds, or the unit-derived law) disagree most | the measurement to make, and whether it can tell them apart |
+
+An **evidence ladder** closes the result: fits the cases, predicts left-out cases, units consistent,
+agrees with the unit-derived law, the owner's claims proved, and measured on a real device. The last rung
+is never marked met by software.
+
+**Agreement with dimensional analysis** means every number in the formula is a pure number or a named
+physical constant. A number that must carry units but matches no constant (a resistance, a time constant,
+an activation energy) belongs to the particular device: units can never supply it, so the rung stays
+**open** and names the numbers to measure, rather than failing. When the units leave a function of
+dimensionless groups open (u/f in the thin-lens law), the formula supplies it; a failed power-law guess for
+that function is not held against the formula. A purely numeric part such as `1 / 2` is one number, and a
+constant matched with a minus sign (`v - 343`) is still that constant.
+
+**Measured (2026-11-07):** [scripts/benchmark_invention_theory.py](../scripts/benchmark_invention_theory.py)
+works each of the 26 physical benchmark laws out from its cases (no model), then theorises it with its real
+SI units. 26 of 26 read as a physicist expects: 14 agree (pendulum with g, gravitation with G, ideal gas
+with R, Stefan–Boltzmann with σ, Doppler with the speed of sound, projectile with g, kinetic energy,
+electrical power, drag, beam deflection, thin lens, parallel resistors, Pythagoras, Lorentz factor), 12 stay
+open on their device constants (decay rate, internal resistance, RC time constant, Arrhenius energy …),
+and none disagree; the slowest took 4.9 s. The first run of this check found a crash on one-input
+dimensionless laws, fractions split into two "unfixed" numbers, and device constants counted as failures —
+all fixed, with tests. A possible mechanism (inverse square, square-root, exponential decay,
+activation, saturation…) is named as a hypothesis the shape suggests, not as established.
+
+**Example.** Five pendulum timings with only `L=m` and the result in `s`. Theory says 2.006 must carry
+s·m^-½, consistent with 2π/√g (0.02 % off). From units alone L cannot give seconds, so g is brought in:
+T = C·L^½·g^-½. Fitted to the cases, C = 6.282 ≈ 2π (0.019 % off), which re-derives T = 2π√(L/g). It proves
+the period rises with L as L^½, and refutes "at most 3" with L = 2.691. For
+gravitation it names 6.674e-11 m³·kg⁻¹·s⁻² as G, proves the force symmetric in the masses and an exact
+inverse square in r, and refutes "increases with r".
+
+Sympy has no timeout, so each step runs with a few seconds' budget (25 s overall) and is reported
+undecided rather than hanging. The theory is a mathematical and dimensional argument about the formula,
+not a physical experiment; it does not establish that a device works or that the idea is new.
 
 ## Autonomous invention cycles
 
@@ -269,6 +356,8 @@ Work out invention invent-<32 hex characters>
 Simulate invention invent-<32 hex characters>
 Simulate invention invent-<32 hex characters> with 20% spread
 Simulate formula c1 * sqrt(L) on invention invent-<32 hex characters>
+Prove invention invent-<32 hex characters>
+Explain why invention invent-<32 hex characters> works
 Prefrontal cortex status
 Dual brain status
 ```

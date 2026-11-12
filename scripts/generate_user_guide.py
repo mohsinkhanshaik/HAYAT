@@ -23,6 +23,10 @@ INTRO = """# How to use HAYAT
 HAYAT is a private assistant that runs on your own Windows computer. You talk to it in plain words, typed or
 spoken, and it decides which of its tools to use. Nothing leaves your computer unless you ask for it.
 
+## Use OpenAI, Anthropic or Gemini
+
+Open **Studios → Connected AI**. In **Connections**, save your API key locally, enable external API access, discover and select an exact model, then use **Research** to ask questions and attach documents. The desk provides calculations, sample statistics, forecasts with past-only backtests, cited document retrieval, usage reporting and evidence export. Public web search and sharing your local memories are each off until you tick their box for that window. Provider billing may apply. It never silently substitutes another model. PRIVATE / LOCAL_ONLY and Emergency stop block calls. [Complete setup and limits](connected-ai-2026-11-11.md).
+
 ## The basics
 
 1. **Start it.** Run `python run.py` (or the HAYAT shortcut). The main window opens with the chat in the middle.
@@ -37,8 +41,54 @@ spoken, and it decides which of its tools to use. Nothing leaves your computer u
 6. **When something fails,** HAYAT says what failed and why in plain words. Say "search again", "try again" or
    "what went wrong?" to continue.
 
+**Starting up.** The desktop boot screen shows actual initialization stages and elapsed time while its
+worker assembles the runtime. It hands the same window over to the workspace. Optional model engines
+load on demand. Ask **Check startup readiness** or choose **Startup readiness** in the command palette
+to distinguish configured parts, missing models, inactive services and skill dependencies.
+
 On the command line (`python run.py --cli-only`) the same requests work, and slash commands such as `/health`
 print plain lines. Set `HAYAT_CLI_JSON=1` if a script needs JSON instead.
+
+**Keep the screen private.** Read-only reports and conversation output mask detected credentials. Partial
+answer drafts stay hidden until completion. Use **Screen shield** or **Ctrl+Shift+H** to cover HAYAT windows;
+press it again to reveal them. This covers the interface while work continues; it does not lock Windows,
+pause tools, clear the clipboard or protect other applications. Check what is visible before sharing.
+The main header keeps your name and wallet balances out of view. Open Business deliberately to read balances.
+
+**Adjust the workspace.** Choose **Layout → Appearance → Aurora** for the new cool-accent theme, or keep
+your saved appearance. Text size, high contrast and reduced motion remain available. Career radar stacks
+its list and evidence vertically on narrower windows; drag the divider to adjust the space.
+
+**Give the conversation more room.** Use **Menu** or **Ctrl+Shift+B** to show/hide the main navigation.
+On a compact window it opens over the conversation; choosing a workspace closes it. Click outside or
+press **Esc** to close it; if its search contains text, the first Esc clears that search. **Ctrl+Shift+K**
+opens workspace search even from Focus mode. **Search commands** in the header (or **Ctrl+Shift+P**)
+opens the searchable action list. Navigation choices are remembered separately for roomy and compact
+windows during this session, and your unsent draft stays in the composer.
+
+**Think through a decision.** Open **Chat actions → Reasoning desk**, or press **Ctrl+Shift+P** and search
+for **Reasoning desk**. Inspect the last answer's checks and observed learning priorities. Choose Automatic,
+Balanced or Deep review; fixed specialist, local and privacy modes stay in force. In **Decision brief**,
+enter your goal, constraints, supplied evidence/unknowns and success criteria, then **Prepare in chat**.
+This stages an unsent draft and preserves any existing chat draft. Review and send it yourself. Deep review
+adds bounded self-questioning and skeptical review; model agreement does not establish factual accuracy.
+
+**Check figures and facts.** Supported whole requests use local calculation, for example **Net worth with
+assets $120000 and liabilities $45000**, **Compound interest on $1000 at 5% annually for 2 years**,
+**Real return with nominal return 10% and inflation 5%**, **Find the hypotenuse of a right triangle with
+legs 3 cm and 4 cm**, or **Energy used by a 2 kW device running for 3 hours at $0.20 per kWh**.
+For monthly compounding, specify an annual rate: **Compound interest on $1000 at 12% annual rate
+compounded monthly for 1 year**. Mixed units, unspecified fees and extra conditions need further interpretation.
+Requests for current officeholders, policy rates and news require fresh lookup; stored facts and model
+memory alone do not establish today's answer. Two-sentence requests now keep that length in Deep mode.
+
+**Run an engineering check.** In **Invention → Experiment Lab**, declare a formula's input and output
+units to check dimensions and scale; convert named/compound units or absolute K/degC/degF temperatures;
+or grade a fixed formula against independently supplied **Unseen cases**. These checks do not fit new
+constants or modify the project's frozen cases. A dimensional match alone does not validate a device.
+The Invention section picker reaches every journal page on narrow windows. Use the sidebar **Back** and
+**Forward** buttons or **Alt+Left / Alt+Right** to revisit workspaces while keeping your draft. **Shift+wheel**
+scrolls horizontally where content supports it. Reduced motion settles active glides and skips animated markers.
 
 ## Everything HAYAT can do
 """

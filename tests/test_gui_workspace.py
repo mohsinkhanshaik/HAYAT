@@ -41,6 +41,14 @@ def test_palette_filters_declared_commands_and_never_executes_search_text():
     callback.assert_not_called()
 
 
+def test_command_titles_rank_above_incidental_keyword_matches():
+    callback = Mock()
+    commands = [WorkspaceCommand('World map', callback, 'reasoning desk'),
+                WorkspaceCommand('Reasoning desk tools', callback), WorkspaceCommand('Reasoning desk', callback)]
+    assert matching_commands(commands, 'reasoning desk') == [commands[2], commands[1], commands[0]]
+    assert matching_commands(commands, '') == commands
+
+
 @pytest.fixture
 def root(shared_tk):
     from tests.conftest import close_window, open_window
@@ -58,6 +66,24 @@ def test_palette_enter_calls_existing_handler_once(root):
     palette.execute()
     callback.assert_called_once_with()
     assert not palette.winfo_exists()
+
+
+def test_palette_explains_empty_results_and_uses_current_theme(root):
+    from types import SimpleNamespace
+    from app.gui_theme import THEMES
+    callback = Mock()
+    theme = SimpleNamespace(**THEMES['Aurora'])
+    palette = CommandPalette(root, [WorkspaceCommand('Reasoning desk', callback, 'decision evidence')], theme)
+    assert palette.results.cget('bg') == theme.PANEL
+    palette.query.set('absent-workspace')
+    assert palette.match_count.get() == '0 commands found'
+    assert 'No matching command' in palette.selection_detail.get()
+    palette.execute()
+    callback.assert_not_called()
+    palette.query.set('decision')
+    assert palette.match_count.get() == '1 command found'
+    assert 'Reasoning desk' in palette.selection_detail.get()
+    palette.destroy()
 
 
 def test_draft_restores_without_sending_and_privacy_prevents_persistence(root, tmp_path):
@@ -112,7 +138,7 @@ def test_previous_launch_draft_requires_explicit_recovery_and_never_overwrites_i
     controller.close()
 
 
-def test_stream_preview_appends_without_losing_selection_or_reading_position(root):
+def test_stream_preview_withholds_unfinished_drafts_and_preserves_notice_selection(root):
     from app.gui import HayatGUI
     from app.gui_workspace import StreamingPreview
     preview = StreamingPreview(root, HayatGUI)
@@ -121,15 +147,15 @@ def test_stream_preview_appends_without_losing_selection_or_reading_position(roo
     preview.drain()
     root.update_idletasks()
     preview.text.yview_moveto(0)
-    preview.text.tag_add("sel", "2.0", "2.4")
+    preview.text.tag_add("sel", "1.0", "1.5")
     preview.publish("delta", "New line\n")
     preview.drain()
-    assert preview.text.get("sel.first", "sel.last") == "Line"
+    assert preview.text.get("sel.first", "sel.last") == "Draft"
     assert preview.text.yview()[0] < .05
-    assert preview.text.get("1.0", "end-1c").endswith("New line\n")
+    assert preview.text.get("1.0", "end-1c") == "Draft hidden until the answer is complete."
     preview.publish("clear")
     preview.drain()
     preview.publish("start", "local/hayat")
     preview.publish("delta", "Fresh reply")
     preview.drain()
-    assert preview.text.get("1.0", "end-1c") == "Fresh reply"
+    assert "Fresh reply" not in preview.text.get("1.0", "end-1c")

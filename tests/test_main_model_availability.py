@@ -70,3 +70,99 @@ def test_a_saved_pick_for_a_removed_model_is_ignored(monkeypatch):
 def test_a_saved_pick_for_an_installed_model_is_still_used(monkeypatch):
     router = _router(["hayat:latest", "tiny:1b"], {"provider": "ollama", "model": "tiny:1b"}, monkeypatch)
     assert router.get("classification_model").model == "tiny:1b"
+
+
+# 2026-11-07: "HAYAT's main model is currently unavailable" again, with the brain cold and free RAM briefly short.
+def test_the_check_says_whether_a_model_fits_the_machine_at_all():
+    rows = [{"model": "hayat:latest", "size_bytes": 22 * GB, "loaded": False}]
+    storage = SimpleNamespace(model_inventory=lambda: {"models": [dict(row) for row in rows]})
+    tight = SimpleNamespace(system=lambda: {"gpu": [{"vram_free_mb": 300, "vram_total_mb": 8151}],
+                                            "ram": {"available_bytes": 12 * GB, "total_bytes": 40 * GB}})
+    decision = ModelResourceManager(storage, tight).can_load("hayat:latest")
+    assert not decision["allowed"] and decision["fits_machine"]  # not free now, but the machine can hold it
+    small = SimpleNamespace(system=lambda: {"gpu": [{"vram_free_mb": 300, "vram_total_mb": 4000}],
+                                            "ram": {"available_bytes": 4 * GB, "total_bytes": 16 * GB}})
+    assert not ModelResourceManager(storage, small).can_load("hayat:latest")["fits_machine"]
+
+
+def test_the_brain_tries_a_load_that_fits_the_machine_but_other_models_wait(tmp_path):
+    from app.models.intelligent_router import IntelligentModelRouter
+    rows = [{"model": name, "provider": "ollama", "capabilities": ["completion"], "size_bytes": 1,
+             "benchmark_score": {"coding_accuracy": score, "mean_latency_seconds": 1}}
+            for name, score in (("hayat:latest", .95), ("helper:7b", .7))]
+    brain = IntelligentModelRouter(SimpleNamespace(model_inventory=lambda: {"models": rows}),
+                                   SimpleNamespace(providers={"ollama": SimpleNamespace(model="hayat:latest")}), tmp_path / "r.db")
+    brain.resource_manager = SimpleNamespace(can_load=lambda model: {"allowed": False, "fits_machine": True})
+    assert brain._resources_allow("hayat:latest") and not brain._resources_allow("helper:7b")
+    brain.resource_manager = SimpleNamespace(can_load=lambda model: {"allowed": False, "fits_machine": False})
+    assert not brain._resources_allow("hayat:latest")  # larger than the whole machine: still refused
+
+
+def test_a_refused_request_brings_the_service_back_and_tries_once_more(monkeypatch):
+    import httpx
+    from app.models import local
+    from app.models.local import OllamaProvider
+    calls, recovered = [], []
+
+    def post(url, **kwargs):
+        calls.append(url)
+        if len(calls) == 1:
+            raise httpx.ConnectError("[WinError 10061] refused", request=httpx.Request("POST", url))
+        return httpx.Response(200, json={"message": {"content": "ok"}, "done": True}, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(httpx, "post", post)
+    monkeypatch.setattr(local, "SERVICE_RECOVERY", lambda: recovered.append(1) or (True, "restarted"))
+    provider = OllamaProvider("http://127.0.0.1:11435", "hayat:latest")
+    assert provider.generate([{"role": "user", "content": "hi"}]).content == "ok"
+    assert len(calls) == 2 and recovered == [1]
+
+
+def test_a_service_that_cannot_be_brought_back_says_why_and_a_slow_one_is_not_restarted(monkeypatch):
+    import httpx
+    import pytest
+    from app.models import local
+    from app.models.base import ModelError
+    from app.models.local import OllamaProvider
+    recovered = []
+    monkeypatch.setattr(local, "SERVICE_RECOVERY", lambda: recovered.append(1) or (False, "ollama exited during startup"))
+    monkeypatch.setattr(httpx, "post", lambda url, **kw: (_ for _ in ()).throw(
+        httpx.ConnectError("refused", request=httpx.Request("POST", url))))
+    with pytest.raises(ModelError, match="could not be brought back: ollama exited during startup"):
+        OllamaProvider("http://127.0.0.1:11435", "hayat:latest").generate([{"role": "user", "content": "hi"}])
+    recovered.clear()
+    monkeypatch.setattr(httpx, "post", lambda url, **kw: (_ for _ in ()).throw(
+        httpx.ReadTimeout("slow", request=httpx.Request("POST", url))))
+    with pytest.raises(ModelError):
+        OllamaProvider("http://127.0.0.1:11435", "hayat:latest").generate([{"role": "user", "content": "hi"}])
+    assert recovered == []  # slow is not down: nothing restarted
+
+
+def test_an_inventory_read_that_finds_the_service_down_brings_it_back_first(monkeypatch, tmp_path):
+    # With the service down the inventory was empty, the brain looked "not installed", and no request ever
+    # reached the provider's recovery: every reply was "main model unavailable".
+    import httpx
+    from app.models import local
+    from app.storage.manager import StorageManager
+    up, recovered = [False], []
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://127.0.0.1:11435")
+
+    def get(url, **kwargs):
+        if not up[0]:
+            raise httpx.ConnectError("[WinError 10061] refused", request=httpx.Request("GET", url))
+        body = {"models": [{"name": "hayat:latest", "size": 22 * GB}]} if url.endswith("/api/tags") else {"models": []}
+        return httpx.Response(200, json=body, request=httpx.Request("GET", url))
+
+    def recover():
+        recovered.append(1)
+        up[0] = True
+        return True, "restarted"
+
+    monkeypatch.setattr(httpx, "get", get)
+    monkeypatch.setattr(httpx, "post", lambda url, **kw: httpx.Response(200, json={}, request=httpx.Request("POST", url)))
+    monkeypatch.setattr(local, "SERVICE_RECOVERY", recover)
+    storage = StorageManager.__new__(StorageManager)
+    import threading
+    storage._cache_lock, storage._model_metadata_cache = threading.Lock(), {}
+    storage._model_score = lambda name: None
+    names = [row["model"] for row in storage.model_inventory()["models"]]
+    assert names == ["hayat:latest"] and recovered == [1]

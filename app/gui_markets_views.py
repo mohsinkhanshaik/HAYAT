@@ -115,6 +115,8 @@ class TickerStrip(tk.Frame):
             change.pack(anchor="w")
             for widget in (cell, name, price, change):
                 widget.bind("<Button-1>", lambda _event, symbol=symbol, asset=asset: on_click(symbol, asset))
+            from app.gui_a11y import activatable
+            activatable(cell, lambda symbol=symbol, asset=asset: on_click(symbol, asset), palette, keys_only=True)
             self.cells[symbol] = {"asset": asset, "price": price, "change": change}
 
     @staticmethod

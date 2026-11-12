@@ -8,6 +8,18 @@ _NUMBERS = dict(zip(('one two three four five six seven eight nine ten eleven tw
 _COUNTS = r'\d{1,3}|' + '|'.join(_NUMBERS)
 _WORDS = re.compile(r'(?i)\b(?P<mode>in exactly|exactly|in under|under|less than|fewer than|at most|'
                     r'no more than|within|maximum(?: of)?|max|in)\s+(?P<count>' + _COUNTS + r')\s+words?\b')
+_SENTENCES = re.compile(r'(?i)(?:\b(?:in|using|with)\s+(?:exactly\s+|only\s+|just\s+)?|'
+                        r'(?:^|[.!?]\s*)(?:exactly\s+|only\s+|just\s+)?)'
+                        r'(?P<count>' + _COUNTS + r')\s+sentences?\b')
+
+
+def sentence_constraint(text: str) -> int | None:
+    match = _SENTENCES.search(' '.join(str(text or '').split()))
+    if not match:
+        return None
+    raw = match['count'].casefold()
+    count = int(raw) if raw.isdigit() else _NUMBERS[raw]
+    return count if 1 <= count <= 20 else None
 
 
 @dataclass(frozen=True)

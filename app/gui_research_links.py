@@ -12,7 +12,9 @@ DESTINATIONS = (
 def research_links(parent, gui, current, *, image=None, name=None, context=None):
     """Only explicitly entered fields cross a handoff; images never become names."""
     style = ttk.Style(parent)
-    style.configure('Hayat.Research.TMenubutton', background=gui.PANEL_2, foreground=gui.WHITE, padding=(8, 5))
+    # Without its own edge colours clam outlined it in bright grey, the one light box in the window's header.
+    style.configure('Hayat.Research.TMenubutton', background=gui.PANEL_2, foreground=gui.WHITE, padding=(8, 5),
+                    bordercolor=gui.LINE, lightcolor=gui.PANEL_2, darkcolor=gui.PANEL_2, arrowcolor=gui.WHITE)
     style.map('Hayat.Research.TMenubutton', foreground=[('disabled', gui.MUTED), ('active', gui.BLACK)],
               background=[('active', gui.GOLD_SOFT)])
     button = ttk.Menubutton(parent, text='Other research tools', style='Hayat.Research.TMenubutton')

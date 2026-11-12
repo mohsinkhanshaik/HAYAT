@@ -79,10 +79,11 @@ DEFAULT_PREFERENCES = {
     "target_titles": [], "search_terms": [], "locations": [], "countries_ok": [], "remote_only": False,
     "willing_to_relocate": False, "min_salary": None,
     "salary_currency": "USD", "level": "", "job_types": [], "exclude_companies": [], "exclude_words": [],
-    "sources": ["remoteok", "jobicy", "himalayas", "workingnomads", "themuse", "arbeitnow"], "companies": [],
+    "sources": ["remoteok", "jobicy", "himalayas", "workingnomads", "arbeitnow", "hnhiring", "company_boards"], "companies": [],
     "auto_prepare": False, "notify_score": 70, "notice_period": "", "work_authorization": "", "work_status": "",
     "salary_expectation": "",
 }
+OLD_DEFAULT_SOURCES = ("remoteok", "jobicy", "himalayas", "workingnomads", "themuse", "arbeitnow")
 
 
 def read_document(path: str | Path) -> str:
@@ -225,6 +226,10 @@ class Profile:
                 data = {}
         data.setdefault("cv", {})
         data["preferences"] = {**DEFAULT_PREFERENCES, **data.get("preferences", {})}
+        # A source list still equal to the old default (2026-10) is the default, not a choice: it gains the
+        # 2026-11 sources and drops The Muse, which now refuses HAYAT (403).
+        if sorted(data["preferences"]["sources"]) == sorted(OLD_DEFAULT_SOURCES):
+            data["preferences"]["sources"] = list(DEFAULT_PREFERENCES["sources"])
         data.setdefault("added_skills", [])
         data.setdefault("removed_skills", [])
         return data

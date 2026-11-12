@@ -1,0 +1,553 @@
+{
+ "source": "US states and DC: the IRS list of state government websites, https://www.irs.gov/businesses/small-businesses-self-employed/state-government-websites, read 2026-10-31. Indian states and UTs: candidates from ICAI's state GST list (not a government page), each kept only after its own government page (.gov.in/.nic.in) was opened on 2026-10-31 and named the state and its tax department; states whose sites could not be reached or verified are left out. National agencies are their governments' own sites.",
+ "authorities": [
+  {
+   "country": "US",
+   "region": "United States (federal)",
+   "code": "US",
+   "agency": "Internal Revenue Service (IRS)",
+   "url": "https://www.irs.gov/",
+   "site": "irs.gov"
+  },
+  {
+   "country": "IN",
+   "region": "India (central)",
+   "code": "IN",
+   "agency": "Income Tax Department, Government of India",
+   "url": "https://www.incometax.gov.in/",
+   "site": "incometax.gov.in"
+  },
+  {
+   "country": "IN",
+   "region": "India (central)",
+   "code": "IN",
+   "agency": "Goods and Services Tax Network (GST portal)",
+   "url": "https://www.gst.gov.in/",
+   "site": "gst.gov.in"
+  },
+  {
+   "country": "IN",
+   "region": "India (central)",
+   "code": "IN",
+   "agency": "Central Board of Indirect Taxes and Customs (CBIC)",
+   "url": "https://www.cbic.gov.in/",
+   "site": "cbic.gov.in"
+  },
+  {
+   "country": "US",
+   "region": "Alabama",
+   "code": "AL",
+   "agency": "Alabama Department of Revenue",
+   "url": "https://www.revenue.alabama.gov/businesses/",
+   "site": "revenue.alabama.gov"
+  },
+  {
+   "country": "US",
+   "region": "Alaska",
+   "code": "AK",
+   "agency": "Alaska Department of Revenue, Tax Division",
+   "url": "https://tax.alaska.gov/",
+   "site": "tax.alaska.gov"
+  },
+  {
+   "country": "US",
+   "region": "Arizona",
+   "code": "AZ",
+   "agency": "Arizona Department of Revenue",
+   "url": "https://www.azdor.gov/",
+   "site": "azdor.gov"
+  },
+  {
+   "country": "US",
+   "region": "Arkansas",
+   "code": "AR",
+   "agency": "Arkansas Department of Finance & Administration",
+   "url": "http://www.dfa.arkansas.gov",
+   "site": "dfa.arkansas.gov"
+  },
+  {
+   "country": "US",
+   "region": "California",
+   "code": "CA",
+   "agency": "California Franchise Tax Board",
+   "url": "https://www.ftb.ca.gov/",
+   "site": "ftb.ca.gov"
+  },
+  {
+   "country": "US",
+   "region": "Colorado",
+   "code": "CO",
+   "agency": "Colorado Department of Revenue",
+   "url": "https://cdor.colorado.gov/",
+   "site": "cdor.colorado.gov"
+  },
+  {
+   "country": "US",
+   "region": "Connecticut",
+   "code": "CT",
+   "agency": "Connecticut Department of Revenue Services",
+   "url": "https://portal.ct.gov/drs",
+   "site": "portal.ct.gov"
+  },
+  {
+   "country": "US",
+   "region": "Delaware",
+   "code": "DE",
+   "agency": "Delaware Division of Revenue",
+   "url": "https://revenue.delaware.gov/",
+   "site": "revenue.delaware.gov"
+  },
+  {
+   "country": "US",
+   "region": "District of Columbia",
+   "code": "DC",
+   "agency": "DC Office of Tax and Revenue",
+   "url": "https://otr.cfo.dc.gov/",
+   "site": "otr.cfo.dc.gov"
+  },
+  {
+   "country": "US",
+   "region": "Florida",
+   "code": "FL",
+   "agency": "Florida Department of Revenue",
+   "url": "http://floridarevenue.com/Pages/info_business.aspx",
+   "site": "floridarevenue.com"
+  },
+  {
+   "country": "US",
+   "region": "Georgia",
+   "code": "GA",
+   "agency": "Georgia Department of Revenue",
+   "url": "https://dor.georgia.gov/",
+   "site": "dor.georgia.gov"
+  },
+  {
+   "country": "US",
+   "region": "Hawaii",
+   "code": "HI",
+   "agency": "Hawaii Department of Taxation",
+   "url": "http://tax.hawaii.gov/",
+   "site": "tax.hawaii.gov"
+  },
+  {
+   "country": "US",
+   "region": "Idaho",
+   "code": "ID",
+   "agency": "Idaho State Tax Commission",
+   "url": "https://tax.idaho.gov/",
+   "site": "tax.idaho.gov"
+  },
+  {
+   "country": "US",
+   "region": "Illinois",
+   "code": "IL",
+   "agency": "Illinois Department of Revenue",
+   "url": "https://tax.illinois.gov/",
+   "site": "tax.illinois.gov"
+  },
+  {
+   "country": "US",
+   "region": "Indiana",
+   "code": "IN",
+   "agency": "Indiana Department of Revenue",
+   "url": "https://www.in.gov/dor/",
+   "site": "in.gov"
+  },
+  {
+   "country": "US",
+   "region": "Iowa",
+   "code": "IA",
+   "agency": "Iowa Department of Revenue",
+   "url": "https://tax.iowa.gov/",
+   "site": "tax.iowa.gov"
+  },
+  {
+   "country": "US",
+   "region": "Kansas",
+   "code": "KS",
+   "agency": "Kansas Department of Revenue",
+   "url": "https://www.ksrevenue.org/",
+   "site": "ksrevenue.org"
+  },
+  {
+   "country": "US",
+   "region": "Kentucky",
+   "code": "KY",
+   "agency": "Kentucky Department of Revenue",
+   "url": "https://revenue.ky.gov/Pages/index.aspx",
+   "site": "revenue.ky.gov"
+  },
+  {
+   "country": "US",
+   "region": "Louisiana",
+   "code": "LA",
+   "agency": "Louisiana Department of Revenue",
+   "url": "https://revenue.louisiana.gov/businesses/",
+   "site": "revenue.louisiana.gov"
+  },
+  {
+   "country": "US",
+   "region": "Maine",
+   "code": "ME",
+   "agency": "Maine Revenue Services",
+   "url": "https://www.maine.gov/revenue/",
+   "site": "maine.gov"
+  },
+  {
+   "country": "US",
+   "region": "Maryland",
+   "code": "MD",
+   "agency": "Comptroller of Maryland",
+   "url": "https://www.marylandtaxes.gov/",
+   "site": "marylandtaxes.gov"
+  },
+  {
+   "country": "US",
+   "region": "Massachusetts",
+   "code": "MA",
+   "agency": "Massachusetts Department of Revenue",
+   "url": "https://www.mass.gov/orgs/massachusetts-department-of-revenue",
+   "site": "mass.gov"
+  },
+  {
+   "country": "US",
+   "region": "Michigan",
+   "code": "MI",
+   "agency": "Michigan Department of Treasury",
+   "url": "https://www.michigan.gov/taxes",
+   "site": "michigan.gov"
+  },
+  {
+   "country": "US",
+   "region": "Minnesota",
+   "code": "MN",
+   "agency": "Minnesota Department of Revenue",
+   "url": "https://www.revenue.state.mn.us/minnesota-department-revenue-divisions",
+   "site": "revenue.state.mn.us"
+  },
+  {
+   "country": "US",
+   "region": "Mississippi",
+   "code": "MS",
+   "agency": "Mississippi Department of Revenue",
+   "url": "https://www.dor.ms.gov/Pages/default.aspx",
+   "site": "dor.ms.gov"
+  },
+  {
+   "country": "US",
+   "region": "Missouri",
+   "code": "MO",
+   "agency": "Missouri Department of Revenue",
+   "url": "https://dor.mo.gov/taxation/business/",
+   "site": "dor.mo.gov"
+  },
+  {
+   "country": "US",
+   "region": "Montana",
+   "code": "MT",
+   "agency": "Montana Department of Revenue",
+   "url": "https://mtrevenue.gov/",
+   "site": "mtrevenue.gov"
+  },
+  {
+   "country": "US",
+   "region": "Nebraska",
+   "code": "NE",
+   "agency": "Nebraska Department of Revenue",
+   "url": "https://revenue.nebraska.gov/",
+   "site": "revenue.nebraska.gov"
+  },
+  {
+   "country": "US",
+   "region": "Nevada",
+   "code": "NV",
+   "agency": "Nevada Department of Taxation",
+   "url": "https://tax.nv.gov/",
+   "site": "tax.nv.gov"
+  },
+  {
+   "country": "US",
+   "region": "New Hampshire",
+   "code": "NH",
+   "agency": "New Hampshire Department of Revenue Administration",
+   "url": "https://www.revenue.nh.gov/",
+   "site": "revenue.nh.gov"
+  },
+  {
+   "country": "US",
+   "region": "New Jersey",
+   "code": "NJ",
+   "agency": "New Jersey Division of Taxation",
+   "url": "https://www.state.nj.us/treasury/taxation/",
+   "site": "state.nj.us"
+  },
+  {
+   "country": "US",
+   "region": "New Mexico",
+   "code": "NM",
+   "agency": "New Mexico Taxation and Revenue Department",
+   "url": "http://www.tax.newmexico.gov/Default.aspx",
+   "site": "tax.newmexico.gov"
+  },
+  {
+   "country": "US",
+   "region": "New York",
+   "code": "NY",
+   "agency": "New York State Department of Taxation and Finance",
+   "url": "https://www.tax.ny.gov/",
+   "site": "tax.ny.gov"
+  },
+  {
+   "country": "US",
+   "region": "North Carolina",
+   "code": "NC",
+   "agency": "North Carolina Department of Revenue",
+   "url": "https://www.ncdor.gov/",
+   "site": "ncdor.gov"
+  },
+  {
+   "country": "US",
+   "region": "North Dakota",
+   "code": "ND",
+   "agency": "North Dakota Office of State Tax Commissioner",
+   "url": "https://www.nd.gov/tax/",
+   "site": "nd.gov"
+  },
+  {
+   "country": "US",
+   "region": "Ohio",
+   "code": "OH",
+   "agency": "Ohio Department of Taxation",
+   "url": "https://tax.ohio.gov/",
+   "site": "tax.ohio.gov"
+  },
+  {
+   "country": "US",
+   "region": "Oklahoma",
+   "code": "OK",
+   "agency": "Oklahoma Tax Commission",
+   "url": "https://www.ok.gov/tax/",
+   "site": "ok.gov"
+  },
+  {
+   "country": "US",
+   "region": "Oregon",
+   "code": "OR",
+   "agency": "Oregon Department of Revenue",
+   "url": "https://www.oregon.gov/DOR/pages/index.aspx",
+   "site": "oregon.gov"
+  },
+  {
+   "country": "US",
+   "region": "Pennsylvania",
+   "code": "PA",
+   "agency": "Pennsylvania Department of Revenue",
+   "url": "https://www.revenue.pa.gov/Pages/default.aspx",
+   "site": "revenue.pa.gov"
+  },
+  {
+   "country": "US",
+   "region": "Rhode Island",
+   "code": "RI",
+   "agency": "Rhode Island Division of Taxation",
+   "url": "http://www.tax.ri.gov/",
+   "site": "tax.ri.gov"
+  },
+  {
+   "country": "US",
+   "region": "South Carolina",
+   "code": "SC",
+   "agency": "South Carolina Department of Revenue",
+   "url": "https://dor.sc.gov/",
+   "site": "dor.sc.gov"
+  },
+  {
+   "country": "US",
+   "region": "South Dakota",
+   "code": "SD",
+   "agency": "South Dakota Department of Revenue",
+   "url": "https://dor.sd.gov/",
+   "site": "dor.sd.gov"
+  },
+  {
+   "country": "US",
+   "region": "Tennessee",
+   "code": "TN",
+   "agency": "Tennessee Department of Revenue",
+   "url": "https://www.tn.gov/revenue/",
+   "site": "tn.gov"
+  },
+  {
+   "country": "US",
+   "region": "Texas",
+   "code": "TX",
+   "agency": "Texas Comptroller of Public Accounts",
+   "url": "https://comptroller.texas.gov/taxes/",
+   "site": "comptroller.texas.gov"
+  },
+  {
+   "country": "US",
+   "region": "Utah",
+   "code": "UT",
+   "agency": "Utah State Tax Commission",
+   "url": "https://tax.utah.gov/business",
+   "site": "tax.utah.gov"
+  },
+  {
+   "country": "US",
+   "region": "Vermont",
+   "code": "VT",
+   "agency": "Vermont Department of Taxes",
+   "url": "https://tax.vermont.gov/",
+   "site": "tax.vermont.gov"
+  },
+  {
+   "country": "US",
+   "region": "Virginia",
+   "code": "VA",
+   "agency": "Virginia Department of Taxation",
+   "url": "https://tax.virginia.gov/",
+   "site": "tax.virginia.gov"
+  },
+  {
+   "country": "US",
+   "region": "Washington",
+   "code": "WA",
+   "agency": "Washington Department of Revenue",
+   "url": "https://dor.wa.gov/",
+   "site": "dor.wa.gov"
+  },
+  {
+   "country": "US",
+   "region": "West Virginia",
+   "code": "WV",
+   "agency": "West Virginia Tax Division",
+   "url": "https://tax.wv.gov/Pages/default.aspx",
+   "site": "tax.wv.gov"
+  },
+  {
+   "country": "US",
+   "region": "Wisconsin",
+   "code": "WI",
+   "agency": "Wisconsin Department of Revenue",
+   "url": "https://www.revenue.wi.gov/Pages/Businesses/home.aspx",
+   "site": "revenue.wi.gov"
+  },
+  {
+   "country": "US",
+   "region": "Wyoming",
+   "code": "WY",
+   "agency": "Wyoming Department of Revenue",
+   "url": "http://revenue.wyo.gov/",
+   "site": "revenue.wyo.gov"
+  },
+  {
+   "country": "IN",
+   "region": "Telangana",
+   "code": "IN-TG",
+   "agency": "Commercial Taxes Department, Government of Telangana",
+   "url": "https://www.tgct.gov.in/tgportal/",
+   "site": "tgct.gov.in"
+  },
+  {
+   "country": "IN",
+   "region": "Jharkhand",
+   "code": "IN-JH",
+   "agency": "Jharkhand Department of Commercial Taxes",
+   "url": "https://www.jharkhand.gov.in/comtax",
+   "site": "jharkhand.gov.in"
+  },
+  {
+   "country": "IN",
+   "region": "Meghalaya",
+   "code": "IN-ML",
+   "agency": "Taxation Department, Government of Meghalaya",
+   "url": "https://meggst.gov.in/",
+   "site": "meggst.gov.in"
+  },
+  {
+   "country": "IN",
+   "region": "Mizoram",
+   "code": "IN-MZ",
+   "agency": "Mizoram Taxation Department",
+   "url": "https://zotax.nic.in/",
+   "site": "zotax.nic.in"
+  },
+  {
+   "country": "IN",
+   "region": "Nagaland",
+   "code": "IN-NL",
+   "agency": "Department of Taxes, Government of Nagaland",
+   "url": "https://nagalandtax.nic.in/",
+   "site": "nagalandtax.nic.in"
+  },
+  {
+   "country": "IN",
+   "region": "Odisha",
+   "code": "IN-OD",
+   "agency": "Commissionerate of CT & GST, Odisha",
+   "url": "https://odishatax.gov.in/",
+   "site": "odishatax.gov.in",
+   "aliases": [
+    "Orissa"
+   ]
+  },
+  {
+   "country": "IN",
+   "region": "Rajasthan",
+   "code": "IN-RJ",
+   "agency": "Rajasthan Commercial Taxes Department",
+   "url": "http://rajtax.gov.in/vatweb/",
+   "site": "rajtax.gov.in"
+  },
+  {
+   "country": "IN",
+   "region": "Sikkim",
+   "code": "IN-SK",
+   "agency": "Commercial Taxes Division, Government of Sikkim",
+   "url": "http://www.sikkimtax.gov.in/",
+   "site": "sikkimtax.gov.in"
+  },
+  {
+   "country": "IN",
+   "region": "Uttar Pradesh",
+   "code": "IN-UP",
+   "agency": "Department of State Taxes, Government of Uttar Pradesh",
+   "url": "https://comtax.up.nic.in/GSThome/en.html",
+   "site": "comtax.up.nic.in"
+  },
+  {
+   "country": "IN",
+   "region": "Andaman and Nicobar Islands",
+   "code": "IN-AN",
+   "agency": "UTGST, Andaman and Nicobar Administration",
+   "url": "https://southandaman.nic.in/utgst/",
+   "site": "southandaman.nic.in",
+   "aliases": [
+    "Andaman",
+    "Nicobar"
+   ]
+  },
+  {
+   "country": "IN",
+   "region": "Dadra and Nagar Haveli and Daman and Diu",
+   "code": "IN-DH",
+   "agency": "Commissioner of Taxes & Excise, DNH and DD",
+   "url": "https://ddvat.gov.in/",
+   "site": "ddvat.gov.in",
+   "aliases": [
+    "Daman",
+    "Diu",
+    "Dadra"
+   ]
+  },
+  {
+   "country": "IN",
+   "region": "Ladakh",
+   "code": "IN-LA",
+   "agency": "State Taxes Department, UT of Ladakh",
+   "url": "https://ladakh.gov.in/state-taxes-department/",
+   "site": "ladakh.gov.in"
+  }
+ ]
+}

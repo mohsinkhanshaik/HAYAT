@@ -60,6 +60,7 @@ def _grab(window, name, widget=None):
     captured = ImageGrab.grab(window=hwnd)
     assert captured.width > 100 and captured.height > 100, "The GUI capture has invalid bounds."
     assert captured.getextrema() != ((0, 0), (0, 0), (0, 0)), "The GUI capture is blank."
+    assert captured.getextrema() != ((255, 255), (255, 255), (255, 255)), "The GUI capture is blank white."
     OUT.mkdir(parents=True, exist_ok=True)
     captured.save(OUT / f"{name}.png")
 
@@ -515,5 +516,33 @@ def test_capture_accounts_with_social(tmp_path):
         _pump(window, 1)
         _grab(window, "41-accounts-facebook-and-not-offered", center)
         center.destroy()
+    finally:
+        _release(window)
+
+
+def test_capture_natural_chat(tmp_path, monkeypatch):
+    """The chat reading a half-sent message and a misspelt one (2026-11-09)."""
+    import app.gui_reading as reading
+    from tests.test_gui import _build_window
+    from app.unfinished import ending_question
+
+    monkeypatch.setattr(reading, "words_file", lambda runtime: tmp_path / "owner-words.json")
+    window = _build_window()
+    try:
+        window.root.deiconify()
+        window.root.attributes("-topmost", True)
+        window.root.geometry("1536x900+0+0")
+        window._append("user", "You\nfind me the")
+        window._append("assistant", "HAYAT\n" + ending_question("find me the"))
+        window._append("user", "You\ncheapest flights to dubai next week")
+        window._append("assistant", "HAYAT\nSearching for the cheapest flights to Dubai next week…")
+        window._append("user", "You\nreserach quantam computing")
+        window._append("assistant", "HAYAT\nHere are three recent results on quantum computing.")
+        window._reading_notes.attach("reserach quantam computing", [("quantam", "quantum")])
+        _pump(window, 1.5)
+        _grab(window, "07-natural-chat")
+        window._reading_notes.keep(window._reading_notes.notes[-1])
+        _pump(window, 0.5)
+        _grab(window, "07b-natural-chat-kept")
     finally:
         _release(window)

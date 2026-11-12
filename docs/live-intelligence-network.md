@@ -184,9 +184,10 @@ Open the atlas ("show the world map"). The **Live layers** bar adds:
 | Satellite | yesterday's true-colour picture of the Earth | NASA GIBS (VIIRS) |
 | Aircraft | planes around the map centre, rotated to their heading; emergency squawks blink red | adsb.lol, every 15 s |
 | Ships | vessels with their course | Digitraffic AIS (Baltic), every 60 s |
-| Transit | buses and trains | MBTA (Boston), Finnish trains, every 30 s |
+| Transit | buses, trams and trains | MBTA (Boston), Finnish trains and 15 operators' GTFS-realtime feeds (from 2026-11-06), every 30 s |
 | ISS orbit | the station and a dashed line for its next 95 minutes | CelesTrak + SGP4 |
 | Fires · last 24 h | satellite heat detections in view, sized by fire power | NASA FIRMS (VIIRS) |
+| GPS interference · aircraft reports | 0.5° cells where aircraft report degraded satellite navigation, in gpsjam.org's colours | adsb.lol, every 2 minutes (added 2026-11-06) |
 
 Getting around (2026-10-11):
 - **Type a place** in the search box ("Denver", "Makkah", or "21.42, 39.83") and the map flies there.
@@ -245,7 +246,7 @@ comes back.
 | River gauges | USGS Water Services | US |
 | Aircraft | adsb.lol (ADS-B), emergency squawks called out | world |
 | Ships | Digitraffic AIS | Baltic Sea |
-| Transit vehicles | MBTA; Finnish trains | Boston; Finland |
+| Transit vehicles | MBTA; Finnish trains; 15 operators' GTFS-realtime feeds ([explore](explore.md#second-wave-2026-11-06-transit-gps-interference-airspace-perimeters-whales-street-photos)) | Boston; Finland; Austin, Minneapolis–St Paul, Toronto and six other Ontario cities, Helsinki, the Netherlands, Norway, South East Queensland, Rio de Janeiro |
 | Elevation | USGS EPQS | US |
 | ISS | CelesTrak orbital elements + SGP4 | world |
 | Official livestreams (26) | Saudi Quran TV, Saudi Sunnah TV, NASA ISS, temple trusts, Monterey Bay Aquarium, explore.org, EarthCam, Sen, See Jackson Hole, USGS Kilauea, and 13 live news channels (Al Jazeera, Sky, DW, ABC, NBC, CBS, WION, NDTV, India Today, TRT, CGTN, euronews, NHK) — each the publisher's own channel | — |
@@ -257,7 +258,7 @@ wheretheiss.at. airplanes.live answers 403. HAYAT honours these refusals.
 **No keyless source yet:**
 - news (GDELT disconnects);
 - worldwide ships;
-- transit outside Boston and Finland.
+- transit outside the 16 connected areas (the answer lists them).
 
 The answer says so instead of leaving gaps unexplained.
 

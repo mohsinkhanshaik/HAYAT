@@ -10,6 +10,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 
@@ -47,7 +48,7 @@ class CompareRunsWindow(tk.Toplevel):
             box.bind('<<ComboboxSelected>>', lambda _event: self.compare())
             self.choices.append(box)
         pick.columnconfigure(1, weight=1)
-        self.status = StringVar(self, 'Reading recorded runs...')
+        self.status = DisplayVar(self, 'Reading recorded runs...')
         ttk.Label(self, textvariable=self.status).pack(fill='x', padx=16)
         self.body = DarkScrolledText(self, wrap='word', bg=palette.PANEL, fg=palette.WHITE,
                                      font=('Consolas', 10), height=18)

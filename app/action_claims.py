@@ -139,6 +139,11 @@ _CLAIMS: tuple[tuple[str, re.Pattern[str]], ...] = (
         r"locates?)\b[^.\n]{0,50}\b(?:to|in|at)\b")),
 )
 
+_THIRD_PARTY_CHECK = re.compile(
+    r"(?i)\b(?:was|were|is|are|been|being)\s+(?:\w+ly\s+)?(?:verified|confirmed|validated)\s+(?:by|in|through|with|from|via)\b")
+_STRONG_CONTACT = re.compile(r"(?i)\b(?:e-?mails?|contacts?|decision[- ]makers?|phone|leads?|prospects?|linkedin)\b|@")
+_FIRST_PERSON = re.compile(r"(?i)\b(?:i|we|i've|we've|i'd|we'd|my|our|us)\b")
+
 #: A Windows path presented as something that now exists.
 _PATH = re.compile(r"(?i)(?<![\w\\])([a-z]:\\[^\s`'\"<>|*?]+)")
 _PRESENTED_AS_REAL = re.compile(
@@ -199,6 +204,19 @@ def unbacked_claims(text: str, *, exists: Callable[[str], bool] = os.path.exists
         if _NOT_A_CLAIM.search(clause) or clause.rstrip("*_ )\"'").endswith("?"):
             continue
         labels = [label for label, pattern in _CLAIMS if pattern.search(clause)]
+        # "Relativity was verified by experiment" describes external history,
+        # not a contact check performed by this assistant. First-person lookup
+        # claims are still detected by the separate action patterns above.
+        if 'verified contacts' in labels and not re.search(
+                r'(?i)\b(?:e-?mails?|contacts?|decision[- ]makers?|owners?|names|phone|numbers?|leads?|'
+                r'prospects?|list|installers?|companies|businesses|clients?|customers?|homeowners|linkedin)\b|@', clause):
+            labels.remove('verified contacts')
+        # A third party's check told in the passive ("population numbers were verified by the 2020 census", "the owners
+        # were confirmed by imperial decree") is history, not this assistant checking contacts: live 2026-11-07, a
+        # one-line answer about Tokyo got the "Not done" warning. Contact words or "I/we" keep the claim.
+        if 'verified contacts' in labels and _THIRD_PARTY_CHECK.search(clause) and not _STRONG_CONTACT.search(clause) \
+                and not _FIRST_PERSON.search(clause):
+            labels.remove('verified contacts')
         for path in _PATH.findall(clause):
             cleaned = path.rstrip(".,;:)")
             if _PRESENTED_AS_REAL.search(clause) and not _FUTURE_PATH.search(clause) and not exists(cleaned):

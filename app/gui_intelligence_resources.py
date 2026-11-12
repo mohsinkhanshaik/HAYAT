@@ -4,6 +4,7 @@ from tkinter import ttk
 
 from app.gui_intelligence_explore import IntelligenceExploreViews
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 
 
 CAMERA_MEDIA = {'All media': '', 'Refreshing stills': 'image', 'Video / clips': 'video',
@@ -32,8 +33,11 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
         self.camera_radius = StringVar(self, '150')
         self.camera_near = None
         self._camera_photo = None
+        self._camera_image = None
+        self._camera_image_size = None
         self._camera_timer = None
         self.camera_refresh = BooleanVar(self, False)
+        self.camera_working = BooleanVar(self, False)
         for key, title in (('cameras', 'Cameras'), ('resources', 'Resources'), ('context', 'Context')):
             frame = tk.Frame(self.notebook, bg=self.palette.BLACK)
             self.tabs[key] = frame
@@ -57,37 +61,51 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
                               ('Open in atlas', self.camera_atlas), ('Focus on map', self.camera_focus),
                               ('Open publisher page', self.open_publisher_page), ('Count vehicles', self.count_vehicles)):
             menu.add_command(label=title, command=action)
+        # In the menu, not a row of its own: a fifth row of controls left a short window too little camera list.
+        menu.add_checkbutton(label='Refresh selected still', variable=self.camera_refresh, command=self.toggle_camera_refresh)
         self.camera_more.configure(menu=menu)
-        self.camera_more.grid(row=2, column=0, sticky='ew', padx=2, pady=2)
-        self.camera_sort_choice = ttk.Combobox(controls, textvariable=self.camera_sort, values=list(CAMERA_SORT), state='readonly', width=16)
-        self.camera_sort_choice.grid(row=2, column=1, sticky='ew', padx=2, pady=2)
+        self.camera_more.grid(row=2, column=1, sticky='ew', padx=2, pady=2)
+        # Real checks of a sample of each matching network (camera_health.py); the Checked column shows the results.
+        test = ttk.Button(controls, text='Test cameras', command=self.test_cameras, style='Compact.Hayat.TButton')
+        test.grid(row=2, column=0, sticky='ew', padx=2, pady=2)
+        test._hayat_icon = 'check'
+        self.camera_buttons['Test cameras'] = test
+        # Sort, with the nearest-event radius beside it (the radius only matters for that sort).
+        sorting = tk.Frame(controls, bg=self.palette.BLACK)
+        sorting.grid(row=2, column=2, sticky='ew', padx=2, pady=2)
+        self.camera_sort_choice = ttk.Combobox(sorting, textvariable=self.camera_sort, values=list(CAMERA_SORT), state='readonly', width=14)
+        self.camera_sort_choice.pack(side='left', fill='x', expand=True)
         self.camera_sort_choice.bind('<<ComboboxSelected>>', lambda _event: self.camera_page(0))
+        self.camera_radius_entry = ttk.Entry(sorting, textvariable=self.camera_radius, width=5)
+        self.camera_radius_entry.pack(side='right')
+        self.camera_radius_entry.bind('<Return>', lambda _event: self.camera_page(0))
+        ttk.Label(sorting, text='km').pack(side='right', padx=(4, 2))
         media = ttk.Combobox(controls, textvariable=self.camera_media, values=list(CAMERA_MEDIA), state='readonly', width=16)
-        media.grid(row=2, column=2, sticky='ew', padx=2, pady=2)
+        media.grid(row=3, column=0, sticky='ew', padx=2, pady=2)
         media.bind('<<ComboboxSelected>>', lambda _event: self.camera_page(0))
         ttk.Checkbutton(controls, text='Publisher available only', variable=self.camera_available,
-                        command=lambda: self.camera_page(0)).grid(row=3, column=0, sticky='w')
-        ttk.Checkbutton(controls, text='Refresh selected still', variable=self.camera_refresh,
-                        command=self.toggle_camera_refresh).grid(row=3, column=1, sticky='w')
-        radius = tk.Frame(controls, bg=self.palette.BLACK)
-        radius.grid(row=3, column=2, sticky='ew')
-        ttk.Label(radius, text='Near radius km').pack(side='left', padx=2)
-        self.camera_radius_entry = ttk.Entry(radius, textvariable=self.camera_radius, width=6)
-        self.camera_radius_entry.pack(side='left', fill='x', expand=True)
-        self.camera_radius_entry.bind('<Return>', lambda _event: self.camera_page(0))
+                        command=lambda: self.camera_page(0)).grid(row=3, column=1, sticky='w')
+        ttk.Checkbutton(controls, text='Hide failed checks', variable=self.camera_working,
+                        command=lambda: self.camera_page(0)).grid(row=3, column=2, sticky='w')
         from app.intelligence.providers import CAMERA_COVERAGE
-        self.camera_message = StringVar(self, 'Public camera networks: ' + CAMERA_COVERAGE + '. Search/region filters above apply. Select a camera; imagery loads only on request.')
-        ttk.Label(self.tabs['cameras'], textvariable=self.camera_message, wraplength=700).pack(fill='x', pady=4)
+        self.camera_message = DisplayVar(self, 'Public camera networks: ' + CAMERA_COVERAGE + '. Search/region filters above apply. Select a camera; imagery loads only on request.')
+        message = ttk.Label(self.tabs['cameras'], textvariable=self.camera_message, wraplength=700)
+        message.pack(fill='x', pady=4)
+        # Wrap at the tab's width, not a fixed 700 px: the summary took three lines and squeezed the camera list.
+        message.bind('<Configure>', lambda event: message.configure(wraplength=max(300, event.width - 8)))
         preview = tk.Frame(self.tabs['cameras'], bg=self.palette.PANEL)
         preview.pack(side='bottom', fill='x', pady=4)
         self.camera_preview = tk.Label(preview, text='No image loaded.', bg=self.palette.PANEL, fg=self.palette.WHITE)
         self.camera_preview.pack(side='left', padx=6)
-        self.camera_preview_info = StringVar(self)
+        self.tabs['cameras'].bind('<Configure>', self.fit_camera_preview, add='+')
+        self.camera_preview_info = DisplayVar(self)
         tk.Label(preview, textvariable=self.camera_preview_info, bg=self.palette.PANEL, fg=self.palette.MUTED, wraplength=370, justify='left').pack(side='left', fill='x', expand=True)
         self.camera_tree = self.new_table('cameras', [('provider', 'Network', 170), ('media', 'Media', 120), ('available', 'Available', 80),
-                                                      ('country', 'Country', 110), ('distance', 'Distance', 80)])
+                                                      ('checked', 'Checked', 150), ('country', 'Country', 100), ('distance', 'Distance', 70)])
+        self.camera_tree.heading('#0', text='Camera')
         self.camera_tree.bind('<<TreeviewSelect>>', lambda _event: self.camera_selected())
         self.camera_tree.bind('<Double-1>', lambda _event: self.watch_camera_video())
+        self.camera_tree.bind('<Return>', lambda _event: self.watch_camera_video())
         resource_controls = tk.Frame(self.tabs['resources'], bg=self.palette.BLACK)
         resource_controls.pack(side='bottom', fill='x', pady=5)
         ttk.Button(resource_controls, text='Open selected publisher', command=self.open_resource).pack(anchor='w')
@@ -98,7 +116,7 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
         self.resource_category = StringVar(self, 'All categories')
         self.resource_access = StringVar(self, 'Any access')
         self.resource_region = StringVar(self, 'World')
-        self.resource_count = StringVar(self, '')
+        self.resource_count = DisplayVar(self, '')
         catalog = self.manager.resources()
         self.resource_search = ttk.Entry(resource_filters, textvariable=self.resource_query)
         self.resource_search.grid(row=0, column=0, columnspan=2, sticky='ew', padx=2, pady=2)
@@ -142,6 +160,17 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
 
     def resource_tab_changed(self, _event=None):
         selected = self.notebook.select()
+        # Event category/severity/time controls do not filter camera catalogs.
+        # Keep the three relevant fields within reach instead of using those
+        # rows for controls that cannot affect this tab.
+        if hasattr(self, '_filter_all_items'):
+            items = ([self.filter_fields[key] for key in ('Search', 'Region', 'Source feed')]
+                     + [self.clear_filters_button] if selected == str(self.tabs['cameras']) else list(self._filter_all_items))
+            for widget in self._filter_all_items:
+                if widget not in items:
+                    widget.place_forget()
+            self.filter_row.items = items
+            self.filter_row.arrange()
         if selected != str(self.tabs['cameras']):
             self.stop_camera_refresh()
         if selected == str(self.tabs['assessment']):
@@ -151,12 +180,27 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
 
     def camera_filters(self):
         return (self.query.get(), self.feed_key(), str(self.bounds()), self.camera_available.get(), self.camera_media.get(),
-                self.camera_near, self.camera_sort.get(), self.camera_radius.get())
+                self.camera_near, self.camera_sort.get(), self.camera_radius.get(), self.camera_working.get())
+
+    def test_cameras(self):
+        """Check a sample of each network matching the current search and source filters (real stills and streams)."""
+        feed = self.feed_key()
+        arguments = {'sample': 4, 'streams': 2}
+        if feed.startswith('cameras_'):
+            arguments['feed'] = feed
+        elif self.query.get().strip():
+            arguments['query'] = self.query.get().strip()
+        if self.work('intelligence_camera_check', arguments):
+            scope = arguments.get('feed') or arguments.get('query') or 'every network'
+            self.camera_message.set(f'Testing cameras ({scope}): fetching real stills and decoding stream frames. '
+                                    'Every network at once takes about two minutes.')
 
     def load_cameras(self):
         if self._closed:
             return
         arguments = {'query': self.query.get(), 'feed': self.feed_key(), 'limit': 200, 'offset': self.camera_offset, 'available_only': self.camera_available.get()}
+        if self.camera_working.get():
+            arguments['working_only'] = True
         arguments['sort'] = CAMERA_SORT.get(self.camera_sort.get(), 'title')
         if arguments['sort'] == 'nearest' and not self.camera_near:
             self.feedback.set('Use More camera actions → Near selected event after selecting an event on the map.')
@@ -225,24 +269,26 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
         row = self.camera_rows.get(self.camera_selection)
         if not row:
             self.feedback.set('Select a camera first; Find streams lists HLS video cameras.')
-        elif not row['details'].get('available'):
-            self.feedback.set((row['details']['availability_basis'] + '. Use More camera actions → Open publisher page.')
-                              if row['details'].get('availability_basis') else 'The publisher marks this camera unavailable.')
-        elif row['details'].get('video_url') or row['details'].get('live_page'):
-            # Played here, in HAYAT's own player. It used to open the web atlas, and an
-            # official livestream (Makkah, Madinah) went to the publisher page in the browser.
-            self.stop_camera_refresh()
-            from app.gui_video_player import open_camera_window
-            from app.intelligence.camera_chat import playback_mode
-            camera = {'event_id': row['id'], 'title': row['title'], 'mode': playback_mode(row['details']),
-                      'source_url': row.get('url') or row['details'].get('page_url') or '', 'media_label': '',
-                      'provider': row['details'].get('provider', ''), 'alternatives': self.camera_alternatives(row['id'])}
-            self.camera_player = open_camera_window(self, self.gui, camera)[0]
-            self.feedback.set(f"Playing {row['title']} in HAYAT's player · no recording")
+        elif any(row['details'].get(key) for key in ('video_url', 'live_page', 'image_url')):
+            self._watch_camera(row)
         elif row['details'].get('page_url'):
             self.open_publisher_page()
         else:
-            self.feedback.set('This publisher supplies still images. Enable Refresh selected still, or use Find streams.')
+            self.feedback.set('This camera has no supported media. Try another camera or update its catalog.')
+
+    def _watch_camera(self, row):
+        """Use the same native viewer from the map, camera list and keyboard."""
+        self.stop_camera_refresh()
+        from app.gui_video_player import open_camera_window
+        from app.intelligence.camera_chat import playback_mode
+        camera = {'event_id': row['id'], 'title': row['title'], 'mode': playback_mode(row['details']),
+                  'source_url': row.get('url') or row['details'].get('page_url') or '', 'media_label': '',
+                  'provider': row['details'].get('provider', ''), 'alternatives': self.camera_alternatives(row['id'])}
+        previous = getattr(self, 'camera_player', None)
+        if previous is not None and previous.winfo_exists():
+            previous.destroy()
+        self.camera_player = open_camera_window(self, self.gui, camera)[0]
+        self.feedback.set(f"Opening {row['title']} in HAYAT's viewer; status confirms when media arrives.")
 
     def camera_alternatives(self, identifier):
         """The other playable cameras in the current list, for Next camera."""
@@ -287,8 +333,10 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
         """Show one camera in the best form its publisher offers: snapshot, live video or player page."""
         row = self.manager.event_record(identifier)['event']
         details = row['details']
-        if details.get('video_url'):
-            self.world_atlas(identifier)
+        if details.get('video_url') or details.get('live_page'):
+            self.camera_rows[identifier] = row
+            self.camera_selection = identifier
+            self._watch_camera(row)
         elif details.get('image_url'):
             self.notebook.select(self.tabs['cameras'])
             self.camera_rows[identifier] = row
@@ -318,6 +366,7 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
             self.camera_sort.set('Name')
         self.camera_rows = {}
         self._camera_photo = None
+        self._camera_check_note = ''
         self.camera_tree.delete(*self.camera_tree.get_children())
         self.camera_preview.configure(image='', text='No image loaded.')
         self.camera_preview_info.set('')
@@ -337,7 +386,9 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
             self.camera_preview.configure(image='', text='No image loaded for this camera.')
         row = self.camera_rows[identifier]
         availability = row['details'].get('availability_basis') or str(row['details']['available'])
-        self.camera_preview_info.set(row['title'] + '\n' + row['details']['provider'] + ' · ' + media_label(row['details']) + '\nPublisher availability: ' + availability + '\nCatalog fetched: ' + (row.get('retrieved_at') or 'unknown'))
+        self.camera_preview_info.set(row['title'] + '\n' + row['details']['provider'] + ' · ' + media_label(row['details'])
+                                     + '\nHAYAT\'s last check: ' + (row.get('health') or 'not checked yet')
+                                     + '\nPublisher availability: ' + availability + '\nCatalog fetched: ' + (row.get('retrieved_at') or 'unknown'))
         self.camera_buttons['Load snapshot'].configure(state='normal' if row['details'].get('image_url') else 'disabled')
 
     def load_camera_frame(self):
@@ -345,6 +396,20 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
             self.work('intelligence_camera_frame', {'event_id': self.camera_selection})
         else:
             self.feedback.set('Select a camera first.')
+
+    def fit_camera_preview(self, _event=None, *, force=False):
+        """Keep a loaded snapshot from consuming the camera list on short windows."""
+        if self._camera_image is None or self._camera_photo is None and not force:
+            return
+        limits = (380, 230 if self.winfo_height() >= 720 else 80)
+        if self._camera_image_size == limits:
+            return
+        from PIL import ImageTk
+        preview = self._camera_image.copy()
+        preview.thumbnail(limits)
+        self._camera_photo = ImageTk.PhotoImage(preview, master=self)
+        self._camera_image_size = limits
+        self.camera_preview.configure(image=self._camera_photo, text='')
 
     def world_atlas(self, event_id=''):
         self.work('intelligence_map', {'event_id': event_id} if event_id else {},
@@ -460,8 +525,10 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
                 self.camera_preview_info.set('')
             for index, row in enumerate(self.camera_rows.values()):
                 details = row['details']
+                checked = row.get('health') or 'not checked yet'
                 values = (
-                    details.get('provider', ''), media_label(details), 'unverified' if details.get('availability_basis') else 'yes' if details['available'] else 'no', details.get('country', ''),
+                    details.get('provider', ''), media_label(details), 'unverified' if details.get('availability_basis') else 'yes' if details['available'] else 'no',
+                    ('✓ ' if row.get('working') else '✗ ' if row.get('working') is False else '') + checked, details.get('country', ''),
                     f"{row['distance_km']} km" if 'distance_km' in row else '')
                 if self.camera_tree.exists(row['id']):
                     self.camera_tree.item(row['id'], text=row['title'], values=values)
@@ -478,18 +545,41 @@ class IntelligenceResourceViews(IntelligenceExploreViews):
                 f"Showing {len(self.camera_rows)} of {output['total_matching']} matching public cameras"
                 + (' nearest the selected event' if self.camera_near else f' · offset {self.camera_offset}')
                 + f" · {output.get('with_still_images', 0)} stills, {output.get('with_live_streams', 0)} HLS streams, {output.get('with_video_clips', 0)} clips, "
-                f"{output.get('with_publisher_player', 0)} publisher players" + (f'\nNetworks: {networks}' if networks else ''))
+                f"{output.get('with_publisher_player', 0)} publisher players" + (f'\nNetworks: {networks}' if networks else '')
+                + (f'\n{self._camera_check_note}' if getattr(self, '_camera_check_note', '') else ''))
         elif result.tool == 'intelligence_camera_frame':
             value = result.output
             if value['event_id'] != self.camera_selection:
                 return
-            from PIL import Image, ImageTk
+            from PIL import Image
             with Image.open(value['path']) as image:
-                preview = image.copy()
-                preview.thumbnail((340, 210))
-            self._camera_photo = ImageTk.PhotoImage(preview, master=self)
-            self.camera_preview.configure(image=self._camera_photo, text='')
-            self.camera_preview_info.set('Fetched: ' + value['fetched_at'] + '\nCached preview: ' + str(value['cached']) + '\nCapture time unverified. Provider images may be delayed.\n' + value['image_url'])
+                self._camera_image = image.copy()
+            self._camera_image_size = None
+            self.fit_camera_preview(force=True)
+            card = ("⚠ " + str(value.get('basis') or 'An older picture.') + "\n" if value.get('stale') else
+                    "✗ Publisher unavailable card; try another camera.\n" if value.get('publisher_card') else
+                    '✓ A real picture from the camera.\n')
+            fetched = str(value.get('fetched_at') or '')
+            when = f"{fetched[11:16]} UTC on {fetched[:10]}" if len(fetched) >= 16 else 'at an unknown time'
+            self.camera_preview_info.set(card + f"Fetched {when}" + (' (kept from the last minute)' if value.get('cached') and not value.get('stale') else '')
+                                         + '.\nCapture time unverified; images may be delayed.')
+            from app.gui_help import Tooltip
+            if hasattr(self.camera_preview, '_source_tip'):
+                self.camera_preview._source_tip.text = value['image_url']
+            else:
+                self.camera_preview._source_tip = Tooltip(self.camera_preview, value['image_url'], self.palette)
+        elif result.tool == 'intelligence_camera_check':
+            from app.intelligence.camera_health import report_lines
+            lines = report_lines(result.output)
+            failing = [line for line in lines[1:] if not line.startswith(('✓', '    '))]
+            # Kept under the list (the reload below rewrites the message) until the filters change.
+            self._camera_check_note = lines[0] + (' Needs attention: ' + '; '.join(line[2:90] for line in failing[:4]) if failing
+                                                  else ' Every sampled network worked.')
+            if not result.output['checked']:
+                self._camera_check_note = lines[0] + ' No supported media was checked; update catalogs or choose another network.'
+            self.camera_message.set(self._camera_check_note)
+            set_text(self.explore_text, '\n'.join(lines))  # the full report, in Explore
+            self.after_idle(lambda: self.camera_page(0))  # the Checked column now shows the results
         elif result.tool in EXPLORE_TOOLS or result.tool == 'intelligence_deep_look':
             self.handle_explore_result(result)
         elif result.tool in ('intelligence_weather', 'intelligence_recall'):

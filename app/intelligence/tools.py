@@ -66,6 +66,7 @@ def register_intelligence_tools(registry, manager):
     registry.register('intelligence_cameras', f'Search public cameras across {CAMERA_COVERAGE}, plus keyed 511/WSDOT APIs once the owner adds free keys, by keywords, bounds, media type, or nearest to a point or event. Provider availability is not proof of a fresh live frame.',
         obj({**filters, 'limit': {'type': 'integer', 'minimum': 1, 'maximum': 1000},
              'offset': {'type': 'integer', 'minimum': 0, 'maximum': 50000}, 'available_only': {'type': 'boolean'},
+             'working_only': {'type': 'boolean'},
              'near': {'type': 'array', 'items': {'type': 'number'}, 'minItems': 2, 'maxItems': 2},
              'near_event': {'type': 'string', 'maxLength': 220},
              'sort': {'enum': ['nearest', 'title', 'media', 'freshness']},
@@ -73,6 +74,9 @@ def register_intelligence_tools(registry, manager):
              'media': {'type': 'string', 'enum': ['', 'image', 'video', 'stream', 'page']}}), 'low', 'filesystem_read', manager.cameras)
     registry.register('intelligence_camera_frame', 'Retrieve the selected registered public camera’s latest JPEG/PNG with publisher cooldowns, bounded storage and provenance. No private camera discovery or recognition; fetch time is not capture time.',
         obj({'event_id': {'type': 'string', 'maxLength': 220}}, ['event_id']), 'low', 'public_web_read', manager.camera_frame)
+    # Which cameras really work: real stills and stream probes from each network (camera_health.py).
+    from app.intelligence.camera_health import register_camera_check_tools
+    register_camera_check_tools(registry, manager)
     registry.register('intelligence_camera_play', 'Prepare an available registered public camera for inline desktop chat playback: a responding live HLS stream first, else the publisher clip or refreshing still, with alternatives for Next camera. Refresh missing catalogs with cooldowns. No arbitrary URL, private CCTV, or recording.',
         obj({'event_id': {'type': 'string', 'maxLength': 220}, 'query': filters['query'],
              'live_only': {'type': 'boolean'}, 'refresh': {'type': 'boolean'}, 'still_only': {'type': 'boolean'}}),
@@ -146,7 +150,7 @@ def direct_plan(text, names, session=None):
             refresh = world.get('refresh') if 'intelligence_refresh' in names else None
         elif (explore := explore_request(value)) and explore['tool'] in names:
             tool, arguments = explore['tool'], explore['arguments']
-        elif re.fullmatch(r'(?:show|open)(?: the)? (?:world atlas|interactive intelligence map|world map)', normalized):
+        elif re.fullmatch(r'(?:show|open|launch|bring back)(?: the| my)? (?:world atlas|(?:browser|brwser) atlas|interactive intelligence map|world map|atlas)(?: in (?:the )?browser)?', normalized):
             tool = 'intelligence_map'
         elif (match := re.fullmatch(r'(?:show|list|find)(?: me)?(?: the)? (?:public )?(?:live |hls )?(?:camera |cctv )?streams(?: (?:in|for) (.+))?', value.strip(' .!?'), re.IGNORECASE)):
             tool, arguments = 'intelligence_cameras', {'media': 'stream', 'available_only': True}
@@ -295,7 +299,7 @@ def report(history):
                 lines.append(value['notice'])
             if value.get('alternatives'):
                 lines.append(f"{len(value['alternatives'])} more cameras here: say \"next camera\" or press Next camera.")
-            lines.extend([value['video_url'] or value.get('source_url', ''), value['basis']])
+            lines.append(value['video_url'] or value.get('source_url', ''))  # the basis follows once, below
         if value.get('camera_control'):
             lines.append('Camera player accepted: ' + value['camera_control']
                          + (' · switching to ' + value['title'] if value.get('title') else ''))

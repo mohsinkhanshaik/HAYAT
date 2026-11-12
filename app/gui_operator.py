@@ -9,6 +9,7 @@ from __future__ import annotations
 import threading
 import time
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -57,7 +58,7 @@ class BrainOperatorMixin:
         # The full summary (truth order, authority rule, timings) is on hover.
         from app.gui_help import Tooltip
 
-        self.operator_status_line = StringVar(master=self.root, value="Checking HAYAT's parts…")
+        self.operator_status_line = DisplayVar(master=self.root, value="Checking HAYAT's parts…")
         status = tk.Label(header, textvariable=self.operator_status_line, bg=self.BLACK, fg=self.GOLD_SOFT,
                           font=("Segoe UI", 9), anchor="w")
         status.pack(side="left", padx=(6, 0))
@@ -74,7 +75,7 @@ class BrainOperatorMixin:
         # The same nodes in 3D (health by colour, running work as pulses) or
         # as a list of cards with every result in full. One switch, one space:
         # both at once left neither enough room in a normal window.
-        from app.gui_brain import BrainGraph, describe
+        from app.gui_brain import BrainExplorer, BrainGraph, describe
 
         self._describe_brain_node = describe
         self.operator_layout = ttk.Button(filters, text="List view", style="Hayat.TButton",
@@ -147,7 +148,7 @@ class BrainOperatorMixin:
         self.brain_wave_picker = mesh_controls.add(ttk.Combobox(
             mesh_controls, textvariable=self.brain_wave_modes, state="disabled", width=7,
             values=("2 / 3", "3 / 5", "4 / 7")))
-        self.brain_mesh_note = StringVar(self.root, "Geometry guides the view; arrows show actual subsystem contracts.")
+        self.brain_mesh_note = DisplayVar(self.root, "Geometry guides the view; arrows show actual subsystem contracts.")
         note = tk.Label(appearance, textvariable=self.brain_mesh_note, bg=self.BLACK, fg=self.MUTED,
                         font=("Segoe UI", 8), anchor="w", justify="left", wraplength=600)
         note.pack(fill="x", pady=(0, 6))
@@ -177,7 +178,13 @@ class BrainOperatorMixin:
         self._brain_compact = False
         self._brain_layout_signature = None
         detail_side.pack(side="right", fill="y", padx=(7, 0))
-        self.brain_node_picker = ttk.Combobox(detail_side, state="readonly", width=28,
+        self.brain_inspector_tabs = ttk.Notebook(detail_side, style='Side.TNotebook')
+        self.brain_inspector_tabs.pack(fill='both', expand=True)
+        node_page = tk.Frame(self.brain_inspector_tabs, bg=self.PANEL)
+        self._brain_contract_page = tk.Frame(self.brain_inspector_tabs, bg=self.PANEL)
+        self.brain_inspector_tabs.add(node_page, text='Subsystem')
+        self.brain_inspector_tabs.add(self._brain_contract_page, text='Connections')
+        self.brain_node_picker = ttk.Combobox(node_page, state="readonly", width=28,
                                               values=[node.label for node in BrainMesh.NODES])
         self.brain_node_picker.set("Choose a part to inspect")
         self.brain_node_picker.pack(fill="x", padx=8, pady=8)
@@ -188,18 +195,20 @@ class BrainOperatorMixin:
                 if node.node_id not in dict(self.brain_graph.VIEWS):
                     self.brain_layer.set("All layers")
                     self.brain_graph.set_layer("All layers")
+                    self.brain_graph.set_health_filter('All checks')
+                    self.brain_graph.set_path_only(False)
                 self.brain_graph.select(node.node_id)
                 self.brain_graph.face(node.node_id)
                 self._select_brain_node(node.node_id)
         self.brain_node_picker.bind("<<ComboboxSelected>>", pick_node)
-        focus_controls = tk.Frame(detail_side, bg=self.PANEL)
+        focus_controls = tk.Frame(node_page, bg=self.PANEL)
         focus_controls.pack(fill="x", padx=8, pady=(0, 6))
         self.brain_focus_button = ttk.Button(focus_controls, text="Focus links", width=0, style="Hayat.TButton",
                                              command=self._focus_brain_links)
         self.brain_focus_button.pack(side="left")
         ttk.Button(focus_controls, text="Reset view", width=0, style="Hayat.TButton",
                    command=lambda: self.brain_graph.reset()).pack(side="right")
-        node_detail = DarkScrolledText(detail_side, bg=self.PANEL,
+        node_detail = DarkScrolledText(node_page, bg=self.PANEL,
                                fg=self.WHITE, font=("Segoe UI", 9), wrap="word",
                                padx=12, pady=10, width=30, height=8, relief="flat")
         node_detail.pack(side="top", fill="both", expand=True)
@@ -212,7 +221,7 @@ class BrainOperatorMixin:
             node_detail.configure(state="disabled")
         self.brain_node_detail.trace_add("write", update_node_detail)
         update_node_detail()
-        self.brain_tour_controls = tk.Frame(detail_side, bg=self.PANEL, padx=10, pady=8)
+        self.brain_tour_controls = tk.Frame(node_page, bg=self.PANEL, padx=10, pady=8)
         self.brain_tour_back = ttk.Button(self.brain_tour_controls, text="◀ Back", width=0, style="Hayat.TButton",
                                           command=lambda: self._brain_tour(-1))
         self.brain_tour_back.pack(side="left")
@@ -283,11 +292,28 @@ class BrainOperatorMixin:
         self.brain_graph.set_motion(self.depth_nav.motion)
         # Press P on a subsystem to pin it, then P on another to light the contract path between them.
         self.brain_graph.on_path_status = lambda message: self.brain_node_detail.set(message)
+        self.brain_contract_explorer = BrainExplorer(self._brain_contract_page, self.brain_graph, type(self))
+        self.brain_contract_explorer.pack(fill='both', expand=True)
+        # Keep the existing layer picker synchronized when the inspector changes filters.
+        self.brain_graph.bind('<<BrainInspectionChanged>>',
+                              lambda _event: self.brain_layer.set(self.brain_graph.layer_filter), add='+')
+        # Component neurons: the real parts inside each subsystem (brain_components).
+        self.brain_graph.on_component = self._select_brain_component
+        self.brain_graph.on_component_drill = self._drill_brain_component
+        self.brain_graph.on_population = self._select_brain_neuron
+        self._brain_components = None
+        self._brain_components_loading = False
+        self._brain_component_selected = None
+        self._brain_component_ticks = 0
+        self.brain_parts_button = ttk.Button(range_controls, text="Parts on", width=0, style="Hayat.TButton",
+                                             command=self._toggle_brain_parts)
+        range_controls.add(self.brain_parts_button)
+        self._load_brain_components()
         self.brain_graph.bind('<<GeometryChanged>>', lambda _event: self._update_brain_geometry_note())
         self._update_brain_geometry_note()
         # Esc ends a tour; with no tour running it keeps its usual meaning (stop).
         self.brain_graph.bind("<Escape>", lambda _event: (self._end_brain_tour(), "break")[1]
-                              if self._brain_tour_step is not None else None)
+                              if self._brain_tour_step is not None else self.brain_graph._cancel_interaction(_event))
         self.brain_graph.pack(side="top", fill="both", expand=True)
         from app.gui_3d_controls import camera_menu
         mesh_controls.add(camera_menu(mesh_controls, self.brain_graph))
@@ -531,7 +557,142 @@ class BrainOperatorMixin:
     def _brain_history_tick(self) -> None:
         if self.current_view == "operator":
             self._load_brain_history()
+            # Component numbers read the whole usage log: every 30 seconds is plenty.
+            self._brain_component_ticks = getattr(self, "_brain_component_ticks", 0) + 1
+            if self._brain_component_ticks % 3 == 0:
+                self._load_brain_components()
         self._schedule(10_000, self._brain_history_tick)
+
+    # ------------------------------------------------- component neurons
+
+    def _load_brain_components(self) -> None:
+        """Rebuild the component layer from the live registry, router and event log, off the UI thread."""
+        if getattr(self, "_brain_components_loading", False) or self._closed:
+            return
+        self._brain_components_loading = True
+
+        def work() -> None:
+            from app.brain_components import snapshot
+
+            try:
+                result = snapshot(self.runtime)
+            except Exception as exc:
+                self._record_failure("Load Brain 5D components", exc)
+                result = None
+            self._post(self._show_brain_components, result)
+
+        threading.Thread(target=work, name="hayat-brain-components", daemon=True).start()
+
+    def _show_brain_components(self, snap: Any) -> None:
+        self._brain_components_loading = False
+        if snap is None or self._closed or self._operator_frame is None:
+            return
+        self._brain_components = snap
+        self.brain_graph.set_components(snap)
+        self._paint_brain_heat()
+        selected = getattr(self, "_brain_component_selected", None)
+        if selected in self.brain_graph.components and self.brain_timeline.moment is None:
+            self._select_brain_component(selected, activate=False)
+
+    def _select_brain_neuron(self, index: int) -> None:
+        """A memory or knowledge neuron: what it holds, its recorded use and its strongest synapses."""
+        population = self.brain_graph.population
+        if population is None or not 0 <= index < len(population):
+            return
+        self._brain_inspector_open = True
+        self._layout_brain_workspace()
+        counts = population.counts()
+        self.brain_node_detail.set(population.describe(index) + (
+            f"\n\nOne of {counts['total']:,} brain neurons: {counts['base']:,} parts and subsystems × {counts['multiple']:.1f}, "
+            "the added ones all real memories and knowledge-graph entities, not model weights."))
+
+    def _toggle_brain_parts(self) -> None:
+        """Parts on (areas; an area's tools open when chosen) -> every tool -> parts off -> parts on."""
+        graph = self.brain_graph
+        if graph.show_components and not graph.show_all_tools:
+            graph.show_all_tools = True
+        elif graph.show_components:
+            graph.show_components, graph.show_all_tools = False, False
+            graph.component_hover = graph.component_active = None
+        else:
+            graph.show_components = True
+        self.brain_parts_button.configure(
+            text="Parts off" if not graph.show_components else "Every tool" if graph.show_all_tools else "Parts on")
+        graph.redraw()
+
+    def _select_brain_component(self, component_id: str, *, activate: bool = True) -> None:
+        graph = self.brain_graph
+        if component_id not in graph.components:
+            return
+        if activate:
+            self._brain_inspector_open = True
+            self._layout_brain_workspace()
+            if getattr(self, "_brain_tour_step", None) is not None:
+                self._end_brain_tour()
+        self._brain_component_selected = component_id
+        component = graph.components[component_id]
+        text = graph.component_detail(component_id)
+        history = self._brain_history
+        if history is not None and component.tools:
+            busy = sum(history.tool_seconds(history.start, history.end).get(tool, 0.0) for tool in component.tools)
+            window = self._range_words(history.end - history.start)
+            text += (f"\n\nIts tools were busy for about {busy / 60:.1f} min in the last {window}." if busy >= 90
+                     else f"\n\nIts tools were busy for about {busy:.0f} s in the last {window}.")
+        snap = getattr(self, "_brain_components", None)
+        if snap is not None and snap.usage_since:
+            text += time.strftime("\nCounts cover the event log since %Y-%m-%d.", time.localtime(snap.usage_since))
+        if component.kind == "capability" and component.opens:
+            text += f"\n\nDouble-click to open {component.opens_label}."
+        else:
+            text += "\n\nDouble-click to run its readiness check now."
+        # The last check of this part stays with it when its numbers refresh.
+        checked = getattr(self, "_brain_component_check", None)
+        if checked and checked[0] == component_id:
+            text += f"\n\nReadiness check at {checked[1]}:\n{checked[2]}"
+        self.brain_node_detail.set(text)
+
+    def _drill_brain_component(self, component_id: str) -> None:
+        """Open the window a component belongs to, or run its own readiness check."""
+        graph = self.brain_graph
+        component = graph.components.get(component_id)
+        if component is None:
+            return
+        opens = component.opens if component.kind == "capability" else ""
+        try:
+            if opens.startswith("view:"):
+                self.show_view(opens.split(":", 1)[1])
+            elif opens.startswith("studio:"):
+                self._open_control_studio(opens.split(":", 1)[1])
+            elif opens and callable(getattr(self, opens, None)):
+                getattr(self, opens)()
+            else:
+                opens = ""
+        except Exception as exc:
+            self._record_failure(f"Open {component.label} from Brain 5D", exc)
+            return
+        if opens:
+            self.console.write("operator", f"Opened {component.opens_label} from the brain.")
+            return
+        self.brain_node_detail.set(graph.component_detail(component_id) + "\n\nChecking readiness now…")
+
+        def work() -> None:
+            from app.brain_components import check
+
+            try:
+                result = check(component, self.runtime)
+            except Exception as exc:
+                result = f"Readiness check failed: {type(exc).__name__}: {exc}"
+            self._post(self._show_brain_component_check, component_id, result)
+
+        threading.Thread(target=work, name="hayat-brain-component-check", daemon=True).start()
+
+    def _show_brain_component_check(self, component_id: str, result: str) -> None:
+        if self._closed or getattr(self, "_brain_component_selected", None) != component_id:
+            return
+        stamp = time.strftime("%H:%M:%S")
+        self._brain_component_check = (component_id, stamp, result)
+        self.brain_node_detail.set(self.brain_graph.component_detail(component_id)
+                                   + f"\n\nReadiness check at {stamp}:\n{result}")
 
     def _replay_brain(self) -> None:
         if not self.brain_graph.motion:
@@ -552,7 +713,8 @@ class BrainOperatorMixin:
         if moment is None or history is None:
             self.brain_graph.show_moment(None)
             selected = getattr(self, "_brain_selected", None)
-            if selected:
+            # A part being inspected keeps the panel; the subsystem it sits in does not take it back.
+            if selected and not getattr(self, "_brain_component_selected", None):
                 self._select_brain_node(selected, activate=False)
             return
         begin, finish = self.brain_timeline._view()
@@ -562,7 +724,7 @@ class BrainOperatorMixin:
         trail = max(5.0, span / 40)
         current = history.flows_at(moment)
         echoes = [flow for flow in history.flows_between(moment - trail, moment) if flow not in current]
-        self.brain_graph.show_moment(moment, current, marks, echoes)
+        self.brain_graph.show_moment(moment, current, marks, echoes, tools=history.tools_at(moment))
         lines = [time.strftime("At %H:%M:%S", time.localtime(moment))]
         doing = list(dict.fromkeys(history.labels_at(moment)))
         lines.append("Doing: " + "; ".join(doing[:4]) if doing else "Idle at this moment.")
@@ -698,6 +860,10 @@ class BrainOperatorMixin:
         if activate and getattr(self, "_brain_tour_step", None) is not None:
             self._end_brain_tour()          # a click on a part explains that part instead
         self._brain_selected = node_id
+        if activate:
+            self._brain_component_selected = None
+        # The parts inside this subsystem, so the inspector names them.
+        parts = [item for item in getattr(self.brain_graph, "components", {}).values() if item.parent == node_id]
         from app.brain_mesh import BrainMesh
         self.brain_node_picker.set(next(node.label for node in BrainMesh.NODES if node.node_id == node_id))
         checks = getattr(self.brain_graph, "checks", {})
@@ -726,6 +892,12 @@ class BrainOperatorMixin:
                          f"{label}'s activity; click {label} again to show everything."
                          if flows or seconds else
                          f"\n\n{label} has no recorded activity lane; its work shows through the parts it connects to.")
+        if parts:
+            states = getattr(self.brain_graph, "component_states", {})
+            busiest = sorted(parts, key=lambda item: -getattr(states.get(item.component_id), "calls", 0))
+            text += (f"\n\nMade of {len(parts)} part{'s' if len(parts) != 1 else ''} (small dots around it; "
+                     "click one to inspect it): " + "; ".join(item.label for item in busiest[:14])
+                     + (" …" if len(parts) > 14 else ""))
         where = self._BRAIN_DESTINATIONS.get(node_id, ("", ""))[1]
         if where:
             text += f"\n\nDouble-click to open {where}."
@@ -741,10 +913,13 @@ class BrainOperatorMixin:
         history = self._brain_history
         if history is None or not getattr(self, "_brain_heat_on", True) or self.brain_graph.view_mode == "3D":
             self.brain_graph.set_heat(None)
+            self.brain_graph.set_component_heat(None)
             return
         from app.gui_brain import FLOWS
 
         self.brain_graph.set_heat(history.node_seconds(history.start, history.end, FLOWS))
+        # Each component glows by its own tools' recorded busy time in the same window.
+        self.brain_graph.set_component_heat(history.tool_seconds(history.start, history.end))
 
     def _toggle_brain_heat(self) -> None:
         self._brain_heat_on = not getattr(self, "_brain_heat_on", True)
@@ -775,7 +950,9 @@ class BrainOperatorMixin:
         self.brain_graph.set_checks(nodes)
         self.brain_graph.set_evidence(report.get("evidence_layer", {}))
         selected = getattr(self, "_brain_selected", None)
-        if selected and getattr(self, "_brain_tour_step", None) is None:
+        # A refreshed subsystem check must not replace the part the owner is inspecting (or its check result).
+        if (selected and getattr(self, "_brain_tour_step", None) is None
+                and not getattr(self, "_brain_component_selected", None)):
             self._select_brain_node(selected, activate=False)
         for node_id, widgets in self.operator_nodes.items():
             item = nodes.get(node_id, {})
@@ -828,6 +1005,8 @@ class BrainOperatorMixin:
 
     def _refresh_operator(self) -> None:
         self._run_mesh_task("Operator refresh", lambda: self.runtime.brain_mesh.self_check(deep=False))
+        if getattr(self, "_operator_frame", None) is not None:
+            self._load_brain_components()
 
     def _run_self_check(self) -> None:
         self._run_mesh_task("Independent + team self-check",

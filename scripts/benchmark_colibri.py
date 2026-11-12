@@ -1,12 +1,19 @@
 """Repeat the local 12-case comparison; no training or model promotion.
 
 Reports and server logs go into a new directory below .test-runs each time.
-The CPU and Vulkan Colibri profiles were measured on this machine. Full-size
-CUDA exceeded its RAM budget and is deliberately not offered here.
+
+Two Colibri model profiles exist (app/models/colibri_service.PROFILES):
+
+* ``original``   - the original-Qwen int4 container (different weights from hayat:latest);
+* ``foundation`` - HAYAT's own brain GGUF, imported in place by Colibri v2.1.0 (the same weight file Ollama serves
+  as hayat:latest), so ``--backend colibri --profile foundation`` against ``--backend ollama`` compares engines on
+  identical weights.
+
+Engines: CPU and Vulkan as measured on 2026-10-08, and CUDA with bounded RAM caches (the 2026-10-08 CUDA start used
+256 slots per layer and crossed the RAM guard).
 """
 import argparse
 import json
-import os
 import socket
 import statistics
 import subprocess
@@ -22,6 +29,7 @@ import httpx
 import psutil
 from app.launcher import OwnOllama
 from app.models.colibri import ColibriProvider
+from app.models.colibri_service import ENGINES, PROFILES, ColibriService
 from app.models.local import OllamaProvider
 
 SYSTEM = ('Follow the requested JSON schema exactly. Use only evidence provided in the request. '
@@ -59,8 +67,10 @@ def score_answer(content, expected, truncated=False):
         return None, False
 
 
-def check_resources(backend, vulkan):
+def check_resources(backend, engine='cpu'):
     """Do not load a second large model or borrow an active HAYAT server."""
+    if isinstance(engine, bool):  # the old signature: check_resources(backend, vulkan)
+        engine = 'vulkan' if engine else 'cpu'
     for port in (11434, 11435):
         try:
             response = httpx.get(f'http://127.0.0.1:{port}/api/ps', timeout=5, trust_env=False)
@@ -71,7 +81,7 @@ def check_resources(backend, vulkan):
             raise RuntimeError('HAYAT Ollama is already running; close it before the isolated benchmark.')
         if any(model.get('size', 0) > 4 * 1024**3 for model in response.json().get('models', [])):
             raise RuntimeError(f'A large Ollama model is loaded on port {port}; unload it before benchmarking.')
-    minimum = 23 if vulkan else 16
+    minimum = ENGINES[engine]['min_ram_gib'] if backend == 'colibri' else 16
     if psutil.virtual_memory().available < minimum * 1024**3:
         raise RuntimeError(f'This benchmark needs at least {minimum} GiB available RAM before startup.')
 
@@ -99,24 +109,39 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--backend', choices=['ollama','colibri'], required=True)
     parser.add_argument('--round', type=int, default=1)
-    parser.add_argument('--vulkan', action='store_true')
+    parser.add_argument('--vulkan', action='store_true', help='same as --engine vulkan (kept for old commands)')
+    parser.add_argument('--engine', choices=sorted(ENGINES), default='cpu')
+    parser.add_argument('--profile', choices=sorted(PROFILES), default='original')
     args = parser.parse_args()
-    if args.round < 1 or args.vulkan and args.backend != 'colibri':
-        parser.error('Use a positive round number; --vulkan requires --backend colibri.')
+    if args.vulkan:
+        args.engine = 'vulkan'
+    if args.round < 1 or args.backend != 'colibri' and (args.vulkan or args.engine != 'cpu' or args.profile != 'original'):
+        parser.error('Use a positive round number; --engine/--profile/--vulkan require --backend colibri.')
     try:
-        check_resources(args.backend, args.vulkan)
+        check_resources(args.backend, args.engine)
     except (RuntimeError, httpx.HTTPError, ValueError) as exc:
         print(f'Benchmark preflight refused: {exc}', file=sys.stderr)
         return 1
+    service = ColibriService(ROOT)
+    profile = PROFILES[args.profile]
     label = f'{args.backend}-round{args.round}'
-    if args.vulkan:
-        label += '-vulkan'
+    if args.backend == 'colibri':
+        label += f'-{args.profile}-{args.engine}'
     run_dir = ROOT / '.test-runs' / ('comparison-' + datetime.now(UTC).strftime('%Y%m%dT%H%M%S%fZ'))
     run_dir.mkdir(parents=True, exist_ok=False)
     out = run_dir / f'{label}.json'
-    report = {'backend':args.backend, 'round':args.round, 'scope':'12-case exploratory model comparison, not equivalent weights or a promotion gate',
+    same = args.backend == 'ollama' or profile['same_weights_as_brain']
+    report = {'backend':args.backend, 'round':args.round,
+              'scope':('12-case comparison of inference engines on the same weight file' if same and args.backend == 'colibri'
+                       else '12-case exploratory model comparison, not a promotion gate'),
               'settings':{'temperature':0,'max_tokens':192,'context':4096,'thinking':False}, 'cases':[]}
-    report['model_weights_differ'] = True
+    if args.backend == 'colibri':
+        report.update(profile=args.profile, engine=args.engine, runtime=str(service.runtime_dir().relative_to(ROOT)))
+        weights = service.weights_check(args.profile)
+        report['weights'] = weights
+        report['model_weights_differ'] = not weights.get('same_as_brain', False)
+    else:
+        report['model_weights_differ'] = False
     report['artifact_manifest'] = json.loads((ROOT / 'models/colibri-manifest.json').read_text(encoding='utf-8'))
     log = (run_dir / f'{label}-server.log').open('w',encoding='utf-8')
     process, owner = None, None
@@ -155,20 +180,15 @@ def main():
             with socket.socket() as sock:
                 sock.bind(('127.0.0.1',0))
                 port=sock.getsockname()[1]
-            model_dir=ROOT/'models/colibri/qwen36-35b-a3b-i4-gs64'
-            env=dict(os.environ,OMP_NUM_THREADS='8',MKL_NUM_THREADS='8',COLI_TIMERS='1',
-                     COLI_USAGE=str(run_dir/'colibri-usage.bin'),
-                     COLI_CUDA='0',
-                     COLI_VULKAN='1' if args.vulkan else '0',COLI_VK_TIER_GB='3')
-            command=[sys.executable,str(ROOT/'runtime/colibri-v2.0.0/coli'),'serve','--model',str(model_dir),
-                     '--model-id','qwen36-35b-a3b-colibri-i4-gs64','--host','127.0.0.1','--port',str(port),
-                     '--ctx','4096','--gpu','auto' if args.vulkan else 'none','--cap','128',
-                     '--ngen','192','--temp','0','--no-think']
+            command, env = service.command(args.profile, args.engine, port, ngen=192, temp=0)
+            env['COLI_TIMERS'] = '1'
+            env['COLI_USAGE'] = str(run_dir/'colibri-usage.bin')
             report['command']=command
+            report['environment']={key: env[key] for key in sorted(env) if key.startswith(('COLI_', 'Q36_', 'OMP_'))}
             process=subprocess.Popen(command,cwd=ROOT,env=env,stdout=log,stderr=log,creationflags=subprocess.CREATE_NO_WINDOW)
             report['server_owned']=True
-            provider=ColibriProvider(f'http://127.0.0.1:{port}/v1',model='qwen36-35b-a3b-colibri-i4-gs64',context_length=4096,timeout=180)
-            deadline=time.monotonic()+180
+            provider=ColibriProvider(f'http://127.0.0.1:{port}/v1',model=profile['model_id'],context_length=4096,timeout=180)
+            deadline=time.monotonic()+600
             while time.monotonic()<deadline:
                 if process.poll() is not None:
                     raise RuntimeError(f'Engine exited with {process.returncode}')
@@ -210,6 +230,18 @@ def main():
         report['total']=len(CASES)
         warm = [row['elapsed_seconds'] for row in report['cases'][1:] if 'error' not in row]
         report['median_warm_seconds'] = statistics.median(warm) if warm else None
+        rates = [row['usage'].get('completion_tokens', 0) / row['elapsed_seconds'] for row in report['cases'][1:]
+                 if 'error' not in row and isinstance(row.get('usage'), dict)
+                 and row['usage'].get('completion_tokens') and row['elapsed_seconds'] > 0]
+        report['median_warm_completion_tokens_per_second'] = statistics.median(rates) if rates else None
+        if args.backend == 'colibri' and process.poll() is None:
+            # The engine's own scheduler counters (Prometheus text), as evidence beside the timings.
+            from app.models.colibri import parse_metrics
+            try:
+                report['engine_metrics'] = parse_metrics(httpx.get(
+                    provider.base_url.removesuffix('/v1') + '/metrics', timeout=5, trust_env=False).text)
+            except httpx.HTTPError as exc:
+                report['engine_metrics_error'] = type(exc).__name__
     except Exception as exc:
         report['error'] = f'{type(exc).__name__}: {exc}'
     finally:

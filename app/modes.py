@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re as _re
 import threading
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -40,6 +41,20 @@ ALIASES = {
     "CODE": ExecutionMode.CODER,
     "COMPUTER_CONTROL": ExecutionMode.COMPUTER,
 }
+
+
+#: Plain requests for more thought on this one turn (and common misspellings of them).
+_DELIBERATE = _re.compile(
+    r"(?i)\b(?:think|thnik|thnk|tink)\s+(?:(?:it|this|that)\s+)?(?:harder|deeper|deeply|carefully|properly|really\s+hard|"
+    r"it\s+through|this\s+through|that\s+through|through|twice|step\s+by\s+step)\b"
+    r"|\bover\s*-?\s*think(?:ing)?\b|\bovrthink\b|\btake\s+(?:your|ur|you)\s+time\b|\bdon'?t\s+rush\b"
+    r"|\b(?:really|deeply)\s+(?:consider|analy[sz]e|reason)\b|\bdouble[- ]?check\s+(?:your|ur)\s+(?:reasoning|logic|thinking)\b"
+    r"|\bdeep\s+think(?:ing)?\b|\bthink\s+hard\b|\bchallenge\s+(?:your|ur)\s+(?:assumptions|answer)\b")
+
+
+def wants_deliberation(text: str) -> bool:
+    """Whether the owner asked, in their own words, for this turn to be thought through harder."""
+    return bool(_DELIBERATE.search(str(text or "")))
 
 
 @dataclass
@@ -125,6 +140,16 @@ class ModeManager:
                     resolved = [ExecutionMode.INCIDENT, ExecutionMode.DEEP]
                 else:
                     resolved = [ExecutionMode.DEEP if complexity == TaskComplexity.COMPLEX else ExecutionMode.BALANCED]
+            # "Think harder", "overthink this", "take your time": this one turn gets the full deliberate path --
+            # self-questioning before the draft (DEEP) and the skeptical review after it (ADVERSARIAL) -- whatever
+            # the configured depth. The owner asked to be able to say so in plain words (2026-11-09).
+            if wants_deliberation(getattr(intent, "goal", "") or ""):
+                resolved = [mode for mode in resolved if mode is not ExecutionMode.FAST]
+                for mode in (ExecutionMode.DEEP, ExecutionMode.ADVERSARIAL):
+                    if mode not in resolved:
+                        resolved.append(mode)
+                if getattr(intent, "entities", None) is not None:
+                    intent.entities["deliberate"] = True
             if source == "voice" and ExecutionMode.VOICE not in resolved:
                 resolved.append(ExecutionMode.VOICE)
             self.effective = resolved
@@ -132,6 +157,18 @@ class ModeManager:
 
     def snapshot(self) -> dict[str, Any]:
         return {"configured": [mode.value for mode in self.configured], "effective": [mode.value for mode in self.effective], "available": self.available}
+
+    def set_reasoning(self, profile: str) -> list[ExecutionMode]:
+        """Change depth while retaining fixed specialists and local/privacy preferences."""
+        profiles = {"automatic": ["AUTO"], "balanced": ["BALANCED"], "deep": ["DEEP", "ADVERSARIAL"]}
+        if profile not in profiles:
+            raise ValueError("Choose automatic, balanced or deep reasoning.")
+        with self._lock:
+            retained = [mode.value for mode in self.configured
+                        if mode.value not in {"AUTO", "FAST", "BALANCED", "DEEP", "ADVERSARIAL"}]
+            # AUTO is exclusive. Retaining a fixed specialist requires a fixed depth.
+            depth = ["BALANCED"] if retained and profile == "automatic" else profiles[profile]
+            return self.set(retained + depth)
 
     def _load(self) -> None:
         try:

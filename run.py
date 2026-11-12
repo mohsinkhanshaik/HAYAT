@@ -61,11 +61,12 @@ def main() -> int:
     # The folder may have moved: the venv must find the Python beside it.
     portable.repair_venv()
     python = ensure_environment()
-    with launcher.folder_runtime(print) as env:
+    arguments = normalized_arguments(sys.argv[1:])
+    with launcher.folder_runtime(print, defer_gui_service='--gui' in arguments) as env:
         initialized = subprocess.run([str(python), "-m", "scripts.init_db"], cwd=str(ROOT), env=env)
         if initialized.returncode:
             return initialized.returncode
-        command = [str(python), str(ROOT / "main.py"), *normalized_arguments(sys.argv[1:])]
+        command = [str(python), str(ROOT / "main.py"), *arguments]
         try:
             return subprocess.run(command, cwd=str(ROOT), env=env).returncode
         except KeyboardInterrupt:

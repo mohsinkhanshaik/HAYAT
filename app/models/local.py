@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import base64
 import mimetypes
+import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import httpx
 
@@ -30,8 +31,28 @@ def discovery_timeout(base_url: str) -> httpx.Timeout:
     return httpx.Timeout(10.0, connect=3.0)
 
 
+#: Set by the runtime: brings HAYAT's local model service back (RuntimeSupervisor.recover, one caller at a time) and
+#: returns (ok, detail). Called when a request finds the service not listening at all, e.g. still starting after
+#: HAYAT opened, or crashed: 2026-11-07, the first questions after a start were "connection refused" and every
+#: later one "HAYAT's main model is currently unavailable", because nothing tried to bring the service back.
+SERVICE_RECOVERY: Callable[[], tuple[bool, str]] | None = None
+
+
+def _refused(exc: BaseException | None) -> bool:
+    """The service is not listening (connection refused / WinError 10061), as opposed to slow or erroring.
+    Follows the causes, since the streaming path wraps the connection error in a ModelError."""
+    seen = 0
+    while exc is not None and seen < 6:
+        if isinstance(exc, (httpx.ConnectError, ConnectionRefusedError)):
+            return True
+        exc, seen = exc.__cause__ or exc.__context__, seen + 1
+    return False
+
+
 class OllamaProvider(ModelProvider):
     name = "ollama"
+    #: Seconds before the single retry of a server error (5xx).
+    SERVER_ERROR_PAUSE = 1.5
 
     #: How long Ollama keeps the model resident in VRAM after a call. Ollama's
     #: default is 5 minutes, after which the next call cold-loads the whole
@@ -75,6 +96,20 @@ class OllamaProvider(ModelProvider):
             message, provider=self.name, endpoint=endpoint, dependency="Ollama",
             failure_class=failure_class, http_status=status, model=self.model,
         )
+
+    def _post_recovering(self, endpoint: str, payload: dict[str, Any]) -> Any:
+        """POST once; if the service is not listening, have it brought back (SERVICE_RECOVERY) and POST once more."""
+        try:
+            return httpx.post(endpoint, json=payload, timeout=self.timeout, trust_env=False)
+        except httpx.HTTPError as exc:
+            recover = SERVICE_RECOVERY
+            if recover is None or not _refused(exc):
+                raise
+            ok, detail = recover()
+            if not ok:
+                raise httpx.ConnectError(f"HAYAT's local model service is not running and could not be brought back: {detail}",
+                                         request=getattr(exc, "request", None)) from exc
+            return httpx.post(endpoint, json=payload, timeout=self.timeout, trust_env=False)
 
     def list_models(self) -> list[str]:
         require_local_endpoint(self.base_url)
@@ -154,12 +189,25 @@ class OllamaProvider(ModelProvider):
         from app.activity import ACTIVITY
 
         try:
-            with ACTIVITY.track("model", "thinking", f"{self.name}/{model}"):
-                response = httpx.post(endpoint, json=payload, timeout=self.timeout, trust_env=False)
+            # A server-side failure (5xx) is retried once after a short pause: a live evaluation
+            # lost a whole conversation to one "Ollama answered 500" a second after a normal
+            # reply. A client error, or a second failure, is reported as before.
+            for attempt in (1, 2):
+                with ACTIVITY.track("model", "thinking", f"{self.name}/{model}"):
+                    response = self._post_recovering(endpoint, payload)
+                if int(getattr(response, "status_code", 200) or 200) < 500 or attempt == 2:
+                    break
+                time.sleep(self.SERVER_ERROR_PAUSE)
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
+            # Ollama says why in the body ({"error": "..."}); keep it, it is the diagnosis.
+            try:
+                reason = str((exc.response.json() or {}).get("error") or "")[:300]
+            except ValueError:
+                reason = exc.response.text[:300]
             raise self._error(
-                f"Ollama answered {exc.response.status_code} for a generation request.",
+                f"Ollama answered {exc.response.status_code} for a generation request"
+                + (f": {reason}" if reason else "."),
                 exc, endpoint=endpoint, status=exc.response.status_code,
             ) from exc
         except httpx.HTTPError as exc:
@@ -179,6 +227,7 @@ class OllamaProvider(ModelProvider):
                 failure_class=FailureClass.DATA_INTEGRITY,
             ) from exc
         message = data.get("message", {})
+        _note_generation(data, model)
         return ModelResponse(
             content=message.get("content", ""),
             model=data.get("model", model),
@@ -204,7 +253,18 @@ class OllamaProvider(ModelProvider):
                    "keep_alive": self.keep_alive, "options": {
                        "temperature": .2 if temperature is None else temperature,
                        "num_ctx": self.num_ctx, "num_predict": max_tokens if max_tokens is not None else 4096}}
-        return stream_local(self, payload, on_chunk=on_chunk, cancel=cancel)
+        try:
+            return stream_local(self, payload, on_chunk=on_chunk, cancel=cancel)
+        except Exception as exc:
+            # Refused before any text arrived, so a second attempt cannot repeat words already shown.
+            recover = SERVICE_RECOVERY
+            if recover is None or not _refused(exc):
+                raise
+            ok, detail = recover()
+            if not ok:
+                raise ModelError(f"HAYAT's local model service is not running and could not be brought back: {detail}",
+                                 provider=self.name, endpoint=self.base_url, dependency="Ollama") from exc
+            return stream_local(self, payload, on_chunk=on_chunk, cancel=cancel)
 
     def generate_vision(self, prompt: str, image_path: str | Path, temperature: float | None = None) -> ModelResponse:
         path = Path(image_path)
@@ -293,3 +353,27 @@ class OpenAICompatibleProvider(ModelProvider):
         if max_tokens is not None:
             payload["max_tokens"] = max(1, int(max_tokens))
         return stream_local(self, payload, compatible=True, on_chunk=on_chunk, cancel=cancel)
+
+
+#: The last completed generation as the model server reported it: tokens written and the speed they came at.
+#: Read by the Mind window's System tab (app/cognitive_telemetry.py); empty until a generation has finished.
+LAST_GENERATION: dict[str, Any] = {}
+
+
+def _note_generation(data: dict[str, Any], model: str) -> None:
+    """Keep the server's own count and timing (eval_count / eval_duration); nothing is estimated."""
+    try:
+        tokens = int(data.get("eval_count") or 0)
+        nanoseconds = int(data.get("eval_duration") or 0)
+        if tokens <= 0 or nanoseconds <= 0:
+            return
+        from datetime import UTC, datetime
+
+        LAST_GENERATION.update({
+            "model": str(data.get("model") or model), "tokens": tokens,
+            "tokens_per_second": round(tokens / (nanoseconds / 1e9), 1),
+            "prompt_tokens": data.get("prompt_eval_count"),
+            "load_ms": round(int(data.get("load_duration") or 0) / 1e6),
+            "at": datetime.now(UTC).isoformat(timespec="seconds")})
+    except (TypeError, ValueError):
+        return

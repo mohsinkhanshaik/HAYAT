@@ -311,6 +311,16 @@ def test_a_complete_folder_runs_hayats_ollama_for_exactly_as_long_as_hayat(tmp_p
     assert (root / "data" / "logs" / "ollama-hayat.log").is_file()
 
 
+def test_desktop_defers_service_wait_until_the_boot_window_is_visible(tmp_path, monkeypatch):
+    root = _complete_root(tmp_path)
+    monkeypatch.delenv(portable.SWITCH, raising=False)
+    monkeypatch.setattr(launcher, 'OwnOllama', lambda *a, **kw: pytest.fail('GUI worker must own service startup'))
+    with launcher.folder_runtime(root=root, defer_gui_service=True) as env:
+        assert env['HAYAT_BOOT_OLLAMA'] == '1'
+        assert env['OLLAMA_BASE_URL'] == 'http://127.0.0.1:11435'
+    assert not (root / 'data' / 'logs' / 'ollama-hayat.log').exists()
+
+
 def test_tesseract_is_copied_without_its_manual_or_uninstaller(tmp_path):
     from scripts import make_portable
 

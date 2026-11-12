@@ -73,6 +73,12 @@ EVENT_TYPES = {
     "TASK_STARTED", "TASK_FAILED", "TASK_COMPLETED", "MODEL_LOADED", "MODEL_FAILED",
     "CAMERA_CHANGED", "SCREEN_CHANGED", "FILE_CHANGED", "RESOURCE_ALERT",
     "KNOWLEDGE_STALE", "VOICE_COMMAND",
+    # Cognition (2026-11-09): a message placed in a topic, memories reviewed for retention, a forecast kept or
+    # judged, the scorecard measured. Payloads carry ids, relations and counts, never message text.
+    "TOPIC_PLACED", "TOPIC_CHANGED_BY_OWNER", "MEMORY_REVIEWED", "FORECAST_KEPT", "FORECAST_JUDGED",
+    "SCORECARD_MEASURED",
+    # A laboratory run finished (robustness suite, code scan or patch test, model discovery): counts only.
+    "LAB_RUN_COMPLETED",
 } | LIFECYCLE_EVENT_TYPES
 
 # Losing one of these would misrepresent what the system actually did, so a

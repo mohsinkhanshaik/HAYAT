@@ -17,6 +17,7 @@ from tkinter import ttk
 
 from app.gui_intelligence_parts import FlowRow, blend
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_windows import MARGIN, place_over, work_area
 from app.markets import QUOTES, RANGES, money, signed_pct
 from app.gui_fonts import DISPLAY
@@ -90,7 +91,7 @@ class TradeCenter(tk.Toplevel):
         self.view = StringVar(self, 'all')
         self.span = StringVar(self, '1D')
         self.layout = StringVar(self, 'Auto')
-        self.status = StringVar(self, 'Loading markets…')
+        self.status = DisplayVar(self, 'Loading markets…')
         self.title('HAYAT · Trade Center')
         self.configure(bg=p.BLACK)
         area = work_area(gui.root)
@@ -384,6 +385,9 @@ class TradeCenter(tk.Toplevel):
         row.pack(fill='x', pady=(4, 0))
         self.explain_button = ttk.Button(row, text='Explain with HAYAT', style='Compact.Hayat.TButton', command=self.explain_scenarios)
         self.explain_button.pack(side='left')
+        # Everything measured about this market in one plain report (app/market_intelligence.py brief).
+        self.brief_button = ttk.Button(row, text='Full brief', style='Compact.Hayat.TButton', command=self.full_brief)
+        self.brief_button.pack(side='left', padx=(6, 0))
         tk.Label(row, text='uses only these numbers', bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 8)).pack(side='left', padx=6)
         self.scenario_note.bind('<Configure>', lambda event: self.scenario_note.configure(wraplength=max(200, event.width - 16)))
         self.scenario_head.bind('<Configure>', lambda event: self.scenario_head.configure(wraplength=max(200, event.width - 4)))
@@ -1297,6 +1301,48 @@ class TradeCenter(tk.Toplevel):
             from app.market_scenarios import explain as summarise
             return {'symbol': value['symbol'], 'text': summarise(model, value)}
         self._submit('explain', explain)
+
+    def full_brief(self):
+        """Scenarios, what moves it, big players' positioning, news tone, HAYAT's own track record and the risks."""
+        from app.market_intelligence import ForecastLedger, brief
+
+        markets, symbol, asset = self.markets, self.symbol, self.selected_asset
+        ledger = getattr(markets, 'ledger', None)
+        if ledger is None and getattr(markets, 'path', None):
+            from pathlib import Path
+            ledger = markets.ledger = ForecastLedger(Path(markets.path).parent / 'market-forecasts.db')
+        if ledger is None:
+            self.scenario_note.configure(text='The full brief needs the market store, which this session does not have.')
+            return
+        intelligence = getattr(getattr(self.gui, 'runtime', None), 'intelligence', None)
+        self.scenario_note.configure(text=f'Gathering everything measured about {symbol}: scenarios, links, positioning, news tone…')
+        self._submit('brief', lambda: brief(markets, intelligence, ledger, symbol, asset))
+
+    def show_brief(self, value):
+        """The brief in its own window, so the side panel keeps its odds and factors."""
+        if not value or value.get('symbol') != self.symbol:
+            return
+        from app.gui_theme import DarkScrolledText
+        from app.gui_windows import place_over
+        p = self.palette
+        window = getattr(self, '_brief_window', None)
+        if window is None or not window.winfo_exists():
+            window = tk.Toplevel(self)
+            window.configure(bg=p.BLACK)
+            window.transient(self)
+            text = DarkScrolledText(window, bg=p.PANEL, fg=p.WHITE, font=('Segoe UI', 10), wrap='word', padx=12, pady=10)
+            text.pack(fill='both', expand=True, padx=10, pady=10)
+            window.text = text
+            window.bind('<Escape>', lambda _event: window.destroy())
+            place_over(window, self, (720, 520))
+            self._brief_window = window
+        window.title(f"{value['symbol']} · full brief · HAYAT")
+        window.text.configure(state='normal')
+        window.text.delete('1.0', 'end')
+        window.text.insert('1.0', value['text'])
+        window.text.configure(state='disabled')
+        window.lift()
+        self.scenario_note.configure(text='Full brief opened: possibilities with odds and their record, never promises.')
 
     def show_explain(self, value):
         if value['symbol'] == self.symbol:

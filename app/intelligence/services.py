@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 import logging
 
+from app.intelligence.camera_health import STREAM
 from app.intelligence.feeds import finite
 from app.intelligence.providers import CAMERA_COVERAGE, camera_url, camera_media_profile
 from app.intelligence.resources import resource_catalog
@@ -17,6 +18,7 @@ _log = logging.getLogger(__name__)
 # What publishers label HLS playlists; the body must still start with #EXTM3U.
 HLS_TYPES = {'application/vnd.apple.mpegurl', 'application/x-mpegurl', 'audio/mpegurl', 'audio/x-mpegurl',
              'text/plain', 'application/octet-stream', 'video/mp2t', 'binary/octet-stream'}
+CLIP_TYPES = {'video/mp4', 'application/octet-stream', 'binary/octet-stream'}
 
 
 #: Next camera from one holy-site broadcast goes to its pair first.
@@ -77,6 +79,7 @@ class ExplorationServices:
         playlists are checked first, so a dead camera is skipped instead of
         timing out in the player.
         """
+        explicit_selection = bool(event_id)
         notice, alternatives = '', []
         if event_id.startswith('livestreams:') and refresh:
             latest = self.store.latest('livestreams')
@@ -108,8 +111,7 @@ class ExplorationServices:
             if any(token_expired(row['details'].get('video_url')) for row in streams[:6]):
                 if self._renew_stream_tokens({row['feed'] for row in streams[:6]}):
                     streams = self._playable_groups(query)['stream'] or streams
-            chosen = next((row for row in streams[:6] if row['details'].get('live_page')
-                           or self._stream_responds(row['details']['video_url'], row['feed'])), None)
+            chosen = next((row for row in streams[:6] if row['details'].get('live_page') or self.stream_health(row)), None)
             if chosen is not None:
                 pool = streams
             else:
@@ -119,6 +121,10 @@ class ExplorationServices:
                     # selected publisher stream from reaching the reconnecting player.
                     pool = streams
                 chosen = pool[0]
+                if pool is groups['still']:
+                    # A still is fetched before it is offered: a camera showing the publisher's "unavailable" card or
+                    # answering 404 is passed over for the next one (four tries), and remembered as failing.
+                    chosen = next((row for row in pool[:4] if self._still_works(row['id'])), chosen)
                 provider = chosen['details'].get('provider') or 'This publisher'
                 notice = ('The matching live streams did not respond, so this is the next best publisher media. ' if streams else '') + (
                     f'{provider} publishes short recorded clips here, not continuous live video; this plays its latest clip.'
@@ -126,7 +132,7 @@ class ExplorationServices:
                     f'{provider} publishes refreshing still images here, not video; the card shows the latest still and refreshes it.'
                     if pool is groups['still'] else 'The player will keep trying this live stream while selected.')
             event_id = chosen['id']
-            dead = {url for url, (_at, responding) in self.__dict__.get('_stream_checks', {}).items() if not responding}
+            dead = {url for url, (_at, responding, *_state) in self.__dict__.get('_stream_checks', {}).items() if not responding}
             alternatives = [{'id': row['id'], 'title': row['title']} for row in pool if row['id'] != event_id
                             and camera_url(row['details'].get('video_url'), row['feed'], video=True) not in dead][:15]
         if event_id.startswith('livestreams:') and not alternatives:
@@ -138,6 +144,9 @@ class ExplorationServices:
         from app.intelligence.camera_chat import playback_mode
         mode = playback_mode(details) if row['kind'] == 'public_camera' else None
         url = camera_url(details.get('video_url'), row['feed'], video=True) if mode in ('stream', 'clip') else ''
+        if refresh and explicit_selection and url:
+            # An explicit retry must not reuse the failed one-minute probe.
+            self.__dict__.get('_stream_checks', {}).pop(url, None)
         if row['feed'] == 'livestreams' and details.get('live_page'):
             from app.intelligence.live import broadcast_source, resolve_livestream
             broadcast_source(details['live_page'])
@@ -189,6 +198,10 @@ class ExplorationServices:
             mode = playback_mode(row['details'])
             if mode:
                 groups[mode].append(row)
+        # Cameras whose last real check failed, and networks where every recent check failed, go last (stable sort).
+        for mode, group in groups.items():
+            broken = self.broken_cameras([row['id'] for row in group], streams=mode != 'still')
+            group.sort(key=lambda row: row['id'] in broken)
         # Kept out of any(groups.values()): only reported when nothing here can play.
         groups['player_only'] = [] if any(groups.values()) else [row for row in ranked if row['details'].get('page_url')][:1]
         return groups
@@ -210,26 +223,74 @@ class ExplorationServices:
             self.refresh(due)
         return bool(due)
 
-    def _stream_responds(self, url, feed):
-        """One playlist request, the same one any player makes; remembered for a minute."""
+    def _stream_state(self, url, feed, timeout=4):
+        """('live' | 'drm' | 'stream_dead' | 'empty', detail): the playlist a player would read and, for a master
+        playlist, its first variant (camera_health.hls_state); for a recorded clip (London's MP4s), the clip itself.
+        Remembered for a minute."""
         import time
+        from urllib.parse import urlsplit
+        from app.intelligence.camera_health import hls_state
         url = camera_url(url, feed, video=True)
         if not url:
-            return False
+            return 'stream_dead', 'no admitted stream address'
         checks = self.__dict__.setdefault('_stream_checks', {})
         cached = checks.get(url)
         if cached and time.monotonic() - cached[0] < 60:
-            return cached[1]
-        try:
-            resource = self.fetcher.fetch(url, 2 * 1024 * 1024, HLS_TYPES, timeout=4)
-            responding = bytes(resource.content).lstrip()[:7] == b'#EXTM3U'
-        except Exception:  # A dead or refusing publisher is a skipped camera, not a failed request.
+            return cached[2]
+        if not urlsplit(url).path.lower().endswith('.m3u8'):
+            try:
+                clip = self.fetcher.fetch(url, 16 * 1024 * 1024, CLIP_TYPES, timeout=max(timeout, 15)).content
+                state = ('live', '') if len(clip) >= 10_000 else ('empty', f'clip of {len(clip)} bytes')
+            except Exception as exc:  # a missing clip is a verdict, not a crash
+                state = ('stream_dead', f'{type(exc).__name__}: {exc}'[:160])
+        else:
+            state = hls_state(lambda address: self.fetcher.fetch(address, 2 * 1024 * 1024, HLS_TYPES, timeout=timeout).content, url)
+        if state[0] == 'stream_dead':
             log_swallowed(_log, 'checking public camera stream ' + feed)
-            responding = False
-        checks[url] = (time.monotonic(), responding)
+        checks[url] = (time.monotonic(), state[0] == 'live', state)
         while len(checks) > 500:
             checks.pop(next(iter(checks)))
-        return responding
+        return state
+
+    def _stream_responds(self, url, feed):
+        """True when the stream lists video segments a player here can decode (not DRM)."""
+        return self._stream_state(url, feed)[0] == 'live'
+
+    def stream_health(self, row, decode=False, timeout=4):
+        """Probe one camera's stream (renewing a signed address first) and record the verdict for that camera.
+
+        With `decode`, one frame is also decoded with FFmpeg, as a player would: a playlist can be fine while the
+        picture is the publisher's slate (Indiana's "LOADING VIDEO", 2026-11-06), which only the frame shows."""
+        url = row['details'].get('video_url')
+        if token_expired(url) and self._renew_stream_tokens({row['feed']}):
+            row = self.event_record(row['id'])['event']
+            url = row['details'].get('video_url')
+        state, detail = self._stream_state(url, row['feed'], timeout)
+        verdict = 'working' if state == 'live' else state
+        from urllib.parse import urlsplit
+        from app.video_workflow import executable
+        # Live HLS only: a recorded clip was already downloaded whole and checked by _stream_state.
+        if state == 'live' and decode and urlsplit(str(url)).path.lower().endswith('.m3u8') and executable('ffmpeg'):
+            import cv2
+            from app.intelligence.camera_eyes import ffmpeg_frame
+            from app.intelligence.explore import placeholder
+            folder = self.store.path.parent / 'intelligence' / 'camera-checks'
+            folder.mkdir(parents=True, exist_ok=True)
+            target = folder / (hashlib.sha256(row['id'].encode()).hexdigest()[:24] + '.jpg')
+            try:
+                ffmpeg_frame(camera_url(url, row['feed'], video=True), target, timeout=40)
+                image = cv2.imread(str(target))
+                if image is None:
+                    verdict, detail = 'stream_dead', 'the decoded frame could not be read'
+                elif placeholder(image):
+                    verdict, detail = 'card', "the stream shows the publisher's slate, not the road"
+            except ValueError as exc:
+                verdict, detail = 'stream_dead', str(exc)[:200]
+            finally:
+                target.unlink(missing_ok=True)
+        # Kept apart from the still's record: one camera can have a working still and a dead stream.
+        self.store.record_camera(row['id'] + STREAM, row['feed'], verdict == 'working', verdict, detail)
+        return verdict == 'working'
 
     def camera_control(self, action):
         dispatch = getattr(self, 'player_dispatch', None)
@@ -241,7 +302,7 @@ class ExplorationServices:
         return resource_catalog(query, category, region, integration)
 
     def cameras(self, query='', bbox=None, limit=100, offset=0, available_only=False, feed='', near=None, radius_km=50, media='',
-                near_event='', located_only=False, sort=''):
+                near_event='', located_only=False, sort='', working_only=False):
         """Public cameras from every connected network, optionally the nearest ones to a point or event."""
         from collections import Counter
         from app.intelligence.view import distance_km
@@ -294,7 +355,24 @@ class ExplorationServices:
             from app.intelligence.objects import reported_at
             rows.sort(key=lambda row: (reported_at({'last_reported': row.get('retrieved_at')}), row['id']), reverse=True)
             rows.sort(key=lambda row: bool(row.get('stale')))
-        return {'intelligence': True, 'cameras': rows[offset:offset+limit], 'total_matching': len(rows),
+        # What HAYAT's own checks found (camera_health.py): failing cameras after working ones when choosing by
+        # distance or media, and each returned camera labelled with its latest check.
+        from app.intelligence.camera_health import failing, label, network_states
+        health = self.store.camera_health()
+        down = {key for key, state in network_states(self.store).items() if state['down']}
+        def checked(row):
+            """The camera's still record, else its stream record: what was last really seen of it."""
+            return health.get(row['id']) or health.get(row['id'] + STREAM)
+        if working_only:  # leave out what HAYAT saw fail recently (cameras never checked stay in)
+            rows = [row for row in rows if not failing(checked(row)) and row['feed'] not in down]
+        if order in ('nearest', 'media'):
+            rows.sort(key=lambda row: failing(checked(row)) or row['feed'] in down)
+        page = []
+        for row in rows[offset:offset + limit]:
+            record, stream = checked(row), health.get(row['id'] + STREAM)
+            words = label(record) + (f"; video {label(stream)}" if stream and record is not stream else '')
+            page.append({**row, 'health': words, 'working': None if record is None else bool(record['ok']) and not failing(record)})
+        return {'intelligence': True, 'cameras': page, 'total_matching': len(rows),
                 'sort': order,
                 'next_offset': offset + limit if len(rows) > offset + limit else None,
                 'networks': dict(Counter(row['details'].get('provider') or row['feed'] for row in rows).most_common()),
@@ -314,12 +392,14 @@ class ExplorationServices:
         where it is, what it is and which media it offers.
         Each point is [id, latitude, longitude, 'c' camera | 'e' event, title, flags, category]
         with flags from: s HLS stream, v video clip, i still image, p publisher player, x stale,
-        ! high severity, + medium severity (events only).
+        b camera whose last real check failed, ! high severity, + medium severity (events only).
         """
         if media not in ('', 'image', 'video', 'page', 'stream'):
             raise ValueError('media must be image, video, stream or page.')
         sources, rows = self._matching(query, feed, None, True)
         field = {'image': 'image_url', 'video': 'video_url', 'page': 'page_url'}.get(media)
+        from app.intelligence.camera_health import failing
+        health = self.store.camera_health()
         points = []
         for row in rows:
             camera = row['kind'] == 'public_camera'
@@ -333,6 +413,9 @@ class ExplorationServices:
                     continue
                 flags = ('s' if profile['stream'] else '') + ('v' if profile['video_clip'] else '') + \
                         ('i' if profile['image'] else '') + ('p' if details.get('page_url') else '')
+                # b: HAYAT's last real check of this camera failed (camera_health.py); the atlas dims it.
+                if failing(health.get(row['id']) or health.get(row['id'] + STREAM)):
+                    flags += 'b'
             else:
                 flags = {3: '!', 2: '+'}.get(row.get('severity_rank', 0), '')
             if row.get('stale'):
@@ -345,10 +428,104 @@ class ExplorationServices:
                 'cameras': sum(point[3] == 'c' for point in points), 'sources': sources, 'monitor': self.status(),
                 'basis': 'Every located provider record, compact. Open a marker for its full source evidence.'}
 
-    def camera_frame(self, event_id):
+    def broken_cameras(self, ids, streams=False):
+        """The ids among these whose last real check (of the still, or with `streams` of the video) failed recently,
+        or whose whole network is down right now."""
+        from app.intelligence.camera_health import failing, network_states
+        ids = list(ids)
+        if not ids:
+            return set()
+        suffix = STREAM if streams else ''
+        records = self.store.camera_health([identifier + suffix for identifier in ids])
+        down = {feed for feed, state in network_states(self.store).items() if state['down']}
+        return {identifier for identifier in ids if failing(records.get(identifier + suffix)) or identifier.split(':', 1)[0] in down}
+
+    def _still_works(self, event_id):
+        try:
+            value = self.camera_frame(event_id)
+            return not value.get('publisher_card') and not value.get('stale')  # an old picture is not a working camera
+        except Exception:  # camera_frame recorded why; the caller tries the next camera
+            return False
+
+    def camera_frame(self, event_id, fresh=False):
+        """The camera's current still, checked and recorded (camera_health.py): a real picture, the publisher's
+        'unavailable' card (returned, marked publisher_card), or an error (recorded, then raised)."""
+        import time as _time
+
+        row = self.event_record(event_id)['event']
+        failures = self.__dict__.setdefault('_camera_failures', {})
+        recent = failures.get(event_id)
+        if recent and not fresh and _time.monotonic() - recent[0] < self.CAMERA_FAILURE_PAUSE:
+            # The owner's log (2026-11-07/09): the same Caltrans still clicked 3-4 times, 25 s of waiting each time.
+            stale = self._stale_still(event_id, recent[1])
+            if stale:
+                return stale
+            wait = round(self.CAMERA_FAILURE_PAUSE - (_time.monotonic() - recent[0]))
+            raise ValueError(f"This camera did not answer {round(_time.monotonic() - recent[0])} s ago ({recent[1]}); asking again "
+                             f"now would most likely wait another 25 s. Try it again in about {wait} s, or choose another camera.")
+        try:
+            value = self._camera_frame(row, event_id, fresh)
+        except Exception as exc:
+            text = str(exc)
+            verdict = 'web_page' if 'text/html' in text else 'error'
+            if row['kind'] == 'public_camera' and camera_url(row['details'].get('image_url'), row['feed']):
+                self.store.record_camera(event_id, row['feed'], False, verdict, f'{type(exc).__name__}: {text}'[:300])
+            if verdict == 'web_page':
+                raise ValueError(f"{row['details'].get('provider') or 'The publisher'} answered with a web page instead of this "
+                                 "camera's picture: the image is offline, or the publisher refuses automated requests. HAYAT "
+                                 "will try other cameras first for the next six hours.") from exc
+            if isinstance(exc, ValueError):
+                raise
+            reason = f'{type(exc).__name__}: {text}'[:160] + self._route_hint()
+            failures[event_id] = (_time.monotonic(), reason)
+            # A health check (fresh) must see the failure itself, not an old picture standing in for it.
+            stale = None if fresh else self._stale_still(event_id, reason)
+            if stale:
+                return stale
+            raise
+        failures.pop(event_id, None)
+        if not value.get('cached'):
+            self.store.record_camera(event_id, row['feed'], not value['publisher_card'],
+                                     'card' if value['publisher_card'] else 'working')
+        return value
+
+    #: How long a camera that just failed (timeout, connection) is not asked again.
+    CAMERA_FAILURE_PAUSE = 90
+
+    @staticmethod
+    def _route_hint():
+        """A timeout through the privacy route is often the route: many camera publishers block or slow Tor exits."""
+        try:
+            from app.privacy_masks import ROUTE
+
+            if ROUTE.snapshot()[0] is not None:
+                return (' The privacy route (Tor) is on: many camera publishers block or slow Tor exits, so this may '
+                        'work with the route off.')
+        except Exception:  # no privacy module in a minimal setup: no hint
+            return ''
+        return ''
+
+    def _stale_still(self, event_id, reason):
+        """The last picture this camera gave, plainly marked as old, when it cannot give a new one now."""
+        from app.intelligence.feeds import timestamp
+        from app.intelligence.view import relative_time
+
+        key = hashlib.sha256(event_id.encode()).hexdigest()[:32]
+        record = self.store.preference('camera_preview_' + key)
+        folder = self.store.path.parent / 'intelligence' / 'camera-previews'
+        if not record:
+            return None
+        path = Path(record.get('path') or '')
+        if not (path.is_file() and path.parent.resolve() == folder.resolve() and path.stem == key):
+            return None
+        age = relative_time(timestamp(record.get('fetched_at'))) or 'earlier'
+        return {'intelligence': True, **record, 'cached': True, 'stale': True, 'stale_reason': reason,
+                'basis': f"An older picture, fetched {age}: the camera did not answer just now ({reason}). It is not "
+                         "the current view."}
+
+    def _camera_frame(self, row, event_id, fresh):
         from PIL import Image
         from app.intelligence.manager import now
-        row = self.event_record(event_id)['event']
         if row['kind'] != 'public_camera':
             raise ValueError('Select a public camera event from the camera catalog.')
         url = camera_url(row['details'].get('image_url'), row['feed'])
@@ -368,7 +545,7 @@ class ExplorationServices:
                 date = timestamp(record.get('fetched_at'))
                 remaining = (datetime.fromisoformat(date) + timedelta(seconds=row['details']['refresh_seconds']) - now()).total_seconds() if date else 0
                 cached_path = Path(record['path'])
-                if remaining > 0 and cached_path.parent.resolve() == folder.resolve() and cached_path.stem == key and cached_path.suffix in ('.jpg', '.png') and cached_path.is_file():
+                if not fresh and remaining > 0 and cached_path.parent.resolve() == folder.resolve() and cached_path.stem == key and cached_path.suffix in ('.jpg', '.png') and cached_path.is_file():
                     return {'intelligence': True, **record, 'cached': True, 'retry_after_seconds': round(remaining)}
             # Some publishers (Singapore) label JPEGs as octet-stream; the decoder below checks the real format.
             # Ottawa sends the non-standard image/jpg.
@@ -376,24 +553,41 @@ class ExplorationServices:
                 resource = self._txdot_snapshot(url)
             else:
                 # NSW's published Victoria Pass JPEG is approximately 2.6 MB at
-                # 5388 x 3592. Keep that network's exception bounded below as well.
-                maximum = (4 if row['feed'] == 'cameras_nsw' else 2) * 1024 * 1024
-                resource = self.fetcher.fetch(url, maximum, {'image/jpeg', 'image/jpg', 'image/png', 'application/octet-stream'})
-            with Image.open(BytesIO(resource.content)) as picture:
+                # 5388 x 3592, and some City of Toronto stills pass 2 MB. Keep those exceptions bounded as well.
+                maximum = (4 if row['feed'] in ('cameras_nsw', 'cameras_toronto') else 2) * 1024 * 1024
+                # 25 s: Lyon's 500 KB stills timed out at the fetcher's 10 s under load (2026-11-06 audit).
+                resource = self.fetcher.fetch(url, maximum, {'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+                                                             'application/octet-stream'}, timeout=25)
+            content = bytes(resource.content)
+            with Image.open(BytesIO(content)) as picture:
                 maximum_pixels = 20000000 if row['feed'] == 'cameras_nsw' else 10000000
-                if picture.format not in ('JPEG', 'PNG') or picture.width * picture.height > maximum_pixels:
+                if picture.format not in ('JPEG', 'PNG', 'GIF') or picture.width * picture.height > maximum_pixels:
                     raise ValueError('Camera image format or dimensions exceed preview limits.')
                 picture.verify()
+            if content.startswith(b'GIF8'):
+                # King County labels some stills image/jpeg that are GIFs; the preview keeps JPEG or PNG only.
+                with Image.open(BytesIO(content)) as picture:
+                    buffer = BytesIO()
+                    picture.convert('RGB').save(buffer, 'PNG')
+                content = buffer.getvalue()
+            import cv2
+            import numpy as np
+            from app.intelligence.explore import placeholder
+            decoded = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_COLOR)
+            card = decoded is not None and placeholder(decoded)
             folder.mkdir(parents=True, exist_ok=True)
-            destination = folder / (key + ('.png' if resource.content.startswith(b'\x89PNG') else '.jpg'))
+            destination = folder / (key + ('.png' if content.startswith(b'\x89PNG') else '.jpg'))
             partial = destination.with_suffix('.partial')
-            partial.write_bytes(resource.content)
+            partial.write_bytes(content)
             partial.replace(destination)
             for old in sorted(folder.glob('*.*'), key=lambda item: item.stat().st_mtime, reverse=True)[30:]:
                 old.unlink(missing_ok=True)
             value = {'event_id': event_id, 'path': str(destination), 'fetched_at': resource.retrieved_at,
-                     'image_url': resource.final_url, 'sha256': resource.sha256,
-                     'basis': 'Latest image retrieved from the public publisher. Fetch time is not verified capture time; this may be a cached or delayed still.'}
+                     'image_url': resource.final_url, 'sha256': resource.sha256, 'publisher_card': card,
+                     'basis': ("The publisher is showing its 'unavailable' card for this camera instead of the road; HAYAT "
+                               "tries other cameras first for the next six hours." if card else
+                               'Latest image retrieved from the public publisher. Fetch time is not verified capture time; '
+                               'this may be a cached or delayed still.')}
             self.store.save_preference('camera_preview_' + key, value)
             self.store.trim_preferences('camera_preview_', 30)
             return {'intelligence': True, **value, 'cached': False}
@@ -465,4 +659,4 @@ class ExplorationServices:
                 self._map_server = IntelligenceMapServer(self)
             from urllib.parse import quote
             return {'intelligence': True, 'map_url': self._map_server.url + ('#' + quote(event_id) if event_id else ''),
-                    'basis': 'Local read-only interactive map. Street tiles and video contact public publishers only when explicitly enabled.'}
+                    'basis': 'Local interactive map. Saved views write local display preferences; street tiles and video contact public publishers only when explicitly enabled.'}

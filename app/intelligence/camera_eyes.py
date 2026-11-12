@@ -71,6 +71,8 @@ class CameraEyes:
         details = row["details"]
         if camera_url(details.get("image_url"), row["feed"]):
             frame = self.manager.camera_frame(event_id)
+            if frame.get("stale"):  # never describe an old picture as what the camera sees now
+                raise ValueError(frame["basis"])
             return {"path": frame["path"], "fetched_at": frame["fetched_at"], "method": "publisher still image", "row": row}
         mode = playback_mode(details)
         if row["feed"] == "livestreams" and details.get("live_page"):

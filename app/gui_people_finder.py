@@ -19,6 +19,7 @@ from typing import Any
 from app.gui_fonts import DISPLAY
 from app.gui_intelligence_parts import FlowRow
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_windows import place_over
 
 EXAMPLES = ("CTOs of fintech companies in UAE", "Founders of fintech startups in India", "CEOs of banks in Germany",
@@ -47,7 +48,7 @@ class PeopleFinderWindow(tk.Toplevel):
         self.auto = BooleanVar(self, True)
         self.deep = BooleanVar(self, False)
         self.source_vars = {key: BooleanVar(self, False) for key, _label in SOURCE_LABELS}
-        self.status = StringVar(self, "Describe who you want to reach, then press Find people.")
+        self.status = DisplayVar(self, "Describe who you want to reach, then press Find people.")
         self.title("HAYAT · Find people to contact")
         self.configure(bg=p.BLACK)
         self.minsize(980, 640)

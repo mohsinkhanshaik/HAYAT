@@ -180,6 +180,9 @@ def idea_request(text: str) -> str | None:
     idea": all mean "suggest businesses I could start", however they are worded.
     """
     value = " ".join((text or "").split())
+    # Folder and document names are data, not business intent. In particular,
+    # describing an invoice under a "startup" folder still asks for vision.
+    value = re.sub(r"(?i)(?:[a-z]:[\\/]|/)[^\r\n<>]*?\.(?:png|jpe?g|webp|gif|bmp|pdf|docx?|xlsx?|csv|txt|md)\b", " ", value)
     from app.business_acquisition import acquisition_request
     if acquisition_request(value):
         return None

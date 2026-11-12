@@ -6,6 +6,15 @@ All default mutable data remains under `D:\AI\data`.
 |---|---|
 | `data/memory/agent.db` | tasks, actions, conversations, memories, checkpoints |
 | `data/memory/learning.db` | mastery and learning activity |
+| `data/memory/topics.db` | conversations, topics and messages with ids and times; how each message related to the one before; the owner's topic fixes (topics) |
+| `data/memory/development.db` | hourly snapshots of the twelve measured development stages |
+| `data/memory/retention.db` | spaced retention practice: each memory's review schedule and every review's cue and rank (cognitive growth) |
+| `data/memory/scorecard.db` | dated scorecard measurements (accuracy, hallucination, calibration, retention, latency, resources) |
+| `data/memory/forecasts.db` | HAYAT's own forecasts, their check dates and your verdicts |
+| `data/memory/robustness.db` | every robustness suite run with its metric and full result (research lab) |
+| `data/memory/code-defense.db` | confirmed security findings and their status, scans, and every patch tested in isolation |
+| `data/memory/model-discovery.db` | every model discovery run: source, target, candidates, verdict |
+| `data/benchmarks/cognitive/baseline.json` | the accepted baseline the keep-only-gains gate compares with |
 | `data/memory/events.db` | durable local event bus |
 | `data/memory/business.db` (wallet desk tables) | HAYAT Wallet pots, pot movements, set-aside rules, bills, bill payments and every money decision with its reasons and your answer |
 | `data/memory/portfolio.db` | portfolio holdings, recorded moves, watched public addresses and daily net-worth snapshots (USD) |

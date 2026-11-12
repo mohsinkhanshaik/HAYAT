@@ -2,6 +2,7 @@
 import queue
 import threading
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -15,7 +16,7 @@ class ImageGallery(tk.Frame):
         self.page, self._pending, self._generation = 1, False, 0
         self._results = queue.Queue(maxsize=1)
         self.query = StringVar(self)
-        self.status = StringVar(self, "Generated images and images you have attached")
+        self.status = DisplayVar(self, "Generated images and images you have attached")
         self.photos = []
         top = ttk.Frame(self)
         top.pack(fill="x", pady=8)

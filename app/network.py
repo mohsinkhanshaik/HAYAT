@@ -80,13 +80,20 @@ def _netsh(arguments: str, timeout: float = 10) -> str:
     return completed.stdout
 
 
+def _web_address(url: str) -> str:
+    """urlopen also opens file: and custom schemes; the router's pages are only ever http or https."""
+    if not str(url).lower().startswith(("http://", "https://")):
+        raise ValueError("Only http and https addresses are read.")
+    return url
+
+
 def _get_local_json(url: str, timeout: float = 5.0) -> Any:
-    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 - the router's own address only
+    with urllib.request.urlopen(_web_address(url), timeout=timeout) as response:  # noqa: S310 - the router's own address only
         return json.loads(response.read(512 * 1024).decode("utf-8", "replace"))
 
 
 def _get_local_text(url: str, timeout: float = 5.0) -> str:
-    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 - the router's own address only
+    with urllib.request.urlopen(_web_address(url), timeout=timeout) as response:  # noqa: S310 - the router's own address only
         return response.read(256 * 1024).decode("utf-8", "replace")
 
 

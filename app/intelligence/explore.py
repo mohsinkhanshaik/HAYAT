@@ -16,6 +16,10 @@ its robots.txt disallows the API.
 | Directions | OSRM on routing.openstreetmap.de (FOSSGIS) | occasional use, as its policy asks |
 | Bike share | GBFS (MobilityData's public system list) | systems that need no key |
 | Vehicles in a camera still | RF-DETR COCO detector (Apache 2.0) | counts only: no plates, faces or identities |
+
+A second wave from the same repository (2026-11-06) lives beside this module: live transit
+(transit.py), GPS interference (gnss.py), US airspace (airspace.py), and fire perimeters,
+whale sightings and street photos (ground.py). Their chat routes are at the end of ROUTES.
 """
 from __future__ import annotations
 
@@ -221,15 +225,29 @@ def sun_elevation(latitude: float, longitude: float, moment: datetime | None = N
     return look_angles(to_ecef(sun_eci(jd + fraction), jd + fraction), observer_ecef(latitude, longitude), latitude, longitude)[0]
 
 
+def flat_share(grey: Any) -> float:
+    """Share of the picture that is perfectly flat (3×3 neighbourhood spread under 0.75 grey levels), measured at
+    320×240 or less. Only ever downscaled: enlarging a small picture would turn each pixel into a flat block."""
+    import cv2
+    import numpy as np
+    height, width = grey.shape[:2]
+    small = (cv2.resize(grey, (320, 240), interpolation=cv2.INTER_AREA) if width > 320 or height > 240 else grey).astype(np.float32)
+    mean, square = cv2.blur(small, (3, 3)), cv2.blur(small * small, (3, 3))
+    return float((np.sqrt(np.maximum(square - mean * mean, 0)) < .75).mean())
+
+
 def placeholder(image: Any) -> bool:
-    """A card ("Temporarily Unavailable"), a blank or a test pattern rather than a scene: most pixels one shade.
-    Measured on 2026-10-11: the Caltrans card 86 % within one narrow band of grey; 13 real road scenes 11-49 %."""
+    """A card ("Temporarily Unavailable"), a blank or a test pattern rather than a scene: most pixels one shade,
+    and drawn flat. Measured on 2026-10-11: the Caltrans card 86 % within one narrow band of grey; 13 real road
+    scenes 11-49 %. On 2026-11-06 real night scenes (Spain, Norway, foggy Iceland) also sat 55-83 % in one band,
+    but camera pictures carry sensor noise: 0-62 % of them is perfectly flat, against 79-95 % for eight publisher
+    cards ("Temporarily Unavailable", "LOADING VIDEO", "Technical Difficulties", a switched-off black frame)."""
     import cv2
     import numpy as np
     grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     histogram = np.bincount(grey.ravel(), minlength=256)
     mode = int(histogram.argmax())
-    return float(histogram[max(0, mode - 8):mode + 9].sum()) / grey.size >= .7
+    return float(histogram[max(0, mode - 8):mode + 9].sum()) / grey.size >= .7 and flat_share(grey) >= .7
 
 
 def compass(azimuth: float) -> str:
@@ -828,8 +846,19 @@ class VehicleModel:
 
 
 # ---------------------------------------------------------------------- tools
-EXPLORE_TOOLS = ("space_launches", "satellites_overhead", "satellite_pass", "aircraft_info", "weather_map", "satellite_image",
-                 "fire_hotspots", "fire_clusters", "route_directions", "bike_share", "traffic_count")
+OWN_TOOLS = ("space_launches", "satellites_overhead", "satellite_pass", "aircraft_info", "weather_map", "satellite_image",
+             "fire_hotspots", "fire_clusters", "route_directions", "bike_share", "traffic_count")
+#: Registered by transit.py, gnss.py, airspace.py and ground.py; their replies come from those modules' report_lines.
+NEIGHBOUR_TOOLS = ("transit_vehicles", "gps_interference", "airspace_check", "fire_perimeters", "whale_sightings", "street_photo",
+                   "intelligence_camera_check")
+#: Third gods-eye-view wave (2026-11-08), registered below from terrain.py, cyclones.py and infrastructure.py.
+WAVE3_TOOLS = ("place_elevation", "tropical_cyclones", "mapped_infrastructure", "plate_readers")
+EXPLORE_TOOLS = OWN_TOOLS + NEIGHBOUR_TOOLS + WAVE3_TOOLS
+#: explore kind → the module whose report_lines writes its reply.
+REPORTERS = {"transit": "transit", "gnss": "gnss", "gnss_world": "gnss", "airspace": "airspace", "perimeters": "ground",
+             "whales": "ground", "street_photo": "ground", "camera_check": "camera_health",
+             "elevation": "terrain", "elevation_profile": "terrain", "cyclones": "cyclones",
+             "infrastructure": "infrastructure", "plate_readers": "infrastructure"}
 
 
 def register_explore_tools(registry: Any, explore: Explore) -> None:
@@ -874,6 +903,14 @@ def register_explore_tools(registry: Any, explore: Explore) -> None:
     registry.register("traffic_count", "Count the vehicles in a public camera's current still (cars, trucks, buses, motorcycles, "
                       "bicycles). Counts only: no plates, faces or identities.", obj({"event_id": {"type": "string", "maxLength": 220}},
                       ["event_id"]), "low", "public_web_read", explore.traffic_count)
+    # Third gods-eye-view wave (2026-11-08): heights anywhere, hurricane forecasts, mapped infrastructure, plate readers.
+    from app.intelligence.cyclones import TropicalCyclones, register_cyclone_tools
+    from app.intelligence.infrastructure import Infrastructure, register_infrastructure_tools
+    from app.intelligence.terrain import Terrain, register_terrain_tools
+    explore.terrain, explore.cyclones, explore.infrastructure = Terrain(explore), TropicalCyclones(explore), Infrastructure(explore)
+    register_terrain_tools(registry, explore.terrain)
+    register_cyclone_tools(registry, explore.cyclones)
+    register_infrastructure_tools(registry, explore.infrastructure)
 
 
 # ---------------------------------------------------------------------- chat
@@ -937,6 +974,111 @@ ROUTES: tuple[tuple[re.Pattern[str], Callable[[re.Match[str]], tuple[str, dict[s
     (_c(_LEAD + r"(?:any\s+|find\s+(?:me\s+)?|where\s+(?:are|can\s+i\s+get)\s+|show\s+(?:me\s+)?)?(?:a\s+)?(?:share\s+bikes?|bike[\s-]?share|"
         r"rental\s+bikes?|city\s+bikes?|bikes?\s+to\s+rent)(?:\s+(?:stations?|docks?))?\s+(?:near|in|around|at)\s+" + _PLACE + _END),
      lambda m: ("bike_share", {"place": m["place"]})),
+    # Live transit (transit.py). "show buses near X" is answered by intelligence_around, which reads the same feeds.
+    (_c(_LEAD + r"(?:where\s+(?:is|are)|track|show\s+(?:me\s+)?|find)\s+(?:the\s+)?(?:bus(?:es)?|trams?|streetcars?|route|line)\s+"
+        r"(?:number\s+)?(?P<route>[A-Za-z]?\d[\w-]{0,6})\s+(?:in|near|around|at)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("transit_vehicles", {"place": m["place"], "route": m["route"], "radius_km": 25})),
+    (_c(_LEAD + r"(?:where\s+are\s+(?:the\s+)?|any\s+|are\s+there\s+(?:any\s+)?)?(?:live\s+)?(?:buses|busses|trams|streetcars|trains|"
+        r"public\s+transport|public\s+transit|transit\s+vehicles)" + _NOW + r"\s+(?:near|in|around|at)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("transit_vehicles", {"place": m["place"]})),
+    # GPS interference (gnss.py).
+    (_c(_LEAD + r"where\s+is\s+(?:the\s+)?(?:gps|gnss)\s+(?:being\s+)?(?:jammed|jamming|spoofed|spoofing|interference)"
+        r"(?:\s+(?:in\s+the\s+world|worldwide))?" + _NOW + _END),
+     lambda m: ("gps_interference", {"place": "world"})),
+    (_c(_LEAD + r"(?:is\s+(?:there\s+)?(?:any\s+)?|are\s+there\s+(?:any\s+)?|any\s+|show\s+(?:me\s+)?|check\s+(?:for\s+)?)?(?:the\s+)?"
+        r"(?:gps|gnss)\s+(?:jamming|spoofing|interference|signal\s+problems?)(?:\s+(?:near|in|around|over|at)\s+" + _PLACE + r")?" + _NOW + _END),
+     lambda m: ("gps_interference", {"place": m["place"] or "world"})),
+    (_c(_LEAD + r"(?:is\s+)?(?:the\s+)?(?:gps|gnss)\s+(?:being\s+)?(?:jammed|spoofed)\s+(?:near|in|around|over|at)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("gps_interference", {"place": m["place"]})),
+    # Airspace (airspace.py).
+    (_c(_LEAD + r"can\s+(?:i|we|you)\s+fly\s+(?:a\s+|my\s+|our\s+)?drone\s+(?:in|at|near|over|around)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("airspace_check", {"place": m["place"]})),
+    (_c(_LEAD + r"(?:is|are)\s+(?:there\s+)?(?:any\s+)?(?:no[\s-]fly\s+zones?|tfrs?|temporary\s+flight\s+restrictions?|flight\s+restrictions?|"
+        r"restricted\s+airspace|drone\s+restrictions?)\s+(?:near|in|around|at|over)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("airspace_check", {"place": m["place"]})),
+    (_c(_LEAD + r"(?:show\s+(?:me\s+)?|check\s+|any\s+)?(?:the\s+)?(?:no[\s-]fly\s+zones?|tfrs?|temporary\s+flight\s+restrictions?|"
+        r"restricted\s+airspace|airspace\s+restrictions?|airspace|drone\s+restrictions?)\s+(?:near|in|around|at|over|for)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("airspace_check", {"place": m["place"]})),
+    (_c(_LEAD + r"is\s+" + _PLACE + r"\s+(?:in\s+)?(?:restricted\s+airspace|a\s+no[\s-]fly\s+zone)" + _END),
+     lambda m: ("airspace_check", {"place": m["place"]})),
+    # Fire perimeters, whales, street photos (ground.py).
+    (_c(_LEAD + r"(?:show\s+(?:me\s+)?|any\s+|the\s+)?(?:wild)?fire\s+(?:perimeters?|boundar(?:y|ies)|outlines?)\s+(?:near|in|around|at)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("fire_perimeters", {"place": m["place"]})),
+    (_c(_LEAD + r"how\s+(?:big|large|contained)\s+(?:is|are)\s+the\s+(?:wild)?fires?\s+(?:near|in|around)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("fire_perimeters", {"place": m["place"]})),
+    (_c(_LEAD + r"(?:any\s+|recent\s+|show\s+(?:me\s+)?)?(?:the\s+)?(?:whale|orca|killer\s+whale|humpback|marine[\s-]mammal|dolphin|porpoise)\s+"
+        r"sightings?\s+(?:near|in|around|off|at)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("whale_sightings", {"place": m["place"]})),
+    (_c(_LEAD + r"(?:are\s+there\s+(?:any\s+)?|any\s+|where\s+are\s+(?:the\s+)?)(?:whales|orcas|humpbacks)\s+(?:near|in|around|off)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("whale_sightings", {"place": m["place"]})),
+    (_c(_LEAD + r"(?:show\s+(?:me\s+)?)?(?:a\s+|the\s+)?street(?:[\s-]level)?\s+(?:view|photo|picture|image)\s+(?:of|at|near|for)\s+" + _PLACE + _END),
+     lambda m: ("street_photo", {"place": m["place"]})),
+    (_c(_LEAD + r"what\s+does\s+" + _PLACE + r"\s+look\s+like\s+from\s+the\s+street" + _END),
+     lambda m: ("street_photo", {"place": m["place"]})),
+    # Do the public cameras really work? (camera_health.py)
+    # Plural or "public" only: "test the camera" is the owner's own webcam. "Check cameras in X" already asks the
+    # camera look (camera_eyes.py) what the cameras show, so the health check answers to "test".
+    (_c(_LEAD + r"test\s+(?:the\s+|all\s+(?:the\s+)?)?(?:public\s+cameras?|cameras)(?:\s+(?:in|for|near|of)\s+" + _PLACE + r")?"
+        + _NOW + _END),
+     lambda m: ("intelligence_camera_check", {"query": m["place"]} if m["place"] else {})),
+    (_c(_LEAD + r"(?:are|is)\s+(?:the\s+)?(?:public\s+cameras?|cameras)\s+(?:in\s+" + _PLACE + r"\s+)?(?:actually\s+|really\s+)?working"
+        + _NOW + _END),
+     lambda m: ("intelligence_camera_check", {"query": m["place"]} if m["place"] else {})),
+    (_c(_LEAD + r"which\s+(?:public\s+)?cameras\s+(?:are\s+)?(?:broken|not\s+working|down|dead)" + _NOW + _END),
+     lambda m: ("intelligence_camera_check", {})),
+    # Heights anywhere (terrain.py).
+    (_c(_LEAD + r"(?:(?:show\s+(?:me\s+)?|what(?:'s|\s+is)\s+)?(?:the\s+)?(?:elevation|height|terrain)\s+profile|how\s+much\s+"
+        r"(?:climbing|climb|elevation\s+gain|ascent|uphill)(?:\s+is\s+there)?)\s+(?:from|between)\s+(?P<a>[^\s,?.!].{0,60}?)\s+(?:to|and)\s+"
+        r"(?P<b>[^\s,?.!].{0,60}?)" + _END),
+     lambda m: ("place_elevation", {"place": m["a"], "to": m["b"]})),
+    (_c(_LEAD + r"(?:what(?:'s|\s+is)\s+)?(?:the\s+)?(?:elevation|height\s+above\s+sea\s+level|altitude\s+above\s+sea\s+level)\s+"
+        r"(?:of|at|in|for)\s+(?!(?:a\s+|the\s+)?(?:privileges?|rights?|admin|administrator|permissions?|process|the\s+sun|the\s+moon)\b)"
+        + _PLACE + _END),
+     lambda m: ("place_elevation", {"place": m["place"]})),
+    (_c(_LEAD + r"how\s+(?:high|far)\s+above\s+sea\s+level\s+is\s+" + _PLACE + _END),
+     lambda m: ("place_elevation", {"place": m["place"]})),
+    (_c(_LEAD + r"how\s+(?:high|low)\s+is\s+" + _PLACE + r"\s+(?:above|below)\s+sea\s+level" + _END),
+     lambda m: ("place_elevation", {"place": m["place"]})),
+    (_c(_LEAD + r"how\s+high\s+is\s+(?P<place>(?:mount|mt\.?|mont|monte|the\s+summit\s+of|the\s+top\s+of)\s+[^\s,?.!].{0,50}?)" + _END),
+     lambda m: ("place_elevation", {"place": m["place"]})),
+    (_c(_LEAD + r"is\s+" + _PLACE + r"\s+(?:below|under|above)\s+sea\s+level" + _END),
+     lambda m: ("place_elevation", {"place": m["place"]})),
+    # Hurricane and tropical storm forecasts (cyclones.py).
+    (_c(_LEAD + r"is\s+" + _PLACE + r"\s+(?:in|inside|within)\s+(?:the\s+|a\s+|any\s+)?(?:hurricane\s+|storm\s+|cyclone\s+|forecast\s+|"
+        r"tropical\s+storm\s+)*cones?" + _NOW + _END),
+     lambda m: ("tropical_cyclones", {"place": m["place"]})),
+    (_c(_LEAD + r"will\s+(?:the\s+|a\s+|any\s+)?(?:hurricane|tropical\s+storm|tropical\s+cyclone|storm|cyclone)(?:\s+(?P<name>[a-z]+))?\s+"
+        r"(?:hit|reach|affect|come\s+to|make\s+landfall\s+in|strike)\s+" + _PLACE + _END),
+     lambda m: ("tropical_cyclones", {"place": m["place"], **({"name": m["name"]} if m["name"] else {})})),
+    (_c(_LEAD + r"(?:what(?:'s|\s+is)\s+)?(?:the\s+)?chances?\s+of\s+(?:tropical[\s-]storm(?:[\s-]force)?|hurricane(?:[\s-]force)?|storm)\s+"
+        r"winds?\s+(?:in|at|for|near|on)\s+" + _PLACE + _NOW + _END),
+     lambda m: ("tropical_cyclones", {"place": m["place"]})),
+    (_c(_LEAD + r"where\s+is\s+(?:the\s+)?(?:hurricane|tropical\s+storm|tropical\s+cyclone|cyclone)(?:\s+(?P<name>[a-z]+))?"
+        r"(?:\s+(?:heading|going|moving|headed|tracking|now|forecast\s+to\s+go))?" + _NOW + _END),
+     lambda m: ("tropical_cyclones", {"name": m["name"]} if m["name"] and m["name"].lower() not in ("now", "heading", "going") else {})),
+    (_c(_LEAD + r"(?:show\s+(?:me\s+)?|what(?:'s|\s+is|\s+are)\s+)?(?:the\s+)?(?:latest\s+|current\s+|official\s+)?"
+        r"(?:hurricane|tropical\s+storm|tropical\s+cyclone|cyclone)(?:\s+(?P<name>[a-z]+))?\s+(?:forecasts?|tracks?|path|cones?|advisory|advisories)"
+        r"(?:\s+(?:for|near|around|in|over)\s+" + _PLACE + r")?" + _NOW + _END),
+     lambda m: ("tropical_cyclones", {**({"place": m["place"]} if m["place"] else {}),
+                                      **({"name": m["name"]} if m["name"] else {})})),
+    (_c(_LEAD + r"(?:show\s+(?:me\s+)?|what(?:'s|\s+is)\s+)?(?:the\s+)?tropical\s+(?:weather\s+)?outlook" + _NOW + _END),
+     lambda m: ("tropical_cyclones", {})),
+    (_c(_LEAD + r"(?:is\s+(?:a|any)|are\s+any)\s+(?:new\s+)?(?:hurricanes?|tropical\s+storms?|tropical\s+cyclones?)\s+(?:forming|developing|"
+        r"brewing|likely\s+to\s+form)" + _NOW + _END),
+     lambda m: ("tropical_cyclones", {})),
+    # Mapped infrastructure and plate readers (infrastructure.py).
+    (_c(_LEAD + r"(?:are\s+there\s+(?:any\s+)?|is\s+there\s+(?:a|an|any)\s+|any\s+|show\s+(?:me\s+)?|list\s+|find\s+|where\s+are\s+(?:the\s+)?)?"
+        r"(?:the\s+)?(?:nearest\s+|closest\s+)?(?P<kind>data\s*cent(?:er|re)s?|datacent(?:er|re)s?|dams?|military\s+(?:bases?|areas?|"
+        r"installations?|sites?|airfields?|ranges?|training\s+areas?)|army\s+bases?|air\s+(?:force\s+)?bases?|naval\s+bases?)\s+"
+        r"(?:near|in|around|close\s+to|to)\s+" + _PLACE + _END),
+     lambda m: ("mapped_infrastructure", {"place": m["place"], "kind": (
+         "datacenter" if "data" in m["kind"].lower() else "dam" if m["kind"].lower().startswith("dam") else "military")})),
+    (_c(_LEAD + r"(?:what\s+)?(?:critical\s+|mapped\s+)?infrastructure\s+(?:is\s+(?:there\s+)?)?(?:near|in|around)\s+" + _PLACE + _END),
+     lambda m: ("mapped_infrastructure", {"place": m["place"]})),
+    (_c(_LEAD + r"(?:are\s+there\s+(?:any\s+)?|any\s+|show\s+(?:me\s+)?|where\s+are\s+(?:the\s+)?|how\s+many\s+)?"
+        r"(?:licen[cs]e[\s-]plate\s+(?:readers?|cameras?|scanners?|recognition\s+cameras?)|plate[\s-](?:readers?|scanners?)|"
+        r"alprs?(?:\s+cameras?)?|flock\s+(?:safety\s+)?cameras?)\s+(?:are\s+there\s+)?(?:near|in|around|at|on)\s+" + _PLACE + _END),
+     lambda m: ("plate_readers", {"place": m["place"]})),
 )
 
 
@@ -975,7 +1117,10 @@ def explore_report(value: dict[str, Any]) -> str | None:
     if not kind:
         return None
     lines: list[str] = []
-    if kind == "launches":
+    if kind in REPORTERS:
+        import importlib
+        lines = importlib.import_module(f"app.intelligence.{REPORTERS[kind]}").report_lines(value)
+    elif kind == "launches":
         lines.append(("Upcoming" if value["mode"] == "upcoming" else "Recent") + " launches"
                      + (f" matching {value['query']}" if value["query"] else "") + ":")
         for item in value["launches"][:10]:

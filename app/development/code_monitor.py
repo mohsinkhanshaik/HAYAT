@@ -87,10 +87,17 @@ class CodeMonitor:
         return not self.running
 
     def _loop(self) -> None:
+        from app.nervous_system import BODY
+
         while not self._stop.is_set():
+            BODY.yield_to_owner("code monitor", self._stop)
+            if self._stop.is_set():
+                break
             try:
                 self.scan_all()
+                BODY.ran("code monitor")
             except Exception as exc:
+                BODY.ran("code monitor", ok=False, note=f"{type(exc).__name__}: {exc}")
                 if self.notify:
                     self.notify(f"Code monitor could not scan: {type(exc).__name__}: {exc}")
             self._stop.wait(self.interval_seconds)

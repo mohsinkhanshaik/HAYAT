@@ -25,6 +25,10 @@ def command(text):
                 return None
             arguments['spread'] = spread
         return 'invention_simulate', arguments
+    match = re.fullmatch(r'(?i)(?:prove|theory (?:for|of)|explain(?: why)?|derive (?:the )?(?:law|theory) (?:for|of)) '
+                         r'(?:the )?invention (invent-[a-f0-9]{32})(?:\s+(?:works|holds))?', value)
+    if match:
+        return 'invention_theory', {'project_id': match[1].lower()}
     match = re.fullmatch(r'(?i)(run|resume|stop|inspect|assess|audit) invention (invent-[a-f0-9]{32})(?: for ([1-8]) cycles?)?', value)
     if match:
         verb, identifier, cycles = match.groups()

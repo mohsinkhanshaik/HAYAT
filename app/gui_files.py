@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from pathlib import Path
@@ -23,7 +24,7 @@ class FileEditor(tk.Toplevel):
         self.title(f'Edit {path.name}')
         self.configure(bg=gui.BLACK)
         self.transient(gui.root)
-        self.status = StringVar(self, value='Reading file…')
+        self.status = DisplayVar(self, value='Reading file…')
         bar = tk.Frame(self, bg=gui.PANEL)
         bar.pack(fill='x')
         self.save_button = ttk.Button(bar, text='Save', command=self.save, state='disabled', style='Hayat.TButton')
@@ -66,7 +67,8 @@ class FileEditor(tk.Toplevel):
                 result = ToolResult(name, False, error=f'{type(exc).__name__}: {exc}')
             self.gui._post(self._deliver, generation, callback, result)
         try:
-            self.gui._preview_workers.submit(worker)
+            # Its own worker: a save must not wait behind slow previews (see HayatGUI._edit_workers).
+            (getattr(self.gui, '_edit_workers', None) or self.gui._preview_workers).submit(worker)
         except Exception as exc:
             self._deliver(generation, callback, ToolResult(name, False, error=f'{type(exc).__name__}: {exc}'))
 
@@ -165,7 +167,7 @@ class NativeFileEditor(tk.Toplevel):
         self.save_button.pack(side='left')
         ttk.Button(bar, text='Reload', command=self.load, style='Hayat.TButton').pack(side='left', padx=7)
         ttk.Button(bar, text='Revise with HAYAT', command=lambda: gui.use_example(f'Read and revise "{path}". Requested changes: '), style='Hayat.TButton').pack(side='left')
-        self.status = StringVar(self, 'Reading native file…')
+        self.status = DisplayVar(self, 'Reading native file…')
         tk.Label(self, textvariable=self.status, bg=gui.BLACK, fg=gui.MUTED, wraplength=750, anchor='w', justify='left').pack(fill='x', pady=8)
         from app.gui_theme import DarkScrolledText
         self.preview = DarkScrolledText(self, wrap='word', height=13, bg=gui.PANEL_2, fg=gui.WHITE, state='disabled', font=('Consolas', 10))
@@ -316,7 +318,7 @@ class PdfViewer(tk.Toplevel):
         self.previous.pack(side='left', padx=8, pady=8)
         self.next = ttk.Button(bar, text='Next', command=lambda: self.render(self._page + 1), style='Hayat.TButton', state='disabled')
         self.next.pack(side='left', padx=4)
-        self.status = StringVar(self, value='Loading PDF…')
+        self.status = DisplayVar(self, value='Loading PDF…')
         tk.Label(bar, textvariable=self.status, bg=gui.PANEL, fg=gui.WHITE).pack(side='left', padx=8)
         ttk.Button(bar, text='Close', command=self.destroy, style='Hayat.TButton').pack(side='right', padx=8)
         ttk.Button(bar, text='Open externally', command=lambda: gui._open_file(path), style='Hayat.TButton').pack(side='right')

@@ -53,6 +53,10 @@ class Planner:
     def _deterministic_plan(self, goal: str, intent: Any | None = None, session: Any | None = None) -> list[PlanStep] | None:
         normalized = " ".join(goal.lower().split())
         names = self.registry.names()
+        from app.startup import readiness_request
+        if readiness_request(goal) and 'startup_readiness' in names:
+            return [PlanStep('Inspect local startup readiness without starting optional services.',
+                             'startup_readiness', {}, {'type': 'tool_success'}, 0)]
         from app.research.onion import parse_tor_web_request
         tor_query = parse_tor_web_request(goal)
         if tor_query and 'tor_web_research' in names:
@@ -137,6 +141,13 @@ class Planner:
         entities = getattr(intent, "entities", {}) if intent else {}
         # Location, the device list and prospect search are read, never imagined.
         from app.situation import direct_situation_plan
+        from app.topics import direct_topics_plan
+        from app.dialogue_state import direct_state_plan
+        from app.investigation import direct_investigation_plan
+        from app.ambition import direct_ambition_plan
+        from app.cognitive_development import direct_development_plan
+        from app.cognitive_scorecard import direct_mind_plan
+        from app.research_lab import direct_lab_plan
         from app.tools.devices import direct_device_plan
         from app.tools.prospects import direct_prospect_plan
         from app.intelligence.discovery import direct_discovery_plan
@@ -154,7 +165,12 @@ class Planner:
                        or direct_image_source_plan(goal, names, getattr(session, 'last_file', None))
                        or direct_email_check_plan(goal, names)
                        or direct_prospect_plan(goal, names)
-                       or direct_situation_plan(goal, names) or direct_discovery_plan(goal, names))
+                       or direct_situation_plan(goal, names) or direct_topics_plan(goal, names)
+                       or direct_state_plan(goal, names) or direct_investigation_plan(goal, names)
+                       or direct_ambition_plan(goal, names)
+                       or direct_development_plan(goal, names) or direct_mind_plan(goal, names)
+                       or direct_lab_plan(goal, names)
+                       or direct_discovery_plan(goal, names))
         if device_plan:
             return [PlanStep(**step) for step in device_plan]
         if isinstance(entities.get("quran"), dict):
@@ -513,6 +529,22 @@ class Planner:
             return [PlanStep("List the project folder.", "list_folder", {"path": ".", "recursive": False}, {"type": "tool_success"})]
         return None
 
+    #: Somewhere to write to: a file, a document kind, a place, or a filename with an extension.
+    _DESTINATION = re.compile(
+        r"(?i)\b(?:files?|folders?|documents?|docs?|pdfs?|docx|word\s+(?:doc|document|file)|excel|xlsx|spreadsheets?|"
+        r"csv|powerpoint|pptx|slides?|presentations?|save[ds]?|saving|export(?:ed|s)?|desktop|downloads|notepad|disk|"
+        r"report\s+(?:file|document)|cv|resume|letter\s+(?:file|document))\b|\b[\w-]+\.[a-z0-9]{2,5}\b")
+
+    #: Tools that create or change files; offered only when a request says where to write (see _candidate_tools).
+    _FILE_WRITES = frozenset({"write_file", "write_pdf", "write_docx", "append_file", "create_folder", "copy_file",
+                              "move_file", "save_edited_file", "edit_file", "write_spreadsheet", "write_presentation",
+                              "edit_document_text", "edit_spreadsheet_cells"})
+
+    @classmethod
+    def names_a_destination(cls, text: str) -> bool:
+        """Whether a request says where to write, which is required before a writing tool is offered."""
+        return bool(cls._DESTINATION.search(str(text or "")))
+
     @staticmethod
     def _spoken_filename(value: str, text_file: bool = False) -> str:
         value = re.sub(r"\s+(?:dash|hyphen)\s+", "-", value, flags=re.IGNORECASE)
@@ -575,7 +607,7 @@ class Planner:
             "context": context.as_prompt_data() if context else {},
             "researched_knowledge": self._knowledge_context(goal),
             "available_tools": tool_info,
-            "rules": [UNTRUSTED_DATA_NOTICE, "Satisfy the user's final goal, not merely one tool call.", "Use only listed tools.", f"Return at most {self.max_steps} steps.", "Choose only tools whose stated purpose fits this request. Do not add tools just because they are available.", "When two tools can do the job, prefer the one with less impact and better observed reliability; too few past calls is unknown, not proof of reliability.", "Each step description must state its purpose and expected effect. Use a read-only observation before a state-changing step when it reduces uncertainty.", "Select explicit measurable postconditions and include every step required by the interpreted intent.", "Never claim success."],
+            "rules": [UNTRUSTED_DATA_NOTICE, "Satisfy the user's final goal, not merely one tool call.", "Use only listed tools.", f"Return at most {self.max_steps} steps.", "Choose only tools whose stated purpose fits this request. Do not add tools just because they are available.", "When two tools can do the job, prefer the one with less impact and better observed reliability; too few past calls is unknown, not proof of reliability.", "Each step description must state its purpose and expected effect. Use a read-only observation before a state-changing step when it reduces uncertainty.", "Select explicit measurable postconditions and include every step required by the interpreted intent.", "When the goal needs several independent look-ups or reads (several places, files, sources), give each its own step, next to each other: consecutive read-only steps run at the same time.", "Never claim success."],
             "output": {"response_type": "action", "response": None, "goal": goal, "success_criteria": ["measurable final state"], "steps": [{"description": "...", "tool": "tool_name", "arguments": {}, "expected": {"type": "tool_success"}, "max_retries": 2}]},
         }
         if any(name.startswith('computer_') for name in candidates):
@@ -875,8 +907,10 @@ class Planner:
         names = self.registry.names()
         prefixes: set[str] = set()
         explicit: set[str] = {"system_status"}
+        writes_wanted = self.names_a_destination(lowered)
         if mentions("product", "template", "sell", "sale", "revenue", "income", "pricing", "bundle", "listing", "digital products", "make money"):
             prefixes.add("product_")
+            writes_wanted = True
             explicit.update({"write_file", "write_pdf", "write_docx", "read_file", "file_exists", "search_files",
                              "web_search", "research_topic", "knowledge_search", "generate_image", "write_spreadsheet", "write_presentation"})
         if mentions("invoice", "quote", "estimate", "client", "customer", "prospect", "inquiry", "expense", "lead", "follow-up", "follow up", "timer",
@@ -889,14 +923,20 @@ class Planner:
         if mentions("freelance", "gig", "job", "work opportunity", "find clients", "find work", "make money", "side hustle", "lead"):
             explicit.update({"web_search", "research_topic", "knowledge_search", "public_web_fetch", "lead_add"})
         if mentions("file", "folder", "project", "read", "write", "edit", "revise", "change", "document", "report", "pdf", "word", "docx", "excel", "xlsx", "powerpoint", "pptx", "spreadsheet", "presentation", "save", "export"):
-            explicit.update({"list_folder", "read_file", "write_file", "write_pdf", "write_docx", "append_file", "create_folder", "copy_file", "move_file", "search_files", "file_exists", "get_file_info"})
-            explicit.update({"read_editable_file", "save_edited_file", "edit_file", "write_spreadsheet", "write_presentation", "read_document_for_edit", "read_spreadsheet_for_edit", "edit_document_text", "edit_spreadsheet_cells"})
+            explicit.update({"list_folder", "read_file", "search_files", "file_exists", "get_file_info",
+                             "read_editable_file", "read_document_for_edit", "read_spreadsheet_for_edit"})
+            # Writing tools only when the request names somewhere to write to. "Write a packing list" and
+            # "Write the word 'mississippi' backwards" offered write_file on the word "write" alone, and the
+            # model wrote rainy_day_packing_list.txt and result.txt into the project.
+            if writes_wanted:
+                explicit.update(self._FILE_WRITES)
         if mentions("download", "fetch", "save from"):
             explicit.add("download_public_file")
         if mentions("code", "project", "error", "traceback", "syntax"):
             explicit.update({"code_monitor_status", "code_scan", "code_explain_error"})
         if mentions("python", "script", "code", "execute", "run", "test"):
             prefixes.add("python_")
+            writes_wanted = True
             explicit.update({"read_file", "write_file", "search_files", "file_exists", "terminal", "powershell"})
         if mentions("browser", "website", "web", "url", "page", "internet") or re.search(r"\b[a-z0-9-]+(?:\.[a-z]{2,})+(?:/\S*)?", lowered):
             prefixes.add("browser_")
@@ -974,6 +1014,12 @@ class Planner:
         from app.revenue_catalog import BY_NAME as revenue_names, relevant_tools
 
         ranked = index.relevant(goal)
+        # And by meaning, with the local embedding model when there is one: "will it be windy in Chicago tomorrow" names
+        # no word the weather tool is described with (app/tools/relevance.SemanticTools).
+        from app.tools.relevance import semantic_matches
+
+        meant = [name for name in semantic_matches(self.registry, goal) if name not in ranked]
+        ranked += meant
         # One family of near-identical tools (job_*, code_*) tying in the index would fill the shortlist on its own: the
         # index adds at most three of a family. The keyword and area rules above still add a whole family when asked for,
         # and revenue workflows have their own cap below.
@@ -983,7 +1029,9 @@ class Planner:
             if name not in revenue_names:
                 family = name.split("_", 1)[0]
                 families[family] = families.get(family, 0) + 1
-                if families[family] > 2:
+                # Tools matched by meaning are few and chosen for this request: the family cap does not drop them (it
+                # dropped intelligence_weather for "will it be windy in Chicago" behind two unrelated intelligence_ tools).
+                if families[family] > 2 and name not in meant:
                     continue
             capped.append(name)
         ranked = capped
@@ -1001,7 +1049,12 @@ class Planner:
         # the request is about a window and what is in it.
         if not re.search(r"\b(?:click|press|tap|button|menu|tab|window|dialog|box|field|control|type\s+\S+\s+into)\b", lowered):
             selected = [name for name in selected if not name.startswith("ui_")]
-        return selected or [name for name in names if name not in revenue_names]
+        selected = selected or [name for name in names if name not in revenue_names]
+        # The tool index and the capability areas match "write" too: "Write a one-line slogan for a bakery" was offered
+        # write_file through them and the slogan became slogan.txt. Without a destination, file writes are not offered.
+        if not writes_wanted:
+            selected = [name for name in selected if name not in self._FILE_WRITES]
+        return selected
 
     def _knowledge_context(self, goal: str) -> list[dict[str, Any]]:
         if self.knowledge is None:

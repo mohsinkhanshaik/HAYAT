@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import io
+import codecs
 import json
 import re
 import time
 from typing import Any
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urldefrag, urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 from pypdf import PdfReader
@@ -18,7 +19,7 @@ from app.research.sources import score_source
 
 
 class ContentExtractor:
-    HTML_VERSION = 3
+    HTML_VERSION = 4
     def extract(self, resource: FetchedResource, query: str = "") -> tuple[SourceDocument, int]:
         started = time.perf_counter()
         content_type = resource.headers.get("content-type", "application/octet-stream").split(";", 1)[0].lower()
@@ -36,8 +37,18 @@ class ContentExtractor:
         author: str | None = None
 
         if content_type in {"text/html", "application/xhtml+xml"}:
-            decoded = resource.content.decode(self._charset(resource) or "utf-8", errors="replace")
+            decoded = self._decode(resource)
             soup = BeautifulSoup(decoded, "html.parser")
+            # Hidden UI, dialogs and navigation must not outrank the actual
+            # article or leak their repeated links into the crawl frontier.
+            for node in soup.select('[hidden], [aria-hidden="true"], [style]'):
+                if node.parent is not None and (node.has_attr("hidden") or node.get("aria-hidden") == "true"
+                        or re.search(r"(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\b", str(node.get("style", "")), re.I)):
+                    node.decompose()
+            base_node = soup.find("base", href=True)
+            base_url = urljoin(resource.final_url, str(base_node["href"])) if base_node else resource.final_url
+            if urlsplit(base_url).scheme not in {"http", "https"}:
+                base_url = resource.final_url
             title = self._clean(soup.title.get_text(" ", strip=True)) if soup.title else domain
             canonical_node = soup.find("link", rel=lambda value: value and "canonical" in value)
             if canonical_node and canonical_node.get("href"):
@@ -46,11 +57,6 @@ class ContentExtractor:
             published = self._property(soup, "article:published_time") or self._meta(soup, "date") or self._json_ld_date(soup, "datePublished")
             updated = self._property(soup, "article:modified_time") or self._meta(soup, "last-modified") or self._json_ld_date(soup, "dateModified") or resource.headers.get("last-modified")
             author = self._meta(soup, "author") or self._json_ld_date(soup, "author")
-            headings = [self._clean(node.get_text(" ", strip=True)) for node in soup.select("h1,h2,h3")[:100]]
-            for anchor in soup.select("a[href]")[:1000]:
-                href = urljoin(resource.final_url, str(anchor.get("href", "")))
-                if urlsplit(href).scheme in {"http", "https"}:
-                    links.append({"text": self._clean(anchor.get_text(" ", strip=True))[:300], "url": href})
             structured_tables: list[dict[str, Any]] = []
             for table_index, table in enumerate(soup.select("table")[:25], 1):
                 rows: list[list[str]] = []
@@ -73,7 +79,16 @@ class ContentExtractor:
             metadata["structured_tables"] = structured_tables
             for node in soup.select("script,style,noscript,template,svg,nav,footer,form"):
                 node.decompose()
-            main = soup.select_one("article,main,[role=main]") or soup.body or soup
+            main = soup.select_one("main,[role=main]") or soup.select_one("article") or soup.body or soup
+            headings = [self._clean(node.get_text(" ", strip=True)) for node in main.select("h1,h2,h3")[:100]]
+            seen_links = set()
+            for anchor in main.select("a[href]")[:1000]:
+                href = urldefrag(urljoin(base_url, str(anchor.get("href", ""))))[0]
+                parts = urlsplit(href)
+                if parts.scheme in {"http", "https"} and not parts.username and not parts.password and href not in seen_links:
+                    links.append({"text": self._clean(anchor.get_text(" ", strip=True))[:300], "url": href})
+                    seen_links.add(href)
+            metadata["code_blocks"] = [node.get_text()[:10_000] for node in main.select("pre")[:20]]
             # Inline tags are not sentence boundaries. Separating every text
             # node by a newline split claims at links/emphasis, while source
             # line wrapping split them again. Preserve only block boundaries.
@@ -106,7 +121,7 @@ class ContentExtractor:
             text = json.dumps(payload, ensure_ascii=False, indent=2)[:500_000]
             metadata["json_type"] = type(payload).__name__
         elif content_type.startswith("text/"):
-            text = resource.content.decode(self._charset(resource) or "utf-8", errors="replace")[:500_000]
+            text = self._decode(resource)[:500_000]
         else:
             raise ValueError(f"Content type cannot be safely extracted: {content_type}")
 
@@ -128,8 +143,23 @@ class ContentExtractor:
 
     @staticmethod
     def _charset(resource: FetchedResource) -> str | None:
-        match = re.search(r"charset=([\w-]+)", resource.headers.get("content-type", ""), re.I)
+        match = re.search(r"charset\s*=\s*[\"']?([\w-]+)", resource.headers.get("content-type", ""), re.I)
         return match.group(1) if match else None
+
+    @classmethod
+    def _decode(cls, resource: FetchedResource) -> str:
+        declared = cls._charset(resource)
+        if not declared:
+            match = re.search(br'<meta\b[^>]*charset\s*=\s*["\x27]?([\w-]+)', resource.content[:4096], re.I)
+            declared = match.group(1).decode("ascii") if match else "utf-8-sig"
+        try:
+            codecs.lookup(declared)
+        except LookupError:
+            declared = "utf-8-sig"
+        try:
+            return resource.content.decode(declared, errors="replace")
+        except (LookupError, UnicodeError):
+            return resource.content.decode("utf-8-sig", errors="replace")
 
     @staticmethod
     def _meta(soup: BeautifulSoup, name: str) -> str | None:

@@ -37,3 +37,12 @@ Unit tests mock external state. Integration tests use real SQLite/tool boundarie
 ## Documentation completion
 
 Every user-visible feature needs code, automated tests, README/deeper docs, and actual verification. Run `tests/test_documentation.py`; check all examples against current CLI/config. Keep commits scoped and rollbackable.
+
+## When a reviewed file changes (static-analysis reviews)
+
+`tests/test_code_review.py` fails when a medium or high bandit finding has no recorded review. A line review in
+[app/code_review.py](../app/code_review.py) covers a file only while its fingerprint matches
+`app/code_review_snapshot.json`, so editing a reviewed file withdraws its reviews. Read every flagged line in that
+file again (the failure lists them), then record it with
+`python scripts/refresh_code_review_snapshot.py <file> [...]`. The script prints each finding it records and refuses
+any whose rule has no line review for that path: a new rule or a new file needs an entry in app/code_review.py first.

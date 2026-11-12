@@ -15,35 +15,7 @@ from typing import Any, Callable
 from app.brain_mesh import BrainMesh
 from app.gui_depth import DepthNavigator, blend, rounded
 
-#: Each layer has its own region of the brain: the interface faces the
-#: viewer, control runs along the top, knowledge sits at the back, sensors and
-#: network at the sides. x right, y down, z towards the viewer. The positions
-#: were then spread by a search that kept every part near its region and
-#: inside the shell while pushing parts apart on screen at the home view and
-#: nearby angles, so names and discs no longer pile on each other.
-LAYOUT: dict[str, tuple[float, float, float]] = {
-    "interface": (.13, .54, .67),
-    "intent": (-.44, .07, .67),
-    "context": (-.66, -.46, .45),
-    "router": (.52, -.14, .83),
-    "helpers": (.67, -.44, .5),
-    "planner": (0.0, -.46, .23),
-    "tool_judgment": (.31, -.73, .01),
-    "authority": (-.39, -.7, .07),
-    "tools": (.63, -.57, -.33),
-    "verifier": (-.05, -.76, .01),
-    "memory": (-.8, .1, -.45),
-    "dna": (-.18, .21, -.91),
-    "research": (.49, .18, -.82),
-    "learning": (-.59, .62, .08),
-    "network": (.94, .28, -.14),
-    "perception": (-.91, -.11, .42),
-    "observability": (.3, .63, -.32),
-    "cortex": (-.6, -.65, .24),
-    "dual_brain": (.94, -.37, -.28),
-    "invention": (.38, .66, .44),
-    "inquiry": (.8, .55, -.05),
-}
+from app.brain_layout import LAYOUT  # noqa: E402  (subsystem positions, shared with Tk-free code)
 
 #: The part of the pipeline each kind of running work passes through.
 FLOWS: dict[str, tuple[str, ...]] = {
@@ -233,6 +205,7 @@ class BrainGraph(DepthNavigator):
     SURFACES = ("Folded", "Wireframe", "Standing waves", "Hidden")
     GEOMETRIES = ("Sketchfab brain", "Procedural")
     DETAILS = {"Auto": (16, 24), "Low": (8, 12), "Normal": (16, 24), "High": (20, 32), "Ultra": (20, 32)}
+    HEALTH_FILTERS = ("All checks", "Needs attention", "Not checked", "Ready")
 
     def __init__(self, parent: tk.Misc, palette: Any, on_open: Callable[[str], None],
                  **kwargs: Any) -> None:
@@ -257,6 +230,12 @@ class BrainGraph(DepthNavigator):
         self.connection_hops = 1
         self.view_mode = "5D"
         self.layer_filter = "All layers"
+        self.health_filter = "All checks"
+        self.path_only = False
+        self.contract_active: tuple[str, str] | None = None
+        self.contract_hover: tuple[str, str] | None = None
+        self._contract_curves: dict[tuple[str, str], tuple[Any, float]] = {}
+        self._link_cycle: tuple[str, str, int] | None = None
         self.surface = "Folded"
         self.mesh_detail = "Normal"
         self.wave_modes = (2, 3)
@@ -271,14 +250,51 @@ class BrainGraph(DepthNavigator):
         #: edges on the shortest route, lit prominently so the eye follows it. Set before super().__init__ so the
         #: initial redraw it triggers can read them.
         self._path_nodes: set[str] = set()
+        self._path_chain: tuple[str, ...] = ()
         self._path_edges: set[tuple[str, str]] = set()
         self._path_from: str | None = None
+        #: Component neurons (app.brain_components): the real parts inside
+        #: each subsystem, their live numbers and their recorded links. Set
+        #: before super().__init__ for the same reason as the path state.
+        self.components: dict[str, Any] = {}
+        self.component_states: dict[str, Any] = {}
+        self.component_links: tuple[Any, ...] = ()
+        self.show_components = True
+        #: Every tool neuron at once, as small dots; otherwise an area's tools show when it is chosen or working.
+        self.show_all_tools = False
+        self.component_hover: str | None = None
+        self.component_active: str | None = None
+        self.component_heat: dict[str, float] = {}
+        self.on_component: Callable[[str], None] | None = None
+        self.on_component_drill: Callable[[str], None] | None = None
+        self._component_base: dict[str, tuple[float, float, float]] = {}
+        self._component_positions: dict[str, tuple[float, float, float, float]] = {}
+        self._tool_owners: dict[str, tuple[str, ...]] = {}
+        self._model_owners: dict[str, list[str]] = {}
+        self._active_components: set[str] = set()
+        self._live_components: set[str] = set()
+        self._component_marks: dict[str, str] = {}
+        self._component_links_by_end: dict[str, list[Any]] = {}
+        #: Memory and knowledge neurons (app/brain_population.py): thousands of real stored units, drawn in one
+        #: batched image instead of one canvas item each, and hit-tested from their projected arrays.
+        self.population: Any = None
+        self.population_hover: int | None = None
+        self.population_active: int | None = None
+        self.on_population: Callable[[int], None] | None = None
+        self._population_photo: Any = None
+        self._population_screen: Any = None
+        self._population_ms = 0.0
         super().__init__(parent, palette, on_open, **kwargs)
         self.active = ""
         #: Set by the host to show the path status line; a plain callback keeps this widget host-agnostic.
         self.on_path_status: Callable[[str], None] | None = None
         self.bind("<Key-p>", self._path_key)
         self.bind("<Key-P>", self._path_key)
+        self.bind("<Key-i>", lambda _event: self._link_key("incoming"))
+        self.bind("<Key-o>", lambda _event: self._link_key("outgoing"))
+        self.bind("<Key-f>", self._connections_key)
+        self.bind("<Key-h>", self._health_key)
+        self.bind("<Return>", self._enter_key)
 
     def _path_key(self, _event: Any = None) -> str:
         message = self.toggle_path_point()
@@ -291,16 +307,123 @@ class BrainGraph(DepthNavigator):
     def trace_path(self, source: str, target: str) -> list[str]:
         """Light the shortest contract path from one subsystem to another and return it (see path_between)."""
         chain = path_between(source, target)
+        self._path_chain = tuple(chain)
         self._path_nodes = set(chain)
         self._path_edges = {(chain[i], chain[i + 1]) for i in range(len(chain) - 1)}
+        self._refresh_views()
         self.redraw()
         return chain
 
     def clear_path(self) -> None:
         self._path_from = None
+        self._path_chain = ()
         if self._path_nodes or self._path_edges:
             self._path_nodes, self._path_edges = set(), set()
+            self._refresh_views()
             self.redraw()
+
+    def _announce_inspection(self, message: str = "") -> None:
+        if message and callable(getattr(self, 'on_path_status', None)):
+            self.on_path_status(message)
+        self.event_generate('<<BrainInspectionChanged>>', when='tail')
+
+    def _enter_key(self, _event: Any = None) -> str:
+        if self.contract_active is not None:
+            source, target = self.contract_active
+            focus = self._hover or self.active
+            destination = source if focus == target else target
+            if destination in dict(self.VIEWS):
+                self.select(destination)
+                self._hover = destination
+                if self.on_preview:
+                    self.on_preview(destination)
+                self.redraw()
+                self._announce_inspection('Focused ' + dict(self.VIEWS)[destination] + '; I/O inspects its contracts.')
+            else:
+                self._announce_inspection('That endpoint is hidden by the current filters.')
+        elif self.VIEWS:
+            self._activate(self.VIEWS[self._keyboard_index % len(self.VIEWS)][0])
+        return 'break'
+
+    def _step_key(self, direction: int) -> str:
+        if not self.VIEWS:
+            self._announce_inspection('No subsystems match these filters. Press H to change the check filter.')
+            return 'break'
+        self.contract_active = self.contract_hover = None
+        result = super()._step_key(direction)
+        self._announce_inspection()
+        return result
+
+    def _connections_key(self, _event: Any = None) -> str:
+        self.focus_connections = not self.focus_connections
+        self.redraw()
+        self._announce_inspection('Showing focused connections.' if self.focus_connections else 'Showing all visible contracts.')
+        return 'break'
+
+    def _health_key(self, _event: Any = None) -> str:
+        self.set_health_filter(self.HEALTH_FILTERS[(self.HEALTH_FILTERS.index(self.health_filter) + 1) % len(self.HEALTH_FILTERS)])
+        return 'break'
+
+    def _link_key(self, direction: str) -> str:
+        focus = self._hover or self.active
+        if focus not in LAYERS:
+            self._announce_inspection('Select a subsystem, then I inspects incoming contracts and O outgoing contracts.')
+            return 'break'
+        links = self.linked_contracts(focus, direction)
+        if not links:
+            self._announce_inspection(f'No {direction} contracts are visible for {dict(self.VIEWS).get(focus, focus)}.')
+            return 'break'
+        index = ((self._link_cycle[2] + 1) % len(links)
+                 if self._link_cycle is not None and self._link_cycle[:2] == (focus, direction) else 0)
+        self._link_cycle = (focus, direction, index)
+        self.select_contract(*links[index])
+        detail = self.contract_detail(*links[index])
+        self._announce_inspection(f"{detail['source_label']} → {detail['target_label']}: {detail['contract']}")
+        return 'break'
+
+    def linked_contracts(self, node_id: str, direction: str = 'both') -> list[tuple[str, str]]:
+        if direction not in {'incoming', 'outgoing', 'both'}:
+            raise ValueError('Choose incoming, outgoing, or both contract directions.')
+        return sorted((edge.source, edge.target) for edge in BrainMesh.EDGES
+                      if ((direction != 'outgoing' and edge.target == node_id)
+                          or (direction != 'incoming' and edge.source == node_id))
+                      and self._visible_edge(edge.source, edge.target))
+
+    def select_contract(self, source: str, target: str) -> None:
+        if not any(edge.source == source and edge.target == target for edge in BrainMesh.EDGES):
+            raise ValueError('That directed contract is not in the brain mesh.')
+        self.contract_active = (source, target)
+        self.component_active = self.population_active = None
+        self.redraw()
+        self._announce_inspection()
+
+    def contract_detail(self, source: str, target: str) -> dict[str, Any]:
+        edge = next((edge for edge in BrainMesh.EDGES if edge.source == source and edge.target == target), None)
+        if edge is None:
+            raise ValueError('That directed contract is not in the brain mesh.')
+        labels = {node.node_id: node.label for node in BrainMesh.NODES}
+        historical = self.moment is not None
+        def endpoint(key: str) -> dict[str, Any]:
+            check = None if historical else self.checks.get(key)
+            return {'state': 'not recorded at this moment' if historical else
+                    'not checked' if check is None else 'ready' if check.get('passed') else 'needs attention',
+                    'checked_at': None if historical else self.evidence.get(key, {}).get('checked_at'),
+                    'detail': '' if check is None else str(check.get('detail') or ''),
+                    'gaps': [] if historical else self.evidence.get(key, {}).get('gaps', [])}
+        return {'source': source, 'target': target, 'source_label': labels[source], 'target_label': labels[target],
+                'contract': edge.contract, 'source_check': endpoint(source), 'target_check': endpoint(target),
+                'visible': self._visible_edge(source, target), 'on_path': (source, target) in self._path_edges,
+                'highlighted_by_work': (source, target) in self._edges,
+                'scope': 'Declared directed software contract. Endpoint readiness does not verify delivery on this link; '
+                         'work highlights show the reported work category, not measured neural firing.'}
+
+    def _cancel_interaction(self, _event: Any = None) -> str:
+        self.contract_active = self.contract_hover = None
+        self._link_cycle = None
+        self.clear_path()
+        result = super()._cancel_interaction(_event)
+        self._announce_inspection()
+        return result
 
     def toggle_path_point(self) -> str:
         """Interactive tracing: the first call pins the focused subsystem as the start, the second traces from
@@ -392,7 +515,25 @@ class BrainGraph(DepthNavigator):
             self.event_generate('<<GeometryChanged>>', when='tail')
 
     def _release(self, event):
+        pressed = self._drag_x is not None
         super()._release(event)
+        # A click between subsystems chooses the component neuron under it.
+        if pressed and not self._dragged and self._hit(float(event.x), float(event.y)) is None:
+            component = self._hit_component(float(event.x), float(event.y))
+            if component is not None:
+                self.select_component(component)
+                if callable(self.on_component):
+                    self.on_component(component)
+            else:
+                neuron = self._hit_population(float(event.x), float(event.y))
+                if neuron is not None:
+                    self.select_population(neuron)
+                    if callable(self.on_population):
+                        self.on_population(neuron)
+                else:
+                    link = self._hit_contract(float(event.x), float(event.y))
+                    if link is not None:
+                        self.select_contract(*link)
         # Paused/reduced-motion scenes have no animation loop to restore their detail.
         if self._effective_detail() != self.render_detail:
             self.redraw()
@@ -416,16 +557,50 @@ class BrainGraph(DepthNavigator):
         if layer != "All layers" and layer not in LAYERS.values():
             raise ValueError("Unknown brain layer")
         self.layer_filter = layer
+        self._refresh_views()
+        self.redraw()
+        self._announce_inspection()
+
+    def set_health_filter(self, state: str) -> None:
+        if state not in self.HEALTH_FILTERS:
+            raise ValueError('Unknown brain check filter.')
+        self.health_filter = state
+        self._refresh_views()
+        self.redraw()
+        self._announce_inspection('Check filter: ' + state + (' (suspended during history)' if self.moment is not None else ''))
+
+    def set_path_only(self, enabled: bool) -> None:
+        self.path_only = bool(enabled)
+        self._refresh_views()
+        self.redraw()
+        self._announce_inspection('Trace a path with P before isolating it.' if self.path_only and not self._path_nodes else '')
+
+    def _refresh_views(self) -> None:
+        def matches(key: str) -> bool:
+            if self.path_only and self._path_nodes and key not in self._path_nodes:
+                return False
+            # Latest readiness is not a historical observation.
+            if self.moment is not None or self.health_filter == 'All checks':
+                return True
+            check = self.checks.get(key)
+            if self.health_filter == 'Not checked':
+                return check is None
+            return check is not None and bool(check.get('passed')) == (self.health_filter == 'Ready')
         self.VIEWS = tuple((node.node_id, node.label) for node in BrainMesh.NODES
-                           if layer == "All layers" or node.layer == layer)
+                           if (self.layer_filter == "All layers" or node.layer == self.layer_filter) and matches(node.node_id))
         self._keyboard_index = 0
         self._hover = None
         if self.active not in dict(self.VIEWS):
             self.active = ""
-        self.redraw()
+        if self.contract_active is not None and not set(self.contract_active) <= set(dict(self.VIEWS)):
+            self.contract_active = None
+        self.contract_hover = None
+        self._link_cycle = None
 
     def _visible_edge(self, source: str, target: str) -> bool:
         if source not in self._positions or target not in self._positions:
+            return False
+        if self.path_only and self._path_edges and (source, target) not in self._path_edges:
             return False
         focus = self._hover or self.active
         if not self.focus_connections or not focus or self.tour_edge is not None:
@@ -435,11 +610,14 @@ class BrainGraph(DepthNavigator):
 
     def set_checks(self, nodes: dict[str, dict[str, Any]]) -> None:
         self.checks = {key: dict(value) for key, value in nodes.items() if key in LAYERS}
+        self._refresh_views()
         self.redraw()
+        self._announce_inspection()
 
     def set_evidence(self, layer: dict[str, Any]) -> None:
         self.evidence = dict(layer.get("nodes", {}))
         self.redraw()
+        self._announce_inspection()
 
     def evidence_detail(self, key: str) -> str:
         if self.moment is not None:
@@ -453,11 +631,392 @@ class BrainGraph(DepthNavigator):
     def set_activity(self, activity: dict[str, Any], voice: dict[str, Any], camera_on: bool = False) -> None:
         flows = active_flows(activity, voice, camera_on)
         self._live_flows = flows
-        if self.moment is None and flows != self.flows:
+        working = self.components_for_activity(activity, voice, camera_on)
+        self._live_components = working
+        if self.moment is None and (flows != self.flows or working != self._active_components):
             self.flows, self._edges = flows, flow_edges(flows)
+            self._active_components = working
             if self.winfo_ismapped():
                 self._wake()
                 self.redraw()
+
+    # ------------------------------------------------------- components
+
+    def set_components(self, snapshot: Any) -> None:
+        """Show a ``brain_components.Snapshot``; None removes the component layer."""
+        from app.brain_components import place
+
+        if snapshot is None:
+            self.components, self.component_states, self.component_links = {}, {}, ()
+            self._component_base, self._tool_owners, self._model_owners = {}, {}, {}
+            self._component_links_by_end = {}
+        else:
+            self.components = {item.component_id: item for item in snapshot.components}
+            self.component_states = dict(snapshot.states)
+            self.component_links = tuple(link for link in snapshot.links
+                                         if link.a in self.components and link.b in self.components)
+            self._component_base = place(snapshot.components, LAYOUT)
+            self._tool_owners = snapshot.tool_index()
+            self._model_owners = {}
+            for item in snapshot.components:
+                if item.kind == "model" and " / " in item.detail:
+                    self._model_owners.setdefault(item.detail.split(" / ", 1)[1], []).append(item.component_id)
+            self._component_links_by_end = {}
+            for link in self.component_links:
+                self._component_links_by_end.setdefault(link.a, []).append(link)
+                self._component_links_by_end.setdefault(link.b, []).append(link)
+        for name in ("component_hover", "component_active"):
+            if getattr(self, name) not in self.components:
+                setattr(self, name, None)
+        population = getattr(snapshot, "population", None) if snapshot is not None else None
+        if population is not self.population:
+            kept = (self.population.ids[self.population_active]
+                    if self.population is not None and self.population_active is not None else None)
+            self.population, self.population_hover = population, None
+            self.population_active = (population.ids.index(kept) if population is not None and kept in population.ids
+                                      else None)
+        self.redraw()
+
+    # ------------------------------------------------------ neuron population
+    #: Synapses drawn when nothing is chosen (the strongest), and with every neuron showing.
+    POPULATION_LINKS = 450
+    POPULATION_LINKS_ALL = 2500
+
+    def _draw_population(self, w: float, h: float) -> None:
+        """Every memory and knowledge neuron in one image: projected together, splatted together."""
+        import numpy as np
+        from PIL import Image, ImageDraw, ImageTk
+
+        population = self.population
+        started = time.perf_counter()
+        moving = self._effective_detail() == "Low" and self.mesh_detail != "Low"
+        scale = .5 if moving else 1.0
+        # The stored units, then a sample of the language models' own neurons (placed by layer and expert).
+        stored = len(population.ids)
+        model_index, model_positions, model_codes = self._population_models(population, moving, np)
+        # Joined once per population and sample, as 32-bit numbers: the same 230,000 rows were stacked again for
+        # every frame, and projecting them in double precision buys nothing at screen resolution.
+        joined_key = (id(population), stored, len(model_index), moving)
+        if getattr(self, "_population_joined_key", None) != joined_key:
+            joined = population.positions if not len(model_index) else np.vstack([population.positions, model_positions])
+            self._population_joined = np.ascontiguousarray(joined, dtype=np.float32)
+            self._population_joined_map = np.concatenate([np.arange(stored, dtype=np.int64), model_index])
+            self._population_joined_key = joined_key
+        positions = self._population_joined
+        self._population_index_map = self._population_joined_map
+        x, y, z = positions[:, 0], positions[:, 1], positions[:, 2]
+        ca, sa, cp, sp = math.cos(self.angle), math.sin(self.angle), math.cos(self.pitch), math.sin(self.pitch)
+        x, z = x * ca + z * sa, z * ca - x * sa
+        y, z = y * cp - z * sp, y * sp + z * cp
+        factor = self._scale(w, h) * 3.8 / (3.8 - z)
+        sx, sy = w / 2 + x * factor, h * self.CENTRE_Y + y * factor
+        self._population_screen = (sx, sy, z)
+        # Only the area the neurons occupy becomes an image: handing Tk a whole-canvas RGBA image cost 136 ms.
+        on_canvas = (sx >= 0) & (sx < w) & (sy >= 0) & (sy < h)
+        if not on_canvas.any():
+            return
+        x0, x1 = max(0, int(sx[on_canvas].min()) - 8), min(int(w), int(sx[on_canvas].max()) + 9)
+        y0, y1 = max(0, int(sy[on_canvas].min()) - 8), min(int(h), int(sy[on_canvas].max()) + 9)
+        key = (id(population), round(self.angle, 5), round(self.pitch, 5), round(self.zoom, 5), int(w), int(h), scale,
+               self.population_hover, self.population_active, self.show_all_tools, len(population.fired), self.palette.HOLO,
+               len(model_index))
+        if key == getattr(self, "_population_key", None) and self._population_photo is not None:
+            # Nothing it shows has changed (a pulse or a part redrew the scene): reuse the image.
+            self.create_image(x0, y0, image=self._population_photo, anchor="nw", tags=("scene", "population"))
+            self._population_ms = (time.perf_counter() - started) * 1000
+            return
+        self._population_key = key
+        width, height = max(8, int((x1 - x0) * scale)), max(8, int((y1 - y0) * scale))
+        lx, ly = (sx - x0) * scale, (sy - y0) * scale
+        near = np.clip((z + 1.1) / 2.2, 0, 1)
+        p = self.palette
+        rgb = lambda colour: np.array([int(colour[i:i + 2], 16) for i in (1, 3, 5)], dtype=np.float32)
+        used, lit = rgb(p.GOLD), rgb(p.WHITE)
+        base_colours = colours = self._population_colours(population, np)
+        if len(model_index):
+            base_colours = colours = np.vstack([colours, self._population_colour_table[model_codes.astype(np.int64)]])
+        now = time.time()
+        # Active = used in the last week, or recalled for a recent reply (a tool call or step once ever is not "active").
+        # Model neurons are never marked active: their firing is not visible to HAYAT.
+        active = (now - np.nan_to_num(population.last_used, nan=0.0)) < 7 * 86400
+        if len(model_index):
+            active = np.concatenate([active, np.zeros(len(model_index), dtype=bool)])
+        for index in population.fired:
+            active[index] = True
+        colours = np.where(active[:, None], colours * .45 + used * .55, colours)
+        alpha = (.28 + .5 * near + .22 * active) * 255
+        # Chosen neurons by population index (links), and where they are on screen (rings).
+        chosen = {index for index in (self.population_hover, self.population_active) if index is not None and index < stored}
+        chosen_screen = [screen for screen in (self._screen_index(index, np) for index in
+                                               (self.population_hover, self.population_active) if index is not None)
+                         if screen is not None]
+        px, py = np.round(lx).astype(np.int64), np.round(ly).astype(np.int64)
+        inside = (px >= 0) & (px < width) & (py >= 0) & (py < height)
+        # A soft glow of neuron density under the dots: brighter where neurons are dense, and no fully transparent
+        # gaps between them. Tk traces every transparent run of an image; 45,000 separate dots made that 120 ms.
+        from PIL import ImageFilter
+        density = np.bincount(py[inside] * width + px[inside], minlength=width * height).reshape(height, width)
+        blurred = np.asarray(Image.fromarray(np.clip(density * 80, 0, 255).astype(np.uint8), "L")
+                             .filter(ImageFilter.GaussianBlur(radius=max(3.0, 8 * scale))), dtype=np.float32)
+        pixels = np.zeros((height, width, 4), dtype=np.uint8)
+        pixels[..., :3] = rgb(blend(p.PANEL, p.ROYAL_SOFT, .55)).astype(np.uint8)
+        pixels[..., 3] = np.where(blurred > .5, np.clip(14 + blurred * .3, 0, 60), 0).astype(np.uint8)
+        # Neurons: a 2x2 splat each (plus a cross for active ones). Every pixel of every dot goes into one array,
+        # sorted dimmest first, and is written in a single assignment: the brightest write lands last and wins.
+        everyone = self._population_sample(population, active, moving, np)
+        self._population_drawn = everyone
+        lit_ones = everyone[active[everyone]]
+        xs_, ys_, alphas_, owners_ = [], [], [], []
+        for dx, dy, weight, members in ((-1, 0, .45, lit_ones), (0, -1, .45, lit_ones), (1, 1, .5, everyone),
+                                        (1, 0, .7, everyone), (0, 1, .7, everyone), (0, 0, 1.0, everyone)):
+            xs_.append(px[members] + dx)
+            ys_.append(py[members] + dy)
+            alphas_.append(alpha[members] * weight)
+            owners_.append(members)
+        qx, qy, qa, owner = (np.concatenate(xs_), np.concatenate(ys_), np.concatenate(alphas_), np.concatenate(owners_))
+        keep = (qx >= 0) & (qx < width) & (qy >= 0) & (qy < height)
+        qx, qy, qa, owner = qx[keep], qy[keep], qa[keep], owner[keep]
+        # Sorted as bytes (what the alpha channel holds): numpy sorts 8-bit keys with a radix sort, several times
+        # faster here than comparing 180,000 floats, and the picture is the same to the last bit.
+        qa = np.clip(qa, 0, 255).astype(np.uint8)
+        order = np.argsort(qa, kind="stable")
+        qx, qy, qa, owner = qx[order], qy[order], qa[order], owner[order]
+        pixels[qy, qx, :3] = np.clip(colours[owner], 0, 255).astype(np.uint8)
+        pixels[qy, qx, 3] = np.maximum(pixels[qy, qx, 3], qa)
+        layer = Image.fromarray(pixels, "RGBA")
+        draw = ImageDraw.Draw(layer, "RGBA")
+        # Synapses over the neurons: the chosen neuron's own, then the strongest (fewer while the brain moves).
+        if len(population.links):
+            budget = 0 if moving and not chosen else (self.POPULATION_LINKS_ALL if self.show_all_tools else self.POPULATION_LINKS)
+            # The strongest-first order of the synapses changes only with the population, not with the camera:
+            # sorting every link again for every frame was pure repetition (and was done even to draw none).
+            if getattr(self, "_population_link_order_key", None) != (id(population), len(population.links)):
+                self._population_link_order = np.argsort(-population.link_weights)
+                self._population_link_order_key = (id(population), len(population.links))
+            rows = self._population_link_order[:budget].tolist() if budget else []
+            if chosen:
+                touching = np.nonzero(np.isin(population.links[:, 0], list(chosen)) | np.isin(population.links[:, 1], list(chosen)))[0]
+                rows = list(dict.fromkeys(touching.tolist() + rows))
+            for row in rows:
+                a, b = int(population.links[row, 0]), int(population.links[row, 1])
+                touched = a in chosen or b in chosen
+                depth = float(near[a] + near[b]) / 2
+                colour = (*[int(v) for v in (used if touched else base_colours[a])],
+                          int(255 * (.85 if touched else .1 + .16 * depth)))
+                draw.line((lx[a], ly[a], lx[b], ly[b]), fill=colour, width=2 if touched else 1)
+        for index in chosen_screen:
+            cx, cy = lx[index], ly[index]
+            draw.ellipse((cx - 5, cy - 5, cx + 5, cy + 5), outline=(*[int(v) for v in lit], 255), width=2)
+        if scale != 1.0:
+            layer = layer.resize((max(1, x1 - x0), max(1, y1 - y0)), Image.BILINEAR)
+        if self._population_photo is not None and (self._population_photo.width(), self._population_photo.height()) == layer.size:
+            self._population_photo.paste(layer)
+        else:
+            self._population_photo = ImageTk.PhotoImage(layer, master=self)
+        self.create_image(x0, y0, image=self._population_photo, anchor="nw", tags=("scene", "population"))
+        self._population_ms = (time.perf_counter() - started) * 1000
+
+    #: Dots drawn at most (still / moving). Every neuron still counts in the density glow, the counts and the graph.
+    POPULATION_DRAW_LIMIT = 60_000
+    POPULATION_DRAW_LIMIT_MOVING = 30_000
+
+    def _population_sample(self, population: Any, active: Any, moving: bool, np: Any) -> Any:
+        """Which neurons get their own dot: all of them up to the limit; above it every active one, then an even
+        sample of the rest (fixed per population and minute, so the picture does not flicker)."""
+        limit = self.POPULATION_DRAW_LIMIT_MOVING if moving else self.POPULATION_DRAW_LIMIT
+        total = len(active)
+        if total <= limit:
+            return np.arange(total)
+        key = (id(population), limit, int(time.time() // 60), self.population_hover, self.population_active)
+        if getattr(self, "_population_sample_key", None) == key:
+            return self._population_sample_cache
+        chosen = np.nonzero(active)[0][:limit]
+        rest = np.nonzero(~active)[0]
+        room = max(0, limit - len(chosen))
+        if room and len(rest):
+            rest = rest[np.linspace(0, len(rest) - 1, num=min(room, len(rest))).astype(np.int64)]
+            chosen = np.concatenate([chosen, rest])
+        extra = [screen for screen in (self._screen_index(index, np) for index in (self.population_hover, self.population_active)
+                                       if index is not None) if screen is not None]
+        if extra:
+            chosen = np.unique(np.concatenate([chosen, np.array(extra, dtype=np.int64)]))
+        self._population_sample_key, self._population_sample_cache = key, chosen
+        return chosen
+
+    def _population_colours(self, population: Any, np: Any) -> Any:
+        """One colour per kind of neuron (memory teal, knowledge blue, sources and evidence green, experience
+        violet…), looked up from the kind codes once per population and palette, not per neuron per frame."""
+        key = (id(population), self.palette.HOLO, self.palette.ROYAL_SOFT)
+        if getattr(self, "_population_colour_key", None) == key:
+            return self._population_colour_cache
+        p = self.palette
+        rgb = lambda colour: [int(colour[i:i + 2], 16) for i in (1, 3, 5)]
+        from app.brain_population import KINDS
+        by_kind = {"memory": p.HOLO, "claim": p.ROYAL_SOFT, "knowledge": p.ROYAL_SOFT, "answer": p.ROYAL_SOFT,
+                   "investigation": p.GOLD_SOFT, "source": p.OLIVE_SOFT, "evidence": p.OLIVE_SOFT,
+                   "lesson": p.GOLD_SOFT, "procedure": p.GOLD_SOFT, "task": p.WHITE, "step": p.WHITE,
+                   "topic": p.GOLD_SOFT, "situation": p.HOLO, "turn": p.HOLO, "tool experience": "#B79CFF",
+                   # Decisions are mostly approvals: amber, not the alert red that would read as errors.
+                   "fact revision": p.ROYAL_SOFT, "decision": "#E0B07A", "world object": p.OLIVE_SOFT,
+                   "feed check": p.OLIVE_SOFT, "own code": "#8FD3C8", "signal": "#9AA7B8",
+                   "own function": "#8FD3C8", "model neuron": "#8C7BFF", "embedding neuron": p.HOLO}
+        table = np.array([rgb(by_kind.get(kind, p.ROYAL_SOFT)) for kind, *_rest in KINDS], dtype=np.float32)
+        codes = getattr(population, "kind_codes", None)
+        if codes is None or len(codes) != len(population):
+            codes = np.array([0 if kind == "memory" else 2 for kind in population.kinds], dtype=np.int8)
+        self._population_colour_table = table
+        self._population_colour_key, self._population_colour_cache = key, table[codes.astype(np.int64)]
+        return self._population_colour_cache
+
+    #: Model neurons drawn as dots (still / moving); all of them are counted.
+    MODEL_DRAW_LIMIT = 24_000
+    MODEL_DRAW_LIMIT_MOVING = 10_000
+
+    def _population_models(self, population: Any, moving: bool, np: Any) -> tuple[Any, Any, Any]:
+        """A fixed sample of the model blocks' neurons with their positions (cached per population and limit)."""
+        if not getattr(population, "blocks", None):
+            return np.zeros(0, dtype=np.int64), np.zeros((0, 3)), np.zeros(0, dtype=np.int8)
+        limit = self.MODEL_DRAW_LIMIT_MOVING if moving else self.MODEL_DRAW_LIMIT
+        key = (id(population), limit)
+        cache = getattr(self, "_population_model_cache", {})
+        if key not in cache:
+            from app.brain_population import block_sample
+            # Keep the still and the moving sample of this population side by side: replacing one with the other
+            # re-sampled millions of model neurons at the start and the end of every drag.
+            cache = {name: value for name, value in cache.items() if name[0] == id(population)}
+            cache[key] = block_sample(population, limit)
+            self._population_model_cache = cache
+        return cache[key]
+
+    def _screen_index(self, index: int, np: Any) -> int | None:
+        """Where a population index is in the drawn arrays: stored units first, then the sampled model neurons."""
+        stored = len(self.population.ids) if self.population is not None else 0
+        if index < stored:
+            return index
+        mapping = getattr(self, "_population_index_map", None)
+        if mapping is None:
+            return None
+        found = np.nonzero(mapping[stored:] == index)[0]
+        return int(stored + found[0]) if len(found) else None
+
+    def _hit_population(self, x: float, y: float) -> int | None:
+        if self.population is None or self._population_screen is None or not self.show_components:
+            return None
+        import numpy as np
+
+        sx, sy, z = self._population_screen
+        drawn = getattr(self, "_population_drawn", None)
+        if drawn is None or not len(drawn):
+            drawn = np.arange(len(sx))
+        # Only neurons that have their own dot can be pointed at.
+        distance = np.hypot(sx[drawn] - x, sy[drawn] - y) - (z[drawn] > self.COMPONENT_HIDDEN_Z) * .5
+        best = int(np.argmin(distance))
+        if distance[best] > 5.5:
+            return None
+        mapping = getattr(self, "_population_index_map", None)
+        screen = int(drawn[best])
+        return int(mapping[screen]) if mapping is not None and screen < len(mapping) else screen
+
+    def select_population(self, index: int | None) -> None:
+        self.population_active = index if self.population is not None and index is not None \
+            and 0 <= index < len(self.population) else None
+        self.redraw()
+
+    def _draw_population_label(self, index: int, w: float) -> None:
+        from app.gui_theme import owned_font
+
+        import numpy as np
+
+        p = self.palette
+        sx, sy, _z = self._population_screen
+        screen = self._screen_index(index, np)
+        if screen is None or screen >= len(sx):
+            return
+        x, y = float(sx[screen]), float(sy[screen])
+        population = self.population
+        from app.brain_population import NAMES
+
+        if index >= len(population.ids):
+            # A language-model neuron: its real address, and the honest limit on what is known about it.
+            first = population.describe(index).splitlines()
+            lines = [first[0], NAMES.get(population.block_of(index)[0]["kind"], "model neuron").capitalize()
+                     + " · structure from the model file", "Its firing is not visible to HAYAT"]
+        else:
+            kind = population.kinds[index]
+            lines = [population.labels[index], f"{NAMES.get(kind, kind)} neuron · {population.groups[index]}",
+                     f"{int(population.uses[index]):,} recorded uses · {len(population.neighbours(index))} synapses"]
+        if not hasattr(self, "_measure_font"):
+            self._measure_font = owned_font(self, family="Segoe UI", size=8)
+        face = self._measure_font
+        for line in range(3):
+            while face.measure(lines[line]) > max(80, min(420, w - 36)) and len(lines[line]) > 4:
+                lines[line] = lines[line][:-2].rstrip("…") + "…"
+        width = min(w - 12, max(face.measure(text) for text in lines) + 24)
+        left, top = max(6, min(w - width - 6, x - width / 2)), max(24, y - 76)
+        rounded(self, (left, top, left + width, top + 59), radius=10, tags=("scene", "label", "population-label"),
+                fill=blend(p.PANEL, p.BLACK, .4), outline=blend(p.PANEL, p.HOLO, .7))
+        for offset, text, colour, font in ((7, lines[0], p.WHITE, ("Segoe UI Semibold", 9)), (26, lines[1], p.MUTED, ("Segoe UI", 8)),
+                                           (44, lines[2], p.GOLD_SOFT, ("Segoe UI", 8))):
+            self.create_text(left + 11, top + offset, anchor="nw", text=text, fill=colour, font=font,
+                             tags=("scene", "label", "population-label"))
+
+    def components_for_activity(self, activity: dict[str, Any], voice: dict[str, Any],
+                                camera_on: bool = False) -> set[str]:
+        """The component neurons doing recorded work right now, from the activity register."""
+        if not self.components:
+            return set()
+        working: set[str] = set()
+        for row in activity.get("running") or []:
+            kind, label, detail = str(row.get("kind", "")), str(row.get("label", "")), str(row.get("detail", ""))
+            if kind == "tool":
+                working.update(self._tool_owners.get(label, ()))
+            elif kind == "model":
+                # "ollama/hayat:latest": the role(s) configured with that model are thinking.
+                working.update(self._model_owners.get(detail.split("/", 1)[-1], ()))
+            elif kind == "learning":
+                working.add("cap:learning")
+            elif kind == "task":
+                working.add("svc:teams" if label == "Worker team" else f"helper:{label}")
+            elif kind == "service" and label in {"Load model", "Unload model"}:
+                working.add("svc:model_resources")
+        if camera_on:
+            working.add("cap:senses")
+        state = str(voice.get("state", ""))
+        if (voice.get("enabled") and state in {"listening", "transcribing"}) or state == "speaking":
+            working.add("cap:voice")
+        return {key for key in working if key in self.components}
+
+    def set_component_heat(self, tool_seconds: dict[str, float] | None) -> None:
+        """Glow each component by its tools' recorded busy time over the window; None clears it."""
+        busy: dict[str, float] = {}
+        for tool, seconds in (tool_seconds or {}).items():
+            for owner in self._tool_owners.get(tool, ()):
+                busy[owner] = busy.get(owner, 0.0) + max(0.0, float(seconds))
+        most = max(busy.values(), default=0.0)
+        self.component_heat = {key: value / most for key, value in busy.items() if value > 0} if most else {}
+        self.redraw()
+
+    def select_component(self, component_id: str | None) -> None:
+        self.component_active = component_id if component_id in self.components else None
+        self.redraw()
+
+    def select(self, key: str) -> None:
+        # Choosing a subsystem puts any chosen component down.
+        if self.component_active is not None and key in LAYERS:
+            self.component_active = None
+        self.contract_active = self.contract_hover = None
+        self._link_cycle = None
+        super().select(key)
+        self._announce_inspection()
+
+    def component_detail(self, component_id: str) -> str:
+        from app.brain_components import describe as describe_component
+
+        component = self.components[component_id]
+        labels = {key: item.label for key, item in self.components.items()}
+        parent = dict((node.node_id, node.label) for node in BrainMesh.NODES).get(component.parent, "")
+        return describe_component(component, self.component_states.get(component_id), parent_label=parent,
+                                  links=self._component_links_by_end.get(component_id, ()), labels=labels)
 
     def set_heat(self, seconds: dict[str, float] | None) -> None:
         """Glow each part by its share of the busiest part's time; None clears it."""
@@ -467,7 +1026,8 @@ class BrainGraph(DepthNavigator):
         self.redraw()
 
     def show_moment(self, moment: float | None, flows: list[str] | None = None,
-                    marks: list[Any] | None = None, echoes: list[str] | None = None) -> None:
+                    marks: list[Any] | None = None, echoes: list[str] | None = None,
+                    tools: list[str] | None = None) -> None:
         """Show the brain as recorded at ``moment``, or live again with None.
 
         ``marks`` are failures, denials and approval requests near that
@@ -476,9 +1036,12 @@ class BrainGraph(DepthNavigator):
         where the work had just been as well as where it is.
         """
         self.moment = moment
+        self._refresh_views()
         self._echo_edges = []
+        self._component_marks = {}
         if moment is None:
             flows, self._moment_marks = self._live_flows, {}
+            self._active_components = set(self._live_components)
         else:
             flows = [flow for flow in (flows or []) if flow in FLOWS]
             self._moment_marks = {}
@@ -486,6 +1049,11 @@ class BrainGraph(DepthNavigator):
                 # A failure outranks an approval request on the same node.
                 if mark.node in LAYERS and self._moment_marks.get(mark.node) != "failure":
                     self._moment_marks[mark.node] = mark.kind
+                for owner in self._tool_owners.get(getattr(mark, "tool", "") or "", ()):
+                    if self._component_marks.get(owner) != "failure":
+                        self._component_marks[owner] = mark.kind
+            # The components whose tools were recorded running at that moment.
+            self._active_components = {owner for tool in tools or () for owner in self._tool_owners.get(tool, ())}
         self.flows, self._edges = list(flows), flow_edges(list(flows))
         if moment is not None and echoes:
             current = set(self._edges)
@@ -571,6 +1139,8 @@ class BrainGraph(DepthNavigator):
 
     def _node_colour(self, key: str) -> str:
         p = self.palette
+        if self.moment is not None:
+            return p.ROYAL_SOFT
         check = self.checks.get(key)
         if check is None:
             return p.ROYAL_SOFT
@@ -587,6 +1157,7 @@ class BrainGraph(DepthNavigator):
         self.configure(bg=p.PANEL, highlightbackground=p.LINE, highlightcolor=p.GOLD)
         self._draw_backdrop(w, h)
         self.delete("scene")
+        self._contract_curves = {}
         points = [self._project(i, w, h) for i in range(len(self.VIEWS))]
         self._positions = {key: points[i] for i, (key, _label) in enumerate(self.VIEWS)}
         focus = self._hover or self.active
@@ -650,7 +1221,8 @@ class BrainGraph(DepthNavigator):
             (x, y, z), (xx, yy, zz) = self._positions[edge.source], self._positions[edge.target]
             flowing = (edge.source, edge.target) in self._edges
             touring = (edge.source, edge.target) == getattr(self, "tour_edge", None)
-            touched = touring or (focus in (edge.source, edge.target) and getattr(self, "tour_edge", None) is None)
+            inspected = (edge.source, edge.target) in (self.contract_active, self.contract_hover)
+            touched = inspected or touring or (focus in (edge.source, edge.target) and getattr(self, "tour_edge", None) is None)
             echo = not flowing and (edge.source, edge.target) in getattr(self, "_echo_edges", ())
             on_path = (edge.source, edge.target) in self._path_edges
             near = (z + zz + 2) / 4
@@ -658,14 +1230,21 @@ class BrainGraph(DepthNavigator):
                       else blend(p.PANEL, p.HOLO, .45) if echo
                       else blend(p.PANEL, p.ROYAL_SOFT, .15 + near * .35))
             curve = contract_curve((x, y), (xx, yy), self._radius(z) * .8 + 10, self._radius(zz) * .8 + 12)
+            self._contract_curves[(edge.source, edge.target)] = (curve, (z + zz) / 2)
             path = tuple(coordinate for i in range(17) for coordinate in curve_point(curve, i / 16))
             layers.append(((z + zz) / 2, 1, lambda path=path, c=colour, t=touched, f=flowing, e=echo,
-                           r=touring, q=on_path:
+                           r=touring, q=on_path, selected=inspected, pair=(edge.source, edge.target):
                            self.create_line(*path, fill=c,
-                                            width=5 if q else 4 if r else 2 if (t or f) else 1.5 if e else 1,
+                                            width=5 if q else 4 if r or selected else 2 if (t or f) else 1.5 if e else 1,
                                             dash=(3, 3) if e else (), arrow="last",
-                                            arrowshape=(7, 8, 3), tags=("scene", "contract", "echo") if e
-                                            else ("scene", "contract"))))
+                                            arrowshape=(7, 8, 3), tags=("scene", "contract", f'contract-{pair[0]}-{pair[1]}',
+                                            'inspected-contract' if selected else 'echo' if e else 'declared-contract'))))
+        self._queue_components(layers, w, h, focus)
+        if self.population is not None and len(self.population) and self.show_components:
+            # Above the shell (whose layers end at z - 2 <= -0.8), below the pathways and the parts.
+            layers.append((-.79, 0, lambda: self._draw_population(w, h)))
+        else:
+            self._population_screen = None
         for i, (key, label) in enumerate(self.VIEWS):
             layers.append((points[i][2], 3, lambda i=i, key=key, label=label:
                            self._draw_brain_node(key, label, *points[i], key in busy_nodes)))
@@ -675,9 +1254,18 @@ class BrainGraph(DepthNavigator):
             draw()
         self._draw_legend(w, h)
         self._legend_boxes = [self.bbox(tag) for tag in ("legend-header", "legend-footer") if self.bbox(tag)]
+        if self.contract_hover is not None or self.contract_active is not None:
+            self._draw_contract_label(self.contract_hover or self.contract_active, w, h)
+            if self.bbox('contract-detail'):
+                self._legend_boxes.append(self.bbox('contract-detail'))
         names = self._draw_names(w, h)
         self._draw_layers(w, h, names + self._discs + self._legend_boxes)
+        if not self.VIEWS:
+            self.create_text(w / 2, h / 2, text='No subsystems match these filters.\nH changes checks; select All layers to widen the view.',
+                             width=max(80, w - 32), justify='center', fill=p.MUTED,
+                             font=('Segoe UI', 10), tags=('scene', 'empty-filter'))
         self._draw_pulses(w, h)
+        self._draw_component_pulses()
         if self._pulse is not None and self._pulse[0] in self._positions:
             x, y, z = self._positions[self._pulse[0]]
             t = min(1.0, (self._clock() - self._pulse[1]) / self.PULSE_SECONDS)
@@ -686,6 +1274,10 @@ class BrainGraph(DepthNavigator):
                              outline=blend(p.GOLD, p.PANEL, t))
         if self._hover in self._positions:
             self._draw_label(self._hover, w)
+        elif self.component_hover in self._component_positions:
+            self._draw_component_label(self.component_hover, w)
+        elif self.population_hover is not None and self._population_screen is not None:
+            self._draw_population_label(self.population_hover, w)
         self.tag_raise("legend")
 
     def _draw_brain_node(self, key: str, label: str, x: float, y: float, z: float, busy: bool) -> None:
@@ -735,11 +1327,259 @@ class BrainGraph(DepthNavigator):
         if (z > -.25 or key == self.active or key in {'cortex', 'dual_brain', 'invention'}) and key != self._hover:
             self._names.append((z, x, y, r, label, key == self.active))
 
+    #: Level of detail: components this far behind the brain's middle are not
+    #: drawn unless chosen, working or marked at the moment shown.
+    COMPONENT_HIDDEN_Z = -.3
+    #: Unfocused recorded links drawn at once; links of the chosen component always show.
+    MAX_COMPONENT_LINKS = 60
+
+    def _component_colour(self, key: str) -> str:
+        p = self.palette
+        state = self.component_states.get(key)
+        if state is None or not (state.calls or state.failures):
+            return blend(p.PANEL, p.MUTED, .6)          # nothing recorded yet
+        if state.last_ok is False:
+            return p.ALERT                              # its last recorded outcome failed
+        return p.OLIVE_SOFT
+
+    def _queue_components(self, layers: list[tuple[float, int, Callable[[], None]]], w: float, h: float,
+                          focus: str | None) -> None:
+        """Membership lines, recorded links and component dots, painted in depth order."""
+        self._component_positions = {}
+        if not self.show_components or not self.components:
+            return
+        p = self.palette
+        chosen = {self.component_hover, self.component_active} - {None}
+        members = (neighborhood(focus, self.connection_hops)
+                   if self.focus_connections and focus and self.tour_edge is None else None)
+        positions = self._component_positions
+        for key, base in self._component_base.items():
+            component = self.components[key]
+            tool = component.kind == "tool"
+            # A tool hangs off its capability area (drawn just before it); everything else off a subsystem.
+            parent = positions.get(component.parent) if tool else self._positions.get(component.parent)
+            home = self.components[component.parent].parent if tool and component.parent in self.components \
+                else component.parent
+            if parent is None or (members is not None and home not in members and key not in chosen):
+                continue
+            working = key in self._active_components
+            marked = self._component_marks.get(key)
+            area_chosen = tool and component.parent in chosen
+            if tool and not (self.show_all_tools or area_chosen or key in chosen or working or marked):
+                continue
+            x, y, z = self._point(base, w, h)
+            if z < self.COMPONENT_HIDDEN_Z and key not in chosen and not working and not marked and not area_chosen:
+                continue
+            near = max(0.0, min(1.0, (z + 1.1) / 2.2))
+            state = self.component_states.get(key)
+            calls = state.calls if state is not None else 0
+            r = (1.9 + min(2.4, math.log10(1 + calls) * .8)) * (.75 + .4 * near) * (.62 if tool else 1)
+            positions[key] = (x, y, z, r)
+            lit = key in chosen
+            colour = p.GOLD if lit else p.HOLO if working else blend(p.PANEL, p.ROYAL_SOFT, .10 + .18 * near)
+            if not tool or area_chosen or lit or working:
+                # With every tool showing, only the chosen area's tools keep their lines: 600 lines would be noise.
+                layers.append(((z + parent[2]) / 2, 1, lambda a=parent, x=x, y=y, c=colour, lw=1.6 if lit or working else 1:
+                               self.create_line(a[0], a[1], x, y, fill=c, width=lw,
+                                                tags=("scene", "component-link", "membership"))))
+            layers.append((z, 2, lambda key=key, x=x, y=y, r=r, near=near, working=working, lit=lit, marked=marked:
+                           self._draw_component(key, x, y, r, near, working, lit, marked)))
+        touched_by = self.component_hover or self.component_active
+        drawn = 0
+        for link in self.component_links:
+            a, b = positions.get(link.a), positions.get(link.b)
+            if a is None or b is None:
+                continue
+            touched = touched_by in (link.a, link.b)
+            if link.kind == "governs" and not touched:
+                continue                                 # governance shows on focus only
+            if not touched:
+                if drawn >= self.MAX_COMPONENT_LINKS:
+                    continue
+                drawn += 1
+            near = (a[2] + b[2] + 2) / 4
+            working = link.a in self._active_components and link.b in self._active_components
+            colour = (p.GOLD_SOFT if touched else p.HOLO if working
+                      else blend(p.PANEL, p.GOLD_SOFT, .36 + .18 * near) if link.kind == 'integration'
+                      else blend(p.PANEL, p.GOLD_SOFT, .22 + .12 * near) if link.kind == "routes"
+                      else blend(p.PANEL, p.HOLO, .16 + .16 * near))
+            width = (1 + min(1.6, math.log10(1 + link.weight) * .8)) if link.kind == "co-use" else 1
+            curve = contract_curve(a, b, a[3] + 2, b[3] + 2)
+            path = tuple(value for i in range(9) for value in curve_point(curve, i / 8))
+            layers.append(((a[2] + b[2]) / 2, 1, lambda path=path, c=colour, lw=width + (1 if touched else 0),
+                           dash=(2, 3) if link.kind == "governs" else (), kind=link.kind:
+                           self.create_line(*path, fill=c, width=lw, dash=dash,
+                                            arrow='last' if kind in {'integration', 'routes', 'governs'} else 'none',
+                                            arrowshape=(5, 6, 2),
+                                            tags=("scene", "component-link", kind))))
+
+    def _draw_component(self, key: str, x: float, y: float, r: float, near: float, working: bool,
+                        lit: bool, marked: str | None) -> None:
+        p = self.palette
+        tags = ("scene", "component", f"component-{key}")
+        warmth = self.component_heat.get(key, 0.0)
+        if warmth > .02:
+            glow = r + 3 + 7 * warmth
+            self.create_oval(x - glow, y - glow, x + glow, y + glow, outline="", tags=(*tags, "component-heat"),
+                             fill=blend(p.PANEL, p.GOLD, .08 + .25 * warmth * (.6 + .4 * near)))
+        if marked:
+            ring = p.ALERT if marked == "failure" else p.GOLD
+            self.create_oval(x - r - 4, y - r - 4, x + r + 4, y + r + 4, outline=ring, width=1.5, dash=(2, 2),
+                             tags=tags)
+        if working or lit:
+            halo = p.GOLD if lit else p.HOLO
+            self.create_oval(x - r - 3, y - r - 3, x + r + 3, y + r + 3, outline=halo, width=1.5, tags=tags)
+        colour = p.HOLO if working else self._component_colour(key)
+        outline = ""
+        if self.evidence_on and self.moment is None:
+            # The fifth dimension for a component: its own readiness, when one was checked.
+            state = self.component_states.get(key)
+            outline = {"ready": p.OLIVE_SOFT, "setup": p.GOLD, "off": p.ALERT}.get(
+                getattr(state, "readiness", "") or "", "")
+        self.create_oval(x - r, y - r, x + r, y + r, fill=blend(p.PANEL, colour, .45 + .5 * near),
+                         outline=outline or blend(p.PANEL, colour, .5 + .4 * near), width=1, tags=tags)
+        if key == self.component_active and key != self.component_hover:
+            label = self.components[key].label
+            self.create_text(x, y + r + 8, text=label, font=("Segoe UI", 8), fill=p.GOLD_SOFT,
+                             tags=("scene", "component-name"))
+
+    def _draw_component_label(self, key: str, w: float) -> None:
+        from app.gui_theme import owned_font
+
+        p = self.palette
+        x, y, _z, r = self._component_positions[key]
+        component = self.components[key]
+        state = self.component_states.get(key)
+        parent = next((node.label for node in BrainMesh.NODES if node.node_id == component.parent), "")
+        from app.brain_components import KINDS
+
+        kind = f"{KINDS.get(component.kind, component.kind)} · in {parent}"
+        if state is not None and (state.calls or state.failures):
+            last = ("last ok" if state.last_ok else "last failed" if state.last_ok is False else "last")
+            when = time.strftime("%b %d %H:%M", time.localtime(state.last_at)) if state.last_at else "?"
+            numbers = f"{state.calls:,} {state.unit.split(' (')[0]} · {state.failures:,} failed · {last} {when}"
+        else:
+            numbers = "No recorded use yet"
+        if not hasattr(self, "_measure_font"):
+            self._measure_font = owned_font(self, family="Segoe UI", size=8)
+        face = self._measure_font
+        lines = [component.label, kind, numbers]
+        for index in (1, 2):
+            while face.measure(lines[index]) > max(80, w - 36) and len(lines[index]) > 4:
+                lines[index] = lines[index][:-2].rstrip("…") + "…"
+        width = min(w - 12, max(face.measure(text) for text in lines) + 24)
+        left = max(6, min(w - width - 6, x - width / 2))
+        top = max(24, y - r - 70)
+        rounded(self, (left, top, left + width, top + 59), radius=10, tags=("scene", "label", "component-label"),
+                fill=blend(p.PANEL, p.BLACK, .4), outline=blend(p.PANEL, p.HOLO, .7))
+        self.create_text(left + 11, top + 7, anchor="nw", text=lines[0], fill=p.WHITE,
+                         font=("Segoe UI Semibold", 9), tags=("scene", "label", "component-label"))
+        self.create_text(left + 11, top + 26, anchor="nw", text=lines[1], fill=p.MUTED,
+                         font=("Segoe UI", 8), tags=("scene", "label", "component-label"))
+        self.create_text(left + 11, top + 44, anchor="nw", text=lines[2], fill=self._component_colour(key),
+                         font=("Segoe UI", 8), tags=("scene", "label", "component-label"))
+
+    def _draw_component_pulses(self) -> None:
+        """A dot per working component, travelling from its subsystem out to it."""
+        if not self._active_components or not self._component_positions:
+            return
+        p = self.palette
+        t = self._clock() * self.PULSE_SPEED if self.motion else .5
+        for index, key in enumerate(sorted(self._active_components)):
+            target = self._component_positions.get(key)
+            source = self._positions.get(self.components[key].parent) if key in self.components else None
+            if target is None or source is None:
+                continue
+            f = (t + index * .29) % 1.0
+            x, y = source[0] + (target[0] - source[0]) * f, source[1] + (target[1] - source[1]) * f
+            self.create_oval(x - 2.5, y - 2.5, x + 2.5, y + 2.5, fill=p.WHITE, outline=p.HOLO, width=1.5,
+                             tags=("scene", "component-flow"))
+
+    def _hit_component(self, x: float, y: float) -> str | None:
+        # The dot under the pointer wins; between equally close dots, the nearer one.
+        best: tuple[float, float, str] | None = None
+        for key, (px, py, z, r) in self._component_positions.items():
+            distance = math.hypot(x - px, y - py)
+            if distance <= max(6.0, r + 3) and (best is None or (distance, -z) < best[:2]):
+                best = (distance, -z, key)
+        return best[2] if best else None
+
+    def _rehover(self) -> None:
+        """Hover a subsystem first; between subsystems, the nearest component neuron."""
+        if not self._inside or self._pointer is None or self._drag_x is not None:
+            return
+        key = self._hit(*self._pointer)
+        component = None if key else self._hit_component(*self._pointer)
+        neuron = None if key or component else self._hit_population(*self._pointer)
+        link = None if key or component or neuron is not None else self._hit_contract(*self._pointer)
+        self.configure(cursor="hand2" if key or component or neuron is not None or link else "fleur")
+        if key != self._hover or component != self.component_hover or neuron != self.population_hover or link != self.contract_hover:
+            if key != self._hover and self.on_preview:
+                self.on_preview(key or self.active)
+            self._hover, self.component_hover, self.population_hover = key, component, neuron
+            self.contract_hover = link
+            self.redraw()
+            self._announce_inspection()
+
+    def _leave(self, event: Any) -> None:
+        self.component_hover = self.population_hover = None
+        self.contract_hover = None
+        super()._leave(event)
+
+    def _double(self, event: Any) -> None:
+        if self._hit(float(event.x), float(event.y)) is None:
+            component = self._hit_component(float(event.x), float(event.y))
+            if component is not None:
+                self.select_component(component)
+                if callable(self.on_component_drill):
+                    self.on_component_drill(component)
+                return
+        super()._double(event)
+
     def _hit(self, x: float, y: float) -> str | None:
         # A finger-sized target while preserving frontmost wins for overlaps.
         matches = [(z, key) for key, (px, py, z) in self._positions.items()
                    if math.hypot(x - px, y - py) <= max(14, self._radius(z) + 5)]
         return max(matches)[1] if matches else None
+
+    def _hit_contract(self, x: float, y: float) -> tuple[str, str] | None:
+        nearest = None
+        for pair, (curve, z) in self._contract_curves.items():
+            start = curve_point(curve, 0)
+            for index in range(1, 17):
+                end = curve_point(curve, index / 16)
+                dx, dy = end[0] - start[0], end[1] - start[1]
+                length = dx * dx + dy * dy
+                fraction = max(0.0, min(1.0, ((x - start[0]) * dx + (y - start[1]) * dy) / length)) if length else 0
+                distance = math.hypot(x - start[0] - fraction * dx, y - start[1] - fraction * dy)
+                candidate = (distance, -z, pair)
+                if distance <= 5 and (nearest is None or candidate < nearest):
+                    nearest = candidate
+                start = end
+        return nearest[2] if nearest is not None else None
+
+    def _draw_contract_label(self, pair: tuple[str, str], w: float, h: float) -> None:
+        info, p = self.contract_detail(*pair), self.palette
+        width = min(550, max(80, w - 32))
+        tags = ('scene', 'contract-detail')
+        footer = self.bbox('legend-footer')
+        bottom = footer[1] - 10 if footer else h - 18
+        lines = [(f"{info['source_label']} → {info['target_label']}", p.GOLD_SOFT, 'Segoe UI Semibold'),
+                 (info['contract'], p.WHITE, 'Segoe UI'),
+                 (f"Checks: {info['source_check']['state']} → {info['target_check']['state']}", p.MUTED, 'Segoe UI'),
+                 ('Declared contract · I/O inspect links · Enter follows · Esc clears', p.MUTED, 'Segoe UI')]
+        items, y = [], 0
+        for text, colour, font in lines:
+            item = self.create_text(26, y, anchor='nw', text=text, width=width - 20, fill=colour,
+                                    font=(font, 8), tags=tags)
+            items.append(item)
+            y = self.bbox(item)[3] + 4
+        top = max(12, bottom - y - 8)
+        for item in items:
+            self.move(item, 0, top + 7)
+        panel = rounded(self, (16, top, 16 + width, top + y + 8), radius=10,
+                        fill=blend(p.PANEL, p.BLACK, .52), outline=blend(p.PANEL, p.GOLD, .62), tags=tags)
+        self.tag_lower(panel, items[0])
 
     def _draw_label(self, key: str, w: float) -> None:
         from app.gui_theme import owned_font
@@ -749,7 +1589,8 @@ class BrainGraph(DepthNavigator):
         title = dict(self.VIEWS)[key]
         detail = self.DESCRIPTIONS[key]
         check = self.checks.get(key)
-        state = "Not checked" if check is None else "Ready" if check.get("passed") else "Needs attention"
+        state = ("Historical check not recorded" if self.moment is not None else
+                 "Not checked" if check is None else "Ready" if check.get("passed") else "Needs attention")
         if not hasattr(self, "_measure_font"):
             self._measure_font = owned_font(self, family="Segoe UI", size=8)
         face = self._measure_font
@@ -907,12 +1748,29 @@ class BrainGraph(DepthNavigator):
         if self._focused:
             self.create_text(12, h - 9, anchor="sw", fill=p.MUTED, font=("Segoe UI", 8), tags=footer,
                              width=available,
-                             text="←/→ pick · Enter details · ↑/↓ tilt · Home reset")
+                             text="←/→ pick · I/O inspect links · F focus · H checks · P trace · Enter details · Esc clear")
             return
         rows = [[]]
         x = 12
-        for colour, text in ((p.OLIVE_SOFT, "ready"), (p.GOLD, "optional, check"),
-                             (p.ALERT, "critical, check"), (p.ROYAL_SOFT, "not checked")):
+        entries = [(p.OLIVE_SOFT, "ready"), (p.GOLD, "optional, check"),
+                   (p.ALERT, "critical, check"), (p.ROYAL_SOFT, "not checked")]
+        if self.moment is not None:
+            entries = [(p.ROYAL_SOFT, 'checks not recorded at this moment')]
+        visible_contracts = sum(self._visible_edge(edge.source, edge.target) for edge in BrainMesh.EDGES)
+        entries.append((p.ROYAL_SOFT, f'{len(self.VIEWS)}/{len(BrainMesh.NODES)} subsystems · '
+                                     f'{visible_contracts}/{len(BrainMesh.EDGES)} declared contracts'))
+        if self.components and self.show_components:
+            entries.append((p.HOLO, f"{len(self.components)} parts · small dots"))
+        if self.population is not None and self.show_components:
+            counts = self.population.counts()
+            stored, model = counts.get("stored_units", counts["population"]), counts.get("model_neurons", 0)
+            entries.append((p.GOLD_SOFT, f"{counts['total']:,} neurons: {counts['base']:,} parts · "
+                                         f"{stored:,} stored memories, facts and experiences"
+                                         + (f" · {model:,} language-model neurons (from the model files)" if model else "")
+                                         + f" · {counts['synapses']:,} synapses"
+                                         + (f" · {counts['short_by']:,} short of {counts['target']:,}" if counts["short_by"]
+                                            else f" · target {counts['target']:,} reached")))
+        for colour, text in entries:
             width = self._legend_font.measure(text) + 24
             if x + width > w - 12 and rows[-1]:
                 rows.append([])
@@ -931,11 +1789,221 @@ class BrainGraph(DepthNavigator):
 
     def _overlay(self, *, redrawn: bool) -> bool:
         # Pulses move every frame; the mesh only when the camera does.
-        if self._edges and not redrawn:
+        moving = bool(self._edges) or bool(self._active_components and self._component_positions)
+        if moving and not redrawn:
             self.delete("flow")
+            self.delete("component-flow")
             self._draw_pulses(*self._size())
+            self._draw_component_pulses()
             self.tag_raise("label")
-        return bool(self._edges)
+        return moving
+
+
+class BrainExplorer(tk.Frame):
+    """Accessible filters and a copyable contract inspector attached to an existing graph."""
+
+    def __init__(self, parent: tk.Misc, graph: BrainGraph, palette: Any, **kwargs: Any) -> None:
+        from tkinter import ttk
+        from app.gui_panels import ScrollableColumn
+        from app.gui_resources import BooleanVar, StringVar
+
+        super().__init__(parent, bg=palette.PANEL, padx=10, pady=10, **kwargs)
+        self.graph, self.palette = graph, palette
+        self._labels = {node.node_id: node.label for node in BrainMesh.NODES}
+        self._ids = {label: key for key, label in self._labels.items()}
+        self._pairs: dict[str, tuple[str, str]] = {}
+        self.layer = StringVar(self, graph.layer_filter)
+        self.health = StringVar(self, graph.health_filter)
+        self.direction = StringVar(self, 'Both')
+        self.isolate = BooleanVar(self, graph.path_only)
+        self.focus_links = BooleanVar(self, graph.focus_connections)
+        self.source = StringVar(self, self._labels['interface'])
+        self.target = StringVar(self, self._labels['memory'])
+        tk.Label(self, text='Contract explorer', bg=palette.PANEL, fg=palette.WHITE,
+                 font=('Segoe UI Semibold', 12), anchor='w').pack(fill='x')
+        self.summary = tk.Label(self, bg=palette.PANEL, fg=palette.MUTED, anchor='w', justify='left',
+                                wraplength=420, font=('Segoe UI', 8))
+        self.summary.pack(fill='x', pady=(3, 8))
+        # The Operator mounts this inspector in roughly 300 px. Keep the
+        # evidence readable while its less frequent view/trace controls scroll
+        # in their own tab, rather than packing them above a one-pixel result.
+        self.tabs = ttk.Notebook(self, style='Side.TNotebook')
+        self.tabs.pack(fill='both', expand=True)
+        inspection = tk.Frame(self.tabs, bg=palette.PANEL)
+        inspection.columnconfigure(0, weight=1)
+        inspection.rowconfigure(1, weight=1, minsize=60)
+        self.settings = ScrollableColumn(self.tabs, palette, width=270)
+        self.settings.body.configure(bg=palette.PANEL)
+        self.settings.canvas.configure(bg=palette.PANEL)
+        self.tabs.add(inspection, text='Connections')
+        self.evidence_page = tk.Frame(self.tabs, bg=palette.PANEL)
+        self.tabs.add(self.evidence_page, text='Evidence')
+        self.tabs.add(self.settings, text='View & trace')
+        filters = tk.Frame(self.settings.body, bg=palette.PANEL)
+        filters.pack(fill='x')
+        for index, (label, variable, values, command) in enumerate([
+                ('Layer', self.layer, ('All layers', *dict.fromkeys(LAYERS.values())), lambda: graph.set_layer(self.layer.get())),
+                ('Checks', self.health, graph.HEALTH_FILTERS, lambda: graph.set_health_filter(self.health.get()))]):
+            tk.Label(filters, text=label, bg=palette.PANEL, fg=palette.MUTED, anchor='w',
+                     font=('Segoe UI', 8)).grid(row=index * 2, column=0, sticky='w')
+            picker = ttk.Combobox(filters, textvariable=variable, values=values, state='readonly', width=18)
+            picker.grid(row=index * 2 + 1, column=0, sticky='ew', pady=(0, 6))
+            picker.bind('<<ComboboxSelected>>', lambda _event, command=command: command())
+            filters.columnconfigure(0, weight=1)
+        actions = tk.Frame(self.settings.body, bg=palette.PANEL)
+        actions.pack(fill='x', pady=(8, 8))
+        ttk.Checkbutton(actions, text='Focused connections', variable=self.focus_links,
+                        command=self._set_focus).pack(anchor='w')
+        ttk.Checkbutton(actions, text='Trace only', variable=self.isolate,
+                        command=lambda: graph.set_path_only(self.isolate.get())).pack(anchor='w')
+        route = tk.Frame(self.settings.body, bg=palette.PANEL)
+        route.pack(fill='x')
+        for index, variable in enumerate((self.source, self.target)):
+            tk.Label(route, text='From' if index == 0 else 'To', bg=palette.PANEL, fg=palette.MUTED,
+                     font=('Segoe UI', 8), anchor='w').grid(row=index * 2, column=0, columnspan=2, sticky='w')
+            picker = ttk.Combobox(route, textvariable=variable, values=tuple(self._ids), state='readonly', width=15)
+            picker.grid(row=index * 2 + 1, column=0, columnspan=2, sticky='ew', pady=(0, 6))
+            route.columnconfigure(index, weight=1)
+        ttk.Button(route, text='Trace', style='HayatAccent.TButton', command=self.trace).grid(row=4, column=0, sticky='ew', pady=(5, 0), padx=(0, 6))
+        ttk.Button(route, text='Clear', style='Hayat.TButton', command=self.clear).grid(row=4, column=1, sticky='ew', pady=(5, 0))
+        self.route_note = tk.Label(self.settings.body, bg=palette.PANEL, fg=palette.GOLD_SOFT, anchor='w', justify='left',
+                                  wraplength=420, font=('Segoe UI', 8))
+        self.route_note.pack(fill='x', pady=(5, 6))
+        choice = tk.Frame(inspection, bg=palette.PANEL)
+        choice.grid(row=0, column=0, sticky='ew')
+        choice.columnconfigure(0, weight=1)
+        self.link_title = tk.Label(choice, bg=palette.PANEL, fg=palette.WHITE, font=('Segoe UI Semibold', 9), anchor='w')
+        self.link_title.grid(row=0, column=0, sticky='ew')
+        picker = ttk.Combobox(choice, textvariable=self.direction, values=('Both', 'Incoming', 'Outgoing'), state='readonly', width=10)
+        picker.grid(row=0, column=1, sticky='e')
+        picker.bind('<<ComboboxSelected>>', lambda _event: self.refresh())
+        table = tk.Frame(inspection, bg=palette.PANEL)
+        table.grid(row=1, column=0, sticky='nsew', pady=(4, 6))
+        table.columnconfigure(0, weight=1)
+        table.rowconfigure(0, weight=1)
+        self.links = ttk.Treeview(table, columns=('contract',), show='tree headings', selectmode='browse', height=4)
+        self.links.heading('#0', text='Directed connection')
+        self.links.heading('contract', text='Contract')
+        self.links.column('#0', width=120, minwidth=90)
+        self.links.column('contract', width=150, minwidth=90)
+        self.links.grid(row=0, column=0, sticky='nsew')
+        vertical = ttk.Scrollbar(table, orient='vertical', command=self.links.yview)
+        vertical.grid(row=0, column=1, sticky='ns')
+        horizontal = ttk.Scrollbar(table, orient='horizontal', command=self.links.xview)
+        horizontal.grid(row=1, column=0, sticky='ew')
+        self.links.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
+        self.links.bind('<<TreeviewSelect>>', self._selected)
+        self.links.bind('<Return>', self._selected)
+        evidence = tk.Frame(self.evidence_page, bg=palette.PANEL)
+        evidence.pack(fill='both', expand=True)
+        self.detail = tk.Text(evidence, bg=palette.BLACK, fg=palette.WHITE, font=('Segoe UI', 9), wrap='word',
+                              height=8, width=34, padx=9, pady=8, relief='flat', takefocus=True)
+        scroll = ttk.Scrollbar(evidence, orient='vertical', command=self.detail.yview)
+        self.detail.configure(yscrollcommand=scroll.set)
+        self.detail.pack(side='left', fill='both', expand=True)
+        scroll.pack(side='right', fill='y')
+        self._binding = graph.bind('<<BrainInspectionChanged>>', lambda _event: self.refresh(), add='+')
+        self.bind('<Map>', lambda event: self.refresh() if event.widget is self else None, add='+')
+        self.bind('<Configure>', self._fit_explorer)
+        self.bind('<Destroy>', self._dispose, add='+')
+        self.settings.adopt(self.settings.body)
+        self.refresh()
+
+    def _fit_explorer(self, event: Any) -> None:
+        if event.widget is not self:
+            return
+        self.summary.configure(wraplength=max(180, event.width - 24))
+        self.route_note.configure(wraplength=max(180, event.width - 45))
+        self.link_title.configure(wraplength=max(75, event.width - 170))
+        if event.height < 420:
+            self.summary.pack_forget()
+        elif not self.summary.winfo_manager():
+            self.summary.pack(fill='x', pady=(3, 8), before=self.tabs)
+
+    def _dispose(self, event: Any) -> None:
+        if event.widget is self and self.graph.winfo_exists():
+            self.graph.unbind('<<BrainInspectionChanged>>', self._binding)
+
+    def _set_focus(self) -> None:
+        self.graph.focus_connections = self.focus_links.get()
+        self.graph.redraw()
+        self.graph._announce_inspection()
+
+    def trace(self) -> None:
+        graph = self.graph
+        chain = graph.trace_path(self._ids[self.source.get()], self._ids[self.target.get()])
+        self.route_note.configure(text=' → '.join(self._labels[key] for key in chain) if chain else
+                                  'No directed contract path exists between these subsystems.')
+        graph._announce_inspection()
+
+    def clear(self) -> None:
+        self.graph.clear_path()
+        self.graph.contract_active = self.graph.contract_hover = None
+        self.graph.redraw()
+        self.route_note.configure(text='')
+        self.graph._announce_inspection()
+
+    def _selected(self, _event: Any = None) -> str:
+        selection = self.links.selection()
+        pair = self._pairs.get(selection[0]) if selection else None
+        if pair is not None and pair != self.graph.contract_active:
+            self.graph.select_contract(*pair)
+        return 'break'
+
+    def refresh(self) -> None:
+        graph = self.graph
+        self.layer.set(graph.layer_filter)
+        self.health.set(graph.health_filter)
+        self.isolate.set(graph.path_only)
+        self.focus_links.set(graph.focus_connections)
+        focus = graph._hover or graph.active
+        visible = [(edge.source, edge.target) for edge in BrainMesh.EDGES if graph._visible_edge(edge.source, edge.target)]
+        pairs = graph.linked_contracts(focus, self.direction.get().lower()) if focus in LAYERS else visible
+        self.summary.configure(text=f'{len(graph.VIEWS)} of {len(BrainMesh.NODES)} subsystems · '
+                               f'{len(visible)} of {len(BrainMesh.EDGES)} declared contracts visible\n'
+                               + ('Historical view: current checks are hidden.' if graph.moment is not None else
+                                  'Checks show endpoint readiness; links show declared wiring.'))
+        self.link_title.configure(text=self._labels.get(focus, 'Visible contracts'))
+        self._pairs = {source + '|' + target: (source, target) for source, target in pairs}
+        for iid in set(self.links.get_children()) - set(self._pairs):
+            self.links.delete(iid)
+        for iid, pair in self._pairs.items():
+            info = graph.contract_detail(*pair)
+            options = {'text': f"{info['source_label']} → {info['target_label']}", 'values': (info['contract'],)}
+            if self.links.exists(iid):
+                self.links.item(iid, **options)
+            else:
+                self.links.insert('', 'end', iid=iid, **options)
+        pair = graph.contract_active
+        if pair is not None:
+            if pair != getattr(self, '_shown_pair', None):
+                self.tabs.select(self.evidence_page)
+            iid = '|'.join(pair)
+            if iid in self._pairs and self.links.selection() != (iid,):
+                self.links.selection_set(iid)
+                self.links.see(iid)
+            info = graph.contract_detail(*pair)
+            lines = [f"{info['source_label']} → {info['target_label']}", info['contract'], '']
+            for key in ('source', 'target'):
+                check = info[key + '_check']
+                lines.append(f"{info[key + '_label']}: {check['state']} · checked {check['checked_at'] or 'time not recorded'}")
+                if check['detail']:
+                    lines.append(check['detail'])
+                lines.extend('• ' + str(gap) for gap in check['gaps'])
+            lines.extend(['', info['scope']])
+            text = '\n'.join(lines)
+        else:
+            text = ('Choose a connection to inspect its directed contract and endpoint evidence.\n\n'
+                    'In the 3D view: drag to rotate, I/O inspect incoming/outgoing links, P traces a route, '
+                    'F focuses a neighborhood, H cycles check filters, and Escape clears inspection.\n\n'
+                    'Every link here comes from the real BrainMesh topology. A visible link does not establish '
+                    'that a request traversed it or that the model fired a neuron.')
+        self.detail.configure(state='normal')
+        self.detail.delete('1.0', 'end')
+        from app.gui_presentation import safe_text
+        self.detail.insert('1.0', safe_text(text))
+        self.detail.configure(state='disabled')
+        self._shown_pair = pair
 
 
 class BrainTimeline(tk.Canvas):

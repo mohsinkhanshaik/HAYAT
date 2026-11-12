@@ -8,6 +8,7 @@ from app.intelligence.feeds import CARS_STATES, KEYED_511, event, finite, text, 
 # Each network's own media hosts: (still-image hosts, video hosts, publisher player-page hosts).
 # Media from any other host is refused, so a catalog cannot point HAYAT at arbitrary sites.
 MEDIA_HOSTS = {
+    'cameras_northern_ireland': (set(), set(), {'www.trafficwatchni.com'}),
     'cameras_nsw': ({'webcams.transport.nsw.gov.au', 'data.livetraffic.com'}, set(), set()),
     'cameras_lyon': ({'download.data.grandlyon.com'}, set(), set()),
     'cameras_valencia': (set(), set(), {'camaras.valencia.es'}),
@@ -49,6 +50,11 @@ MEDIA_HOSTS = {
     # TxDOT answers a snapshot request with JSON carrying the JPEG in base64 (see camera_frame).
     'cameras_txdot': ({'its.txdot.gov'}, set(), set()),
     'cameras_alabama': ({'api.algotraffic.com'}, {'cdn3.wowza.com'}, {'www.algotraffic.com'}),
+    # 2026-11-06. FL511 stills come from its imaging contractor's host; the others from the publisher itself.
+    'cameras_florida': ({'images-dis.divas.cloud'}, set(), set()),
+    'cameras_kingcounty': ({'info.kingcounty.gov'}, set(), set()),
+    'cameras_houston': ({'www.houstontranstar.org'}, set(), set()),
+    'cameras_a22': ({'www.autobrennero.it'}, set(), set()),
     # Official channels' /live pages; the stream itself is resolved when the owner asks to play it.
     'livestreams': ({'webcam.arunachala.org'}, set(), {'www.youtube.com', 'www.siddhivinayak.org',
                                                      'somnath.org', 'sai.org.in', 'webcam.arunachala.org'}),
@@ -71,12 +77,13 @@ IBI_IMAGE = re.compile(r'/map/Cctv/[\w.-]+')
 MICHIGAN_LINK = re.compile(r'href="(/MiDrive/map\?[^"]*lat=(-?\d+(?:\.\d+)?)&(?:amp;)?lon=(-?\d+(?:\.\d+)?)[^"]*id=(\d+)[^"]*)"')
 TAGS = re.compile(r'<[^>]+>')
 # Iowa's public HLS servers listen on 8888; every other media URL must use the default HTTPS port.
-CAMERA_COVERAGE = ('New South Wales (Australia; publisher catalog, snapshot availability varies), Lyon (France), '
+CAMERA_COVERAGE = ('Northern Ireland (TrafficWatchNI publisher viewers; no direct streams or map coordinates), '
+                   'New South Wales (Australia; publisher catalog, snapshot availability varies), Lyon (France), '
                    'Luxembourg (CITA), London, Spain (DGT national roads and Madrid city), California (Caltrans and ALERTCalifornia wildfire '
                    'cameras), New York City, Finland, Iceland, Norway (with live video), Estonia and Tallinn, Singapore, Hong Kong, New Zealand, British Columbia, Toronto, '
                    'Ottawa, Calgary, Québec, Delaware, Maryland, Austin, Seattle, Washington statewide, Oregon, Iowa, '
                    'Illinois, Michigan, Minnesota, Colorado, Nebraska, Indiana, Kansas, Massachusetts, Missouri, Texas, '
-                   'Alabama, and USGS '
+                   'Alabama, Florida (FL511), Houston, King County (Washington), Italy\'s A22 Brenner motorway, and USGS '
                    'volcano webcams in Alaska, the Cascades and Hawaii; official Makkah and Madinah broadcasts; '
                    'selected Indian publisher views in Maharashtra, Gujarat and Tamil Nadu (not nationwide CCTV)')
 MEDIA_PORTS = {'cameras_iowa': (None, 443, 8888)}
@@ -89,6 +96,7 @@ CARS_STATE_NAMES = {'mn': 'Minnesota', 'co': 'Colorado', 'ne': 'Nebraska', 'in':
                     'ma': 'Massachusetts'}
 #: Minnesota's video previews answer 403; its stills and streams work.
 CARS_NO_PREVIEW = {'mn'}
+KING_COUNTY_HANDLER = '/transportation/kcdot/Roads/TrafficCameras/ImageHandler/Handler.ashx'
 
 
 def network(feed):
@@ -117,6 +125,8 @@ def camera_url(url, feed, *, video=False, page=False):
     images, videos, pages = MEDIA_HOSTS.get(key, (set(), set(), set()))
     host, path = parts.hostname, parts.path
     if page:
+        if key == 'cameras_northern_ireland':
+            return url if host in pages and path == '/twni/cameras/static' and re.fullmatch(r'id=[1-9][0-9]{0,7}', parts.query) and not parts.fragment else ''
         if key == 'cameras_valencia':
             return url if host in pages and path == '/camaras/visualizador.html' and re.fullmatch(r'id=[0-9]{1,8}', parts.query) and not parts.fragment else ''
         if key == 'cameras_luxembourg':
@@ -148,6 +158,13 @@ def camera_url(url, feed, *, video=False, page=False):
     if key == 'cameras_ottawa':
         # Ottawa serves stills from /beta/camera?id=<camera number>, with no file suffix.
         return url if host in images and path == '/beta/camera' and re.fullmatch(r'id=\d{1,6}', parts.query) else ''
+    if key == 'cameras_kingcounty':
+        # King County's image handler: Handler.ashx?id=<file name>.jpg
+        return url if host in images and path == KING_COUNTY_HANDLER and re.fullmatch(r'id=[\w.-]{1,80}\.jpe?g', parts.query, re.I) else ''
+    if key == 'cameras_houston':
+        return url if host in images and re.fullmatch(r'/snapshots/cctv/[1-9]\d{2,4}\.jpg', path) and not parts.query else ''
+    if key == 'cameras_a22':
+        return url if host in images and re.fullmatch(r'/WebCamImg/km\d{1,3}\.jpg', path) and not parts.query else ''
     return url if host in images and path.lower().endswith(('.jpg', '.jpeg', '.png')) else ''
 
 
@@ -179,9 +196,33 @@ def camera_media_profile(details):
             'video_clip': bool(video and not stream), 'image': bool(details.get('image_url'))}
 
 
+def trafficwatchni_cameras(content):
+    """Read official public viewer links as data; never execute publisher JavaScript."""
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(content, 'html.parser')
+    rows = []
+    for element in soup.select('[data-cctv-id]')[:5000]:
+        identity = str(element.get('data-cctv-id') or '')
+        link = element.select_one('a[href]')
+        title = element.select_one('.cctv-truncated-text')
+        if not re.fullmatch(r'[1-9][0-9]{0,7}', identity) or link is None or title is None:
+            continue
+        if link.get('href') != f'/twni/cameras/static?id={identity}':
+            continue
+        name = title.get_text(' ', strip=True)
+        if name:
+            rows.append({'id': identity, 'name': name[:300]})
+    if not rows:
+        raise ValueError('TrafficWatchNI page has no validated public camera links; prior catalog retained.')
+    return rows
+
+
 def open_camera_items(feed, payload):
     """The record array of each open camera network, validated by shape."""
     key = feed.key
+    if key == 'cameras_northern_ireland':
+        return payload
     if key in ('cameras_nyc', 'cameras_austin', 'cameras_hongkong', 'cameras_drivebc', 'cameras_iceland', 'cameras_calgary',
                'cameras_michigan', 'cameras_wsdot', 'cameras_spain', 'cameras_madrid', 'cameras_missouri', 'cameras_estonia',
                'cameras_tallinn', 'cameras_luxembourg') \
@@ -191,6 +232,12 @@ def open_camera_items(feed, payload):
         return payload.get('features') if isinstance(payload, dict) else None
     if key == 'cameras_alabama':
         return payload
+    if key == 'cameras_houston':
+        return payload.get('cameras') if isinstance(payload, dict) else None
+    if key == 'cameras_a22':
+        return payload.get('Items') if isinstance(payload, dict) else None
+    if key in ('cameras_florida', 'cameras_kingcounty'):
+        return payload.get('features') if isinstance(payload, dict) else None
     if key.startswith('discovered_'):
         from app.intelligence.discovery import DISCOVERED_MAPPINGS, records_at
         return records_at(payload, DISCOVERED_MAPPINGS[key]['records_path'])
@@ -224,6 +271,19 @@ def open_camera_items(feed, payload):
 
 def open_camera(feed, item):
     key = feed.key
+    if key == 'cameras_northern_ireland':
+        identity = str(item.get('id') or '')
+        if not re.fullmatch(r'[1-9][0-9]{0,7}', identity):
+            raise ValueError('TrafficWatchNI camera requires its public camera id.')
+        return camera(feed, identity, text(item.get('name'), 300), None,
+                      'DfI Traffic Information and Control Centre (TrafficWatchNI)', 'United Kingdom',
+                      page=f'https://www.trafficwatchni.com/twni/cameras/static?id={identity}',
+                      state='Northern Ireland', refresh=300,
+                      media_kind='camera image in the publisher browser viewer; no direct stream',
+                      availability_basis='Public camera page listed; image availability unverified',
+                      location_basis='Publisher list provides no coordinates; not placed on the map',
+                      catalog_license='Crown copyright, Open Government Licence; TrafficWatchNI',
+                      license_url='https://www.trafficwatchni.com/twni/crown-copyright')
     if key in ('cameras_nsw', 'cameras_lyon'):
         geometry, props = item.get('geometry') or {}, item.get('properties') or {}
         point = geometry.get('coordinates')
@@ -278,6 +338,53 @@ def open_camera(feed, item):
                       page=f'https://www.cita.lu/webcam/map/{identifier}', refresh=120,
                       media_kind='Publisher traffic snapshot; capture time is not established by catalog retrieval',
                       catalog_license='CC0 (public camera-location dataset)')
+    if key == 'cameras_florida':
+        props = item.get('attributes') or {}
+        # FL511's ID repeats across districts (1,340 of 4,057 rows on 2026-11-06 shared an ID with a camera elsewhere);
+        # the image channel is unique per camera, so it is the key.
+        image = camera_url(props.get('IMAGE'), key)
+        channel = re.fullmatch(r'/DGI/(chan-\d{1,7})_h\.jpg', urlsplit(image).path) if image else None
+        if not channel:
+            raise ValueError('FL511 camera requires its image channel.')
+        identifier = channel[1]
+        return camera(feed, identifier, text(props.get('DESCRIPT'), 300), [props.get('LONGITUDE'), props.get('LATITUDE')],
+                      'Florida DOT (FL511)', 'United States', image=image, available=bool(image), refresh=120, state='Florida',
+                      county=text(props.get('COUNTY')), road=text(props.get('HIGHWAY')), direction=text(props.get('DIRECTION')),
+                      publisher_camera_code=text(props.get('ID'), 20), catalog_license='FL511 content, individual personal use only', media_kind='traffic camera stills')
+    if key == 'cameras_kingcounty':
+        props, geometry = item.get('attributes') or {}, item.get('geometry') or {}
+        identifier = props.get('AssetID')
+        if type(identifier) is not int or not 0 < identifier < 10000000:
+            raise ValueError('King County camera requires its asset number.')
+        address = str(props.get('ImageURL') or '')
+        image = camera_url('https://' + address[7:] if address.startswith('http://') else address, key)  # the county serves https too
+        return camera(feed, identifier, text(props.get('Location'), 300), [geometry.get('x'), geometry.get('y')],
+                      'King County Road Services', 'United States', image=image,
+                      available=bool(image) and props.get('CurrentStatus') == 'Active', refresh=120, state='Washington',
+                      county='King County', region=text(props.get('CamRegion')),
+                      model=' '.join(text(part) for part in (props.get('Manufacturer'), props.get('Model')) if part),
+                      media_kind='county road camera stills')
+    if key == 'cameras_houston':
+        identifier = str(item.get('id') or '')
+        if not re.fullmatch(r'[1-9]\d{2,4}', identifier):
+            return None  # id 0 marks a different, non-snapshot camera class in the same list
+        # The catalog's own link is a viewer helper; the still is always this snapshot address.
+        return camera(feed, identifier, text(item.get('location'), 300), [finite(item.get('lng')), finite(item.get('lat'))],
+                      'Houston TranStar', 'United States', image=f'https://www.houstontranstar.org/snapshots/cctv/{identifier}.jpg',
+                      refresh=120, state='Texas', city='Houston', direction=text(item.get('dir')),
+                      catalog_license='Public TranStar traffic camera images (no licence published)', media_kind='traffic camera stills')
+    if key == 'cameras_a22':
+        identifier = str(item.get('Id') or '')
+        if not re.fullmatch(r'A22_\d{1,3}', identifier):
+            raise ValueError('A22 webcam requires its motorway kilometre id.')
+        position = (item.get('GpsPoints') or {}).get('position') or {}
+        detail = next(iter((item.get('Detail') or {}).values()), {}) or {}
+        title = ' · '.join(part for part in (text(item.get('Shortname')), text(detail.get('BaseText'))) if part)
+        image = camera_url(item.get('Webcamurl'), key)
+        return camera(feed, identifier, title, [position.get('Longitude'), position.get('Latitude')], 'Autostrada del Brennero',
+                      'Italy', image=image, available=bool(image) and item.get('Active') is not False, refresh=60,
+                      road='A22', motorway_km=identifier[4:], catalog_license='CC0 (Open Data Hub, NOI Techpark)',
+                      media_kind='motorway webcam stills, refreshed about once a minute')
     if key == 'cameras_washington':
         props, geometry = item['attributes'], item.get('geometry') or {}
         image = camera_url(props.get('ImageURL'), key)
@@ -504,12 +611,15 @@ def open_camera(feed, item):
         location = item.get('location') or {}
         title = ' at '.join(part for part in (text(location.get('displayRouteDesignator')),
                                              text(location.get('displayCrossStreet'))) if part)
+        # Since about November 2026 every ALDOT stream is FairPlay-encrypted (25 of 25 sampled on 2026-11-06:
+        # SAMPLE-AES, skd:// keys), which only Apple's players may decrypt. HAYAT does not work around DRM, so the
+        # stream address is not kept: the camera is its refreshing still, with ALGO's own player one click away.
         return camera(feed, item['id'], title or f"ALGO camera {item['id']}",
                       [location.get('longitude'), location.get('latitude')], 'ALDOT (ALGO Traffic)', 'United States',
-                      image=item.get('snapshotImageUrl'), video=(item.get('playbackUrls') or {}).get('hls'),
-                      page=item.get('permLink'), refresh=120, state='Alabama', city=text(location.get('city')),
-                      county=text(location.get('county')), direction=text(location.get('direction')),
-                      media_kind='live HLS video and refreshing still')
+                      image=item.get('snapshotImageUrl'), page=item.get('permLink'), refresh=120, state='Alabama',
+                      city=text(location.get('city')), county=text(location.get('county')),
+                      direction=text(location.get('direction')),
+                      media_kind="refreshing still (ALDOT's video is DRM-encrypted; watch it in ALGO's player)")
     if key == 'cameras_missouri':
         video = camera_url(item.get('html'), key, video=True)
         if not video:

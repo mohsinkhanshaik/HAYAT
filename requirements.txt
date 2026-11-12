@@ -27,7 +27,7 @@ PyYAML>=6.0,<7
 python-dotenv>=1.0,<2
 playwright>=1.50,<2
 # Window-handle captures prevent unrelated desktop apps contaminating GUI checks.
-Pillow>=11.2.1,<13
+Pillow>=11.2.1,<14
 PyAutoGUI>=0.9.54,<1
 # Portable text clipboard adapter (native OS commands are selected by the
 # package; lack of a graphical clipboard degrades without blocking startup).
@@ -42,6 +42,12 @@ pyserial>=3.5,<4
 APScheduler>=3.11,<4
 jsonschema>=4.23,<5
 numpy>=2.2,<3
+# Invention workbench: least-squares fitting of formula constants (app/invention_sim.py) and the
+# theory layer's symbolic proofs and unit linear algebra (app/invention_theory.py). Both were
+# previously present only as other packages' dependencies.
+scipy>=1.14,<2
+sympy>=1.13,<2
+pyspellchecker>=0.8,<0.9
 sounddevice>=0.5.1,<1
 faster-whisper>=1.1,<2
 # Portable global push-to-talk listener. It is loaded only when push-to-talk
@@ -64,7 +70,8 @@ pytest>=8.3,<10
 # pytest process running for two and a half hours before it was noticed.
 pytest-timeout>=2.3,<3
 ruff>=0.16.9,<0.17
-opencv-python-headless>=4.14,<6
+# OpenCV 5 moves Haar/HOG into contrib; retain the verified detector API used by local perception.
+opencv-python-headless>=4.14,<5
 prompt_toolkit>=3.0.50,<4
 winsdk>=1.0.0b10,<2; sys_platform == "win32"
 # Windows APIs used for the clipboard, window handles, active-window tracking
@@ -117,3 +124,13 @@ rapidfuzz>=3,<4
 # Offline language identification: which language a message is written in,
 # so HAYAT can explain it in English and offer to learn that language.
 langid>=1.1.6,<2
+# Research & advanced intelligence (2026-11-09). Model discovery (the D3M-derived
+# engine): pipelines, chronological validation, permutation importance.
+scikit-learn>=1.9,<2
+# Adversarial Robustness Toolbox (DARPA GARD's attack/defence library, MIT):
+# black-box attacks on discovered models in the AI Robustness Laboratory.
+adversarial-robustness-toolbox>=1.20,<2
+# Code defence (the AIxCC-inspired pipeline): static security review of
+# HAYAT's own code, and known-vulnerability checks of installed packages.
+bandit>=1.9,<2
+pip-audit>=2.10,<3

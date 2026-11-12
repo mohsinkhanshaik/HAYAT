@@ -141,12 +141,13 @@ def test_recognition_without_models_still_counts_faces_but_names_no_one(tmp_path
     assert rec.enroll("Sam", "x.jpg", consent=True)["enrolled"] is False  # cannot enrol without the recognition model
 
 
-def test_the_real_engine_reports_detection_even_with_no_models(tmp_path):
-    """OpenCV's bundled detector means detection is available offline; recognition waits for the models."""
+def test_the_real_engine_reports_legacy_detection_only_when_this_build_supports_it(tmp_path):
+    """Legacy Haar is bundled in the supported4.x build, but absent from base5.x."""
+    import cv2
     from app.perception.faces import FaceEngine
 
     status = FaceEngine(models_dir=tmp_path / "absent").status()
-    assert status["detection"] is True
+    assert status["detection"] is callable(getattr(cv2, 'CascadeClassifier', None))
     assert status["recognition"] is False and "OpenCV Zoo" in status["reason"]
     assert "set up face recognition" in status["reason"]
 

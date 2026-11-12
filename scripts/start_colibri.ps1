@@ -1,52 +1,58 @@
-# Run the verified optional Colibri candidate, separate from HAYAT's default.
+# Run the optional Colibri engine on loopback, separate from HAYAT's default.
+# -Profile original   : the original-Qwen int4 container (different weights from hayat:latest).
+# -Profile foundation : HAYAT's own brain GGUF read in place (scripts/setup_colibri_foundation.py; Colibri 2.1.0+).
+# The command, environment and RAM thresholds come from app/models/colibri_service.py, shared with the GUI and
+# scripts/benchmark_colibri.py.
 param(
-    [ValidateSet('cpu', 'vulkan')][string]$Backend = 'cpu',
+    [ValidateSet('cpu', 'vulkan', 'cuda')][string]$Backend = 'cpu',
+    [ValidateSet('original', 'foundation')][string]$Profile = 'original',
     [ValidateRange(1024, 65535)][int]$Port = 8000,
     [switch]$CheckOnly
 )
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path -Parent $PSScriptRoot
 $python = Join-Path $workspace '.venv/Scripts/python.exe'
-$launcher = Join-Path $workspace 'runtime/colibri-v2.0.0/coli'
-$model = Join-Path $workspace 'models/colibri/qwen36-35b-a3b-i4-gs64'
-foreach ($required in @($python, $launcher, (Join-Path $model 'model-globals.safetensors'))) {
-    if (-not (Test-Path -LiteralPath $required)) { throw "Missing local installation file: $required" }
+if (-not (Test-Path -LiteralPath $python)) { throw "Missing local installation file: $python" }
+$plan = & $python -c @"
+import json, sys
+sys.path.insert(0, r'$workspace')
+from app.models.colibri_service import ColibriService, PROFILES
+service = ColibriService()
+command, env = service.command('$Profile', '$Backend', $Port)
+spec = PROFILES['$Profile']
+marker = service.root / spec['model_dir'] / spec['marker']
+print(json.dumps({'command': command, 'env': {k: v for k, v in env.items() if k.startswith(('COLI_', 'OMP_', 'MKL_'))},
+                  'model': str(service.root / spec['model_dir']), 'marker': str(marker), 'ready': marker.is_file()}))
+"@ | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw 'Could not read the Colibri launch plan.' }
+if (-not $plan.ready) { throw "Missing local installation file: $($plan.marker)" }
+$launcher = $plan.command[1]
+if ($CheckOnly) {
+    & $python $launcher doctor --model $plan.model --ctx 4096 --json
+    exit $LASTEXITCODE
 }
-if (-not $CheckOnly) {
-    foreach ($endpoint in @('http://127.0.0.1:11435/api/ps', 'http://127.0.0.1:11434/api/ps')) {
-        $resident = $null
-        try { $resident = Invoke-RestMethod -Uri $endpoint -TimeoutSec 2 } catch { }
-        if ($resident.models | Where-Object { $_.size -gt 4GB }) {
-            throw 'A large Ollama model is loaded. Unload it before starting the Colibri comparison model.'
-        }
-    }
-    $free = & $python -c 'import psutil; print(psutil.virtual_memory().available)'
-    $minimum = if ($Backend -eq 'vulkan') { 23GB } else { 16GB }
-    if ($LASTEXITCODE -ne 0 -or [long]$free -lt $minimum) {
-        throw "This tested Colibri profile needs at least $($minimum / 1GB) GiB available RAM before startup."
-    }
-}
-$values = @{
-    COLI_CUDA = '0'
-    COLI_VULKAN = $(if ($Backend -eq 'vulkan') { '1' } else { '0' })
-    COLI_VK_TIER_GB = '3'
-    OMP_NUM_THREADS = '8'
-    COLI_USAGE = (Join-Path $workspace 'data/cache/colibri-full-usage.bin')
-}
+& $python -c @"
+import sys
+sys.path.insert(0, r'$workspace')
+from app.models.colibri_service import ColibriService
+try:
+    ColibriService().preflight('$Backend')
+except RuntimeError as error:
+    print(error, file=sys.stderr)
+    raise SystemExit(1)
+"@
+if ($LASTEXITCODE -ne 0) { exit 1 }
 $previous = @{}
-foreach ($key in $values.Keys) { $previous[$key] = [Environment]::GetEnvironmentVariable($key, 'Process') }
+foreach ($property in $plan.env.PSObject.Properties) {
+    $previous[$property.Name] = [Environment]::GetEnvironmentVariable($property.Name, 'Process')
+}
 $exitCode = 1
 try {
-    foreach ($key in $values.Keys) { [Environment]::SetEnvironmentVariable($key, $values[$key], 'Process') }
-    $gpu = if ($Backend -eq 'vulkan') { 'auto' } else { 'none' }
-    $mode = if ($CheckOnly) { 'doctor' } else { 'serve' }
-    $options = @($mode, '--model', $model, '--ctx', '4096', '--gpu', $gpu, '--cap', '128')
-    if ($CheckOnly) {
-        $options += @('--deep', '--json')
-    } else {
-        $options += @('--host', '127.0.0.1', '--port', "$Port", '--model-id', 'qwen36-35b-a3b-colibri-i4-gs64', '--no-think')
+    foreach ($property in $plan.env.PSObject.Properties) {
+        [Environment]::SetEnvironmentVariable($property.Name, $property.Value, 'Process')
     }
-    & $python $launcher @options
+    $arguments = @($plan.command | Select-Object -Skip 1)
+    & $python @arguments
     $exitCode = $LASTEXITCODE
 } finally {
     foreach ($key in $previous.Keys) { [Environment]::SetEnvironmentVariable($key, $previous[$key], 'Process') }

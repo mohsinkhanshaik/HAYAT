@@ -27,7 +27,40 @@ class IntelligenceStore:
             CREATE TABLE IF NOT EXISTS intel_objects (id TEXT PRIMARY KEY, first_reported TEXT, last_reported TEXT,
                 category TEXT, latitude REAL, longitude REAL, status TEXT, data TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS intel_objects_time ON intel_objects(last_reported);
+            CREATE TABLE IF NOT EXISTS camera_health (id TEXT PRIMARY KEY, feed TEXT NOT NULL, at TEXT NOT NULL,
+                ok INTEGER NOT NULL, verdict TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '');
+            CREATE INDEX IF NOT EXISTS camera_health_feed ON camera_health(feed, at);
         '''))
+
+    # The latest real check of each camera (camera_health.py): one row per camera, a month at most.
+    def record_camera(self, event_id, feed, ok, verdict, detail='', at=None):
+        from datetime import UTC, datetime, timedelta
+        moment = at or datetime.now(UTC).isoformat(timespec='seconds')
+        def commit(db):
+            db.execute('INSERT INTO camera_health VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET feed=excluded.feed, '
+                       'at=excluded.at, ok=excluded.ok, verdict=excluded.verdict, detail=excluded.detail',
+                       (event_id, feed, moment, int(bool(ok)), verdict, str(detail)[:300]))
+            db.execute('DELETE FROM camera_health WHERE at < ?', ((datetime.now(UTC) - timedelta(days=30)).isoformat(timespec='seconds'),))
+        self.write(commit)  # bumps the revision, so open windows redraw their camera columns
+
+    def camera_health_stamp(self):
+        """(rows, newest check, working): changes when a camera is checked or its verdict flips (even within the
+        same second), so windows know to redraw."""
+        return tuple(self.run(lambda db: db.execute('SELECT COUNT(*), MAX(at), SUM(ok) FROM camera_health').fetchone()))
+
+    def camera_health(self, ids=None, feed=''):
+        def read(db):
+            if ids is not None:
+                found = {}
+                identifiers = list(ids)
+                for start in range(0, len(identifiers), 500):
+                    chunk = identifiers[start:start + 500]
+                    found.update({row['id']: dict(row) for row in db.execute(
+                        f'SELECT * FROM camera_health WHERE id IN ({",".join("?" * len(chunk))})', chunk)})
+                return found
+            query, values = ('SELECT * FROM camera_health WHERE feed=?', (feed,)) if feed else ('SELECT * FROM camera_health', ())
+            return {row['id']: dict(row) for row in db.execute(query, values)}
+        return self.run(read)
 
     def run(self, operation):
         with self.lock, sqlite3.connect(self.path, timeout=15) as db:

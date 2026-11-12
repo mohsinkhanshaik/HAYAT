@@ -75,6 +75,37 @@ def _contract(data):
         return 'unavailable'
 
 
+def _replay_numeric(candidate, tests, tolerance, recorded):
+    """Recompute bounded acceptance cases without fitting or changing the journal."""
+    from app.invention_sim import grade
+
+    try:
+        formula = candidate.get('formula')
+        if not isinstance(formula, str) or not 1 <= len(formula.strip()) <= 240:
+            raise ValueError('A fixed formula is missing or exceeds the audit budget.')
+        if not 1 <= len(tests) <= 32:
+            raise ValueError('Replay requires 1–32 acceptance cases.')
+        for case in tests:
+            if (not isinstance(case, dict) or set(case) != {'inputs', 'expected'}
+                    or not isinstance(case['inputs'], dict) or not 1 <= len(case['inputs']) <= 12
+                    or any(not isinstance(key, str) or not re.fullmatch(r'[A-Za-z][A-Za-z_0-9]{0,31}', key)
+                           for key in case['inputs'])):
+                raise ValueError('Malformed acceptance case.')
+            for raw in [*case['inputs'].values(), case['expected']]:
+                if isinstance(raw, bool) or not isinstance(raw, (str, int, float)) or len(str(raw)) > 100:
+                    raise ValueError('Acceptance value exceeds the numeric audit budget.')
+                value = Decimal(str(raw))
+                if not value.is_finite() or value.copy_abs() > Decimal('1e30') or abs(value.as_tuple().exponent) > 100:
+                    raise ValueError('Acceptance value exceeds the numeric audit budget.')
+        measured = grade(formula, tests, tolerance)
+        matches = all(type(recorded.get(key)) is int and recorded[key] == measured[key] for key in ('total', 'passed'))
+        if 'did_not_run' in recorded:
+            matches = matches and type(recorded['did_not_run']) is int and recorded['did_not_run'] == measured['did_not_run']
+        return {'state': 'replayed', 'record_matches': matches, 'measurement': measured}
+    except (TypeError, ValueError, ArithmeticError) as exc:
+        return {'state': 'unavailable', 'record_matches': False, 'error': str(exc)[:240]}
+
+
 def audit_project(data):
     """Build a reproducible, bounded audit from the stored project alone."""
     research = data.get('research') if isinstance(data.get('research'), dict) else {}
@@ -164,9 +195,11 @@ def audit_project(data):
     measurement = best.get('measurement') if isinstance(best.get('measurement'), dict) else {}
     tests = data.get('tests') if isinstance(data.get('tests'), list) else []
     contract = _contract(data)
-    total, passed = measurement.get('total'), measurement.get('passed')
-    numeric_pass = (contract == 'intact' and bool(tests) and type(total) is int and type(passed) is int
-                    and total == len(tests) and passed == total)
+    replay = (_replay_numeric(candidate, tests, data.get('tolerance', 0), measurement)
+              if best and tests and contract == 'intact' else {'state': 'not_run', 'record_matches': False})
+    replayed = replay.get('measurement') or {}
+    numeric_pass = (replay['state'] == 'replayed' and replay['record_matches']
+                    and replayed['passed'] == replayed['total'] and not replayed['did_not_run'])
     missing = [key for key in ('hypothesis', 'design') if not _text(candidate.get(key))]
     if not _items(candidate.get('assumptions'), 16):
         missing.append('assumptions')
@@ -175,6 +208,10 @@ def audit_project(data):
     stage = ('CONTRACT_CHANGED' if contract != 'intact' else 'DRAFT' if not best
              else 'NUMERIC_CASES_PASSED' if numeric_pass else 'NUMERIC_CASES_FAILED' if tests else 'PROPOSAL_REQUIRES_EXPERIMENTS')
     gaps = [_text(value) for value in _items(research.get('knowledge_gaps'), 32) if _text(value)]
+    if replay['state'] == 'unavailable':
+        gaps.append('Numeric acceptance replay unavailable: ' + replay['error'])
+    elif replay['state'] == 'replayed' and not replay['record_matches']:
+        gaps.append('Stored numeric result does not match a fresh replay of the current formula and frozen cases.')
     gaps += [_text(value) for value in _items(research.get('errors'), 16) if _text(value)]
     if _text(research.get('error')):
         gaps.append(_text(research['error']))
@@ -205,6 +242,7 @@ def audit_project(data):
                or any(isinstance(claim, dict) and any(isinstance(claim.get(field), list) and len(claim[field]) > 16
                                                      for field in ('evidence', 'contradictions')) for claim in _items(raw_claims, 256)))
     return {'version': 1, 'stage': stage, 'contract': contract, 'numeric_cases_passed': numeric_pass,
+            'numeric_replay': replay,
             'physical_validation_verified': False, 'novelty_verified': False,
             'sources': sources, 'source_count': len(sources), 'distinct_document_hashes': len(documents),
             'publisher_hosts': len(publishers), 'reported_primary_sources': sum(source['primary_reported'] for source in sources),
@@ -225,6 +263,11 @@ def audit_markdown(audit):
              audit['scope'], '', f"Recorded usable sources: {audit['source_count']} · distinct document fingerprints: {audit['distinct_document_hashes']} · publisher hosts: {audit['publisher_hosts']}",
              f"Claims with traceable reported citations: {audit['traceable_claims']} · claims with conflicts: {audit['conflicting_claims']}",
              'Physical validation: unverified. Novelty: unverified.', '']
+    replay = audit.get('numeric_replay', {})
+    if replay.get('state') == 'replayed':
+        measured = replay['measurement']
+        lines += [f"Numeric replay: {measured['passed']}/{measured['total']} cases passed · stored result "
+                  + ('matches.' if replay['record_matches'] else 'does not match.'), '']
     if audit['audit_limited']:
         lines += ['Audit bounds reached; additional records were not assessed.', '']
     if audit['gaps']:

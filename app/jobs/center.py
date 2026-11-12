@@ -37,6 +37,10 @@ class JobCenter:
         self.profile = Profile(self.folder / "profile.json")
         self.fetcher, self.mailer, self.gate, self.model, self.opener = fetcher, mailer, gate, model, opener
         self.browser = browser
+        # The web search used to find employers' own boards (set by the runtime to research's search chain).
+        from app.jobs.discovery import BoardDirectory
+        self.search_provider: Any = None
+        self.boards = BoardDirectory(self.folder / "boards.json")
 
     # ------------------------------------------------------------------ searching and matching
     def source_access(self, source: str) -> dict[str, Any]:
@@ -48,7 +52,7 @@ class JobCenter:
             url = SOURCES[name]["site"]
         elif board:
             roots = {"lever": "https://jobs.lever.co/", "greenhouse": "https://job-boards.greenhouse.io/",
-                     "ashby": "https://jobs.ashbyhq.com/"}
+                     "ashby": "https://jobs.ashbyhq.com/", "workable": "https://apply.workable.com/"}
             url = roots[board[1]] + board[2]
         else:
             raise ValueError("Choose a known public feed or a board such as lever:company, greenhouse:company or ashby:company.")
@@ -109,13 +113,43 @@ class JobCenter:
             except (ValueError, TypeError):
                 return True
         due = [name for name in dict.fromkeys(sources) if name not in deferred_names and (force or query or depth != "normal" or stale(name))]
+        # "Company boards" is not one address: search finds employers' boards for these terms (app/jobs/discovery.py),
+        # and each board found is read like a followed company.
+        discovery = None
+        if "company_boards" in due:
+            due.remove("company_boards")
+            from app.jobs.discovery import boards_for_round
+            discovery = boards_for_round(self.boards, self.search_provider, terms)
+            # Without a web search the known boards and the company check still work: that is not a failure.
+            self.store.record_source("company_boards", len(discovery["found"]), len(discovery["boards"]), "")
+            due.extend(name for name in discovery["boards"] if name not in due and name.split(":", 1)[0] not in cooldowns)
+        if "company_boards" in sources:
+            sources.remove("company_boards")
+            sources.extend(discovery["boards"] if discovery else [])
         found = ({"jobs": [], "sources": []} if not due else
                  collect(self.fetcher, due, terms) if depth == "normal" and check is None and progress is None else
                  collect(self.fetcher, due, terms, depth, check, progress))
+        if discovery is not None:
+            # Employers that just showed up hiring for these terms on other feeds may list more roles on their own board.
+            from app.jobs.discovery import probe_companies
+            companies = [row["company"] for row in found["jobs"] if "@" not in row["source"] and row.get("company")]
+            probed = probe_companies(self.fetcher, self.boards, companies, terms)
+            fresh_boards = [name for name in probed if name not in due and name.split(":", 1)[0] not in cooldowns]
+            if fresh_boards:
+                more = collect(self.fetcher, fresh_boards, terms)
+                found["jobs"] = found["jobs"] + more["jobs"]
+                found["sources"] = found["sources"] + more["sources"]
+                discovery["boards"] = discovery["boards"] + fresh_boards
+                sources.extend(fresh_boards)
+            discovery["new"] = discovery["new"] + probed
+            discovery["from_companies"] = probed
+            discovery["directory"] = self.boards.summary()["boards"]
         deferred.extend(found.get("deferred_sources", []))
         deferred_names.update(item["source"] for item in deferred)
         for item in found["sources"]:
             self.store.record_source(item["source"], item["read"], item["kept"], item.get("error", ""))
+            if discovery and item["source"] in discovery["boards"]:
+                self.boards.record(item["source"], item["read"], item["kept"], item.get("error", ""))
             if item.get("retry_at"):
                 self.store.defer_source(item["source"], item["retry_at"], item["access_status"])
         # Keep collected roles for future filters. A location view must not discard the other locations from the cache.
@@ -151,6 +185,8 @@ class JobCenter:
                 "coverage": found.get("coverage", {"depth": depth, "exhaustive": False}),
                 "criteria": {"query": query, "terms": terms, "location": location, "remote": remote},
                 "source_summary": summary, "empty_reason": empty_reason, "counts": self.store.counts(),
+                "company_boards": {key: discovery.get(key) for key in ("boards", "found", "new", "from_companies", "directory", "searched")}
+                if discovery else None,
                 "profile_ready": bool(self.profile.skills(data)),
                 "basis": "Scores are HAYAT's reading of the posting and your profile, not the employer's decision. Sources are credited on each job; "
                          "apply through the posting's own page. Results include saved postings that match every active filter; "
@@ -172,8 +208,10 @@ class JobCenter:
     def learned(self) -> dict[str, float]:
         """What the owner's own choices say: titles of jobs pursued against jobs hidden."""
         from app.jobs.match import learned_from
-        pursued = [row["title"] for row in self.store.applications() if row["status"] in ("prepared", "opened", "applied", "interview", "offer")]
-        hidden = [row["title"] for row in self.store.matches(limit=500, include_blocked=True, include_hidden=True) if row["hidden"]]
+        chosen = {"prepared", "opened", "applied", "interview", "offer"}
+        pursued = [row["title"] for row in self.store.applications() if row["status"] in chosen or row.get("applied_at")
+                   or any(event.get("status") in chosen for event in row.get("events", []))]
+        hidden = [row["title"] for row in self.store.iter_matches(include_blocked=True, include_hidden=True) if row["hidden"]]
         return learned_from(pursued, hidden)
 
     @staticmethod
@@ -183,6 +221,8 @@ class JobCenter:
                 "revision": hashlib.sha256(json.dumps([reading, match, row.get("description"), row.get("application")],
                                                      sort_keys=True, default=str).encode("utf-8")).hexdigest(),
                 "mode": reading.get("mode", ""), "score": row.get("score"), "verdict": row.get("verdict"), "posted_at": row["posted_at"],
+                "expires_at": row.get("expires_at"), "last_seen": row.get("last_seen"),
+                "listing_evidence": row.get("listing_evidence") or {},
                 "source_name": row["source_name"], "url": row["url"], "pay": pay_text(reading.get("salary")) if reading.get("salary") else "",
                 "matched": match.get("matched", [])[:6], "missing_required": match.get("missing_required", [])[:6],
                 "blocked": match.get("blocked", []), "warnings": reading.get("warnings", []), "application": row.get("application")}
@@ -199,6 +239,8 @@ class JobCenter:
         rows = [row for row in rows if (not remote_only or row["reading"].get("mode") == "remote")
                 and (sponsorship == "all" or row["reading"].get("sponsorship") == sponsorship)
                 and matches_location(row, location, include_remote=include_remote)]
+        # Deadlines can lower a cached score at read time; restore order before paging.
+        rows.sort(key=lambda row: (row['score'], row.get('posted_at') or '', row['number']), reverse=True)
         currency = self.profile.load()["preferences"]["salary_currency"]
         if sort_by == "newest":
             rows.sort(key=lambda row: row.get("posted_at") or "", reverse=True)
@@ -253,6 +295,7 @@ class JobCenter:
                                                                                      "apply_url", "source_name", "posted_at", "employment_type",
                                                                                      "application")},
                 "description": row["description"][:3000], "reading": row["reading"], "match": row["match"], "score": row["score"],
+                "listing_evidence": row.get("listing_evidence") or {},
                 "verdict": row["verdict"], "application_record": self.store.application(number),
                 "basis": "Every reading comes from the posting's own text; the score is a reading, not a promise."}
 
@@ -291,6 +334,11 @@ class JobCenter:
     def prospects(self) -> dict[str, Any]:
         from app.jobs.insight import prospects
         return {"jobs_view": True, **prospects(self.store)}
+
+    def career_radar(self, proposed_skills: list[str] | None = None, weekly_hours: float = 6,
+                     query: str = "", location: str = "", check=None) -> dict[str, Any]:
+        from app.jobs.career import radar
+        return radar(self, proposed_skills, weekly_hours, query, location, check=check)
 
     def discover_company(self, company: str, follow: bool = False) -> dict[str, Any]:
         """Find a company's public ATS board and its open roles; optionally follow it so searches include it."""

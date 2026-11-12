@@ -5,6 +5,10 @@
 HAYAT is a private assistant that runs on your own Windows computer. You talk to it in plain words, typed or
 spoken, and it decides which of its tools to use. Nothing leaves your computer unless you ask for it.
 
+## Use OpenAI, Anthropic or Gemini
+
+Open **Studios → Connected AI**. In **Connections**, save your API key locally, enable external API access, discover and select an exact model, then use **Research** to ask questions and attach documents. The desk provides calculations, sample statistics, forecasts with past-only backtests, cited document retrieval, usage reporting and evidence export. Public web search and sharing your local memories are each off until you tick their box for that window. Provider billing may apply. It never silently substitutes another model. PRIVATE / LOCAL_ONLY and Emergency stop block calls. Complete setup and limits.
+
 ## The basics
 
 1. **Start it.** Run `python run.py` (or the HAYAT shortcut). The main window opens with the chat in the middle.
@@ -19,8 +23,54 @@ spoken, and it decides which of its tools to use. Nothing leaves your computer u
 6. **When something fails,** HAYAT says what failed and why in plain words. Say "search again", "try again" or
    "what went wrong?" to continue.
 
+**Starting up.** The desktop boot screen shows actual initialization stages and elapsed time while its
+worker assembles the runtime. It hands the same window over to the workspace. Optional model engines
+load on demand. Ask **Check startup readiness** or choose **Startup readiness** in the command palette
+to distinguish configured parts, missing models, inactive services and skill dependencies.
+
 On the command line (`python run.py --cli-only`) the same requests work, and slash commands such as `/health`
 print plain lines. Set `HAYAT_CLI_JSON=1` if a script needs JSON instead.
+
+**Keep the screen private.** Read-only reports and conversation output mask detected credentials. Partial
+answer drafts stay hidden until completion. Use **Screen shield** or **Ctrl+Shift+H** to cover HAYAT windows;
+press it again to reveal them. This covers the interface while work continues; it does not lock Windows,
+pause tools, clear the clipboard or protect other applications. Check what is visible before sharing.
+The main header keeps your name and wallet balances out of view. Open Business deliberately to read balances.
+
+**Adjust the workspace.** Choose **Layout → Appearance → Aurora** for the new cool-accent theme, or keep
+your saved appearance. Text size, high contrast and reduced motion remain available. Career radar stacks
+its list and evidence vertically on narrower windows; drag the divider to adjust the space.
+
+**Give the conversation more room.** Use **Menu** or **Ctrl+Shift+B** to show/hide the main navigation.
+On a compact window it opens over the conversation; choosing a workspace closes it. Click outside or
+press **Esc** to close it; if its search contains text, the first Esc clears that search. **Ctrl+Shift+K**
+opens workspace search even from Focus mode. **Search commands** in the header (or **Ctrl+Shift+P**)
+opens the searchable action list. Navigation choices are remembered separately for roomy and compact
+windows during this session, and your unsent draft stays in the composer.
+
+**Think through a decision.** Open **Chat actions → Reasoning desk**, or press **Ctrl+Shift+P** and search
+for **Reasoning desk**. Inspect the last answer's checks and observed learning priorities. Choose Automatic,
+Balanced or Deep review; fixed specialist, local and privacy modes stay in force. In **Decision brief**,
+enter your goal, constraints, supplied evidence/unknowns and success criteria, then **Prepare in chat**.
+This stages an unsent draft and preserves any existing chat draft. Review and send it yourself. Deep review
+adds bounded self-questioning and skeptical review; model agreement does not establish factual accuracy.
+
+**Check figures and facts.** Supported whole requests use local calculation, for example **Net worth with
+assets $120000 and liabilities $45000**, **Compound interest on $1000 at 5% annually for 2 years**,
+**Real return with nominal return 10% and inflation 5%**, **Find the hypotenuse of a right triangle with
+legs 3 cm and 4 cm**, or **Energy used by a 2 kW device running for 3 hours at $0.20 per kWh**.
+For monthly compounding, specify an annual rate: **Compound interest on $1000 at 12% annual rate
+compounded monthly for 1 year**. Mixed units, unspecified fees and extra conditions need further interpretation.
+Requests for current officeholders, policy rates and news require fresh lookup; stored facts and model
+memory alone do not establish today's answer. Two-sentence requests now keep that length in Deep mode.
+
+**Run an engineering check.** In **Invention → Experiment Lab**, declare a formula's input and output
+units to check dimensions and scale; convert named/compound units or absolute K/degC/degF temperatures;
+or grade a fixed formula against independently supplied **Unseen cases**. These checks do not fit new
+constants or modify the project's frozen cases. A dimensional match alone does not validate a device.
+The Invention section picker reaches every journal page on narrow windows. Use the sidebar **Back** and
+**Forward** buttons or **Alt+Left / Alt+Right** to revisit workspaces while keeping your draft. **Shift+wheel**
+scrolls horizontally where content supports it. Reduced motion settles active glides and skips animated markers.
 
 ## Everything HAYAT can do
 
@@ -30,10 +80,10 @@ print plain lines. Set `HAYAT_CLI_JSON=1` if a script needs JSON instead.
 | [Replica app studio](#replica) | Plan and generate original app code with HAYAT, then run local parity, image, contrast, review, brand and listing checkers. |
 | [Invention and executive reasoning](#invention) | Develop testable ideas with goals, a skeptical critic and saved experiment rounds, then work the formula out and simulate it. |
 | [Learning atlas](#learning-atlas) | Explore twelve fields, find prerequisite gaps, and track your assessed understanding and review dates. |
-| [Global intelligence workspace](#public-intelligence) | Public feeds, about 37,200 cameras with video in chat, maps, weather, alerts, launches, satellites and ISS passes, fires, satellite images, directions and bike share. |
+| [Global intelligence workspace](#public-intelligence) | Public feeds, about 42,200 cameras, maps, weather, alerts, space, fires, live buses and trains, GPS jamming signs, US airspace, whales, street photos, directions and bike share. |
 | [Markets & Trade Center](#markets) | Crypto and stocks streamed live, charts with expected ranges and a measured track record, world events by industry, alerts. Read-only: it never trades. |
 | [Accounts & sign-in](#accounts) | Connect your own Google, Microsoft, GitHub, LinkedIn, Notion and Slack accounts, then read your mail, calendar, files, repositories and channels. Sending or creating anything waits for your confirmation. |
-| [Jobs & applications](#jobs) | Find jobs on public boards, read your CV, score each fit with the reasons, prepare applications on its own, track them, and work out what to learn to reach more of them. Sending waits for your confirmation. |
+| [Jobs & applications](#jobs) | Search public jobs, compare CV evidence, simulate skills and plan practice in Career radar. Track applications and conditional interview forecasts. Sending requires your confirmation. |
 | [Web3 explorer & agentic web](#web3) | Blockchain networks, blocks, any address, transaction or ENS name, DeFi totals, and how ready a website is for AI agents (Web 4.0). Read-only: nothing is signed or sent. |
 | [Talk and get answers](#chat) | Ask anything in your own words. HAYAT answers with an AI model that runs on this computer. |
 | [Talk out loud](#voice) | Speak to HAYAT and hear it answer, with push-to-talk or hands-free listening. |
@@ -55,6 +105,7 @@ print plain lines. Set `HAYAT_CLI_JSON=1` if a script needs JSON instead.
 | [Messages and email](#messages) | Keep contacts, and send email or WhatsApp messages from your own accounts. |
 | [Keep your location private](#location-privacy) | See who can learn where you are, and keep HAYAT from giving it away. |
 | [Reverse engineer a binary or app](#reverse-engineer) | Take a program apart and see how it works, all on this computer. |
+| [Robustness, code security and model discovery](#research-lab) | Measure how HAYAT holds up against noisy and deceptive input, review its own code and packages for security weaknesses, and find out whether something in a table can be predicted. |
 | [Masks: Tor and a masked browser](#privacy-masks) | Layers that hide where your connection comes from, run by HAYAT itself: Tor and a masked browser. |
 | [Check an email address's setup](#email-check) | Check an address's mail provider, SPF, DMARC and DKIM, and whether it is printed on its website. |
 | [Earn and manage money](#money) | Start a business or service, price it, get a website and marketing kit, find clients, invoice them, prepare digital products for sale, and track actual income and withdrawal records. |
@@ -106,7 +157,7 @@ Plan and generate original app code with HAYAT, then run local parity, image, co
 
 Develop testable ideas with goals, a skeptical critic and saved experiment rounds, then work the formula out and simulate it.
 
-**How it works:** Open Invention, create a goal and optionally supply numeric acceptance cases, then run bounded cycles. With cases, Work it out fits standard shapes without a model, unknown constants in a proposal are fitted, and Simulate sweeps each input, ranks what matters most and runs a Monte Carlo of every case.
+**How it works:** Open Invention, create a goal and optionally supply numeric acceptance cases, then run bounded cycles. With cases, Work it out fits standard shapes without a model, unknown constants in a proposal are fitted, and Simulate sweeps each input, ranks what matters most and runs a Monte Carlo of every case. Experiment Lab checks declared dimensions and unit scales, converts units, and tests unseen cases without refitting or changing frozen acceptance cases. Theory proves each case exactly, works out the units every constant must carry and names the physical constant it matches, derives the law from units alone, proves properties and claims with sympy, and picks the measurement that tells rival formulas apart.
 
 **Try saying:**
 
@@ -114,6 +165,8 @@ Develop testable ideas with goals, a skeptical critic and saved experiment round
 - “List invention projects”
 - “Prefrontal cortex status”
 - “Dual brain status”
+- “Has anyone patented a solar water purifier made from clay?”
+- “Check prior art and feasibility for a bicycle that charges a phone from braking”
 
 **Window:** Invention Workbench
 
@@ -137,7 +190,7 @@ Explore twelve fields, find prerequisite gaps, and track your assessed understan
 
 ### Global intelligence workspace
 
-Public feeds, about 37,200 cameras with video in chat, maps, weather, alerts, launches, satellites and ISS passes, fires, satellite images, directions and bike share.
+Public feeds, about 42,200 cameras, maps, weather, alerts, space, fires, live buses and trains, GPS jamming signs, US airspace, whales, street photos, directions and bike share.
 
 **How it works:** Ask "Play live camera in Delaware in chat" for a public stream, then "Pause camera", "Next camera" or "Stop camera". After "Find public cameras in London", say "play" or "play the second one". Dead streams are skipped; London plays clips and New York refreshing stills, labelled as not live. Global intelligence also provides maps, publisher directories, weather and retained evidence. Everyday questions work too: planes over a city, rain tomorrow, earthquakes or storms near a place, space weather, a world brief, and watching a place for a hazard. Also: "next rocket launch", "when can I see the ISS?", "radar over Chicago", "satellite image of Dubai", "fire hotspots near Los Angeles", "directions from Detroit to Ann Arbor", "bike share near Paris", "what plane is UAE1".
 
@@ -171,6 +224,18 @@ Public feeds, about 37,200 cameras with video in chat, maps, weather, alerts, la
 - “Deep look at Denver”
 - “Deep analysis of Chicago”
 - “Which fires are growing near Los Angeles?”
+- “Where are the buses in Toronto?”
+- “Is there GPS jamming near Gdansk?”
+- “Can I fly a drone in Washington DC?”
+- “Show fire perimeters near Fresno”
+- “Any orca sightings near Friday Harbor?”
+- “Street view of the Eiffel Tower”
+- “Test the public cameras”
+- “Are the cameras in Delaware working?”
+- “How high is La Paz above sea level?”
+- “Is Miami in the hurricane cone?”
+- “Data centres near Frankfurt”
+- “Are there licence plate readers near Atlanta?”
 
 **Window:** Global intelligence
 
@@ -207,6 +272,11 @@ Crypto and stocks streamed live, charts with expected ranges and a measured trac
 - “Compare my watchlist over a month”
 - “Which signals work for bitcoin?”
 - “What drives bitcoin?”
+- “Give me a full bitcoin brief”
+- “How good have your market predictions been?”
+- “How are big funds positioned in bitcoin futures?”
+- “How does bitcoin react to earthquakes?”
+- “Is the news about nvidia negative?”
 
 **Window:** Trade Center
 
@@ -233,7 +303,7 @@ Connect your own Google, Microsoft, GitHub, LinkedIn, Notion and Slack accounts,
 
 ### Jobs & applications
 
-Find jobs on public boards, read your CV, score each fit with the reasons, prepare applications on its own, track them, and work out what to learn to reach more of them. Sending waits for your confirmation.
+Search public jobs, compare CV evidence, simulate skills and plan practice in Career radar. Track applications and conditional interview forecasts. Sending requires your confirmation.
 
 **How it works:** Say "read my CV from C:\path\cv.pdf" (or use Studios → Jobs), then "find data analyst jobs", "show my job matches", "show job 12", "what should I learn", "find hidden jobs at Stripe", "what are my chances", "prepare an application for job 12" and "send my application for job 12". Say "I will relocate" to keep on-site roles elsewhere. Every few hours HAYAT searches on its own and tells you about strong matches; it never sends an application without your confirmation.
 
@@ -245,6 +315,7 @@ Find jobs on public boards, read your CV, score each fit with the reasons, prepa
 - “Find hidden jobs at Stripe”
 - “What are my chances”
 - “Prepare an application for job 3”
+- “Show my career radar”
 
 **Window:** Jobs
 
@@ -332,6 +403,11 @@ Keep what you tell it and what it learns, bring it back when it matters, and kee
 - “What do you know about solar panels, and where did you learn it?”
 - “Where did we leave off?”
 - “What have you learned from mistakes?”
+- “How connected is your memory network?”
+- “Import my ChatGPT history from D:/Downloads/chatgpt-export”
+- “Forget what I told you about my old address”
+- “How reliable are your answers, by my verdicts?”
+- “What are my goals?”
 
 **Window:** Knowledge Library
 
@@ -597,6 +673,26 @@ Take a program apart and see how it works, all on this computer.
 
 **Window:** Reverse engineering
 
+<a id="research-lab"></a>
+
+### Robustness, code security and model discovery
+
+Measure how HAYAT holds up against noisy and deceptive input, review its own code and packages for security weaknesses, and find out whether something in a table can be predicted.
+
+**How it works:** Ask in plain words, or open the Research lab. Robustness runs four measured suites. Code security scans HAYAT's own code (or a project you registered) and tests a patch on an isolated copy; it never applies one. Model discovery compares models against a baseline and says so when nothing predictable is found. Cause and effect estimates how much one column changes another after allowing for the rest, with refutation tests; it is an observational estimate, never a proof. The graph network learns to predict missing links and is scored against simple rules on links it never saw. Fuzzing tries generated inputs on HAYAT's own text handlers in a child process and keeps the smallest input that breaks one. The skill laboratory measures whether learned strategies, a small trained network and discovered concepts each solve problems they never saw, in a small exact domain, and learns a named skill from your own examples.
+
+**Try saying:**
+
+- “How robust are you?”
+- “Scan your code for security problems”
+- “Check your packages for known vulnerabilities”
+- “Predict revenue from D:/data/sales.csv”
+- “Discover a model for BTC”
+- “Show the robustness report”
+- “What is the effect of discount on sales in D:/data/sales.csv”
+
+**Window:** Research lab
+
 <a id="privacy-masks"></a>
 
 ### Masks: Tor and a masked browser
@@ -654,6 +750,7 @@ Start a business or service, price it, get a website and marketing kit, find cli
 - “Can I afford a 300 dollar laptop?”
 - “Set aside 25% of income for tax”
 - “Find solar installers in Austin, Texas and make a lead list”
+- “I want to make 1 billion by 2030, what would it take?”
 
 **Window:** Business
 
@@ -759,7 +856,7 @@ Set rules that react to events, and schedule jobs to run later or every day.
 
 Check its own parts, models and resources, explain its tools, and back up its data.
 
-**How it works:** Ask for a self check, or open Health or Brain 5D.
+**How it works:** Ask for a self check, or open Health or Brain 5D. Startup readiness lists configured parts, deferred engines and skill dependency issues.
 
 **Try saying:**
 
@@ -769,6 +866,8 @@ Check its own parts, models and resources, explain its tools, and back up its da
 - “What can't you do?”
 - “How do you work?”
 - “Which tool would you use to make an invoice?”
+- “What are your parts doing right now?”
+- “Investigate why the last reply failed”
 
 **Window:** Brain 5D
 

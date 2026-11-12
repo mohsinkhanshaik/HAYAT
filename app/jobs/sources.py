@@ -69,13 +69,14 @@ def clean(value: Any) -> str:
 def job(source: str, native_id: Any, title: str, company: str, *, url: str, apply_url: str = "", location: str = "",
         remote: bool | None = None, description: str = "", tags: list[str] | None = None, posted: Any = None,
         employment_type: str = "", seniority: str = "", salary_min: Any = None, salary_max: Any = None, currency: str = "",
-        period: str = "") -> dict[str, Any]:
+        period: str = "", expires: Any = None) -> dict[str, Any]:
     text = plain(description)
     if re.search(r"[\u00c0-\u00ff]", text):
         text = "\n".join(clean(line) for line in text.splitlines())
     return {"key": f"{source}:{native_id}", "source": source, "source_name": SOURCES[source.split("@")[0]]["name"],
             "title": clean(title)[:200], "company": clean(company)[:120], "location": clean(location)[:200], "remote": remote, "url": url, "apply_url": apply_url or url,
             "description": text[:20000], "tags": [str(tag)[:40] for tag in (tags or []) if tag][:20], "posted_at": _date(posted),
+            "expires_at": _date(expires),
             "employment_type": str(employment_type or "")[:40], "seniority": str(seniority or "")[:40],
             "salary_min": _number(salary_min), "salary_max": _number(salary_max), "currency": str(currency or "")[:8],
             "salary_period": str(period or "")[:12]}
@@ -101,13 +102,13 @@ def arbeitnow_rows(data: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def remoteok(fetcher: Any, terms: list[str]) -> list[dict[str, Any]]:
+    # Its ?tag= search stopped returning jobs (only the terms notice) by 2026-11-08, so the whole current
+    # feed is read once and HAYAT's own relevance filter picks the matching roles.
     rows, seen = [], set()
-    for term in (terms or [""])[:3]:
-        tag = re.sub(r"[^a-z0-9]+", "-", term.lower()).strip("-")
-        for item in _get(fetcher, "https://remoteok.com/api" + (f"?tag={quote(tag)}" if tag else "")):
-            if isinstance(item, dict) and item.get("id") and item["id"] not in seen:
-                seen.add(item["id"])
-                rows.append(item)
+    for item in _get(fetcher, "https://remoteok.com/api"):
+        if isinstance(item, dict) and item.get("id") and item["id"] not in seen:
+            seen.add(item["id"])
+            rows.append(item)
     return [job("remoteok", item["id"], item.get("position"), item.get("company"), url=item.get("url", ""),
                 apply_url=item.get("apply_url") or item.get("url", ""), location=item.get("location") or "Remote", remote=True,
                 description=item.get("description", ""), tags=item.get("tags", []), posted=item.get("epoch") or item.get("date"),
@@ -156,7 +157,7 @@ def himalayas_rows(data: dict[str, Any]) -> list[dict[str, Any]]:
                 tags=list(item.get("categories") or []), posted=item.get("pubDate"), employment_type=item.get("employmentType", ""),
                 seniority=", ".join(item.get("seniority") or []) if isinstance(item.get("seniority"), list) else item.get("seniority", ""),
                 salary_min=item.get("minSalary"), salary_max=item.get("maxSalary"), currency=item.get("currency", ""),
-                period=item.get("salaryPeriod", ""))
+                period=item.get("salaryPeriod", ""), expires=item.get("expiryDate"))
             for item in data.get("jobs", []) if item.get("guid") or item.get("applicationLink")]
 
 
@@ -188,7 +189,101 @@ def workingnomads(fetcher: Any, terms: list[str]) -> list[dict[str, Any]]:
             for item in rows if item.get("url")]
 
 
+_ROLE_WORDS = re.compile(r"(?i)\b(?:engineer|developer|scientist|analyst|manager|designer|architect|lead|head|director|"
+                        r"specialist|consultant|administrator|researcher|intern|technician|officer|writer|recruiter|"
+                        r"devops|sre|programmer|associate|coordinator|founding|staff|principal|cto|vp)\b")
+
+
+def hnhiring(fetcher: Any, terms: list[str]) -> list[dict[str, Any]]:
+    """This month's Hacker News "Ask HN: Who is hiring?" posts that mention a term, via the public HN Algolia API.
+
+    Each post is written by someone at the hiring company; its first line is conventionally
+    "Company | Role | Location | Remote/Onsite | link". The posting's own address is the HN comment.
+    """
+    stories = _get(fetcher, "https://hn.algolia.com/api/v1/search_by_date?tags=story,author_whoishiring&hitsPerPage=6")
+    story = next((hit for hit in stories.get("hits", []) if str(hit.get("title", "")).startswith("Ask HN: Who is hiring?")), None)
+    if not story:
+        return []
+    rows: dict[str, dict[str, Any]] = {}
+    for term in (terms or [""])[:3]:
+        query = f"&query={quote(term)}" if term else ""
+        data = _get(fetcher, f"https://hn.algolia.com/api/v1/search?tags=comment,story_{story['objectID']}"
+                             f"&hitsPerPage=80{query}")
+        for row in hnhiring_rows(data, term):
+            rows.setdefault(row["key"], row)
+    return list(rows.values())
+
+
+def hnhiring_rows(data: dict[str, Any], term: str = "") -> list[dict[str, Any]]:
+    out = []
+    for hit in data.get("hits", []):
+        if hit.get("parent_id") != hit.get("story_id"):  # replies under a post are not postings
+            continue
+        text = plain(str(hit.get("comment_text") or ""))
+        first = next((line for line in text.splitlines() if line.strip()), "")
+        parts = [part.strip() for part in first.split("|") if part.strip()]
+        if len(parts) < 2:
+            continue
+        company = re.sub(r"\s*\(.*?\)\s*$", "", parts[0])[:120]
+        title = next((part for part in parts[1:] if _ROLE_WORDS.search(part) and len(part) <= 140), "")
+        if not title:
+            continue
+        location = next((part for part in parts[1:] if part is not title and not part.lower().startswith("http")
+                         and re.search(r"(?i)remote|onsite|on-site|hybrid|[A-Z][a-z]+,\s*[A-Z]{2}|\b(?:USA|US|UK|EU|Europe)\b", part)), "")
+        remote = bool(re.search(r"(?i)\bremote\b", first)) and not re.search(r"(?i)\bno remote\b|\bnot remote\b", first)
+        out.append(job("hnhiring", hit.get("objectID"), title, company,
+                       url=f"https://news.ycombinator.com/item?id={hit.get('objectID')}", location=location,
+                       remote=remote or None, description=text, tags=[term] if term else [], posted=hit.get("created_at")))
+    return out
+
+
+def jobtech(fetcher: Any, terms: list[str]) -> list[dict[str, Any]]:
+    """Sweden's public employment service (Arbetsförmedlingen) JobTech search API: open data, no key."""
+    found: dict[str, dict[str, Any]] = {}
+    for term in (terms or [""])[:3]:
+        data = _get(fetcher, "https://jobsearch.api.jobtechdev.se/search?limit=50" + (f"&q={quote(term)}" if term else ""))
+        for row in jobtech_rows(data):
+            found[row["key"]] = row
+    return list(found.values())
+
+
+def jobtech_rows(data: dict[str, Any]) -> list[dict[str, Any]]:
+    out = []
+    for item in data.get("hits", []):
+        place = item.get("workplace_address") or {}
+        location = ", ".join(part for part in (place.get("municipality"), place.get("region"), place.get("country")) if part)
+        application = item.get("application_details") or {}
+        url = item.get("webpage_url") or f"https://arbetsformedlingen.se/platsbanken/annonser/{item.get('id')}"
+        employment = (item.get("employment_type") or {}).get("label", "")
+        out.append(job("jobtech", item.get("id"), item.get("headline"), (item.get("employer") or {}).get("name", ""),
+                       url=url, apply_url=application.get("url") or url, location=location or "Sweden",
+                       remote=None, description=(item.get("description") or {}).get("text", ""),
+                       tags=[(item.get("occupation") or {}).get("label", "")], posted=item.get("publication_date"),
+                       employment_type=employment, expires=item.get("application_deadline")))
+    return [row for row in out if row["title"]]
+
+
+def company_boards(fetcher: Any, terms: list[str]) -> list[dict[str, Any]]:
+    raise ValueError("Company boards are found through web search by the job center (app/jobs/discovery.py), "
+                     "then read one board at a time.")
+
+
 # ---------------------------------------------------------------------- company boards
+def workable(fetcher: Any, company: str) -> list[dict[str, Any]]:
+    data = _get(fetcher, f"https://apply.workable.com/api/v1/widget/accounts/{quote(company)}", 8 * 1024 * 1024)
+    name = data.get("name") or company.title()
+    out = []
+    for item in data.get("jobs", []):
+        place = ", ".join(part for part in (item.get("city"), item.get("state"), item.get("country")) if part)
+        out.append(job(f"workable@{company}", item.get("shortcode"), item.get("title"), name, url=item.get("url", ""),
+                       apply_url=item.get("application_url", ""), location=place, remote=bool(item.get("telecommuting")) or None,
+                       description=" · ".join(part for part in (item.get("department"), item.get("function"),
+                                                                item.get("industry"), item.get("experience")) if part),
+                       tags=[item.get("department", ""), item.get("function", "")], posted=item.get("published_on"),
+                       employment_type=item.get("employment_type", "")))
+    return out
+
+
 def greenhouse(fetcher: Any, company: str) -> list[dict[str, Any]]:
     data = _get(fetcher, f"https://boards-api.greenhouse.io/v1/boards/{quote(company)}/jobs?content=true", 16 * 1024 * 1024)
     return [job(f"greenhouse@{company}", item.get("id"), item.get("title"), item.get("company_name") or company,
@@ -250,15 +345,25 @@ SOURCES: dict[str, dict[str, Any]] = {
     "remoteok": {"name": "Remote OK", "site": "https://remoteok.com", "reader": remoteok, "about": "remote jobs worldwide, tech-heavy"},
     "jobicy": {"name": "Jobicy", "site": "https://jobicy.com", "reader": jobicy, "about": "remote jobs, searched by your terms"},
     "himalayas": {"name": "Himalayas", "site": "https://himalayas.app", "reader": himalayas, "about": "remote jobs with location limits"},
-    "themuse": {"name": "The Muse", "site": "https://www.themuse.com", "reader": themuse, "about": "US-led, many fields, remote and on-site"},
+    "themuse": {"name": "The Muse", "site": "https://www.themuse.com", "reader": themuse,
+                "about": "US-led, many fields; refused HAYAT's requests (403) since 2026-11, so off by default"},
     "workingnomads": {"name": "Working Nomads", "site": "https://www.workingnomads.com", "reader": workingnomads,
                       "about": "remote jobs worldwide"},
+    "hnhiring": {"name": "Hacker News: Who is hiring?", "site": "https://news.ycombinator.com/submitted?id=whoishiring",
+                 "reader": hnhiring, "about": "this month's posts by the hiring companies themselves; worldwide, on-site and remote"},
+    "company_boards": {"name": "Company career boards (found by search)", "site": "https://job-boards.greenhouse.io",
+                       "reader": company_boards,
+                       "about": "employers' own Greenhouse, Lever, Ashby and Workable boards found by web search for your terms; "
+                                "every board found is remembered and read again"},
+    "jobtech": {"name": "Arbetsförmedlingen JobTech (Sweden)", "site": "https://jobsearch.api.jobtechdev.se", "reader": jobtech,
+                "about": "Sweden's public employment service, open data; off unless you look for work in Sweden"},
     "greenhouse": {"name": "Greenhouse", "site": "https://www.greenhouse.com", "board": greenhouse, "about": "a company's own careers board"},
     "lever": {"name": "Lever", "site": "https://www.lever.co", "board": lever, "about": "a company's own careers board"},
     "ashby": {"name": "Ashby", "site": "https://www.ashbyhq.com", "board": ashby, "about": "a company's own careers board"},
+    "workable": {"name": "Workable", "site": "https://www.workable.com", "board": workable, "about": "a company's own careers board"},
 }
 FEEDS = tuple(name for name, item in SOURCES.items() if "reader" in item)
-BOARD = re.compile(r"^(greenhouse|lever|ashby):([a-z0-9][a-z0-9-]{0,60})$")
+BOARD = re.compile(r"^(greenhouse|lever|ashby|workable):([a-z0-9][a-z0-9-]{0,60})$")
 
 
 _COMPANY_SUFFIX = re.compile(r"\b(?:inc|llc|ltd|limited|gmbh|corp|co|company|technologies|technology|labs|software|group|"
@@ -282,8 +387,10 @@ def board_from_url(url: str) -> tuple[str, str] | None:
     if parsed.scheme != "https" or parsed.username or parsed.password or parsed.port not in (None, 443):
         return None
     ats = {"boards.greenhouse.io": "greenhouse", "job-boards.greenhouse.io": "greenhouse",
-           "jobs.lever.co": "lever", "jobs.ashbyhq.com": "ashby"}.get(parsed.hostname or "")
+           "jobs.lever.co": "lever", "jobs.ashbyhq.com": "ashby", "apply.workable.com": "workable"}.get(parsed.hostname or "")
     slug = parsed.path.strip("/").split("/")[0].lower()
+    if ats == "workable" and slug in ("j", "api", "careers"):  # short job links and the API, not a company
+        return None
     return (ats, slug) if ats and BOARD.fullmatch(f"{ats}:{slug}") else None
 
 
@@ -329,7 +436,7 @@ def discover(fetcher: Any, name: str, limit: int = 12) -> list[dict[str, Any]]:
             candidates.extend((ats, slug, url, f"linked from {name}") for (ats, slug), url in links.boards.items())
     else:
         candidates = [(ats, slug, "", "company-name guess; verify employer identity")
-                      for slug in company_slugs(name) for ats in ("greenhouse", "lever", "ashby")]
+                      for slug in company_slugs(name) for ats in ("greenhouse", "lever", "ashby", "workable")]
     found = []
     for ats, slug, url, evidence in candidates[:max(0, min(limit, 12))]:
         try:

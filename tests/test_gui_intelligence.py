@@ -20,6 +20,8 @@ def explorer(shared_tk, tmp_path):
     manager = IntelligenceManager(tmp_path / 'intelligence.db', Fetcher(), registry)
     register_intelligence_tools(registry, manager)
     manager.refresh()
+    # These tests cover the flat map; tests/test_gui_globe.py covers the 3D globe (the default view).
+    manager.preferences('save', {'map_mode': 'flat'})
     class GUI(Palette):
         def _open_intelligence(self):
             self._intelligence_window = window
@@ -289,6 +291,7 @@ def test_intelligence_map_filters_missing_coordinates_and_shows_source_evidence(
     manager = IntelligenceManager(tmp_path / 'intelligence.db', Fetcher(), registry)
     register_intelligence_tools(registry, manager)
     manager.refresh()
+    manager.preferences('save', {'map_mode': 'flat'})
     class GUI(Palette):
         pass
     gui = GUI()
@@ -299,7 +302,7 @@ def test_intelligence_map_filters_missing_coordinates_and_shows_source_evidence(
         assert len(window.tree.get_children()) == 4
         assert len(window.map.find_withtag('event')) == 2
         assert window.polygons and '4/4 feeds current' in window.status.get()
-        assert window.source_tree.set('cyber', 'status') == 'ok'
+        assert window.source_tree.set('cyber', 'status') == 'current'  # the store's 'ok', in plain words
         window.layer.set('cyber')
         assert window.tree.get_children() == ('cyber:CVE-2026-12345',)
         assert len(window.map.find_withtag('event')) == 0
@@ -429,7 +432,8 @@ def test_nearest_camera_action_media_filter_and_publisher_page(explorer):
     assert 'nearest the selected event' in window.camera_message.get()
     window.camera_media.set('Publisher player')
     window.all_cameras()
-    pump_until(window, lambda: not window._busy and len(window.camera_rows) == 8)
+    pump_until(window, lambda: not window._busy and len(window.camera_rows) == 9)
+    assert window.camera_tree.set('cameras_northern_ireland:44', 'media') == 'Publisher player'
     window.camera_tree.selection_set('cameras_quebec:4057')
     window.update()
     window.open_publisher_page()

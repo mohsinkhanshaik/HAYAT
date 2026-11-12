@@ -3,8 +3,9 @@
 What ``HAYAT.lnk`` runs (through ``launch.pyw``). In order:
 
 1. point ``.venv`` at the Python in ``runtime/`` (the folder may have moved);
-2. start HAYAT's own Ollama on its own port, unless one already answers there;
-3. open the HAYAT window with no console;
+2. show the desktop boot screen, whose worker starts/reuses HAYAT's own Ollama
+   on its own port (non-GUI modes keep the launcher's service wrapper);
+3. assemble and open the HAYAT workspace with no console;
 4. when the window closes, stop the Ollama this launch started, and only that.
 
 The Ollama is put in a Windows job that ends with this launcher, so it and
@@ -37,6 +38,8 @@ def venv_python(root: Path = ROOT) -> Path:
 
 
 def ollama_answers(url: str, timeout: float = 1.5) -> bool:
+    if not url.lower().startswith(("http://", "https://")):
+        return False  # urlopen would also open file: and custom schemes; the model server is only ever http(s)
     try:
         with urllib.request.urlopen(f"{url}/api/tags", timeout=timeout) as response:
             return response.status == 200
@@ -198,7 +201,8 @@ def ensure_venv(log: Any) -> Path | None:
 
 
 @contextmanager
-def folder_runtime(say: Callable[[str], None] = lambda message: None, root: Path = ROOT) -> Iterator[dict[str, str]]:
+def folder_runtime(say: Callable[[str], None] = lambda message: None, root: Path = ROOT,
+                   *, defer_gui_service: bool = False) -> Iterator[dict[str, str]]:
     """The environment HAYAT's processes run in, with HAYAT's Ollama up throughout.
 
     With ``runtime/`` complete: HAYAT's own Ollama on HAYAT's port, stopped
@@ -217,6 +221,11 @@ def folder_runtime(say: Callable[[str], None] = lambda message: None, root: Path
         yield env
         return
     env.update(portable.environment(root))
+    if defer_gui_service:
+        # The visible desktop boot worker owns the potentially long wait.
+        env['HAYAT_BOOT_OLLAMA'] = '1'
+        yield env
+        return
     (root / "data" / "logs").mkdir(parents=True, exist_ok=True)
     job = Job()
     with open(root / "data" / "logs" / "ollama-hayat.log", "ab") as server_log:
@@ -243,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
         if python is None:
             tell(r"HAYAT's Python environment could not be prepared. See data\logs\launcher.log.")
             return 1
-        with folder_runtime(lambda message: note(log, message)) as env:
+        with folder_runtime(lambda message: note(log, message), defer_gui_service='--gui' in arguments) as env:
             subprocess.run([str(python), "-m", "scripts.init_db"], cwd=str(ROOT), env=env,
                            stdout=log, stderr=log, creationflags=NO_WINDOW)
             note(log, "opening HAYAT " + " ".join(arguments))

@@ -107,6 +107,25 @@ _FACT_CHECK = re.compile(
     r"(?i)^(?:please\s+|can\s+you\s+|could\s+you\s+|would\s+you\s+)*"
     r"(?:fact[ -]?check|verify|check\s+(?:whether|if)|is\s+it\s+true\s+that)\b"
 )
+# "Was the moon landing fake?" and "is climate change a hoax?" are claims to
+# check against the record, not opinions for the model to recall. A request
+# ("can you make a fake ...") is not a question about a claim.
+_RUMOUR_QUESTION = re.compile(r"(?i)^(?:is|was|were|are|did|does|do|has|have)\b(?!\s+(?:you|u)\b)")
+_RUMOUR = re.compile(
+    r"(?i)\b(?:hoax(?:es)?|faked?|staged|conspirac\w*|cover[- ]?ups?|inside job|false flag|myths?|debunked|"
+    r"psyop|chemtrails?|flat earth|earth (?:is |really )?flat|really (?:happen(?:ed)?|real|true))\b")
+# Tax rates, brackets and deadlines change by law; a model's memory of them is
+# a past year's figure. Answered from the authority's current pages instead.
+_TAX_RULE = re.compile(
+    r"(?i)\b(?:tax(?:es)?\s+(?:rates?|brackets?|slabs?|deadlines?|due dates?|thresholds?|exemptions?|limits?)|"
+    r"(?:sales|income|property|gst|vat|capital gains|estate|franchise|payroll|state|excise)\s+tax(?:es)?|gst rates?)\b")
+_REPORTED_CLAIM = re.compile(r"(?i)^i (?:heard|read|saw)\b.+\b(?:is (?:it|that|this) true|can you verify|fact[ -]?check)\b")
+_INCUMBENT = re.compile(
+    r"(?i)^who (?:is|are) (?:the )?(?:current )?(?:president|prime minister|chancellor|"
+    r"governor|foreign minister|finance minister|secretary.general|ceo|chairperson) (?:of|in|at|for)\b")
+_CURRENT_METRIC = re.compile(
+    r"(?i)\b(?:federal funds (?:target (?:range|rate)|rate)|fed (?:interest |policy )?rate|"
+    r"(?:us|u\.s\.|uk|india|pakistan|eurozone) (?:inflation|unemployment|policy interest) rate)\b")
 
 #: Subjects whose true value changes faster than any training run. A model
 #: asked for one of these does not know it is out of date.
@@ -120,6 +139,24 @@ _VOLATILE_SUBJECT = re.compile(
     r"release\s+date|released\s+yet|out\s+yet|changelog|release\s+notes|"
     r"is\s+\S+\s+(?:down|up|offline)|outage|status\s+page|"
     r"trending|top\s+stories"
+    r")\b"
+)
+
+#: Records and counts that change as things are discovered, built or earned. Asked "which planet has the most
+#: moons?", the brain answered Saturn (146) in one run and Jupiter (95) in the next; sources said Saturn, 274+
+#: (live, 2026-11-07). A model cannot know such a number is out of date, so these are looked up.
+_CHANGING_RECORD = re.compile(
+    r"(?i)\b(?:"
+    r"how\s+many\s+(?:confirmed\s+|known\s+|discovered\s+|recorded\s+|named\s+)?"
+    r"(?:moons|exoplanets|planets\s+outside|satellites\s+in\s+orbit|species|subscribers|followers|users|employees|"
+    r"members\s+states?|countries\s+(?:are\s+)?in)|"
+    r"(?:the\s+)?most\s+(?:moons|satellites|followers|subscribers|downloaded|streamed|viewed|valuable|populous|"
+    r"medals|titles|goals|wins|oscars|grammys)|"
+    r"(?:world|all[- ]time|olympic)\s+record|record\s+(?:for|holder)|"
+    r"richest|tallest\s+(?:building|skyscraper|tower)|highest[- ]grossing|best[- ]selling|"
+    r"fastest\s+(?:supercomputer|computer|production\s+car|car|land\s+speed)|"
+    r"largest\s+(?:company|companies|economy|economies|army|airline|bank)|oldest\s+living|"
+    r"most\s+(?:valuable|popular)\s+(?:company|companies|brand|app|website|programming\s+language)"
     r")\b"
 )
 
@@ -167,6 +204,15 @@ _WORLD_QUESTION = re.compile(
 #: would undo the whole point of this module. So the second group names the
 #: predicates that make HAYAT itself the subject -- what it is running, using,
 #: or doing -- rather than the pronoun alone.
+_PRIVATE_UNKNOWABLE = re.compile(
+    r"(?i)\b(?:am I thinking|I'?m thinking (?:of|about)|in my (?:coat |trouser |jacket )?(?:pocket|wallet|purse|head|mind)|"
+    r"my (?:card'?s? )?(?:pin|passcode)\b|(?:did|do) I (?:eat|have for (?:breakfast|lunch|dinner)|type|wear)\b|"
+    r"parked outside my|my (?:next[- ]door )?neighbou?r'?s (?:middle |first |last )?name|"
+    r"(?:in|on) my (?:savings|checking|current|bank) account|"
+    r"(?:downstairs|upstairs|next door) from me|(?:near|around|next to) me right now|in my (?:house|room|street) right now)")
+_FUTURE_UNKNOWABLE = re.compile(
+    r"(?i)\b(?:which|what) (?:number|numbers|ball|balls) will (?:come up|be drawn|win)|\blottery\b[^?]*\bwill\b|"
+    r"\b(?:rain|snow|weather|sunny|temperature)\b[^?]*\b(?:a|one|two|\d+) years? from (?:today|now)\b")
 _SELF_SUBJECT = re.compile(
     r"(?i)\b(?:your|yours|yourself|hayat'?s?)\b"
     r"|\byou'?re\b"
@@ -363,6 +409,19 @@ def needs_live_web(text: str) -> LiveWebNeed | None:
         return None
     if _SELF_SUBJECT.search(value):
         return None
+    # What the owner is thinking, carries or keeps private is on no web page; a search for
+    # "what number am I thinking of right now" returned a guessing game as the answer.
+    if _PRIVATE_UNKNOWABLE.search(value):
+        return None
+    # "The article you read earlier" is a question about HAYAT's own record (app/own_history.py);
+    # a fresh search answered it with today's pages as if they were the earlier reading.
+    from app.own_history import past_action_question, past_reading_topic
+    if past_reading_topic(value) is not None or past_action_question(value) is not None:
+        return None
+    # A lottery draw or the weather a year ahead is on no page yet; searching returned draw archives
+    # and today's forecast as if they answered it.
+    if _FUTURE_UNKNOWABLE.search(value):
+        return None
     # "What did I have for breakfast today?" is about the owner's own past,
     # which the web cannot know; it became a search for "breakfast today".
     if _OWN_PAST.search(value) and not _WEB_VERB.search(value):
@@ -385,16 +444,36 @@ def needs_live_web(text: str) -> LiveWebNeed | None:
         return LiveWebNeed("web_material_request", clean_query(value))
     if _SOURCE_REQUEST.search(value) and not _LOCAL_OBJECT.search(value):
         return LiveWebNeed("source_request", clean_query(value))
-    if _FACT_CHECK.match(value):
+    if _FACT_CHECK.match(value) or _REPORTED_CLAIM.match(value):
         return LiveWebNeed("fact_check_request", clean_query(value))
+    if _RUMOUR_QUESTION.match(value) and _RUMOUR.search(value):
+        return LiveWebNeed("fact_check_request", clean_query(value))
+    if _TAX_RULE.search(value) and not re.match(r"(?i)(?:i|i'm|my|we|our)\b", value):
+        from app.research.tax_sources import authorities_for
+
+        if authorities_for(value) or re.search(r"\b(?:20\d\d|current|this year|now)\b", value, re.I):
+            return LiveWebNeed("tax_rule", clean_query(value))
+    # A named state's business, unemployment, labor, contracting or legal rule: the
+    # agency's current page, not a remembered rule from another state or year.
+    from app.research.state_agencies import agencies_for as state_agencies
+
+    if not re.match(r"(?i)(?:i|i'm|my|we|our)\b", value) and state_agencies(value):
+        return LiveWebNeed("state_rule", clean_query(value))
     if is_self_contained_calculation(value) or is_local_clock_question(value):
         return None
     # "I love rainy weather" and "the weather is nice today" share an opinion;
     # they ask nothing, and were sent to web research for the word "weather".
     if _OPINION.match(value) and not value.endswith("?"):
         return None
+    if ((_INCUMBENT.match(value) or _CURRENT_METRIC.search(value))
+            and not re.search(r'\b(?:in|during|since|between)\s+(?:the\s+)?\d{4}\b', value, re.I)
+            and not re.match(r'(?i)^(?:explain|define|what (?:is|does).+mean\b)', value)):
+        return LiveWebNeed('current_office_or_metric', clean_query(value))
     if _VOLATILE_SUBJECT.search(value):
         return LiveWebNeed("volatile_subject", clean_query(value))
+    if (_CHANGING_RECORD.search(value) and (_WORLD_QUESTION.match(value) or value.endswith("?"))
+            and not re.search(r"(?i)\b(?:should|do|can|must|could)\s+i\b|\bmy\b", value)):
+        return LiveWebNeed("changing_record", clean_query(value))
     if _PRESENT_MARKER.search(value) and (_WORLD_QUESTION.match(value) or value.endswith("?")):
         return LiveWebNeed("present_tense_world_question", clean_query(value))
     return None

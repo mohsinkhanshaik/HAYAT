@@ -2,7 +2,7 @@
 
 Tk scrolls a text or canvas by whole lines or units, so every wheel notch was a jump.
 `SmoothScroller` moves the view toward a target a fraction of the remaining distance
-each frame, which reads as one continuous glide; further notches extend the target
+each elapsed-time step, which reads as one continuous glide even at different frame rates; further notches extend the target
 instead of queueing jumps. Dragging the scrollbar cancels a glide in progress.
 
 `fade_in` eases a newly opened window in from transparent (about 0.15 s) instead of
@@ -15,9 +15,11 @@ turns every glide into an instant move and every window entrance into an instant
 from __future__ import annotations
 
 import logging
+import math
 import itertools
 import sys
 import time
+import weakref
 import tkinter as tk
 from contextlib import contextmanager
 from typing import Any
@@ -28,6 +30,7 @@ _log = logging.getLogger(__name__)
 
 MOTION = {"enabled": True}
 _anchors = itertools.count()
+_scrollers = weakref.WeakSet()
 
 
 def system_allows_motion() -> bool:
@@ -47,6 +50,15 @@ def system_allows_motion() -> bool:
 
 def set_motion(enabled: bool) -> None:
     MOTION["enabled"] = bool(enabled)
+    if not enabled:
+        for scroller in list(_scrollers):
+            target = scroller.target
+            scroller.cancel()
+            if target is not None:
+                try:
+                    scroller._move(target)
+                except tk.TclError:
+                    pass
 
 
 class SmoothScroller:
@@ -54,18 +66,25 @@ class SmoothScroller:
     FRAME_MS = 15
     EASE = 0.3        # share of the remaining distance covered each frame
 
-    def __init__(self, widget: Any) -> None:
+    def __init__(self, widget: Any, axis: str = 'y') -> None:
         self.widget = widget
+        self.axis = axis
         self.target: float | None = None
         self.last_set: float | None = None
         self.job: str | None = None
+        self._last_tick = None
+        _scrollers.add(self)
+
+    def _view(self):
+        return getattr(self.widget, self.axis + 'view')()
 
     def _span(self) -> tuple[float, float, float]:
-        first, last = self.widget.yview()
+        first, last = self._view()
         visible = max(1e-6, last - first)
-        return first, visible, max(1.0, self.widget.winfo_height() / visible)
+        size = self.widget.winfo_height() if self.axis == 'y' else self.widget.winfo_width()
+        return first, visible, max(1.0, size / visible)
 
-    def wheel(self, event: Any) -> str:
+    def wheel(self, event: Any) -> str | None:
         delta = getattr(event, "delta", 0)
         if not delta:
             delta = {4: 120, 5: -120}.get(getattr(event, "num", 0), 0)
@@ -78,7 +97,7 @@ class SmoothScroller:
         except tk.TclError:
             return "break"
         if visible >= 0.999:
-            return "break"  # everything is already in view
+            return None  # a containing scroller can own this gesture
         if self.target is not None and self.last_set is not None and abs(first - self.last_set) > 1e-4:
             self.target = None  # the scrollbar was dragged mid-glide: start from where the view is now
         if self.target is None:
@@ -87,34 +106,44 @@ class SmoothScroller:
             # view between gestures. Comparing that new view to last_set in
             # _tick otherwise cancels every future wheel event indefinitely.
             self.last_set = first
-        base = self.target if self.target is not None else first
-        self.target = min(max(0.0, base - (delta / 120) * self.STEP_PX / total), 1.0 - visible)
+        movement = -(delta / 120) * self.STEP_PX / total
+        # Reversing the wheel means reversing now, not paying down an old target.
+        base = self.target if self.target is not None and (self.target-first)*movement >= 0 else first
+        self.target = min(max(0.0, base + movement), 1.0 - visible)
+        if abs(self.target-first) < 1e-9:
+            self.cancel()
+            return None
         if not MOTION["enabled"]:
             self._move(self.target)
             self.target = None
         elif self.job is None:
+            self._last_tick = time.monotonic()
             self.job = self.widget.after(self.FRAME_MS, self._tick)
         return "break"
 
     def _move(self, fraction: float) -> None:
-        self.widget.yview_moveto(fraction)
-        self.last_set = self.widget.yview()[0]
+        getattr(self.widget, self.axis + 'view_moveto')(fraction)
+        self.last_set = self._view()[0]
 
     def _tick(self) -> None:
         self.job = None
         if self.target is None:
             return
         try:
-            first, _visible, total = self._span()
+            first, visible, total = self._span()
             if self.last_set is not None and abs(first - self.last_set) > 1e-4:
                 self.target = None  # the owner took over with the scrollbar
                 return
+            self.target = max(0, min(self.target, 1-visible))
             gap = self.target - first
             if abs(gap) * total < 2.0:
                 self._move(self.target)
                 self.target = None
                 return
-            self._move(first + gap * self.EASE)
+            moment = time.monotonic()
+            elapsed = min(.1, max(.001, moment - (self._last_tick or moment - .015)))
+            self._last_tick = moment
+            self._move(first + gap * (1-math.exp(-elapsed/.045)))
             if abs(self.last_set - first) < 1e-7:
                 # Text views snap to whole pixels; a step too small to move ends the glide.
                 self._move(self.target)
@@ -132,6 +161,7 @@ class SmoothScroller:
             except tk.TclError:
                 pass
         self.job, self.target, self.last_set = None, None, None
+        self._last_tick = None
 
 
 FADE_MS = 150
@@ -159,7 +189,8 @@ def fade_in(window: Any, duration_ms: int = FADE_MS) -> bool:
         try:
             if not window.winfo_exists():
                 return
-            progress = min(1.0, (time.monotonic() - started) * 1000 / max(1, duration_ms))
+            progress = (min(1.0, (time.monotonic() - started) * 1000 / max(1, duration_ms))
+                        if MOTION['enabled'] else 1)
             # Ease-out cubic: quick to appear, gentle to settle. The end is exactly 1.0, which also
             # drops Windows' layered style so nothing stays half-transparent.
             window.wm_attributes("-alpha", 1.0 if progress >= 1 else 1 - (1 - progress) ** 3)
@@ -178,17 +209,21 @@ def attach(widget: Any) -> SmoothScroller:
     if existing is not None:
         return existing
     scroller = SmoothScroller(widget)
+    horizontal = SmoothScroller(widget, 'x')
     widget.bind("<MouseWheel>", scroller.wheel)
     widget.bind("<Button-4>", scroller.wheel)
     widget.bind("<Button-5>", scroller.wheel)
+    widget.bind('<Shift-MouseWheel>', horizontal.wheel)
     widget._smooth_scroller = scroller
+    widget._smooth_horizontal_scroller = horizontal
     widget.bind("<Destroy>", lambda event: scroller.cancel() if event.widget is widget else None, add="+")
+    widget.bind('<Destroy>', lambda event: horizontal.cancel() if event.widget is widget else None, add='+')
     # Embedded image/document/player cards are child windows of the chat Text.
     # Their labels and buttons must route wheel events to that nearest parent.
     top = widget.winfo_toplevel()
     if not getattr(top, "_hayat_wheel_routing", False):
         top._hayat_wheel_routing = True
-        for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+        for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>", '<Shift-MouseWheel>'):
             top.bind(sequence, _wheel_from_child, add="+")
     return scroller
 
@@ -196,11 +231,14 @@ def attach(widget: Any) -> SmoothScroller:
 def _wheel_from_child(event: Any) -> str | None:
     current = event.widget
     while current is not None:
-        scroller = getattr(current, "_smooth_scroller", None)
+        horizontal = bool(getattr(event, 'state', 0) & 1)
+        scroller = getattr(current, '_smooth_horizontal_scroller' if horizontal else '_smooth_scroller', None)
         if scroller is not None:
-            return scroller.wheel(event)
+            result = scroller.wheel(event)
+            if result is not None:
+                return result
         # An independent editor, map, list or value control owns its wheel.
-        if current.winfo_class() in {"Text", "Canvas", "Listbox", "Treeview", "Scale", "TScale", "TCombobox", "Spinbox", "TSpinbox"}:
+        if scroller is None and current.winfo_class() in {"Text", "Canvas", "Listbox", "Treeview", "Scale", "TScale", "TCombobox", "Spinbox", "TSpinbox"}:
             return None
         current = getattr(current, "master", None)
     return None

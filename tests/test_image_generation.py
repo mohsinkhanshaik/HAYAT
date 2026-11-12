@@ -801,15 +801,18 @@ def test_an_sdxl_model_runs_at_native_1024_with_flash_attention_and_tiled_vae(tm
     monkeypatch.setattr(subprocess, "Popen", _Popen)
     monkeypatch.setattr(res, "heavy", _heavy)
 
-    gen.generate("a portrait", quality="ultra")
+    gen.generate("a lighthouse at dusk", quality="ultra")
     cmd = captured["cmd"]
     assert cmd[cmd.index("-W") + 1] == "1024", "SDXL renders at its native 1024"
     assert "--diffusion-fa" in cmd and "--vae-tiling" in cmd, "the memory savers that make 1024 fit"
     assert "--vae-on-cpu" not in cmd, "tiled decoding keeps the VAE on the GPU"
     assert float(cmd[cmd.index("--cfg-scale") + 1]) <= 6, "SDXL guidance stays natural"
     assert "--vae" not in cmd, "SDXL must not get the SD 1.5 VAE"
-    gen.generate("a portrait", quality="fast")
+    gen.generate("a lighthouse at dusk", quality="fast")
     assert captured["cmd"][captured["cmd"].index("-W") + 1] == "768", "fast stays at 768"
+    # A portrait is composed upright: SDXL's trained 2:3 frame, not a square.
+    gen.generate("a portrait", quality="ultra")
+    assert (captured["cmd"][captured["cmd"].index("-W") + 1], captured["cmd"][captured["cmd"].index("-H") + 1]) == ("832", "1216")
 
 
 def test_a_video_request_reads_the_quality_tier_from_its_words():

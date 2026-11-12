@@ -216,6 +216,14 @@ class Fetcher:
                                   "Wir bieten dir eine spannende Aufgabe, und du bringst Erfahrung mit SQL oder Excel mit, die du im "
                                   "Team einsetzt. Das ist eine Stelle für Studierende, die bei uns lernen und mit uns wachsen."),
                               "tags": [], "job_types": ["internship"], "created_at": stamp}]}
+        elif "hn.algolia.com" in url and "author_whoishiring" in url:
+            body = {"hits": [{"objectID": "900", "title": "Ask HN: Who is hiring? (November 2026)", "created_at": NOW.isoformat()}]}
+        elif "hn.algolia.com" in url:
+            body = {"hits": [{"objectID": "901", "story_id": 900, "parent_id": 900, "created_at": NOW.isoformat(),
+                              "comment_text": "Omega Analytics | Data Analyst | Hyderabad, India | ONSITE | https://omega.example/jobs"
+                                              "<p>We use SQL and Python to price risk.</p>"},
+                             {"objectID": "902", "story_id": 900, "parent_id": 901, "created_at": NOW.isoformat(),
+                              "comment_text": "Is this role open to people outside India?"}]}  # a reply, not a posting
         elif "greenhouse.io" in url:
             body = {"jobs": [{"id": 71, "title": "Data Analyst II", "company_name": "Stripe", "absolute_url": "https://stripe.com/jobs/71",
                               "location": {"name": "Remote in India"}, "content": "&lt;p&gt;SQL and Python&lt;/p&gt;", "departments": [],
@@ -493,13 +501,13 @@ def test_prospects_reads_only_the_owners_record_and_splits_by_strength():
             return self._apps
 
     def app(status, score):
-        return {"status": status, "score": score, "title": "Data Analyst", "company": "X"}
+        return {"status": status, "score": score, "score_at_application": score, "title": "Data Analyst", "company": "X"}
     sent = [app("offer", 80), app("interview", 72), app("rejected", 65), app("applied", 55),
             app("rejected", 40), app("interview", 85), app("applied", 70)]
     value = prospects(Store(sent + [app("saved", 50), app("prepared", 50)]))  # saved/prepared are not "sent"
     assert value["sent"] == 7 and value["replies"] == 3 and value["offers"] == 1 and value["waiting"] == 2
     assert value["by_strength"]["strong_fit"]["reply_rate"] == 0.6 and value["enough"]
-    assert value["projection"]["applications_per_reply"] == 2
+    assert value["projection"] is None  # missing dates cannot support a time-window forecast
     text = "\n".join(prospects_lines(value))
     # Honest framing: own record only, and an explicit disclaimer that it never predicts an employer's decision.
     assert "own record" in text and "never predicts a particular employer" in text
@@ -557,7 +565,7 @@ def test_the_jobs_window(shared_tk, center):
             time.sleep(.02)
         return ready()
     try:
-        assert [window.tabs.tab(tab, "text") for tab in window.tabs.tabs()] == ["Matches", "Applications", "Profile", "CV review", "Learn", "Sources"]
+        assert [window.tabs.tab(tab, "text") for tab in window.tabs.tabs()] == ["Matches", "Applications", "Profile", "CV review", "Learn", "Sources", "Career radar"]
         assert wait(lambda: window.match_tree.get_children())
         first = window.match_tree.get_children()[0]
         assert window.match_tree.item(first, "values")[2] == "Data Analyst"
@@ -696,6 +704,8 @@ def test_scores_learn_a_little_from_what_the_owner_pursues_and_hides(center):
     assert learned_from(["Data Analyst"], []) == {}  # too few choices to learn from
     learned = learned_from(["Data Analyst", "Data Analyst II"], ["Marketing Analyst", "Marketing Analyst", "Sales Analyst"])
     assert learned["data"] > 0 and learned["marketing"] < 0
+    # The Marketing Analyst sample comes from The Muse, which is off by default since it refused HAYAT (2026-11).
+    center.set_preferences({"sources": center.profile.load()["preferences"]["sources"] + ["themuse"]})
     center.search()
     rows = {row["title"]: row for row in center.matches(limit=50, include_blocked=True)["matches"]}
     before = rows["Senior Data Analyst"]["score"]

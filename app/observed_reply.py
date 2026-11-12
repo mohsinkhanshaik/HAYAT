@@ -604,6 +604,16 @@ def _email_check(output: dict[str, Any]) -> str | None:
 
 def _invention(output: dict[str, Any]) -> str | None:
     """Invention workbench outputs (app/invention.py): a project, a simulation, or a graded formula."""
+    if "ladder" in output and isinstance(output.get("summary"), list):  # invention_theory
+        return "\n".join(["Theory and proof:", *output["summary"]])
+    if "law" in output and "Buckingham" in str(output.get("basis")):  # invention_derive_law
+        lines = [f"From units alone: {output['law']}"]
+        if output.get("drops_out"):
+            lines.append(f"Cannot affect the result: {', '.join(output['drops_out'])}.")
+        if output.get("note"):
+            lines.append(output["note"])
+        lines.append(output["basis"])
+        return "\n".join(lines)
     if "sweeps" in output and "monte_carlo" in output:  # invention_simulate
         return "\n".join([f"Simulation of {output.get('formula')}:", *(output.get("summary") or []),
                           str(output.get("basis") or "")]).strip()
@@ -742,10 +752,22 @@ def _local_image_tools(output):
     return None
 
 
+def _dialogue_reports(output: dict[str, Any]) -> str | None:
+    """dialogue_state, investigate_incident and ambition_evaluate write their own plain report ("text")."""
+    text = output.get("text")
+    if not isinstance(text, str) or not text.strip():
+        return None
+    if ({"goals", "facts", "refused", "measures"} <= set(output)
+            or ("findings" in output and output.get("changed_anything") is False)
+            or {"numbers", "questions", "milestones"} <= set(output)):
+        return text
+    return None
+
+
 #: Checked in order; the first renderer that recognises an output wins.
 RENDERERS: tuple[Callable[[dict[str, Any]], str | None], ...] = (
     _local_image_tools, _listing, _matches, _contents, _process, _info, _exists, _system, _download,
-    _location, _devices, _prospects, _lead_list, _quran, _camera_status, _faces, _people, _invention, _email_check, _privacy_masks, _location_privacy, _situation, _discovery,
+    _location, _devices, _prospects, _lead_list, _quran, _camera_status, _faces, _people, _invention, _email_check, _privacy_masks, _location_privacy, _dialogue_reports, _situation, _discovery,
     _ideas, _launch_status, _rate, _proposal, _money_report, _wallet, _streams, _brief, _business_result,
 )
 

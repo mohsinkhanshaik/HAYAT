@@ -26,6 +26,9 @@ VECTOR_DIMENSIONS = 128
 MEMORY_RELATIONS = frozenset({
     "related", "supports", "contradicts", "depends_on", "caused_by",
     "part_of", "same_entity", "followed_by", "supersedes",
+    # A task's reflection (what worked, what failed, next time) points at the task it is about, and
+    # memories recalled together for work that succeeded learn a link (app/memory/plasticity.py).
+    "reflects_on", "co_recalled",
 })
 
 
@@ -504,27 +507,42 @@ class MemoryDatabase:
         if not seeds:
             return []
         seed_values = ",".join("(?)" for _ in seeds)
+        from app.memory.plasticity import FADING_RELATIONS, HALF_LIFE_DAYS
+
+        fading = ",".join(f"'{name}'" for name in FADING_RELATIONS)
+        half_life = float(HALF_LIFE_DAYS)
         with self.connect() as db:
             rows = db.execute(
                 f"""WITH RECURSIVE
                     seeds(seed_id) AS (VALUES {seed_values}),
-                    edges(from_id,to_id,relation,weight,evidence_json,direction) AS (
-                        SELECT source_id,target_id,relation,weight,evidence_json,'outgoing' FROM memory_links
-                        UNION ALL
-                        SELECT target_id,source_id,relation,weight,evidence_json,'incoming' FROM memory_links
+                    -- Associative links fade with time since they were last reinforced (half strength after
+                    -- HALF_LIFE_DAYS, never zero); structural ones keep their weight. See app/memory/plasticity.py.
+                    live(source_id,target_id,relation,weight,evidence_json) AS (
+                        SELECT source_id,target_id,relation,
+                               CASE WHEN relation IN ({fading}) THEN weight / (1.0 + MAX(0.0,
+                                    COALESCE(julianday('now') - julianday(last_reinforced_at), 0.0)) / {half_life})
+                                    ELSE weight END,
+                               evidence_json FROM memory_links
                     ),
-                    walk(seed_id,memory_id,from_id,relation,weight,path_weight,depth,path,direction,evidence_json) AS (
+                    edges(from_id,to_id,relation,weight,evidence_json,direction) AS (
+                        SELECT source_id,target_id,relation,weight,evidence_json,'outgoing' FROM live
+                        UNION ALL
+                        SELECT target_id,source_id,relation,weight,evidence_json,'incoming' FROM live
+                    ),
+                    walk(seed_id,memory_id,from_id,relation,weight,path_weight,depth,path,direction,evidence_json,contradiction) AS (
                         SELECT s.seed_id,e.to_id,e.from_id,e.relation,e.weight,e.weight,1,
-                               ',' || s.seed_id || ',' || e.to_id || ',',e.direction,e.evidence_json
+                               ',' || s.seed_id || ',' || e.to_id || ',',e.direction,e.evidence_json,e.relation='contradicts'
                         FROM seeds s JOIN edges e ON e.from_id=s.seed_id
                         UNION ALL
                         SELECT w.seed_id,e.to_id,w.memory_id,e.relation,e.weight,w.path_weight*e.weight,w.depth+1,
-                               w.path || e.to_id || ',',e.direction,e.evidence_json
+                               w.path || e.to_id || ',',e.direction,e.evidence_json,
+                               MAX(w.contradiction,e.relation='contradicts')
                         FROM walk w JOIN edges e ON e.from_id=w.memory_id
                         WHERE w.depth < ? AND instr(w.path, ',' || e.to_id || ',')=0
+                        LIMIT ?
                     )
                     SELECT * FROM walk ORDER BY depth ASC,path_weight DESC LIMIT ?""",
-                [*seeds, max_depth, limit * max(1, len(seeds))],
+                [*seeds, max_depth, min(20_000, max(200, limit * len(seeds) * 8)), limit * len(seeds)],
             ).fetchall()
         best: dict[tuple[int, int], dict[str, Any]] = {}
         for row in rows:
@@ -535,7 +553,7 @@ class MemoryDatabase:
                 "weight": float(row["weight"]), "path_weight": float(row["path_weight"]),
                 "depth": int(row["depth"]), "path": path, "direction": row["direction"],
                 "evidence": json.loads(row["evidence_json"] or "{}"),
-                "contradiction": row["relation"] == "contradicts",
+                "contradiction": bool(row["contradiction"]),
             }
             key = (item["seed_id"], item["memory_id"])
             previous = best.get(key)
@@ -839,9 +857,24 @@ class MemoryDatabase:
         discoveries: dict[int, tuple[float, dict[str, Any], int]] = {}
         seeds = ranked[:seed_limit]
         seed_scores = {int(seed["id"]): float(seed["relevance"]) for seed in seeds}
-        for association in self.associations_many(
+        associations = self.associations_many(
             list(seed_scores), max_depth=max_depth, limit=max_nodes,
-        ):
+        )
+        # Every hop must remain eligible. Otherwise an excluded/tampered node
+        # can be reintroduced through a link, or used as a bridge to boost a fact.
+        path_ids = sorted({node for item in associations for node in item["path"]})
+        path_rows = {}
+        if path_ids:
+            placeholders = ",".join("?" for _ in path_ids)
+            with self.connect() as db:
+                path_rows = {int(row["id"]): row for row in db.execute(
+                    f"{self.SELECT_MEMORY} WHERE m.id IN ({placeholders})", path_ids).fetchall()}
+        eligible_ids = {node for node, row in path_rows.items()
+                        if _memory_digest(str(row["content"])) == str(row["content_digest"] or "")
+                        and (include_foreign_transient or not excluded_from_conversation(dict(row), session_id=session_id))}
+        for association in associations:
+            if any(node not in eligible_ids for node in association["path"]):
+                continue
             seed_id = int(association["seed_id"])
             associated_id = int(association["memory_id"])
             score = seed_scores[seed_id] * float(association["path_weight"])
@@ -858,11 +891,7 @@ class MemoryDatabase:
         existing_ids = set(by_id)
         missing_ids = [memory_id for memory_id in discoveries if memory_id not in existing_ids]
         if missing_ids:
-            placeholders = ",".join("?" for _ in missing_ids)
-            with self.connect() as db:
-                rows = db.execute(
-                    f"{self.SELECT_MEMORY} WHERE m.id IN ({placeholders})", missing_ids
-                ).fetchall()
+            rows = [path_rows[memory_id] for memory_id in missing_ids]
             for row in rows:
                 if memory_type and row["memory_type"] != memory_type:
                     continue
@@ -913,7 +942,7 @@ class MemoryDatabase:
         if provider is None or not provider.available:
             return {"available": False, "indexed": 0, "skipped": 0, "reason": "No configured local embedding provider is available."}
         with self.connect() as db:
-            rows = db.execute("SELECT id,content,memory_type FROM memories WHERE memory_type IN ('semantic','episodic','procedural','learning','project') ORDER BY id").fetchall()
+            rows = db.execute("SELECT id,content,memory_type FROM memories WHERE memory_type IN ('semantic','episodic','procedural','learning','project','reflection') ORDER BY id").fetchall()
             existing = {int(row["memory_id"]): dict(row) for row in db.execute("SELECT memory_id,model,embedding_version,content_hash FROM memory_neural_vectors").fetchall()}
         pending = []
         skipped = 0
@@ -949,6 +978,39 @@ class MemoryDatabase:
         with self.connect() as db:
             db.execute("INSERT OR REPLACE INTO embedding_cache(provider,model,embedding_version,content_hash,dimension,created_at,vector_json) VALUES(?,?,?,?,?,?,?)", (provider.name, provider.model, provider.version, digest, len(vector), now_iso(), json.dumps(vector)))
         return vector
+
+    def forget(self, memory_ids: list[int]) -> dict[str, Any]:
+        """Delete memories for good, with everything derived from them: search index (triggers), vectors, links,
+        consolidation marks, retrieval objects and cached embeddings no other memory shares. Conversation history
+        and backups are separate records and are not touched (the result says so)."""
+        ids = sorted({int(value) for value in memory_ids})
+        if not ids:
+            return {"forgotten": 0, "ids": []}
+        marks = ",".join("?" * len(ids))
+        with self.connect() as db:
+            rows = db.execute(f"SELECT id, content FROM memories WHERE id IN ({marks})", ids).fetchall()
+            found = [int(row["id"]) for row in rows]
+            if not found:
+                return {"forgotten": 0, "ids": [], "missing": ids}
+            hashes = {content_hash(row["content"]) for row in rows}
+            marks = ",".join("?" * len(found))
+            links = db.execute(f"DELETE FROM memory_links WHERE source_id IN ({marks}) OR target_id IN ({marks})",
+                               found + found).rowcount
+            present = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            # memory_consolidation exists only once consolidation has run; a fresh store has none.
+            for table in ("memory_vectors", "memory_neural_vectors", "memory_consolidation"):
+                if table in present:
+                    db.execute(f"DELETE FROM {table} WHERE memory_id IN ({marks})", found)
+            retrieval = db.execute(f"DELETE FROM retrieval_objects WHERE object_type LIKE 'memory:%' AND source_id IN ({marks})",
+                                   [str(value) for value in found]).rowcount if "retrieval_objects" in present else 0
+            db.execute(f"DELETE FROM memories WHERE id IN ({marks})", found)
+            remaining = {content_hash(row["content"]) for row in db.execute("SELECT content FROM memories").fetchall()}
+            cached = 0
+            for digest in hashes - remaining:
+                cached += db.execute("DELETE FROM embedding_cache WHERE content_hash=?", (digest,)).rowcount
+        return {"forgotten": len(found), "ids": found, "missing": sorted(set(ids) - set(found)),
+                "links_removed": links, "index_entries_removed": retrieval, "cached_embeddings_removed": cached,
+                "not_touched": "Conversation history and earlier backups keep their own copies; ask to clear those separately."}
 
     def record_message(self, session_id: str, role: str, content: str, model: str | None = None, metadata: dict[str, Any] | None = None) -> int:
         if role not in {"system", "user", "assistant", "tool"}:

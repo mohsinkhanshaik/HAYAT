@@ -172,6 +172,13 @@ Now:
   result on its card: connected, or "sign-in not working" with the reason.
   **Check now** repeats it. A sign-in missing from Windows Credential Manager
   is no longer shown as connected.
+- **A failed check says what it proves** (2026-11-10). Only the provider
+  refusing the sign-in, or the credential being gone, marks it "not working".
+  If the provider could not be reached, asked for fewer requests (429) or had
+  a fault of its own (5xx), the card turns amber: "provider not reached ·
+  sign-in untested". Nothing needs signing in again; check again when the
+  connection is back. Accounts are checked side by side, and a read whose
+  connection drops is tried once more (a send never is).
 - **A tab fallback while signing in with the browser:**
   - **Open it again ↗** and **Copy the sign-in link**: paste the link into a
     tab of the browser where you are already signed in to that service.

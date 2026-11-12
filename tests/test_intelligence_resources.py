@@ -2,6 +2,7 @@
 from datetime import UTC, datetime
 from io import BytesIO
 import json
+import random
 from types import SimpleNamespace
 
 import httpx
@@ -13,7 +14,9 @@ from app.intelligence.live import LIVESTREAMS
 
 #: Cameras added 2026-10-11: Tallinn's list ships with HAYAT (no fetch), plus the Norway and Estonia fixture records.
 from app.intelligence.live import static_records  # noqa: E402
-ADDED_CAMERAS = len(static_records('cameras_tallinn')) + 6  # Norway, Estonia, Luxembourg, València, NSW and Lyon fixtures
+# Norway, Estonia, Luxembourg, València, NSW and Lyon fixtures; then (2026-11-06) two Florida, two King County,
+# one Houston (its id-0 row is skipped) and one A22 camera.
+ADDED_CAMERAS = len(static_records('cameras_tallinn')) + 6 + 6
 
 #: Livestreams with a place on the map, plus the ISS broadcast at the station's position.
 PLACED_LIVESTREAMS = sum(item.get("latitude") is not None for item in LIVESTREAMS) + 1
@@ -53,6 +56,8 @@ ESTONIA_IMAGES = b"""<?xml version="1.0" encoding="UTF-8"?><d2LogicalModel xmlns
 def open_camera_payloads():
     """One realistic record per open camera network, shaped like the live 2026-10-05 responses."""
     return {
+        'cameras_northern_ireland': b'<div data-cctv-id="44"><a href="/twni/cameras/static?id=44">'
+                                   b'<span class="cctv-truncated-text">A2 - Tillysburn</span></a></div>',
         'cameras_nsw': {'type': 'FeatureCollection', 'features': [{'type': 'Feature',
             'id': '023651ee-389c-4677-978e-d39b6c24c1e7',
             'geometry': {'type': 'Point', 'coordinates': [151.10533, -34.02977]},
@@ -184,6 +189,26 @@ def open_camera_payloads():
             'icd_Id': f'IH-10 @ Test {code}', 'name': f'IH-10 @ Test {code}', 'hasSnapshot': True, 'latitude': 29.76,
             'longitude': -95.36, 'statusDescription': 'Device Online', 'dirDescription': 'East',
             'equipLoc': {'roadway': 'IH-10'}}]}} for code, _name in TXDOT_DISTRICTS},
+        # 2026-11-06 networks, shaped like the live answers. FL511 repeats an ID for two different cameras.
+        'cameras_florida': {'features': [
+            {'attributes': {'ID': '1220', 'DESCRIPT': 'I-75 @ MM 346.5 SB', 'COUNTY': 'Marion', 'HIGHWAY': 'I-75', 'DIRECTION': 'S',
+                            'LATITUDE': 29.107363, 'LONGITUDE': -82.188334, 'IMAGE': 'https://images-dis.divas.cloud/DGI/chan-9431_h.jpg'}},
+            {'attributes': {'ID': '1220', 'DESCRIPT': 'I-95 SB before E Cypress Rd', 'COUNTY': 'Broward', 'HIGHWAY': 'I-95', 'DIRECTION': 'S',
+                            'LATITUDE': 26.22006, 'LONGITUDE': -80.13676, 'IMAGE': 'https://images-dis.divas.cloud/DGI/chan-6351_h.jpg'}}]},
+        'cameras_kingcounty': {'features': [
+            {'attributes': {'AssetID': 220, 'Location': 'Avondale Rd NE & NE 165th St', 'CurrentStatus': 'Active', 'CamRegion': 'North',
+                            'ImageURL': 'http://info.kingcounty.gov/transportation/kcdot/Roads/TrafficCameras/ImageHandler/Handler.ashx?id=AvonNE_NE165_nec.jpg',
+                            'Manufacturer': 'Cohu', 'Model': '3950'}, 'geometry': {'x': -122.08, 'y': 47.75}},
+            {'attributes': {'AssetID': 64, 'Location': 'Retired camera', 'CurrentStatus': 'Inactive', 'ImageURL': None},
+             'geometry': {'x': -122.2, 'y': 47.5}}]},
+        'cameras_houston': {'cameras': [
+            {'location': '10 EAST @ SAN JACINTO', 'id': '1002', 'lat': '29.76824', 'lng': '-95.355711', 'dir': 'South',
+             'url': "showWin('/layers/gc.aspx?cam=1002')"},
+            {'location': 'Not a snapshot camera', 'id': '0', 'lat': '29.7', 'lng': '-95.3'}]},
+        'cameras_a22': {'TotalResults': 1, 'Items': [{'Id': 'A22_68', 'Active': True, 'Shortname': 'ADS Sciliar',
+            'Detail': {'it': {'BaseText': 'a destra carr. NORD (dir.Brennero)'}},
+            'GpsPoints': {'position': {'Latitude': 46.53591, 'Longitude': 11.49772}},
+            'Webcamurl': 'https://www.autobrennero.it/WebCamImg/km68.jpg'}]},
     }
 
 
@@ -256,7 +281,10 @@ class ExtendedFetcher(Fetcher):
             'air_quality_sg': {'data': {'regionMetadata': [], 'items': []}}, 'warnings_hko': {},
         })
         output = BytesIO()
-        Image.new('RGB', (32, 24), '#15253a').save(output, format='JPEG')
+        # A real picture has texture (sensor noise, a scene); a flat colour is what a publisher's "unavailable" card
+        # looks like, and is recognised as one (camera_health.py).
+        noise = random.Random(4)
+        Image.frombytes('RGB', (32, 24), bytes(noise.randrange(30, 90) for _ in range(32 * 24 * 3))).save(output, format='JPEG')
         self.image = output.getvalue()
 
     def fetch(self, url, *args, **kwargs):
@@ -277,13 +305,19 @@ class ExtendedFetcher(Fetcher):
         if url.lower().endswith(('.jpg', '.jpeg')) or url.endswith('/image') or '/api/images/' in url:
             self.calls.append('image')
             return SimpleNamespace(content=self.image, retrieved_at=datetime.now(UTC).isoformat(), sha256='image-hash', final_url=url)
+        if url.lower().split('?')[0].endswith('.mp4'):
+            # London's recorded clips: a real check fetches the clip itself.
+            self.calls.append('clip')
+            return SimpleNamespace(content=b'\x00\x00\x00\x18ftypmp42' + bytes(20000), retrieved_at=datetime.now(UTC).isoformat(),
+                                   sha256='clip-hash', final_url=url)
         if url.lower().split('?')[0].endswith('.m3u8'):
             # Stream liveness checks: a playlist, unless the test marks that publisher stream dead.
             self.calls.append('playlist')
             if url in getattr(self, 'dead_streams', ()):
                 raise RuntimeError('Publisher stream unavailable')
-            return SimpleNamespace(content=b'#EXTM3U\n#EXT-X-VERSION:3\n', retrieved_at=datetime.now(UTC).isoformat(),
-                                   sha256='playlist-hash', final_url=url)
+            # A live media playlist lists its segments; one without any has no video to play (camera_health.hls_state).
+            return SimpleNamespace(content=b'#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nsegment-1.ts\n',
+                                   retrieved_at=datetime.now(UTC).isoformat(), sha256='playlist-hash', final_url=url)
         if url.startswith('https://api.met.no/'):
             self.calls.append('weather')
             return SimpleNamespace(content=json.dumps({'geometry': {'coordinates': [-.1, 51.5, 20]}, 'properties': {'timeseries': [
@@ -311,7 +345,7 @@ def test_extended_catalogs_preserve_unknown_frame_time_and_publisher_provenance(
     assert len(expanded.store.states()) == len(expanded.feeds)
     assert all(source['status'] == 'ok' for source in expanded.dashboard()['sources'])
     cameras = expanded.cameras(limit=4)
-    assert cameras['total_matching'] == 71 + len(LIVESTREAMS) + ADDED_CAMERAS and cameras['next_offset'] == 4
+    assert cameras['total_matching'] == 72 + len(LIVESTREAMS) + ADDED_CAMERAS and cameras['next_offset'] == 4
     assert all(row['observed_at'] is None for row in cameras['cameras'])
     assert expanded.cameras(query='California')['total_matching'] == 14  # 12 Caltrans + ALERTCalifornia + Monterey Bay Aquarium live
     assert expanded.cameras(feed='cameras_caltrans_4')['total_matching'] == 1
@@ -436,6 +470,8 @@ def test_us_state_networks_keep_public_cameras_and_working_media_only(expanded):
     alabama = expanded.cameras(feed='cameras_alabama')['cameras']
     assert [row['title'] for row in alabama] == ['I-10 at McDonald Rd']  # first-responder cameras are not public
     assert alabama[0]['details']['page_url'] == 'https://www.algotraffic.com?cameraId=1845'
+    # ALDOT's streams are FairPlay DRM since November 2026: the still is kept, the stream address is not.
+    assert alabama[0]['details']['image_url'] and not alabama[0]['details'].get('video_url')
     texas = expanded.cameras(feed='cameras_txdot_hou')['cameras'][0]
     assert texas['details']['image_url'] == ('https://its.txdot.gov/its/DistrictIts/GetCctvSnapshotByIcdId'
                                              '?icdId=IH-10%20%40%20Test%20HOU&districtCode=HOU')

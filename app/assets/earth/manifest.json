@@ -1,0 +1,28 @@
+{
+  "earth-day.jpg": {
+    "source": "https://commons.wikimedia.org/wiki/File:Whole_world_-_land_and_oceans_12000.jpg",
+    "original": "NASA Visible Earth, Blue Marble: Next Generation (NASA Goddard Space Flight Center)",
+    "license": "Public domain (NASA)",
+    "downloaded_sha256": "16002ce631925ee643bc50b405abca63e8b4eab8d9e0505b57f0f1dc3ac0f8c7",
+    "transformation": "Wikimedia 3840 px thumbnail resized to 3072x1536 (Lanczos), JPEG quality 86.",
+    "shows": "Cloud-free composite of land cover and ocean colour; not today's weather.",
+    "sha256": "4d2e8bb044f9a81e7a6916c7f4de15a6b3a3533cbc36195bcb9a2df177a3e1a7",
+    "bytes": 636561
+  },
+  "earth-night.jpg": {
+    "source": "https://commons.wikimedia.org/wiki/File:The_earth_at_night.jpg",
+    "original": "NASA Earth Observatory, Black Marble 2012 (Suomi NPP VIIRS)",
+    "license": "Public domain (NASA)",
+    "downloaded_sha256": "b4fdd3f53133ca2352d7fb7902ec97e292fa5f61226e22387adfa32bf77b16bb",
+    "transformation": "Wikimedia 3840 px thumbnail converted to greyscale and resized to 2048x1024, JPEG 85.",
+    "shows": "Composite of 2012 night-time lights; not live.",
+    "sha256": "3e560669d8032b0f47f9e4b60c85ed19f5427361717b0224dab644f3eb44c9d2",
+    "bytes": 161801
+  },
+  "countries.json": {
+    "source": "Natural Earth 1:110m admin 0 countries",
+    "license": "Public domain",
+    "sha256": "6cdd0781b560ed9d0fee13ca27d7b85a22806901cde4e646e6393879befba369",
+    "bytes": 207268
+  }
+}

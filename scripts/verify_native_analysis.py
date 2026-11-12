@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import struct
 import sys
 from pathlib import Path
@@ -32,6 +33,18 @@ def fixture(path: Path):
     path.write_bytes(image)
 
 
+def decompiled_fixture_returns_42(result: dict) -> bool:
+    """Check decompiled code, never hashes or other evidence-envelope text."""
+    structured = result.get('structured')
+    if not isinstance(structured, dict):
+        return False
+    code = structured.get('normalized_result')
+    if not isinstance(code, str):
+        return False
+    code = re.sub(r'/\*.*?\*/|//[^\r\n]*', '', code, flags=re.S)
+    return bool(re.search(r'\breturn\s+(?:0x2a|42)[uUlL]*\s*;', code, re.I))
+
+
 def main():
     from app.reverse_engineer import ReaSession, ReverseEngineer
     folder = ROOT / '.test-runs' / 'native-analysis'
@@ -40,7 +53,15 @@ def main():
     fixture(target)
     before = hashlib.sha256(target.read_bytes()).hexdigest()
     engine = ReverseEngineer(lambda: ReaSession(start_timeout=60))
-    report = {'fixture': str(target), 'sha256': before, 'executed': False, 'checks': {}}
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+    from app.research_lab import ghidra_status
+    from app.reverse_engineer import installed_version
+    status = ghidra_status(SimpleNamespace())
+    report = {'fixture': str(target), 'sha256': before, 'executed': False, 'checks': {},
+              'checked_at': datetime.now(UTC).isoformat(), 'ghidra_version': status.get('version'),
+              'java_version': status.get('java_version'), 'rea_version': installed_version(),
+              'qualification_limits': 'Generated x64 PE only; other architectures and file formats are not qualified.'}
     try:
         listing = engine.tools()
         report['tool_count'] = listing['count']
@@ -53,8 +74,7 @@ def main():
         for name, args in operations:
             print(f'Checking {name}...', flush=True)
             report['checks'][name] = engine.read(name, args, timeout=180)
-        text = report['checks']['procedure_pseudo_code']['report']
-        report['decompiled_return_42'] = '42' in text or '0x2a' in text.lower()
+        report['decompiled_return_42'] = decompiled_fixture_returns_42(report['checks']['procedure_pseudo_code'])
         if not report['decompiled_return_42']:
             raise AssertionError('Generated return value was absent from the decompilation.')
         report['passed'] = True

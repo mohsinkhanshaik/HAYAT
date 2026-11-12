@@ -27,11 +27,26 @@ def _expand(value: Any) -> Any:
     return value
 
 
+#: Parsed YAML by path, kept while the file's size and modification time are unchanged.
+_PARSED: dict[Path, tuple[tuple[int, int], Any]] = {}
+
+
 def load_yaml(relative_path: str | Path) -> dict[str, Any]:
+    """The file's settings with ${VAR} expanded from the current environment.
+
+    Startup read settings.yaml eight times; the parse is cached per file
+    version, while expansion runs on every call (it builds fresh containers,
+    so callers never share or mutate the cached copy).
+    """
     load_environment()
     path = PROJECT_ROOT / relative_path
-    with path.open("r", encoding="utf-8") as handle:
-        return _expand(yaml.safe_load(handle) or {})
+    stat = path.stat()
+    version = (stat.st_mtime_ns, stat.st_size)
+    cached = _PARSED.get(path)
+    if cached is None or cached[0] != version:
+        with path.open("r", encoding="utf-8") as handle:
+            cached = _PARSED[path] = (version, yaml.safe_load(handle) or {})
+    return _expand(cached[1])
 
 
 def load_settings() -> dict[str, Any]:

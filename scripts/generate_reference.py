@@ -28,7 +28,7 @@ def render() -> str:
         "", "## Commands", "", "```text", HELP.strip(), "```", "", "## Modes", "",
     ]
     lines.extend(f"- `{mode.value}`" for mode in ExecutionMode)
-    lines.extend(["", f"## Model-independent tools ({len(tools)})", "", "> A configured vision provider adds the conditional `analyze_screenshot` tool at normal startup.", "", "| Tool | Risk | Permission | Description |", "|---|---|---|---|"])
+    lines.extend(["", f"## Model-independent tools ({len(tools)})", "", "> A configured vision provider adds the conditional `describe_screen` and `describe_image` tools at normal startup.", "", "| Tool | Risk | Permission | Description |", "|---|---|---|---|"])
     for tool in tools:
         description = str(tool["description"]).replace("|", "\\|").replace("\n", " ")
         lines.append(f"| `{tool['name']}` | {tool['risk']} | `{tool['permission']}` | {description} |")

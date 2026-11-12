@@ -12,6 +12,48 @@ from app.models.local import OpenAICompatibleProvider
 from app.policy.cost import is_local_endpoint
 
 
+def parse_metrics(text: str) -> dict[str, float]:
+    """Prometheus text exposition into {name{labels}: value}; comment and malformed lines are skipped."""
+    values: dict[str, float] = {}
+    for line in str(text or "").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        # name{labels} value [timestamp]; a label value may itself hold spaces.
+        end = line.rfind("}") + 1 if "{" in line else line.find(" ")
+        if end <= 0:
+            continue
+        name, fields = line[:end], line[end:].split()
+        try:
+            number = float(fields[0])
+        except (IndexError, ValueError):
+            continue
+        if math.isfinite(number):
+            values[name.strip()] = number
+    return values
+
+
+def summarize_metrics(values: dict[str, float]) -> dict[str, float | int | None]:
+    """The engine scheduler's own counters in plain terms (colibri_scheduler_* from GET /metrics)."""
+    prefix = "colibri_scheduler_"
+
+    def value(name: str) -> float | None:
+        return values.get(prefix + name)
+
+    def mean(name: str) -> float | None:
+        total, count = value(name + "_sum"), value(name + "_count")
+        return round(total / count, 3) if total is not None and count else None
+
+    summary: dict[str, float | int | None] = {
+        key: (int(found) if (found := value(key)) is not None else None)
+        for key in ("active", "queued", "capacity", "completed_total", "failed_total", "rejected_total",
+                    "timed_out_total", "cancelled_total")}
+    summary.update(mean_first_output_seconds=mean("first_output_seconds"),
+                   mean_request_seconds=mean("slot_duration_seconds"),
+                   mean_queue_wait_seconds=mean("queue_wait_seconds"))
+    return summary
+
+
 class ColibriProvider(OpenAICompatibleProvider):
     def __init__(self, base_url: str = "http://127.0.0.1:8000/v1", model: str = "",
                  api_key: str = "", *, context_length: int = 4096,

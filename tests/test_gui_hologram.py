@@ -59,6 +59,19 @@ def test_drag_across_a_card_rotates_without_starting_a_capability(scene):
     assert actions == views == []
 
 
+def test_short_workspace_keeps_actions_without_drawing_decoration_across_them(scene, root):
+    widget, actions, views = scene
+    root.geometry('930x110-4000-4000')
+    root.update()
+    widget.redraw()
+    assert len(widget._card_boxes) == 6
+    assert not widget.find_withtag('voice')
+    for box in widget._card_boxes.values():
+        assert 0 <= box[1] < box[3] <= widget.winfo_height()
+    assert not any('NEURAL WORKSPACE' in widget.itemcget(item, 'text') for item in widget.find_all() if widget.type(item) == 'text')
+    assert actions == views == []
+
+
 def test_all_capabilities_can_be_opened_with_keyboard_and_chords_pass_through(scene, root):
     widget, actions, views = scene
     widget.focus_force()

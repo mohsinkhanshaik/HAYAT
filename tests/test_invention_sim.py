@@ -69,6 +69,28 @@ def test_standard_shapes_find_a_line_a_power_law_and_a_product():
     assert sim.work_out(AREA)['best']['formula'] == 'h * w'
 
 
+def _law(law, points):
+    return [{'inputs': point, 'expected': format(float(f"{law(**point):.10g}"), '.10g')} for point in points]
+
+
+@pytest.mark.parametrize('name,law,points,expected,held_out', [
+    # 2026-11-07: the harder benchmark tier found these shapes missing (5/16 before, 16/16 after).
+    ('parallel resistors', lambda R1, R2: R1 * R2 / (R1 + R2),
+     [{'R1': a, 'R2': b} for a, b in ((10, 100), (22, 33), (47, 68), (100, 10), (220, 470), (470, 1000), (1000, 220))],
+     'R1 * R2 / (R1 + R2)', {'R1': 330, 'R2': 150}),
+    ('Michaelis-Menten', lambda S: 12 * S / (3 + S), [{'S': s} for s in (0.5, 1, 2, 4, 8, 16, 32)],
+     '12 * S / (3 + S)', {'S': 100}),
+    ('a wave about a level', lambda t: 3 + 2 * math.sin(1.5 * t + 0.4),
+     [{'t': t} for t in (0, 0.4, 0.8, 1.2, 1.6, 2, 2.6, 3.2, 4, 5)], '3 + 2 * sin(3 / 2 * t + 2 / 5)', {'t': 7}),
+    ('inverse square plus background', lambda d: 800 / d ** 2 + 15, [{'d': d} for d in (1, 1.5, 2, 3, 4, 6, 8, 10)],
+     '15 + 800 / d ** 2', {'d': 20}),
+])
+def test_harder_standard_shapes_find_the_exact_law(name, law, points, expected, held_out):
+    best = sim.work_out(_law(law, points), tolerance=0.002)['best']
+    assert best['formula'] == expected, name
+    assert sim.grade(best['formula'], _law(law, [held_out]), 0.002)['passed'] == 1  # predicts a case it never saw
+
+
 def test_leave_one_out_predicts_each_case_from_a_fit_that_never_saw_it():
     best = sim.work_out(LINE)['best']
     assert best['leave_one_out']['predicted_within_tolerance'] == 4
@@ -259,7 +281,7 @@ def test_the_workbench_window_works_it_out_and_draws_the_simulation(shared_tk, t
         finish()
         panel.work_button.invoke()
         finish()
-        assert panel.data['rounds'][0]['method'] == 'fit' and panel.state_badge.cget('text') == 'TESTED'
+        assert panel.data['rounds'][0]['method'] == 'fit' and panel.state_badge.cget('text') == 'Example cases passed'
         assert '2.006 * sqrt(L)' in panel.sim_text.get('1.0', 'end')
         panel.round_list.selection_set('1')
         panel.round_selected()

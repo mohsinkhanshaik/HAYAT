@@ -63,9 +63,9 @@ class Inquiry:
             return None
         lines = [f"- Q: {item['question']}\n  A ({item['basis']}): {item['answer']}" for item in self.questions]
         text = ("Your private self-inquiry before answering. It is your own reasoning, not evidence, and "
-                "you need not mention it. Build the answer on the settled points. For each point marked "
+                "you need not mention it. Treat reasoning and context as provisional, not independent verification. For each point marked "
                 "unknown, say plainly that it is not established instead of filling it in; for each point "
-                "marked needs_user, answer what you can and ask that one question at the end.\n"
+                "marked needs_user, answer what you can and ask only the most consequential missing question at the end.\n"
                 + "\n".join(lines))
         return Message("system", text, optional_context=True)
 
@@ -75,7 +75,7 @@ class SelfInquiry:
         "type": "object",
         "properties": {
             "questions": {
-                "type": "array", "maxItems": 4,
+                "type": "array", "minItems": 1, "maxItems": 4,
                 "items": {
                     "type": "object",
                     "properties": {
@@ -157,14 +157,17 @@ class SelfInquiry:
 
 def _validated(payload) -> list[dict]:
     """The schema is a request to the model, so check the contract again here."""
-    if not isinstance(payload, dict) or not isinstance(payload.get("questions"), list):
+    if (not isinstance(payload, dict) or set(payload) != {"questions"}
+            or not isinstance(payload.get("questions"), list) or not 1 <= len(payload["questions"]) <= 4):
         raise ValueError("Self-inquiry returned an invalid contract.")
     questions = []
-    for item in payload["questions"][:4]:
-        if not isinstance(item, dict) or item.get("basis") not in BASES:
+    for item in payload["questions"]:
+        if (not isinstance(item, dict) or set(item) != {"question", "answer", "basis"}
+                or item.get("basis") not in BASES
+                or not isinstance(item.get("question"), str) or not isinstance(item.get("answer"), str)):
             raise ValueError("Self-inquiry returned an invalid question.")
-        question, answer = str(item.get("question", "")).strip(), str(item.get("answer", "")).strip()
+        question, answer = item["question"].strip(), item["answer"].strip()
         if not question or not answer:
-            continue
+            raise ValueError("Self-inquiry returned an invalid empty question or answer.")
         questions.append({"question": question[:400], "answer": answer[:800], "basis": item["basis"]})
     return questions

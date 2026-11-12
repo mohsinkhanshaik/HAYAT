@@ -272,6 +272,36 @@
     ]
   },
   {
+    "topic": "SQLite timestamp timezone normalization for freshness checks",
+    "url": "https://www.sqlite.org/lang_datefunc.html",
+    "facts": [
+      {
+        "claim": "The date and time functions use UTC or \"zulu\" time internally",
+        "excerpt": "The date and time functions use UTC or \"zulu\" time internally"
+      }
+    ]
+  },
+  {
+    "topic": "Tkinter event handler responsiveness and GUI scheduling",
+    "url": "https://docs.python.org/3/library/tkinter.html",
+    "facts": [
+      {
+        "claim": "event handlers must respond quickly",
+        "excerpt": "event handlers must respond quickly"
+      }
+    ]
+  },
+  {
+    "topic": "Ollama local embedding API text vector generation",
+    "url": "https://docs.ollama.com/api/embed",
+    "facts": [
+      {
+        "claim": "Creates vector embeddings representing the input text",
+        "excerpt": "Creates vector embeddings representing the input text"
+      }
+    ]
+  },
+  {
     "topic": "Earth planet position in the solar system",
     "url": "https://science.nasa.gov/earth/facts/",
     "refresh_days": 30,

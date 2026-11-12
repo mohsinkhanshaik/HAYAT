@@ -12,6 +12,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 
@@ -77,7 +78,7 @@ class SavedViewsWindow(tk.Toplevel):
         self.open_button.pack(side='left')
         self.delete_button = ttk.Button(actions, text='Delete', command=self.delete)
         self.delete_button.pack(side='left', padx=6)
-        self.status = StringVar(self, 'Loading saved views...')
+        self.status = DisplayVar(self, 'Loading saved views...')
         ttk.Label(actions, textvariable=self.status).pack(side='left', padx=8)
         self.views = []
         place_over(self, intelligence.winfo_toplevel(), (760, 560))

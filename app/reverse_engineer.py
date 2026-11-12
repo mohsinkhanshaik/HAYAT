@@ -32,7 +32,7 @@ NODE = PROJECT_ROOT / "runtime" / "node" / "node.exe"
 #: user profile and %TEMP% (found 2026-10-17: Java's hsperfdata in %TEMP%).
 REA_HOME = PROJECT_ROOT / "data" / "rea-home"
 REA_SCRIPT = PROJECT_ROOT / "runtime" / "rea" / "node_modules" / "rea-agents" / "scripts" / "rea.mjs"
-REA_VERSION = "6.7.0"
+REA_VERSION = "6.8.0"
 
 
 def native_environment(env: dict[str, str]) -> dict[str, str]:

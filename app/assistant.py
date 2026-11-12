@@ -155,7 +155,10 @@ class AssistantService:
         and correlation cannot drift out of sync with what actually happened.
         """
         self._interlock.ticket()
-        with self._learner_stands_aside():
+        from app.nervous_system import BODY
+
+        # While the owner waits for this reply, every background part waits too (app/nervous_system.py).
+        with BODY.focus("answering you"), self._learner_stands_aside():
             return self._handle_turn(text, source)
 
     @contextmanager
@@ -191,8 +194,14 @@ class AssistantService:
         failures = getattr(self.runtime, "failures", None)
         events = getattr(self.runtime, "events", None)
         if turns is None:
+            from datetime import UTC, datetime
+
+            started = datetime.now(UTC).isoformat()
             reply = self._handle_inner(text, source)
+            reply = self._after_reply(text, reply)
+            self._attach_self_review(text, reply, started)
             self._observe_situation(text, reply)
+            self._observe_topic(reply)
             return reply
 
         # A new request arriving while earlier work is still in flight replaces
@@ -232,7 +241,12 @@ class AssistantService:
                 exc.hayat_failure_id = failure.failure_id
                 exc.hayat_failed_request = failure.user_request
             self._finalize(turn, TurnStatus.FAILED, error=f"{type(exc).__name__}: {exc}")
+            # The owner sees "That turn failed"; a following "can you fix it?" is about this failure.
+            from app.dialogue_turn import note_failure_reported
+
+            note_failure_reported(self)
             raise
+        reply = self._after_reply(text, reply)
         turn.response_id = getattr(reply, "response_id", None)
         turn.task_id = reply.task_id or turn.task_id
         turn.intent = getattr(getattr(reply, "intent", None), "intent", None) and reply.intent.intent.value
@@ -253,10 +267,39 @@ class AssistantService:
             return self._suppressed_reply(reply)
 
         completed = reply.complete is not False
+        try:
+            # What this reply sent out, from the transfer log's records for this turn (app/outbound.py).
+            from app.outbound import summary as outbound_summary
+
+            outbound = outbound_summary(turn_id=turn.turn_id, model=getattr(self.runtime, "model", None))
+            self.runtime.session.last_outbound = outbound
+            self.runtime.session.last_spelling = list(getattr(getattr(reply, "intent", None), "entities", {})
+                                                      .get("spelling") or [])
+            reply.response.metadata["outbound"] = outbound
+        except Exception:
+            log_swallowed(_log, "summarising what the reply sent out")
+        self._attach_self_review(text, reply, str(getattr(turn, "created_at", "") or ""))
         self._finalize(turn, TurnStatus.COMPLETED if completed else TurnStatus.FAILED)
         self._publish_final(turn, reply)
         self._observe_situation(text, reply)
+        self._observe_topic(reply)
         return reply
+
+    def _after_reply(self, text: str, reply: Any) -> Any:
+        """Keep the reply in the dialogue record; never send again a reply the owner refused (app/dialogue_turn.py)."""
+        from app.dialogue_turn import after_reply
+
+        return after_reply(self, getattr(self._turn_state, "request", "") or text, reply)
+
+    def _attach_self_review(self, text: str, reply: Any, started: str) -> None:
+        """Why this reply arose, what shaped it, how reliable it is, whether to revise it (app/self_review.py)."""
+        from app.self_review import for_turn as review_turn
+
+        reviewed = review_turn(self.runtime, text, reply, started)
+        response = getattr(reply, "response", None)
+        if reviewed is not None and response is not None and isinstance(getattr(response, "metadata", None), dict):
+            response.metadata["self_review"] = {key: reviewed.get(key) for key in
+                                                ("score", "level", "calibrated_score", "calibrated_level", "revise")}
 
     def _observe_situation(self, text: str, reply: Any) -> None:
         """Remember what was asked, score the last prediction, predict the next.
@@ -278,6 +321,93 @@ class AssistantService:
             situation.observe_turn(owner_words(text), ok=getattr(reply, "complete", None) is not False)
         except Exception:
             log_swallowed(_log, "observing a turn for the situation model", level=logging.WARNING)
+
+    def _place_in_topic(self, text: str) -> Any:
+        """Record the owner's message in its conversation and topic (app/topics.py); None when not tracked."""
+        self._turn_state.topic = None
+        topics = getattr(self.runtime, "topics", None)
+        conversation = getattr(self.runtime, "conversation", None)
+        if conversation is not None:
+            conversation.topic_decision = None
+        if topics is None or not str(text or "").strip():
+            return None
+        # Private-mode and child-mode turns are answered, but not added to another record.
+        guardian = getattr(getattr(self.runtime, "learning", None), "guardian", None)
+        if bool(getattr(getattr(self.runtime, "authority", None), "privacy_mode", False)) or bool(getattr(guardian, "active", False)):
+            return None
+        from app.agent.conversation import owner_words
+        try:
+            decision = topics.decide(self.runtime.session.session_id, owner_words(text))
+        except Exception:
+            log_swallowed(_log, "placing a message in its conversation topic", level=logging.WARNING)
+            return None
+        self._turn_state.topic = decision
+        if conversation is not None:
+            conversation.topic_decision = decision
+        return decision
+
+    #: Where a follow-up read through its topic may go: answers and lookups, never an action on the computer.
+    _TOPIC_READING_KINDS = frozenset({IntentKind.RESEARCH, IntentKind.QUESTION, IntentKind.CONVERSATION, IntentKind.BROWSER})
+
+    def _read_in_topic(self, intent: RequestIntent, decision: Any) -> RequestIntent | None:
+        """The intent of a follow-up read through its topic, when that reading is the one to act on.
+
+        "Look at the latest and predict for nxt year" routed on its own to a generic action whose words were
+        searched as typed. Read with its topic's subject it is a research request about next year's forecast.
+        Only answer/lookup readings are adopted, and only in place of a generic routing: a command, a control
+        phrase, a clarification or a specific tool route is never replaced.
+        """
+        if decision is None or not getattr(decision, "anchored", ""):
+            return None
+        if intent.control or intent.needs_clarification or intent.response:
+            return None
+        if intent.intent not in self._TOPIC_READING_KINDS | {IntentKind.ACTION}:
+            return None
+        if intent.intent is IntentKind.ACTION and intent.classification_source not in {"deterministic", "safe_fallback", ""}:
+            return None
+        try:
+            read = self.runtime.intent_router.route(decision.anchored, self.runtime.session)
+        except Exception:
+            log_swallowed(_log, "routing a follow-up read through its topic")
+            return None
+        if read.control or read.needs_clarification or read.intent not in self._TOPIC_READING_KINDS:
+            return None
+        if read.intent is IntentKind.RESEARCH and decision.query:
+            read.entities["query"] = decision.query
+        read.entities["topic_reading"] = {"original": decision.original, "anchored": decision.anchored,
+                                          "topic": decision.title, "query": decision.query}
+        read.classification_source = "topic_follow_up"
+        return read
+
+    def _observe_topic(self, reply: Any) -> None:
+        """Keep the reply with its topic and put the topic decision on the reply (shown under it in the chat)."""
+        decision = getattr(self._turn_state, "topic", None)
+        topics = getattr(self.runtime, "topics", None)
+        if decision is None or topics is None:
+            return
+        response = getattr(reply, "response", None)
+        try:
+            text = str(getattr(reply, "display_response", "") or getattr(response, "display_text", "") or "")
+            # Only work still running is the topic's open task; a search answered inside the turn is done.
+            job_id = str(getattr(self._turn_state, "job", "") or "")
+            jobs = getattr(self.runtime, "research_jobs", None)
+            running = {job.job_id for job in jobs.running()} if job_id and jobs is not None else set()
+            topics.observe_reply(decision, text, open_task=job_id if job_id in running else "",
+                                 session_id=self.runtime.session.session_id)
+            if response is not None and isinstance(getattr(response, "metadata", None), dict):
+                response.metadata["topic"] = decision.to_dict()
+        except Exception:
+            log_swallowed(_log, "recording a reply with its topic", level=logging.WARNING)
+        # A forecast HAYAT just gave is kept, to be checked when its date comes (app/forecasts.py).
+        ledger = getattr(self.runtime, "forecasts", None)
+        if ledger is not None and getattr(reply, "complete", None) is not False:
+            try:
+                forecast_id = ledger.record(decision.original, text, subject=decision.query or decision.topic_subject,
+                                            topic_id=decision.topic_id)
+                if forecast_id and response is not None and isinstance(getattr(response, "metadata", None), dict):
+                    response.metadata["forecast_id"] = forecast_id
+            except Exception:
+                log_swallowed(_log, "keeping a forecast for checking later")
 
     def _suppressed_reply(self, reply: AssistantReply) -> AssistantReply:
         """A result the user already took back is not shown."""
@@ -433,10 +563,54 @@ class AssistantService:
         except IllegalTurnTransition:
             pass
 
+    def _unfinished_sentence(self, text: str) -> "str | AssistantReply":
+        """The text to act on, or the question asking for the rest of a half-sent message."""
+        import time as _time
+
+        from app.unfinished import FRESH_SECONDS, combine, ending_question, unfinished
+
+        session = self.runtime.session
+        pending = getattr(session, "pending_fragment", None)
+        if pending:
+            session.pending_fragment = None
+            if _time.monotonic() - float(pending.get("at", 0)) < FRESH_SECONDS:
+                joined = combine(pending.get("text", ""), text)
+                if joined is None:
+                    session.last_user_input = text
+                    return self._direct(RequestIntent(IntentKind.CONVERSATION, 1.0, text,
+                                                      classification_source="unfinished"),
+                                        "Okay, I've dropped that half-sentence.")
+                return joined
+        lesson = getattr(session, "pending_learning", None) or {}
+        in_lesson = lesson.get("type") == "language" and not lesson.get("paused")
+        if not in_lesson and unfinished(text):
+            session.pending_fragment = {"text": str(text).strip(), "at": _time.monotonic()}
+            session.last_user_input = text
+            intent = RequestIntent(IntentKind.CONVERSATION, 1.0, text, classification_source="unfinished",
+                                   entities={"unfinished": True})
+            return self._direct(intent, ending_question(text))
+        return text
+
     def _handle_inner(self, text: str, source: str = "text", turn: Any = None) -> AssistantReply:
         self._turn_state.turn = turn
+        self._turn_state.topic = None
+        # "find me the" -> "…the what?" -> "cheapest flight to dubai": one sentence (app/unfinished.py).
+        waiting = self._unfinished_sentence(text)
+        if isinstance(waiting, AssistantReply):
+            return waiting
+        text = waiting
         self._turn_state.request = text
+        # Which conversation and topic this belongs to, and what a follow-up means there (app/topics.py).
+        owner_text = text
+        decision = self._place_in_topic(text)
+        # Goals he states and facts about him, kept across topics and days (app/dialogue_state.py).
+        from app import dialogue_turn
+
+        dialogue_turn.observe(self, text)
         intent = self.runtime.intent_router.route(text, self.runtime.session)
+        in_topic = self._read_in_topic(intent, decision)
+        if in_topic is not None:
+            intent, text = in_topic, decision.anchored
         if intent.control not in {"MODEL_PULL", "MODEL_PULL_STATUS", "MODEL_PULL_CANCEL", "MODEL_PULL_AGAIN", "INSTALL_CONFIRM"}:
             self.runtime.session.model_pull_followup = False
         pending_lesson = self.runtime.session.pending_learning or {}
@@ -479,7 +653,7 @@ class AssistantService:
         if guardian is not None:
             allowed, reason = guardian.check(intent.intent.value, text)
             if not allowed:
-                self.runtime.session.last_user_input = text
+                self.runtime.session.last_user_input = owner_text
                 return self._direct(intent, f"Child mode is active, so I won't operate the computer or access private resources. We can keep learning here, or a parent can leave child mode from the console. ({reason})")
             if guardian.active:
                 modes = [*modes]
@@ -513,7 +687,8 @@ class AssistantService:
             self.runtime.session.standing_instruction = {}
         from app.business_acquisition import remember_topic
         remember_topic(self.runtime.session, text, intent)
-        self.runtime.session.last_user_input = text
+        # What the owner said, never the topic's reading of it: replies and records quote his words.
+        self.runtime.session.last_user_input = owner_text
         self.runtime.session.last_intent = intent
         if turn is not None:
             turn.intent = intent.intent.value
@@ -524,8 +699,19 @@ class AssistantService:
             self._advance(turn, TurnStatus.NORMALIZED)
             self._advance(turn, TurnStatus.ROUTED, intent=intent.intent.value, confidence=intent.confidence)
 
+        # A complaint about the last answer, a request to find out why something failed, or a goal-sized money
+        # question is answered from the dialogue record before the routed path can repeat itself
+        # (app/dialogue_turn.py). Child mode never reaches here with a tool request.
+        if not (guardian is not None and guardian.active):
+            # The owner's words, never a topic's reading of them ("fix it, about the ...").
+            handled = dialogue_turn.intercept(self, owner_text, intent)
+            if handled is not None:
+                return handled
         if intent.needs_clarification:
             return self._direct(intent, intent.response or "What should I do specifically?")
+        if intent.classification_source == 'contact_boundary':
+            self.runtime.session.last_answer_source = 'contact_boundary'
+            return self._direct(intent, intent.response)
         if intent.entities.get("business_acquisition"):
             from app.business_acquisition import format_report
             self.runtime.state.set_activity(Activity.RESEARCHING)
@@ -566,12 +752,28 @@ class AssistantService:
                 return self._direct(intent, 'The world-update research is still running, so I have not yet '
                                     'established the requested sector evidence. The sourced report will include '
                                     'conditional effects and coverage gaps when the search finishes.')
-            from app.calculation import calculation_answer
-            from app.dates import date_answer, letter_count_answer
-            from app.exact_answers import exact_answer
+            if intent.classification_source == 'owner_mind':
+                from app.own_history import owner_mind_answer
+                honest = owner_mind_answer(text)
+                if honest is not None:
+                    return self._direct(intent, honest)
+            if intent.classification_source == 'own_action_history':
+                from app.own_history import past_action_answer
+                recorded = past_action_answer(getattr(self.runtime, 'memory', None),
+                                              getattr(self.runtime, 'confirmations', None), text)
+                if recorded is not None:
+                    return self._direct(intent, recorded)
+            if intent.classification_source == 'own_reading_history':
+                from app.own_history import past_reading_answer
+                research = getattr(self.runtime, 'research', None)
+                recorded = past_reading_answer(getattr(research, 'knowledge', None), text)
+                if recorded is not None:
+                    return self._direct(intent, recorded)
+            from app.answer_format import exact_local_answer
 
-            calculated = (calculation_answer(text) or date_answer(text) or letter_count_answer(text)
-                          or exact_answer(text))
+            # Also answers a question followed by "Reply with only the final answer." and
+            # gives it in that form (app/answer_format.py).
+            calculated = exact_local_answer(text)
             if calculated is not None:
                 self.runtime.session.last_answer_source = "exact"
                 return self._direct(intent, calculated)
@@ -875,6 +1077,8 @@ class AssistantService:
         if control == "PROJECT_USE":
             project = self.runtime.projects.use(str(intent.entities.get("project", "")))
             return self._direct(intent, f"Active project is now {project.name} at {project.root}.")
+        if control == "REVISIT_ANSWER":
+            return self._direct(intent, self._revisit_answer(intent))
         if control == "SHOW_THINKING":
             stream = getattr(self.runtime, "thoughts", None)
             if stream is None:
@@ -882,7 +1086,9 @@ class AssistantService:
             return self._direct(intent, "Here's what I did:\n" + stream.report())
         if control == "BACKGROUND_LEARNING":
             return self._direct(intent, self._background_learning_answer())
-        if control and control.startswith("SELF_"):
+        # SELF_REVIEW is the improvement report below; caught here it was answered
+        # "I couldn't read that about myself right now." every time.
+        if control and control.startswith("SELF_") and control != "SELF_REVIEW":
             from app import self_knowledge
 
             text = self_knowledge.answer(control, intent.entities or {}, self.runtime)
@@ -899,12 +1105,16 @@ class AssistantService:
         if control == "MONEY_DECISION":
             return self._direct(intent, self._owner_money_decision(str((intent.entities or {}).get("text") or intent.goal or "")))
         if control == "CAPABILITY":
-            return self._direct(intent, self._capability_answer(intent.goal or ""))
+            self._turn_state.capability_used_model = False
+            answer = self._capability_answer(intent.goal or "", interpret_unknown=True)
+            return self._direct(intent, answer, record=not self._turn_state.capability_used_model)
         if control == "SELF_REVIEW":
             improvement = getattr(self.runtime, "improvement", None)
             if improvement is None:
                 return self._direct(intent, "I can't review myself right now.")
-            return self._direct(intent, improvement.report())
+            from app.owner_feedback import OwnerFeedback
+            verdicts = OwnerFeedback.beside(self.runtime.memory).summary_line()
+            return self._direct(intent, improvement.report() + (f"\n\n{verdicts}" if verdicts else ""))
         if control == "LEARNING_REPORT":
             return self._direct(intent, self._learning_report(int(intent.entities.get("days", 1))))
         if control == "REPLY_LANGUAGE":
@@ -1126,7 +1336,7 @@ class AssistantService:
                     "Open the HAYAT Wallet window to approve it.")
         return owner_word(desk, text) or "Say “approve decision N”, “decline decision N” or “decision N is paid”."
 
-    def _capability_answer(self, question: str) -> str:
+    def _capability_answer(self, question: str, *, interpret_unknown: bool = False) -> str:
         """Whether HAYAT can do a thing, answered from the registry.
 
         Asked "can you scrape websites?" the model replied "I don't have a
@@ -1136,7 +1346,9 @@ class AssistantService:
         public_web_fetch returns pages. The model had no way to know that, so
         it answered from what a general language model usually cannot do.
 
-        No model is consulted here. The registry is the fact.
+        Known ability classes use local records. Unknown subjects can reach
+        semantic interpretation when requested; registration never proves
+        that a requested target is reachable or that an action succeeded.
         """
         registry = getattr(self.runtime, "registry", None)
         if registry is None:
@@ -1162,11 +1374,14 @@ class AssistantService:
                 understanding = getattr(registry, "understanding", None)
                 if understanding is not None:
                     return understanding.overview(registry)
-            return (f"I have {len(names)} tools registered, but none of them match that. "
-                    f"Ask me \"what tools do you have\" for the full list rather than "
-                    f"taking my word for what I cannot do.")
+            if interpret_unknown and getattr(self.runtime, 'model', None) is not None:
+                self._turn_state.capability_used_model = True
+                return self._conversation_reply(question, capability='conversation')
+            return ("I don't have a verified tool match for that complete request. "
+                    "I won't claim I can perform it from a similar word in a tool name. "
+                    "Please clarify the target or ask me to explain the topic.")
 
-        lines = ["Yes. Here's what I actually have for that:", ""]
+        lines = ["These registered tools may help with that request:", ""]
         for name in matched[:6]:
             try:
                 spec = registry.get(name)
@@ -1176,8 +1391,8 @@ class AssistantService:
             description = " ".join(str(spec.description or "").split())
             lines.append(f"  {name} -- {description[:150]}")
         lines.append("")
-        lines.append("Those are registered on this machine and run locally. Say the word and "
-                     "I'll use them -- I don't need you to paste the content in.")
+        lines.append("Registration does not establish that the requested target, service or permission is ready. "
+                     "Nothing has been executed by this answer.")
         return "\n".join(lines)
 
     def _learning_report(self, days: int = 1) -> str:
@@ -1264,6 +1479,9 @@ class AssistantService:
         self._record("user", text, intent=intent.intent.value)
         summary = failure.summary()
         self._record("assistant", summary, complete=True)
+        from app.dialogue_turn import note_failure_reported
+
+        note_failure_reported(self)
         return self._build_reply(intent, summary, complete=True)
 
     def _diagnostic(self, intent: RequestIntent, text: str) -> AssistantReply:
@@ -1292,6 +1510,11 @@ class AssistantService:
                     return reply
         previous = self.runtime.session.last_task
         self.runtime.session.last_correction = text
+        if previous is None:
+            from app.owner_feedback import acknowledgement
+            noted = acknowledgement(text)
+            if noted is not None:
+                return self._direct(intent, noted)
         if text.lower().strip(" .!?") == "try again" and previous is not None:
             retry_intent = self._retry_intent(previous)
             if retry_intent.is_action and retry_intent.requires_tools:
@@ -1695,6 +1918,13 @@ class AssistantService:
             return answer
         from app.tools.introspection import denies_a_real_capability
 
+        # An unrecognized target is not made reachable by tools for another
+        # ability. In particular, retain a true limit beside an offer to search.
+        if self.runtime.intent_router.CAPABILITY_QUESTION.match(text):
+            from app.tools.introspection import _tools_for_ability
+            if not _tools_for_ability(registry, sorted(registry.names()), text):
+                return answer
+
         ability = denies_a_real_capability(registry, answer)
         if not ability:
             return answer
@@ -1706,10 +1936,10 @@ class AssistantService:
         retry = (
             f"{text}\n\n"
             f"[Correction: you just said you cannot {ability}. That is false. On this "
-            f"machine you have these tools and they work:\n{truth}\n"
-            f"Your background learner also runs continuously and reads the public web on "
-            f"its own. Answer again, accurately, and do not ask him to paste content you "
-            f"can fetch yourself.]"
+            f"machine the following capabilities are registered:\n{truth}\n"
+            f"Registration alone does not verify execution or service readiness. Background learning "
+            f"runs only under the configured policy and observed state. Answer accurately about the "
+            f"requested target; do not broaden a true limitation into a false claim that all browsing is absent.]"
         )
         try:
             second = self.runtime.conversation.reply(
@@ -1916,12 +2146,82 @@ class AssistantService:
         special = {"mode", "url", "web_capture", "reference_resolved", "github", "paper", "repository", "document_url"}
         return not (set(intent.entities) & special)
 
+    def _revisit_answer(self, intent: RequestIntent) -> str:
+        """"How did you get that? Do it again, better, and look it up": answered from what was recorded about the
+        last answer, then the original question is answered again -- researched, deeper, when asked to look it up."""
+        from types import SimpleNamespace
+
+        from app.answer_provenance import describe
+        from app.intent.revisit import original_question, related
+
+        wants = intent.entities or {}
+        question, answer = original_question(self._history(), self.runtime.session.last_user_input)
+        if not question:
+            return ("I haven't answered anything in this conversation yet, so there is nothing to explain or redo. "
+                    "Ask your question and I'll show how I answer it.")
+        session = self.runtime.session
+        previous = str(wants.get("previous_source") or "")
+        audit = session.research_audit or {}
+        searched = bool(audit.get("query")) and related(str(audit.get("query")), question)
+        if searched and previous not in {"brain", "exact"}:
+            # The answer came from that search; "revisit_answer" or "deterministic" only says how the question was
+            # routed, and read as "HAYAT's own rules" (live, 2026-11-07).
+            previous = "research_audit"
+        parts: list[str] = []
+        if wants.get("explain"):
+            shim = SimpleNamespace(session=SimpleNamespace(last_answer_source=previous,
+                                                           standing_instruction=getattr(session, "standing_instruction", None)),
+                                   conversation=getattr(self.runtime, "conversation", None),
+                                   model=getattr(self.runtime, "model", None))
+            lines = [f"How I reached my last answer (to “{question[:160]}”):"]
+            lines += [f"- {line}" for line in describe(shim)]
+            # The self-review made when that answer was given: trigger, assumptions, influences, reliability, revision.
+            from app.self_review import lines as review_lines
+
+            lines += [f"- {line}" for line in review_lines(getattr(session, "last_self_review", None))]
+            if searched:
+                pages = audit.get("pages_checked") or []
+                lines.append(f"- I searched for “{audit['query']}” ({audit.get('status', 'unknown status')}): "
+                             f"{len(pages)} page{'s' if len(pages) != 1 else ''} read.")
+                lines += [f"  · {page.get('title') or page.get('url')}: {page.get('url')}" for page in pages[:6]]
+                if audit.get("errors"):
+                    lines.append(f"  · {len(audit['errors'])} search or fetch error(s) left gaps.")
+            elif previous in {"brain", "question", "conversation", ""}:
+                lines.append("- I did not look anything up for it: it came from the model's own knowledge, which can be "
+                             "out of date or wrong. Nothing in it was checked against sources.")
+            stream = getattr(self.runtime, "thoughts", None)
+            report = str(stream.report()).strip() if stream is not None else ""
+            if report:
+                # "understood: QUESTION" lines are routing labels, not steps (live, 2026-11-07).
+                steps = [line for line in report.splitlines()
+                         if line.strip() and not line.strip().lower().startswith("understood:")][:8]
+                if steps:
+                    lines += ["- Recorded steps:", *[f"  {line.strip()}" for line in steps]]
+            parts.append("\n".join(lines))
+        if wants.get("redo") or wants.get("research"):
+            if wants.get("research") or searched or self._wants_current_facts(question):
+                level = "deep"
+                parts.append(("Looking it up again, more thoroughly, for your original question:\n" if parts else "")
+                             + self._research_in_background(question, query=self._research_query(question), level=level))
+            else:
+                parts.append("Again, more carefully:\n" + self._conversation_reply(
+                    f"{question}\n\n(Answer this again, more carefully and completely than your previous answer. "
+                    "Say plainly what you are unsure of.)", capability=self._question_model_capability(question)))
+        elif wants.get("explain") and not searched:
+            parts.append("Say “look it up” and I'll check that answer against sources.")
+        return "\n\n".join(parts)
+
     def _history(self) -> list[dict[str, Any]]:
         try:
-            return self.runtime.memory.conversation_history(self.runtime.conversation.session_id, 12)
+            history = self.runtime.memory.conversation_history(self.runtime.conversation.session_id, 12)
         except Exception:
             log_swallowed(_log, "reading the conversation for a research subject")
             return []
+        # A vague "find it" takes its subject from this topic, never from an unrelated one earlier in the chat.
+        decision, topics = getattr(self._turn_state, "topic", None), getattr(self.runtime, "topics", None)
+        if decision is not None and topics is not None:
+            history, _ = topics.scope_history(self.runtime.conversation.session_id, history, decision)
+        return history
 
     def _rewrite(self, prompt: str) -> str:
         from app.models.base import Message
@@ -1945,6 +2245,11 @@ class AssistantService:
         """Search as a job: a quick answer comes back now, a slow one as its own message later."""
         from app.output import get_output
         from app.research.subject import requested_level
+
+        # A follow-up read through its topic is searched as the topic's subject, not as its own words (app/topics.py).
+        decision = getattr(self._turn_state, "topic", None)
+        if decision is not None and decision.anchored and decision.query and text == decision.anchored:
+            query = decision.query
 
         authority = getattr(self.runtime, "authority", None)
         modes = set(self.runtime.session.effective_modes)
@@ -2031,6 +2336,7 @@ class AssistantService:
             self._record("assistant", text, notice=kind, job=getattr(job, "job_id", "") or getattr(job, "name", ""))
         except Exception:
             log_swallowed(_log, "recording a research result", level=logging.WARNING)
+        self._file_job_result(job, text, kind)
         get_output().emit(text, source="assistant_notice")
         voice = getattr(self.runtime, "voice", None)
         try:
@@ -2039,6 +2345,23 @@ class AssistantService:
                 voice._speak(spoken[:600])
         except Exception:
             log_swallowed(_log, "speaking a research result", level=logging.WARNING)
+
+    def _file_job_result(self, job: Any, text: str, kind: str) -> None:
+        """A finished search goes under the topic that asked for it; a forecast in it is kept for checking."""
+        if kind != "research" or getattr(job, "status", "done") not in {"done", ""}:
+            return
+        placed = None
+        topics = getattr(self.runtime, "topics", None)
+        try:
+            if topics is not None:
+                placed = topics.task_finished(str(getattr(job, "job_id", "") or ""), text)
+            ledger = getattr(self.runtime, "forecasts", None)
+            # Only work a tracked topic asked for: privacy-mode and child-mode searches are never placed in one.
+            if ledger is not None and placed is not None:
+                ledger.record(str(getattr(job, "asked", "") or ""), text,
+                              subject=str(getattr(job, "query", "") or ""), topic_id=placed["topic_id"])
+        except Exception:
+            log_swallowed(_log, "filing a research result under its topic")
 
     _OFFERS_SEARCH = re.compile(
         r"(?i)\b(?:want me to|shall i|should i|would you like me to|i can|i could|let me|i'?ll|i will)\s+"
@@ -2063,6 +2386,12 @@ class AssistantService:
         self.runtime.memory.record_message(self.runtime.session.session_id, role, content, metadata=metadata)
 
     def _outcome_response(self, intent: RequestIntent, outcome: Any) -> str:
+        history = getattr(outcome, 'history', [])
+        if len(history) == 1 and history[0].get('tool') == 'startup_readiness':
+            result = history[0].get('result') or {}
+            if result.get('success') and isinstance(result.get('output'), dict):
+                from app.startup import readiness_lines
+                return '\n'.join(readiness_lines(result['output']))
         from app.research.contact_actions import report as contact_report
         contacts = contact_report(getattr(outcome, 'history', []))
         if contacts:
@@ -2363,7 +2692,10 @@ class AssistantService:
             return f"I couldn't show the {kind}: the generated file is invalid at {path}."
         seconds = output.get("seconds")
         took = f" in {float(seconds):.0f}s" if isinstance(seconds, (int, float)) else ""
-        return f"Your {kind} is ready{took}. Saved to {path}"
+        from app.models.diffusion import asks_for_text
+        lettering = (" Note: the image model draws letters as shapes, so the wording in it may be misspelled."
+                     if kind == "image" and asks_for_text(str(output.get("prompt") or "")) else "")
+        return f"Your {kind} is ready{took}.{lettering} Saved to {path}"
 
     @staticmethod
     def _camera_observation(outcome: Any) -> str | None:

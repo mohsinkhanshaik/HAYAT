@@ -32,6 +32,17 @@ WEB_LIMIT = 500
 HISTORY_LIMIT = 2000
 
 
+def _cause() -> dict[str, Any]:
+    """The turn and task this request belongs to, so a reply can say what it sent (app/outbound.py)."""
+    try:
+        from app.execution import current_context
+
+        context = current_context()
+    except Exception:
+        return {}
+    return {key: value for key, value in (("turn", context.turn_id), ("task", context.task_id)) if value}
+
+
 def where(url: str) -> tuple[str, str]:
     """(host, path) of an address, without its query: keys and tokens in a query string are never kept."""
     parts = urlsplit(str(url or ""))
@@ -44,6 +55,7 @@ class TransferLog:
         self._lock = threading.RLock()
         self._active: dict[int, dict[str, Any]] = {}
         self._web: deque[dict[str, Any]] = deque(maxlen=WEB_LIMIT)
+        self._outbound: deque[dict[str, Any]] = deque(maxlen=WEB_LIMIT)
         self._sites: dict[str, dict[str, Any]] = {}
         self._history: list[dict[str, Any]] = []
         self._next = 1
@@ -111,7 +123,7 @@ class TransferLog:
     def web(self, url: str, *, purpose: str, size: int, ms: int, status: str = "done", error: str = "") -> None:
         host, path = where(url)
         row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "host": host, "path": path[:200], "purpose": purpose,
-               "bytes": int(size), "ms": int(ms), "status": status, "error": str(error)[:160]}
+               "bytes": int(size), "ms": int(ms), "status": status, "error": str(error)[:160], **_cause()}
         with self._lock:
             self._web.append(row)
             site = self._sites.setdefault(host, {"host": host, "requests": 0, "bytes": 0, "failed": 0, "ms": 0, "last": "",
@@ -126,6 +138,25 @@ class TransferLog:
     def web_recent(self, limit: int = 200) -> list[dict[str, Any]]:
         with self._lock:
             return list(reversed(self._web))[:limit]
+
+    # ------------------------------------------------------------------ what else leaves the computer
+    def search(self, query: str, engines: list[str], results: int) -> None:
+        """The words sent to search engines (app/outbound.py): kept for this session only, like web requests."""
+        row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "kind": "search", "query": str(query)[:200],
+               "engines": [str(engine) for engine in engines][:8], "results": int(results), **_cause()}
+        with self._lock:
+            self._outbound.append(row)
+
+    def action(self, what: str) -> None:
+        """An outward action (a message, a post, a sign-in), named by where it went, never by what it said."""
+        row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "kind": "action", "what": str(what)[:200],
+               **_cause()}
+        with self._lock:
+            self._outbound.append(row)
+
+    def outbound_recent(self, limit: int = 200) -> list[dict[str, Any]]:
+        with self._lock:
+            return list(reversed(self._outbound))[:limit]
 
     def sites(self) -> list[dict[str, Any]]:
         with self._lock:

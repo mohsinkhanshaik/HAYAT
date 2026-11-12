@@ -41,6 +41,7 @@ class AdaptiveControlPlane:
         self.runtime = runtime
         self.cycles = 0
         self.last_queued: list[str] = []
+        self.observation_errors: dict[str, str] = {}
 
     @staticmethod
     def _public_safe(text: str) -> bool:
@@ -54,6 +55,7 @@ class AdaptiveControlPlane:
     def curriculum(self, limit: int = 12) -> list[dict[str, Any]]:
         """Rank concrete gaps from evidence already held by the runtime."""
         priorities: list[LearningPriority] = []
+        self.observation_errors = {}
         knowledge = getattr(getattr(self.runtime, "research", None), "knowledge", None)
         if knowledge is not None:
             try:
@@ -65,7 +67,8 @@ class AdaptiveControlPlane:
                     ).fetchall()
                     stale = db.execute(
                         "SELECT query FROM knowledge WHERE status='active' AND valid_until IS NOT NULL "
-                        "AND valid_until<=? ORDER BY confidence DESC LIMIT 5",
+                        "AND (julianday(valid_until) IS NULL OR julianday(valid_until)<=julianday(?)) "
+                        "ORDER BY confidence DESC LIMIT 5",
                         (datetime.now(UTC).isoformat(),),
                     ).fetchall()
                 for left, right in conflicts:
@@ -81,7 +84,8 @@ class AdaptiveControlPlane:
                         topic, "stored knowledge passed its validity horizon", "stale_knowledge", 88,
                         "fresh independent sources and an updated validity horizon", self._public_safe(topic),
                     ))
-            except Exception:
+            except Exception as exc:
+                self.observation_errors["knowledge"] = type(exc).__name__
                 log_swallowed(_log, "reading stale knowledge priorities")
         failures = getattr(self.runtime, "failures", None)
         if failures is not None:
@@ -95,7 +99,8 @@ class AdaptiveControlPlane:
                         topic, "a runtime dependency recently failed", "runtime_failure", 92,
                         "official documentation plus a reproducible local diagnostic", self._public_safe(topic),
                     ))
-            except Exception:
+            except Exception as exc:
+                self.observation_errors["failures"] = type(exc).__name__
                 log_swallowed(_log, "reading failure priorities")
         learning = getattr(self.runtime, "learning", None)
         if learning is not None:
@@ -107,7 +112,8 @@ class AdaptiveControlPlane:
                             topic, "measured mastery is weak or due for review", "measured_weakness", 72,
                             "retrieval practice improves the recorded mastery score", self._public_safe(topic),
                         ))
-            except Exception:
+            except Exception as exc:
+                self.observation_errors["learning"] = type(exc).__name__
                 log_swallowed(_log, "reading weak-mastery priorities")
         unique: dict[str, LearningPriority] = {}
         for item in priorities:
@@ -118,6 +124,8 @@ class AdaptiveControlPlane:
         return [item.to_dict() for item in ranked[:max(1, min(int(limit), 50))]]
 
     def queue_curriculum(self, limit: int = 3) -> dict[str, Any]:
+        if getattr(getattr(self.runtime, "authority", None), "privacy_mode", False):
+            return {"queued": 0, "topics": [], "reason": "privacy mode blocks public learning"}
         learner = getattr(self.runtime, "learner", None)
         if learner is None:
             return {"queued": 0, "topics": [], "reason": "continuous learner unavailable"}
@@ -182,34 +190,37 @@ class AdaptiveControlPlane:
         camera = getattr(self.runtime, "camera", None)
         voice = getattr(self.runtime, "voice", None)
         displays = getattr(self.runtime, "displays", None)
-        try:
-            camera_status = camera.status() if camera is not None else {}
-        except Exception:
-            camera_status = {}
-        try:
-            voice_status = voice.status() if voice is not None else {}
-        except Exception:
-            voice_status = {}
-        try:
-            display_status = displays.status() if displays is not None else {}
-        except Exception:
-            display_status = {}
+        measurements, errors = {}, {}
+        for name, component in (("camera", camera), ("voice", voice), ("screen", displays)):
+            try:
+                value = component.status() if component is not None else None
+                if not isinstance(value, dict):
+                    errors[name] = "unavailable"
+                measurements[name] = value if isinstance(value, dict) else {}
+            except Exception as exc:
+                measurements[name] = {}
+                errors[name] = type(exc).__name__
+        camera_status, voice_status, display_status = (measurements[name] for name in ("camera", "voice", "screen"))
         observation = camera_status.get("last_observation") or {}
         capture = voice_status.get("last_capture") or {}
         return {
+            "measured_at": datetime.now(UTC).isoformat(),
+            "observation_errors": errors,
             "camera": {
+                "available": "camera" not in errors,
                 "active": bool(camera_status.get("active")),
                 "frames_captured": int(observation.get("frames_captured", 0) or 0),
                 "frames_analyzed": int(observation.get("frames_analyzed", 0) or 0),
-                "method": observation.get("analysis_method") or "multi_frame_ranked_consensus",
+                "method": observation.get("analysis_method") or "not_observed",
                 "ocr_frames_compared": int((observation.get("ocr") or {}).get("frames_compared", 0) or 0),
             },
             "voice": {
+                "available": "voice" not in errors,
                 "state": voice_status.get("state", "off"), "mode": voice_status.get("mode", "off"),
                 "stt": voice_status.get("stt_provider"), "tts": voice_status.get("tts_provider"),
                 "capture": capture,
             },
-            "screen": {"displays": int(display_status.get("count", 0) or 0)},
+            "screen": {"available": "screen" not in errors, "displays": int(display_status.get("count", 0) or 0)},
             "wifi_sensing": self._wifi_sensing(),
             "grounding_rule": "multiple observations outrank single-frame inference; current sensor evidence outranks memory",
             "uncertainty": "missing or stale measurements remain unknown rather than becoming guessed facts",
@@ -234,7 +245,30 @@ class AdaptiveControlPlane:
         curriculum = self.curriculum(8)
         learner = getattr(self.runtime, "learner", None)
         improvement = getattr(self.runtime, "improvement", None)
+        knowledge = getattr(getattr(self.runtime, "research", None), "knowledge", None)
+        knowledge_health: dict[str, Any] = {"available": False}
+        review_reliability: dict[str, Any] = {"available": False}
+        memory = getattr(self.runtime, "memory", None)
+        if memory is not None and getattr(memory, "path", None):
+            try:
+                from app.self_review import SelfReviewLog
+
+                review_reliability = {"available": True, **SelfReviewLog.beside(memory).assessment()}
+            except Exception as exc:
+                self.observation_errors["review_reliability"] = type(exc).__name__
+        if knowledge is not None:
+            try:
+                stats = knowledge.stats()
+                keys = ("measured_at", "claims", "verified_current_claims", "stale_claims", "undated_claims",
+                        "invalid_deadlines", "claims_missing_direct_evidence", "unresolved_conflicts")
+                knowledge_health = {"available": True, **{key: stats[key] for key in keys if key in stats}}
+            except Exception as exc:
+                self.observation_errors["knowledge_health"] = type(exc).__name__
         return {
+            "measured_at": datetime.now(UTC).isoformat(),
+            "observation_errors": dict(self.observation_errors),
+            "knowledge_health": knowledge_health,
+            "review_reliability": review_reliability,
             "operational_metacognition": True,
             "subjective_consciousness_claimed": False,
             "self_model": "measured runtime state, outcomes, gaps, and uncertainty",

@@ -463,3 +463,18 @@ def test_a_conversation_reply_never_shows_an_invented_phone_number(tmp_path):
     reply = chat.reply("how do I reach the installers?")
     assert "(866) 459-9494" not in reply and "(phone not on record)" in reply
     assert "(832) 616-8538" in reply and "not found by any search" in reply
+
+
+# Live 2026-11-07: a one-line answer about Tokyo got "Not done: ... verified contacts" for history told in the passive.
+@pytest.mark.parametrize("text,claim", [
+    ("Its status was confirmed by the Meiji government, which renamed Edo, and the names of ministries followed.", False),
+    ("Population numbers were verified by the 2020 census.", False),
+    ("The owners of the land were confirmed by imperial decree.", False),
+    ("I verified the emails from LinkedIn.", True),
+    ("All 8 verified installers are listed below.", True),
+    ("The contacts were verified by phone.", True),
+    ("The owners were verified by us through public records.", True),
+])
+def test_history_told_in_the_passive_is_not_a_contact_check(text, claim):
+    from app.action_claims import unbacked_claims
+    assert bool(unbacked_claims(text)) is claim

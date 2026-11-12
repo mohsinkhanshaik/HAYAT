@@ -32,6 +32,7 @@ is not working.
 from __future__ import annotations
 
 import json
+import os
 import ctypes
 import hashlib
 import logging
@@ -83,6 +84,11 @@ class LearningBudget:
     min_idle_seconds: float = 120.0
     #: Refuse to start if the machine is already busy with the owner's work.
     max_cpu_percent: float = 70.0
+    #: Keep this much RAM free for the owner; below it the learner waits.
+    min_free_ram_gb: float = 2.0
+    #: VRAM a cycle may need (free, or held by an idle model that would unload). 0 turns the check off.
+    #: Below it -- an image or video render holding the card -- the learner waits instead of competing.
+    min_obtainable_vram_gb: float = 1.0
     #: Recheck soon after the owner becomes idle instead of sleeping for the
     #: whole learning interval after a question woke the queue.
     idle_retry_seconds: float = 15.0
@@ -95,6 +101,8 @@ class LearningBudget:
             "max_seconds_per_cycle": self.max_seconds_per_cycle,
             "min_idle_seconds": self.min_idle_seconds,
             "max_cpu_percent": self.max_cpu_percent,
+            "min_free_ram_gb": self.min_free_ram_gb,
+            "min_obtainable_vram_gb": self.min_obtainable_vram_gb,
             "idle_retry_seconds": self.idle_retry_seconds,
         }
 
@@ -193,6 +201,10 @@ class ContinuousLearner:
         self.retry_delay_seconds = max(0.0, float(retry_delay_seconds))
         self.maintenance_interval_seconds = max(60.0, float(maintenance_interval_seconds))
         self._next_maintenance = 0.0
+        self._next_reference_refresh = 0.0
+        self.last_reference_refresh: dict[str, Any] = {}
+        self._next_correction_check = 0.0
+        self.last_correction_check: dict[str, Any] = {}
         self.last_maintenance: dict[str, Any] = {}
         self.worker_state = "stopped"
         self.waiting_because = ""
@@ -302,7 +314,12 @@ class ContinuousLearner:
             from app.hardware import profile
 
             hardware = profile(refresh=True)
-            if hardware.available_ram_bytes is not None and hardware.available_ram_bytes < 2 * 1024**3:
+            if (hardware.available_ram_bytes is not None
+                    and hardware.available_ram_bytes < self.budget.min_free_ram_gb * 1024**3):
+                return True
+            gpu = hardware.gpu
+            if (self.budget.min_obtainable_vram_gb > 0 and gpu.available and gpu.obtainable_bytes is not None
+                    and gpu.obtainable_bytes < self.budget.min_obtainable_vram_gb * 1024**3):
                 return True
         except Exception:
             log_swallowed(_log, "reading the hardware profile for learning budget")
@@ -317,10 +334,26 @@ class ContinuousLearner:
 
     def may_run(self) -> tuple[bool, str]:
         """Every reason not to start a cycle, checked in one place."""
+        return self._admission(refresh_storage=True)
+
+    def preview_admission(self) -> tuple[bool | None, str]:
+        """Inspect readiness without walking the entire project for a status view.
+
+        Unknown storage stays unknown. Starting a cycle still uses may_run and
+        performs the real quota check before any research is admitted.
+        """
+        return self._admission(refresh_storage=False)
+
+    def _admission(self, *, refresh_storage: bool) -> tuple[bool | None, str]:
         if self._stop.is_set():
             return False, self.stopped_because or "stopped"
         if self._paused.is_set():
             return False, self._paused_because or "paused"
+        from app.nervous_system import BODY
+
+        if BODY.focused:
+            # A task the owner started (not only a chat turn) also comes first (app/nervous_system.py).
+            return False, "waiting while you wait for me: " + BODY.state()["why"]
         if self.halt_file_present():
             return False, f"halted by {self.stop_file.name}"
         if bool(getattr(getattr(self.runtime, "authority", None), "privacy_mode", False)):
@@ -332,7 +365,17 @@ class ContinuousLearner:
             return False, "the machine is busy with your work"
         storage = getattr(self.runtime, "storage", None) if self.runtime is not None else None
         if storage is not None:
-            capacity = storage.category_capacity("learning")
+            if not refresh_storage and callable(getattr(storage, "quick_status", None)):
+                snapshot = storage.quick_status()
+                if snapshot.get("last_scanned_at") is None:
+                    return None, "storage allocation has not been measured yet; checked when a cycle starts"
+                limit = snapshot.get("learning_allocation_bytes")
+                used = snapshot.get("learning_used_bytes")
+                if used is None:
+                    return None, "storage allocation measurement is unavailable"
+                capacity = {"quota_bytes": limit, "remaining_bytes": None if limit is None else max(0, limit - used)}
+            else:
+                capacity = storage.category_capacity("learning")
             if capacity.get("quota_bytes") is not None and int(capacity.get("remaining_bytes") or 0) <= 0:
                 return False, "the governed learning allocation is full"
         return True, "ok"
@@ -1083,6 +1126,8 @@ class ContinuousLearner:
                         continue
                     self.waiting_because = ""
                     self._maintain_if_due()
+                    self._refresh_reference_packs_if_due()
+                    self._check_owner_corrections_if_due()
                     self.worker_state = "checking_queue"
                     topic = (topics() if topics else self.next_topic()) or ""
                     if not topic:
@@ -1125,6 +1170,66 @@ class ContinuousLearner:
         except Exception as exc:
             self.last_maintenance = {"at": datetime.now(UTC).isoformat(), "error": type(exc).__name__}
             log_swallowed(_log, "continuous learning maintenance")
+        # Spaced retention practice (app/memory/retention.py): can its memories still be recalled from their key words?
+        retention = getattr(self.runtime, "retention", None)
+        if retention is not None:
+            try:
+                self.last_maintenance["retention"] = retention.review(limit=12)
+            except Exception:
+                log_swallowed(_log, "spaced retention practice")
+        # HAYAT's own code is re-scanned for security weaknesses once a day (app/code_defense.py; local, no network).
+        defense = getattr(self.runtime, "code_defense", None)
+        if defense is not None:
+            try:
+                age = defense.last_scan_age_hours()
+                if age is None or age >= 24:
+                    scanned = defense.scan()
+                    self.last_maintenance["code_scan"] = {"new": scanned["new"], "open": scanned["open_by_severity"]}
+            except Exception:
+                log_swallowed(_log, "daily security scan of HAYAT's own code")
+        # Forecasts whose check date has come: find out what actually happened (app/forecasts.py).
+        forecasts = getattr(self.runtime, "forecasts", None)
+        if forecasts is not None:
+            try:
+                self.last_maintenance["forecast_checks_queued"] = forecasts.queue_lookups(
+                    lambda topic: self.enqueue(topic, source="forecast_check", priority=55))
+            except Exception:
+                log_swallowed(_log, "queuing forecast checks")
+
+    def _refresh_reference_packs_if_due(self) -> None:
+        """Re-verify curated official facts before they expire (at most every six hours)."""
+        research = getattr(self.runtime, "research", None)
+        # The test sandbox redirects databases, not these report files or the network.
+        if (research is None or time.monotonic() < self._next_reference_refresh
+                or os.environ.get("HAYAT_TEST_SANDBOX")):
+            return
+        self._next_reference_refresh = time.monotonic() + 6 * 3600
+        self.worker_state = "refreshing reference facts"
+        try:
+            from app.research.official_pack import refresh_due_packs
+
+            self.last_reference_refresh = {"at": datetime.now(UTC).isoformat(),
+                                           **refresh_due_packs(research.knowledge, research.fetcher, PROJECT_ROOT)}
+        except Exception as exc:
+            self.last_reference_refresh = {"at": datetime.now(UTC).isoformat(), "error": type(exc).__name__}
+            log_swallowed(_log, "refreshing curated reference facts")
+
+    def _check_owner_corrections_if_due(self) -> None:
+        """Compare one of the owner's corrections with public sources (at most every 30 minutes)."""
+        research, memory = getattr(self.runtime, "research", None), getattr(self.runtime, "memory", None)
+        if (research is None or not hasattr(memory, "path") or time.monotonic() < self._next_correction_check
+                or os.environ.get("HAYAT_TEST_SANDBOX")):
+            return
+        self._next_correction_check = time.monotonic() + 1800
+        self.worker_state = "checking owner corrections"
+        try:
+            from app.owner_feedback import OwnerFeedback
+
+            checked = OwnerFeedback.beside(memory).check_corrections(research, limit=1)
+            if checked:
+                self.last_correction_check = {"at": datetime.now(UTC).isoformat(), "checked": checked}
+        except Exception:
+            log_swallowed(_log, "checking the owner's corrections against sources")
 
     def _wait(self, seconds: float) -> None:
         """Interruptible wait: a new safe topic wakes the idle learner."""
@@ -1186,9 +1291,10 @@ class ContinuousLearner:
         }
 
     def status(self) -> dict[str, Any]:
-        allowed, reason = self.may_run()
+        allowed, reason = self.preview_admission()
         return {
             "running": self.running, "may_run": allowed, "reason": reason,
+            "admission_is_preview": True,
             "paused": self.paused, "paused_because": self._paused_because,
             "halted_by_file": self.halt_file_present(),
             "stop_file": str(self.stop_file),

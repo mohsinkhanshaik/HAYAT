@@ -231,6 +231,11 @@ class FailureLog:
         with self._lock:
             self._failures.append(failure)
             del self._failures[: -self._limit]
+        # Also in the process log (data/logs/hayat.log). Failures used to reach the event store only, so when the
+        # owner asked for "the actual logs" of a failed reply the log file held nothing about it (2026-11-10).
+        _log.warning("failure %s at stage %s: %s: %s (turn %s, provider %s, tool %s)", failure.failure_id,
+                     failure.stage, failure.exception_type, str(failure.exception_message)[:300], failure.turn_id,
+                     failure.provider, failure.tool)
         if self._bus is not None:
             try:
                 self._bus.publish(

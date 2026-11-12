@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import re
 import time
-from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from dataclasses import dataclass
@@ -313,7 +313,8 @@ def activity_line(item: dict[str, Any]) -> str:
         words += f": {detail[:90]}"
     seconds = float(item.get("seconds") or 0)
     elapsed = f"{seconds:.0f}s" if seconds < 90 else f"{seconds / 60:.0f}m"
-    return f"{_KIND_ICONS.get(kind, '•')} {words}  {elapsed}"
+    from app.gui_presentation import safe_text
+    return safe_text(f"{_KIND_ICONS.get(kind, '•')} {words}  {elapsed}")
 
 
 # ----------------------------------------------------------------- live working view
@@ -345,7 +346,7 @@ class WorkingView(tk.Frame):
     def __init__(self, parent: Any, palette: Any) -> None:
         super().__init__(parent, bg=palette.PANEL_2, highlightthickness=1, highlightbackground=palette.LINE)
         self.palette = palette
-        self.title = StringVar(self, value="Working")
+        self.title = DisplayVar(self, value="Working")
         tk.Label(self, textvariable=self.title, bg=palette.PANEL_2, fg=palette.GOLD, anchor="w",
                  font=("Segoe UI Semibold", 10)).pack(fill="x", padx=8, pady=(5, 0))
         body = tk.Frame(self, bg=palette.PANEL_2)
@@ -415,7 +416,9 @@ class WorkingView(tk.Frame):
         if path:
             from app.platform_support import open_path
 
-            self.shot.bind("<Button-1>", lambda _event, target=path: open_path(target))
+            from app.gui_a11y import activatable
+
+            activatable(self.shot, lambda target=path: open_path(target), self.palette)
         if not self.shot.winfo_manager():
             # Before the expanding steps list, or it takes all the width first.
             self.shot.pack(side="right", padx=(8, 0), before=self.steps)

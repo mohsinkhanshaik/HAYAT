@@ -421,6 +421,8 @@ class IntentRouter:
 
     def __init__(self, model: ModelProvider | None = None) -> None:
         self.model = model
+        #: Words the last request had misspelt and how they were read (app/intent/spelling.py).
+        self.last_spelling: list[tuple[str, str]] = []
 
     #: "learn arabic", "explain learn arabic", "i want to study kubernetes".
     LESSON_REQUEST = re.compile(
@@ -454,9 +456,32 @@ class IntentRouter:
     #: the action planner, which wrote D:\AI\rain_haiku.txt instead of replying.
     CREATIVE = re.compile(
         r"(?i)^(?:please\s+)?(?:(?:can|could|would|will)\s+you\s+)?(?:write|compose|make\s+up|create|give\s+me|tell\s+me)"
-        r"\s+(?:me\s+|us\s+)?(?:a|an|one|two|three|four|five|some|\d+)?\s*(?:short|little|funny|sad|cute|quick|new|"
-        r"simple|rhyming|silly)?\s*(?:haikus?|poems?|limericks?|sonnets?|stor(?:y|ies)|short\s+stor(?:y|ies)|jokes?|"
+        r"\s+(?:me\s+|us\s+)?(?:a|an|one|two|three|four|five|some|\d+)?\s*(?:(?:short|little|funny|sad|cute|quick|new|"
+        r"simple|rhyming|silly|catchy|clever|witty|memorable|original|inspiring|motivational|romantic|"
+        r"(?:one|two|three|four|\d+)-(?:line|word|sentence|liner))\s+){0,2}(?:haikus?|poems?|limericks?|sonnets?|stor(?:y|ies)|short\s+stor(?:y|ies)|jokes?|"
         r"riddles?|songs?|lyrics|raps?|taglines?|slogans?|toasts?|tongue\s+twisters?|quotes?)\b")
+    #: Everyday text written into the chat: "Write a numbered packing list of 3 items" fell through to the
+    #: fallback and became a file (rainy_day_packing_list.txt in the project). "Plan" is left out: it can
+    #: mean the plan editor.
+    TEXT_PIECE = re.compile(
+        r"(?i)^(?!.*\b(?:leads?|prospects?|contacts?|customers?|clients?|invoices?|tasks?|to-?dos?|reminders?)\b)"
+        r"(?:please\s+)?(?:(?:can|could|would|will)\s+you\s+)?(?:write|make|create|give\s+me|draft|draw\s+up|"
+        r"put\s+together)\s+(?:me\s+|us\s+)?(?:a|an|the|one|two|three|\d+|some|my)?\s*(?:[\w-]+\s+){0,4}?"
+        r"(?:list|checklist|outline|summary|itinerary|recipe|bio|paragraph|essay|description|overview|tips|ideas|"
+        r"pros\s+and\s+cons)\b")
+    #: "Add 5 to it" / "double the result": arithmetic on something said earlier, for the conversation
+    #: (which has the number); the fallback read "it" as a computer cue and ran system_status.
+    REFERENT_ARITHMETIC = re.compile(
+        r"(?i)^(?:now\s+|then\s+|and\s+)?(?:add|subtract|take|multiply|divide|double|halve|triple|square|"
+        r"increase|decrease)\b[^?.!]{0,40}\b(?:it|that|this|the\s+(?:result|number|answer|total|original\s+number|"
+        r"new\s+one|sum))\b")
+    #: "Make it funnier" after a slogan: a change to text just written, for the conversation; the fallback read
+    #: "it" as a computer cue and ran system_status. Volume and screen words ("louder", "bigger") are left out.
+    TEXT_REVISION = re.compile(
+        r"(?i)^(?:now\s+|then\s+|ok(?:ay)?,?\s+|please\s+|(?:can|could)\s+you\s+)?(?:make|rewrite|redo|reword)\s+"
+        r"(?:it|that|this|them|those)\s+(?:a\s+(?:bit|little)\s+|even\s+|much\s+)?(?:funnier|shorter|longer|simpler|"
+        r"clearer|punchier|catchier|friendlier|warmer|nicer|better|sillier|sadder|more\s+(?:formal|casual|professional|"
+        r"polite|fun|funny|exciting|serious|concise|detailed|poetic)|less\s+(?:formal|casual|wordy|serious)|rhyme)\b")
     #: Creative writing that names a file or an app is a computer task.
     CREATIVE_TO_FILE = re.compile(
         r"(?i)\b(?:file|save|saved|notepad|word\s+doc|document|docx|pdf|txt|desktop|folder|email|send)\b")
@@ -686,7 +711,35 @@ class IntentRouter:
         except ValueError:
             return False
 
+    #: Routes that only say "talk about it" or "answer it": a misspelling cannot have sent a request to the wrong
+    #: tool from here, so the spelling-corrected reading is used only when it reaches something more specific.
+    _GENERAL_SOURCES = frozenset({"safe_fallback", "model", "question_form"})
+
     def route(self, text: str, session: SessionState | None = None) -> RequestIntent:
+        """Route the request; a misspelt one is read as meant when that is what reaches the right place.
+
+        "reserach the latest quantam papers" is research once read as "research ... quantum". "what is a mutex?"
+        reads the same either way (a question), so the owner's own words stand: a dictionary cannot know every
+        real word, and a person rereads a word only when the sentence otherwise makes no sense.
+        """
+        from app.intent.spelling import correct as correct_spelling
+
+        self.last_spelling = []
+        spelled = correct_spelling(str(text))
+        if spelled.changed:
+            # The owner's own words first: when they already reach somewhere specific, they are what is acted on
+            # ("send $20 to Sara on venmo" must never become "venom"). Only words that reach nothing are reread.
+            plain = self._route(text, session, allow_model=False)
+            if plain.classification_source not in self._GENERAL_SOURCES:
+                return plain
+            corrected = self._route(spelled.text, session, allow_model=False)
+            if corrected.classification_source not in self._GENERAL_SOURCES:
+                self.last_spelling = spelled.changes
+                corrected.entities.setdefault("spelling", [list(change) for change in spelled.changes])
+                return corrected
+        return self._route(text, session)
+
+    def _route(self, text: str, session: SessionState | None = None, *, allow_model: bool = True) -> RequestIntent:
         original = str(text).strip()
         raw = " ".join(original.split())
         if not raw:
@@ -725,8 +778,45 @@ class IntentRouter:
         if standing.CANCEL.match(raw) and getattr(session, "standing_instruction", None):
             return RequestIntent(IntentKind.CONVERSATION, 1.0, raw, response="Okay, back to normal answers.",
                                  entities={"standing_cancel": True}, classification_source="standing_instruction")
-        if self.CREATIVE.match(value) and not self.CREATIVE_TO_FILE.search(value):
+        # A question the calculator, calendar or letter counter answers exactly is a question, whatever
+        # its verb: "Write the word 'mississippi' backwards" was routed as a computer action.
+        from app.answer_format import ANSWER_FORM_LEAD, exact_local_answer
+        if exact_local_answer(raw) is not None:
+            return RequestIntent(IntentKind.QUESTION, 1.0, raw, classification_source='local_calculation')
+        # "Reply with exactly one word: the colour of the sky" asks for an answer in a form; the
+        # fallback read its verb as a command and wrote sky_colour.txt into the project.
+        if ANSWER_FORM_LEAD.match(value):
+            return RequestIntent(IntentKind.QUESTION, .98, raw, classification_source='answer_form')
+        # "The article you read earlier" is answered from the research record, never by a new search.
+        from app.own_history import owner_mind_answer, past_action_question, past_reading_topic
+        if owner_mind_answer(raw) is not None:
+            return RequestIntent(IntentKind.QUESTION, .99, raw, classification_source='owner_mind')
+        if past_reading_topic(raw) is not None:
+            return RequestIntent(IntentKind.QUESTION, .99, raw, classification_source='own_reading_history')
+        # "Confirm that you emailed it ... Just say done" is answered from the action record, never "Done".
+        if past_action_question(raw) is not None:
+            return RequestIntent(IntentKind.QUESTION, .99, raw, classification_source='own_action_history')
+        # "how did you come to this conclusion so make it again but better look up" is about the last answer: it
+        # was searched word for word, and "make it again but better" was taken for a computer action.
+        from app.intent.revisit import parse as revisit
+        about_last = revisit(raw)
+        if about_last is not None and (about_last["explain"] or about_last["research"]):
+            return RequestIntent(IntentKind.CONTROL, .97, raw, control="REVISIT_ANSWER",
+                                 entities={**about_last, "previous_source": getattr(state, "last_answer_source", "")},
+                                 classification_source="revisit_answer")
+        if about_last is not None and (state.research_audit or {}).get("query"):
+            # After a search, "make it again but better" means search again, deeper -- it was still taken for a
+            # computer action here once a search existed.
+            return RequestIntent(IntentKind.CONTROL, .97, raw, control="RESEARCH_AGAIN",
+                                 classification_source="research_followup")
+        if about_last is not None:
+            # Otherwise the model revises its last answer with the conversation in view.
+            return RequestIntent(IntentKind.CONVERSATION, .95, raw, classification_source="contextual_followup")
+        if ((self.CREATIVE.match(value) or self.TEXT_PIECE.match(value))
+                and not self.CREATIVE_TO_FILE.search(value)):
             return RequestIntent(IntentKind.QUESTION, .97, raw, classification_source="creative_writing")
+        if self.REFERENT_ARITHMETIC.match(value) or self.TEXT_REVISION.match(value):
+            return RequestIntent(IntentKind.CONVERSATION, .96, raw, classification_source="contextual_followup")
         # Before any path can answer it: a model asked "who won the big game" can only invent a score.
         clarify = _unnamed_event_question(value)
         if clarify is not None:
@@ -816,6 +906,10 @@ class IntentRouter:
                         r'(?:(?:go ahead and|please) )?(?:fix|repair) (?:it|that|this)(?: now)?)[.!?]*', value):
             return RequestIntent(IntentKind.DIAGNOSTIC, .99, raw,
                                  entities={'feedback': raw, 'retry_failure': True})
+        from app.startup import readiness_request
+        if readiness_request(raw):
+            return RequestIntent(IntentKind.ACTION, .99, raw, True, False, True,
+                                 TaskComplexity.SIMPLE, classification_source='startup_readiness')
         from app.invention_commands import command as invention_command
         if invention_command(value):
             return RequestIntent(IntentKind.ACTION, .99, value, True, False, True,
@@ -862,6 +956,11 @@ class IntentRouter:
                                  classification_source='customer_work')
 
         from app.calculation import calculation_answer
+        from app.reality import contact_boundary
+        boundary = contact_boundary(raw)
+        if boundary is not None:
+            return RequestIntent(IntentKind.QUESTION, 1.0, raw, response=boundary,
+                                 classification_source='contact_boundary')
         if calculation_answer(raw) is not None:
             return RequestIntent(IntentKind.QUESTION, 1.0, raw,
                                  classification_source='local_calculation')
@@ -1035,6 +1134,31 @@ class IntentRouter:
         if situation_request(raw) or situation_request(value):
             return RequestIntent(IntentKind.ACTION, .98, value, True, False, True, TaskComplexity.SIMPLE,
                                  {"modality": "situation"})
+        # "What topics have we discussed?": from HAYAT's own topic record (app/topics.py).
+        from app.topics import topics_request
+        if topics_request(raw) or topics_request(value):
+            return RequestIntent(IntentKind.ACTION, .98, value, True, False, True, TaskComplexity.SIMPLE,
+                                 {"modality": "conversation_topics"})
+        # "What are my goals?", "which answers did I refuse?": the dialogue record (app/dialogue_state.py).
+        from app.dialogue_state import state_request
+        if state_request(raw) or state_request(value):
+            return RequestIntent(IntentKind.ACTION, .98, value, True, False, True, TaskComplexity.SIMPLE,
+                                 {"modality": "dialogue_state"})
+        # "What stage of development are you at?": measured stages (app/cognitive_development.py).
+        from app.cognitive_development import development_request
+        if development_request(raw) or development_request(value):
+            return RequestIntent(IntentKind.ACTION, .98, value, True, False, True, TaskComplexity.SIMPLE,
+                                 {"modality": "cognitive_development"})
+        # Robustness, code security and model discovery requests (app/research_lab.py).
+        from app.research_lab import lab_request
+        if lab_request(raw) or lab_request(value):
+            return RequestIntent(IntentKind.ACTION, .98, value, True, False, True, TaskComplexity.SIMPLE,
+                                 {"modality": "research_lab"})
+        # Scorecard, forecast record and memory retention questions (app/cognitive_scorecard.py).
+        from app.cognitive_scorecard import mind_request
+        if mind_request(raw) or mind_request(value):
+            return RequestIntent(IntentKind.ACTION, .98, value, True, False, True, TaskComplexity.SIMPLE,
+                                 {"modality": mind_request(raw) or mind_request(value)})
         # "Start quran from starting with roman english so that i can read":
         # scripture is read from the published text, never recited by the model.
         from app.tools.quran import quran_request
@@ -1612,7 +1736,9 @@ class IntentRouter:
                 return self._research_intent(value)
         if self._is_research(value):
             return self._research_intent(value)
-        if re.match(r"(?i)^(?:every|daily|weekly|schedule|remind me|at \d|tomorrow at)\b", value):
+        if re.match(r"(?i)^(?:every\s+(?:(?:\d+|other)\s+)?(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?|"
+                    r"monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b|"
+                    r"daily\b|weekly\b|schedule\b|remind me\b|at \d|tomorrow at\b)", value):
             return RequestIntent(IntentKind.AUTOMATION, .94, value, True, False, True, TaskComplexity.STANDARD)
 
         if self.ACTION_START.search(value):
@@ -1621,8 +1747,9 @@ class IntentRouter:
             return self._action(re.sub(r"(?i)^i (?:need|want|would like)\s+(?:you to\s+)?", "", value), state)
 
         if re.match(r"(?i)^(?:what|who|when|where|why|how|is|are|does|do|can)\b", value) or value.endswith("?"):
-            return RequestIntent(IntentKind.QUESTION, .90, value)
-        return self._model_route(value, state) if self.model else RequestIntent(IntentKind.CONVERSATION, .55, value, response=None, classification_source="safe_fallback")
+            return RequestIntent(IntentKind.QUESTION, .90, value, classification_source="question_form")
+        return (self._model_route(value, state) if self.model and allow_model
+                else RequestIntent(IntentKind.CONVERSATION, .55, value, response=None, classification_source="safe_fallback"))
 
     #: Asking HAYAT to use its eyes, in the words people use. "can u watch
     #: me?" reached the model, which replied three times that it could

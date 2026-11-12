@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import ctypes
+import csv
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -23,6 +25,17 @@ class FILETIME(ctypes.Structure):
 
 def _filetime(value: FILETIME) -> int:
     return (value.high << 32) + value.low
+
+
+def _gpu_number(value: str) -> int | float | None:
+    """Driver telemetry may be fractional, or unavailable for an individual sensor."""
+    value = value.strip()
+    if value.casefold().strip("[]") in {"n/a", "not supported", "unknown", ""}:
+        return None
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("GPU telemetry must be finite.")
+    return int(number) if number.is_integer() else number
 
 
 class ObservabilityManager:
@@ -87,9 +100,29 @@ class ObservabilityManager:
             "disk": {"total_bytes": disk.total, "free_bytes": disk.free, "project_budget": self.storage.maximum, "reserve_bytes": self.storage.reserve},
             "gpu": self._gpu(), "paid_telemetry": False,
         }
-        if (result["ram"]["used_percent"] >= 90 or result["disk"]["free_bytes"] <= self.storage.reserve) and self.event_bus:
-            self.event_bus.publish("RESOURCE_ALERT", "observability", {"ram_used_percent": result["ram"]["used_percent"], "disk_free_bytes": result["disk"]["free_bytes"]})
+        self._maybe_alert(result)
         return result
+
+    def _maybe_alert(self, result: dict[str, Any], now: float | None = None) -> bool:
+        """Once when memory or disk crosses its line, then at most every 10 minutes while it stays there.
+
+        The owner's log had seven identical alerts in 30 s (2026-11-07), one per 5-second reading.
+        """
+        import time as _time
+
+        high = result["ram"]["used_percent"] >= 90 or result["disk"]["free_bytes"] <= self.storage.reserve
+        now = _time.monotonic() if now is None else now
+        last = getattr(self, "_last_alert", None)
+        if high and self.event_bus and (last is None or now - last >= self.ALERT_REPEAT_SECONDS):
+            self._last_alert = now
+            self.event_bus.publish("RESOURCE_ALERT", "observability", {"ram_used_percent": result["ram"]["used_percent"], "disk_free_bytes": result["disk"]["free_bytes"]})
+            return True
+        if not high:
+            self._last_alert = None
+        return False
+
+    #: While memory or disk stays past its line, the alert repeats at most this often.
+    ALERT_REPEAT_SECONDS = 600
 
     def performance(self) -> dict[str, Any]:
         with self.memory.connect() as db:
@@ -137,11 +170,20 @@ class ObservabilityManager:
     def _gpu() -> list[dict[str, Any]]:
         try:
             command = ["nvidia-smi", "--query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu", "--format=csv,noheader,nounits"]
-            output = subprocess.run(command, capture_output=True, text=True, timeout=8, check=True).stdout.strip().splitlines()
+            output = subprocess.run(command, capture_output=True, text=True, timeout=8, check=True,
+                                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout.strip().splitlines()
             rows = []
-            for line in output:
-                name, total, used, free, utilization, temperature = [item.strip() for item in line.split(",")]
-                rows.append({"name": name, "vram_total_mb": int(total), "vram_used_mb": int(used), "vram_free_mb": int(free), "utilization_percent": int(utilization), "temperature_c": int(temperature)})
+            fields = ("vram_total_mb", "vram_used_mb", "vram_free_mb", "utilization_percent", "temperature_c")
+            for values in csv.reader(output, skipinitialspace=True):
+                try:
+                    if len(values) != len(fields) + 1:
+                        raise ValueError("GPU telemetry row has an unexpected number of fields.")
+                    row = {"name": values[0].strip(), **{field: _gpu_number(value)
+                                                      for field, value in zip(fields, values[1:])}}
+                    rows.append(row)
+                except ValueError as exc:
+                    rows.append({"available": False, "name": values[0].strip() if values else "",
+                                 "error": f"{type(exc).__name__}: {exc}"})
             return rows
         except Exception as exc:
             return [{"available": False, "error": f"{type(exc).__name__}: {exc}"}]

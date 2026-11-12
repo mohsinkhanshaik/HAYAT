@@ -20,6 +20,7 @@ from app.gui_empty import show_empty
 from app.gui_intelligence_parts import FlowRow
 from app.gui_panels import ScrollableColumn
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
@@ -102,7 +103,7 @@ class NetworkingWindow(tk.Toplevel):
         self.query, self.goal = StringVar(self), StringVar(self)
         self.sort = StringVar(self, SORTS[0])
         self.due_only, self.include_revoked = BooleanVar(self), BooleanVar(self)
-        self.status = StringVar(self, 'Local contacts and unsent drafts. No search or outreach starts automatically.')
+        self.status = DisplayVar(self, 'Local contacts and unsent drafts. No search or outreach starts automatically.')
         self.fields = {key: StringVar(self) for key in
                        ('name', 'role', 'organization', 'expertise', 'goals', 'source_url', 'follow_up')}
         self._build()

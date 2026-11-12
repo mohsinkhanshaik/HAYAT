@@ -1,0 +1,428 @@
+{
+  "version": "bounce-v1",
+  "grader_version": "bounce-grader-v2",
+  "grader_changes": [
+    "2026-10-31: the contradiction check accepts 'no single laptop can' and 'simultaneously': the first live run named the contradiction in those words ('no single laptop can simultaneously cost under $500 and at least $800') and was marked wrong."
+  ],
+  "model": "hayat:latest",
+  "checked_at": "2026-10-31T23:14:21.572819+00:00",
+  "seconds": 1074.7,
+  "cases": [
+    {
+      "id": "budget-kept",
+      "family": "constraint_tracking",
+      "turns": [
+        "Plan a 3-day trip to Chicago for a budget of $600. Keep it short.",
+        "Actually make it 2 days instead.",
+        "Keep the original budget. Show the final plan."
+      ],
+      "replies": [
+        "Here is a tight 3-day Chicago plan for $600 (ground costs only): Day 1: Millennium Park & Architecture River Cruise ($35) + Portillo’s/Lou Malnati’s (~$45). Day 2: Lincoln Park Zoo, The 606 trail + Shawarma/Pilsen dinner (~$45). Day 3: Lakefront beach walk + Garrett Popcorn. Budget: ~$180 lodging (2 nights), $95 food, $15 transit (Ventra card), and a buffer for the cruise/misc costs to hit exactly $600 total.",
+        "Here’s a tight 36-hour Chicago plan for $600 (ground costs only):\n\n- Lodging: ~$95–110/night × 1 night = ~$100. Tip: Book via apps like Motel 6 or Red Roof Inn near the Loop or Uptown to stay under budget.\n- Architecture River Cruise: ~$35 (the best value in Chicago).\n- Transit: Ventra card loaded with $15 for CTA trains/buses. No need for rideshares if you stick to the Loop/Lakefront.\n- Food & Drink (~$80):\n    - Breakfast 1: Coffee + pastry ($8).\n    - Lunch 1: Deep dish slice or Chicago-style hot dog at a local spot (Portillo’s/Al's) ($15).\n    - Dinner 1: Italian beef sandwich + fries ($20).\n    - Breakfast 2: Bagel/coffee ($8).\n    - Lunch 2: Chipotle/Tacos or park picnic supplies ($15).\n    - Snacks/Coffee/Beer: $14.\n\nThe Itinerary:\n\n- Day 1 (Arrival & Icons):\n    - Drop bags. Walk the Riverwalk, then take the Architecture Cruise ($35) in the late afternoon—it’s free with your transit card if you walk to/from it, but usually paid separately for the boat tour itself.\n    - Evening: Dinner at a classic Chicago spot (Italian beef or deep dish).\n- Day 2 (Culture & Views):\n    - Morning: Walk through Millennium Park (Cloud Gate/\"The Bean\" is free) and grab coffee.\n    - Mid-day: Take the L to Lincoln Park Zoo (free entry, pay only for food/rides). Walk the zoo grounds or hit The 606 trail if you have energy left.\n    - Afternoon: Head back downtown. If budget allows after Day 1 costs (~$85 spent), use remaining cash ($~270?? No wait—let's re-calc to ensure we are exactly on $600).\n\nRevised Budget Breakdown (Total $600):\n- Lodging: $110 (1 night, budget hotel/motel)\n- Cruise: $35\n- Food/Drink: $90 (generous for 2 days of local eats + drinks)\n- Transit/Misc Buffer: $65 ($15 transit card + $50 buffer for souvenirs, extra snack, or one paid attraction like the Field Museum if you swap it in instead of a nice dinner). Wait—Field Museum is ~$32. Let's put that in.\n    - Revised Day 2: Morning: Millennium Park (Free). Afternoon: The Art Institute (Students/Youth free, but general admission is pricey) OR Museum Campus: Field Museum ($30-40 for adults? Actually ~$32. Let's assume $35 total with tax/misc).\n    - Let's stick to the simpler \"Food + Cruise\" model and keep it short as requested:\n\nFinal Short Plan:\n1.  Stay: Budget hotel (Motel 6/Red Roof Inn) for one night (~$100–120 depending on season).\n2.  Do: Architecture Riverboat Tour ($35). This is the #1 paid activity and worth every penny.\n3.  Eat: Local Chicago hot dogs, Italian beef sandwiches, and a slice of deep dish pizza for lunch/dinner over two days (~$80 total).\n4.  Walk: Millennium Park (Cloud Gate), Navy Pier exterior walkway (free to stroll), Lakefront Trail ($0).\n5.  Transit: Ventra card with $15 loaded on it.\n\nTotal Estimated Cost: ~$230–260. You have a massive buffer (~$340) left over for one really nice dinner, shopping (Magnificent Mile), or upgrading your hotel to something nicer like the Chicago Athletic Association if you find a deal, or just keeping it in your pocket.\n\nWant me to list specific budget hotels near the Loop?",
+        "Here is your finalized 2-day Chicago plan at exactly $600. I’ve adjusted the lodging to a comfortable mid-range option (as suggested) and tightened the food/transport costs to balance it out.\n\nBudget Breakdown ($600 Total)\n- Lodging: $250 (1 night, 3-star hotel near Union Station or Loop). This is your biggest cost; book early.\n- Food & Drink: $140 (~$70/day for solid local eats: Italian beef, deep dish slice, coffee, and one nice dinner).\n- Architecture River Cruise: $55 (Includes tax/tip buffer; standard adult fare is ~$38–$42 depending on season).\n- Transport & Transit: $60 ($15 Ventra card for CTA trains/buses + two rideshares to/from airport or late-night return).\n- Attractions/Misc Buffer: $95 (Covers one paid museum like the Field Museum at ~$32, plus souvenirs/coffee/snacks buffer).\n\nThe Itinerary\n\nDay 1: Icons & Riverwalk\n- Morning/Afternoon: Arrive. Drop bags at hotel. Walk to Millennium Park for \"Cloud Gate\" (The Bean) and Crown Fountain—both free.\n- Lunch: Grab an Italian beef sandwich or a deep-dish slice near the Loop (~$15).\n- Late Afternoon: Take the CTA train to the Architecture River Cruise dock. Board your cruise ($38–$42 ticket + tip/tax = ~$50 allocated here). This is the best way to see Chicago in one hour.\n- Evening: Dinner near Michigan Avenue (Magnificent Mile exterior walk is free; eat at a classic spot like Portillo’s or Al's for Italian beef/hot dogs, budgeted within your $140 food total).\n\nDay 2: Art & Lakefront\n- Morning: Breakfast. Walk to the Field Museum or Art Institute (pick one based on interest; ~$35 covered in misc buffer) OR stick to free sights like Lincoln Park Zoo if you prefer nature over museums.\n- Lunch: Quick bite near Navy Pier (~$15).\n- Afternoon: Stroll along the Lakefront Trail or walk through Navy Pier (free exterior access; pay only for rides/attractions if desired, using your remaining buffer). Grab Garrett Popcorn as a souvenir/snack.\n- Evening: Departure. Use any leftover cash from the $95 misc bucket for an extra drink or taxi home.\n\nKey Tips to Stay on Budget:\n1.  Lodging is variable: If you find a hotel under $200, move that savings into food (upgrade your dinner) or keep it as profit.\n2.  Transit: Chicago’s CTA system is efficient and safe during the day. A Ventra card ($5 initial fee + load amount) covers most of your movement between Loop, Navy Pier, and Museum Campus.\n3.  Water: Carry a reusable bottle; tap water is free at restaurants and fountains (like in Millennium Park).\n\nThis plan hits all major highlights without rushing you into cheap motels or skipping the iconic river cruise. Safe travels!"
+      ],
+      "checks": [
+        {
+          "turn": 2,
+          "constraint": "keeps the $600 budget",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 2,
+          "constraint": "uses 2 days, not 3",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 324.5
+    },
+    {
+      "id": "long-reference",
+      "family": "long_distance_reference",
+      "turns": [
+        "For a project: my budget is $1,200 and my deadline is March 3. Just acknowledge.",
+        "What is 15% of 80?",
+        "Name one primary colour.",
+        "What was my deadline?"
+      ],
+      "replies": [
+        "Budget locked at $1,200. Deadline set for March 3. 📅✅ Keeping those numbers tight means every decision from now until March 3 has to pay for itself in time or quality. With $1,200, you are not buying luxury; you are buying precision. That budget range is perfect for a focused sprint—enough to hire a solid freelancer for specific tasks like design, coding, or copywriting, but small enough that you cannot afford scope creep. The deadline of March 3 creates a hard ceiling on how much complexity the project can hold. If today is late October or November, you have roughly three months. That is plenty of time to build something substantial if you cut out everything that does not directly serve the core goal.\n\nThink of it like packing for a trip with strict luggage limits. You do not pack \"just in case\" items; you pack only what you will use every day. In project terms, this means stripping away nice-to-haves until only the must-have features remain. For example, if you are building a website, your $1,200 might cover a custom theme and basic setup from a developer, leaving room for one round of revisions. If you tried to add complex e-commerce functionality or user logins, that budget would vanish in hours of backend work. So the smart move is to start with a simple, functional version that solves one problem well, then use any remaining time after March 3 to expand it later if needed. This approach keeps you under budget and ensures you actually launch on date rather than getting stuck in endless tweaking.",
+        "15% of 80 = 12 (80 × 15 / 100).\nCalculated locally from your numbers.",
+        "Red 🎨",
+        "March 3 📅"
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "answers 12",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 3,
+          "constraint": "recalls March 3",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 80.4
+    },
+    {
+      "id": "name-correction",
+      "family": "user_correction",
+      "turns": [
+        "My sister's name is Aisha.",
+        "Sorry, I meant her name is Amina, not Aisha.",
+        "What is my sister's name? One word."
+      ],
+      "replies": [
+        "Got it, Mohsin. I've noted that your sister's name is Aisha. 📝\n\nI'll keep this in mind for future conversations—whether we're drafting a message to her or just talking about family. Is there anything specific you'd like me to do with this info right now?",
+        "My mistake, Mohsin. It’s Amina then. 📝\n\nI’ve updated my notes to reflect that your sister's name is Amina. Is there anything specific you'd like me to do with this info right now?",
+        "Amina"
+      ],
+      "checks": [
+        {
+          "turn": 2,
+          "constraint": "uses the corrected name",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 38.7
+    },
+    {
+      "id": "original-number",
+      "family": "referent_tracking",
+      "turns": [
+        "Remember the number 47 for this conversation.",
+        "Add 5 to it.",
+        "Now double the original number, not the new one. Just the result."
+      ],
+      "replies": [
+        "Understood. I’ll remember that.",
+        "47 + 5 = 52.",
+        "94 94\n\nI could not properly cover: Now double the original number, not the new one. Just the result."
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "47 + 5 = 52",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 2,
+          "constraint": "doubles 47, not 52",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 47.0
+    },
+    {
+      "id": "unit-followup",
+      "family": "units",
+      "turns": [
+        "A rectangle is 3 m by 4 m. What is its area?",
+        "Give that in square feet."
+      ],
+      "replies": [
+        "12 square meters 📐",
+        "129.2 square feet 📐 To get from square meters to square feet, we start with the linear conversion: one meter is exactly 3.28084 feet. Since area involves two dimensions (length and width), we square that factor. $1 \\text{ m}^2 = (3.28084 \\text{ ft})^2 \\approx 10.7639 \\text{ sq ft}$.\n\nYour rectangle is $3 \\times 4$ meters, which equals 12 square meters. Multiplying that by the conversion factor ($12 \\times 10.7639$) gives approximately 129.17 square feet.\n\nHere’s why it matters: if you were buying carpet or tiles sold in imperial units, knowing this exact figure prevents underestimating your material needs. A rough \"rule of thumb\" is often just multiplying by 10 (giving 120 sq ft), but that leaves a gap of nearly 9 square feet—enough to leave a strip of floor uncovered along the edges! 📏 The reason the conversion feels tricky is that we are squaring a number rather than just multiplying by one. When you convert meters to feet, you use roughly 3.28 for each side of your rectangle. So instead of doing $1 \\times 1$, you do $(3.28) \\times (3.28)$ to get the area conversion factor. That gives us about 10.76 square feet in every single square meter. It is not a round number like ten or twelve, which makes mental math slightly awkward but precise enough for building work.\n\nLet’s walk through your specific rectangle again with this deeper view. You have one side that is three meters long and another that is four meters wide. If you convert those sides first into feet—three meters becomes about 9.84 feet, and four meters becomes roughly 13.12 feet—you can multiply those two new numbers directly: $9.84 \\times 13.12$. That calculation lands right around 129.07 square feet. If you had converted the total area first (getting 12 square meters) and then multiplied by our factor of roughly 10.76, you would get about 129.17 square feet. The tiny difference comes from rounding those intermediate steps; in real life on a job site, both answers are close enough that the same carpet roll will cover it either way. 📏"
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "12 square metres",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 1,
+          "constraint": "about 129 square feet",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 84.1
+    },
+    {
+      "id": "change-one-item",
+      "family": "partial_edit",
+      "turns": [
+        "Write a numbered packing list of exactly 3 items for a rainy day. Items only.",
+        "Change only the second item to something else and keep the other two exactly the same. Show the list."
+      ],
+      "replies": [
+        "1. Waterproof jacket\n2. Foldable umbrella\n3. Quick-dry shoes 🌧️",
+        "1. Waterproof jacket\n2. Rain boots 🥾\n3. Quick-dry shoes"
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "items 1 and 3 unchanged, item 2 changed",
+          "passed": false,
+          "missing": [
+            "changed_item: before=['waterproof jacket', 'foldable umbrella', 'quick-dry shoes 🌧️'] after=['waterproof jacket', 'rain boots 🥾', 'quick-dry shoes']"
+          ],
+          "violated": []
+        }
+      ],
+      "passed": false,
+      "error": "",
+      "seconds": 61.6
+    },
+    {
+      "id": "reverse-list",
+      "family": "reversal",
+      "turns": [
+        "List exactly three fruits as a numbered list, nothing else.",
+        "Reverse the order of that list. Numbered, nothing else."
+      ],
+      "replies": [
+        "1. Apple\n2. Banana\n3. Orange",
+        "1. Orange\n2. Banana\n3. Apple"
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "same three items in reverse order",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 40.1
+    },
+    {
+      "id": "pronoun-which",
+      "family": "pronoun_resolution",
+      "turns": [
+        "Paris and Rome are both capital cities. Which of them is in Italy? One word."
+      ],
+      "replies": [
+        "Rome Paris is the capital of France; it lies within French borders. Rome is the capital of Italy and sits inside Italian territory. The city located in Italy is Rome."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "Rome",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 16.8
+    },
+    {
+      "id": "contradiction",
+      "family": "contradictory_constraints",
+      "turns": [
+        "I need a laptop that costs under $500 but it must cost at least $800. Which one should I buy?"
+      ],
+      "replies": [
+        "There is no single price for any product, so no laptop can be both under $500 and over $800 at the same time ⚖️. You likely meant to set a range (e.g., between $500 and $800) or pick one limit. Tell me which budget you actually have in mind, and I’ll find something that fits 💻."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "names the contradiction",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 31.3
+    },
+    {
+      "id": "impossible-prime",
+      "family": "impossible_constraint",
+      "turns": [
+        "Give me a prime number strictly between 24 and 28."
+      ],
+      "replies": [
+        "There is none. The integers strictly between 24 and 28 are 25, 26, and 27—and all three are composite (divisible by numbers other than 1 and themselves). 🤷‍♂️ It’s a bit of an empty stretch because the numbers in that gap are all divisible by something smaller than themselves. If we look at 25, it breaks down neatly into $5 \\times 5$. Then there is 26, which is clearly even and splits into $2 \\times 13$. Finally, 27 might look tricky because it isn’t even, but it’s just $3 \\times 9$, or three cubed. Since a prime number must have exactly two distinct positive divisors—1 and itself—and each of these candidates has at least one more divisor in between, none of them qualify. It is simply not possible to find a prime there; the next ones are 23 on the low side and 29 on the high side.\n\nIt feels like a trick question because the gap is so small and right in the middle of those \"big\" two-digit numbers, but primes are actually quite sparse there. To see why it’s empty, we just have to look at how divisibility works for odd and even numbers. Any number strictly between 24 and 28 must be an integer, which leaves us with exactly three candidates: 25, 26, and 27.\n\nLet's walk through them one by one. First is 26. It’s easy to spot because it ends in a six, meaning it’s even. Any even number greater than two can be divided by two, so $26 = 2 \\times 13$. That immediately knocks it out of the prime club since primes must only have themselves and one as divisors.\n\nNext is 27. This one often trips people up because it isn’t even, so you might instinctively think \"prime.\" But we can test small factors quickly. If you add its digits ($2 + 7$), you get $9$, which is divisible by three. That means the whole number is divisible by three. Sure enough, $3 \\times 9 = 27$. So it has divisors of one, three, nine, and twenty-seven. Not prime.\n\nFinally, we hit 25. This is a classic square number. It’s not even, but you can see the factorization instantly if you know your multiplication tables: $5 \\times 5 = 25$. So its divisors are one, five, and twenty-five. Again, too many factors to be prime.\n\nThe reason it feels like there should be a prime here is that primes get less frequent as numbers get larger, but they never stop completely. However, in this specific tiny window, the \"noise\" of divisibility by small numbers (like 2 and 3) catches every single candidate before we can find one that stands alone. The closest neighbors are actually just outside our boundary: 23 is prime on the left, and 29 is prime on the right. So for this specific request, the answer remains zero primes found in that strict interval."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "says there is none",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 48.9
+    },
+    {
+      "id": "typo-percent",
+      "family": "typos",
+      "turns": [
+        "wat is 25 percnt of 240"
+      ],
+      "replies": [
+        "25% of 240 = 60 (240 × 25 / 100).\nCalculated locally from your numbers."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "60",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 0.0
+    },
+    {
+      "id": "hinglish-sum",
+      "family": "code_switching",
+      "turns": [
+        "Mujhe batao 12 aur 15 ka sum kya hai?"
+      ],
+      "replies": [
+        "12 + 15 = 27 🧮"
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "27",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 26.4
+    },
+    {
+      "id": "urdu-mixed-days",
+      "family": "code_switching",
+      "turns": [
+        "Ek hafte mein kitne din hote hain? Number batao."
+      ],
+      "replies": [
+        "7 📅 It’s seven because we count from Sunday to Saturday (or Monday to Sunday) and that full cycle is always 7 days long, no matter where you are in the world 🌍. It doesn’t change if it’s a leap year or which month you’re looking at; the week just keeps spinning through those same 7 slots over and over again ⏳. So when Mohsin asks for \"ek hafte,\" he is asking for that complete, unbroken loop of time we all use to organize our lives 📅.\n\nIt’s seven because we divide the year into roughly fifty-two of these cycles to keep our calendars aligned with the seasons 🌍. Think about how a month is messy—it can be 28, 30, or 31 days—but a week stays stubbornly consistent at exactly one hundred and sixty-eight hours ⏳. This consistency is what makes it useful for planning; if you start on Monday morning and count forward seven full nights of sleep, you land back on the same day of the week 📅.\n\nFor example, Mohsin might schedule a meeting for next Tuesday. If today is Tuesday, he just adds seven days to his mental calendar: Wednesday (1), Thursday (2)... all the way until he hits the next Tuesday again 🔢. It’s like walking around a circular track; no matter how many laps you run, one lap always brings you back to that same starting line 🏃‍♂️. This rhythm is so deeply embedded in our lives that even when we switch time zones or cross oceans, those seven days keep ticking over without skipping a beat ⌚."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "7",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 42.6
+    }
+  ],
+  "metamorphic": [
+    {
+      "id": "percent",
+      "variants": [
+        "What is 17% of 340?",
+        "340 multiplied by 0.17 equals what?",
+        "Compute seventeen percent of three hundred forty.",
+        "whats 17 percnt of 340"
+      ],
+      "answers": [
+        "17% of 340 = 57.8 (340 × 17 / 100).\nCalculated locally from your numbers.",
+        "57.8 🧮",
+        "57.8",
+        "17% of 340 = 57.8 (340 × 17 / 100).\nCalculated locally from your numbers."
+      ],
+      "correct": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "id": "speed",
+      "variants": [
+        "A car travels 240 km in 3 hours. What is its average speed in km/h?",
+        "In 3 hours a car covers 240 kilometres. Average speed in km per hour?",
+        "Average speed in km/h if you drive 240 km over 3 hours, with a coffee stop that doesn't change the totals?"
+      ],
+      "answers": [
+        "The average speed is 80 km/h. 🚗💨\n\nHere’s the quick math:\n$$ \\text{Average Speed} = \\frac{\\text{Total Distance}}{\\text{Total Time}} $$\n$$ 240 \\div 3 = 80 $$",
+        "The average speed is 80 km/h. 🚗\n\nIt’s just the total distance divided by the total time:\n$$240 \\text{ km} / 3 \\text{ hours} = 80 \\text{ km/h}.$$",
+        "80 km/h. 🚗\n\nThe formula is simple: total distance divided by total time. The coffee break happens during those three hours, so it’s already counted in the clock. It just means you were stopped for part of that time and driving faster for the rest to hit 240 km anyway.\n\n$$ \\frac{240 \\text{ km}}{3 \\text{ h}} = 80 \\text{ km/h} $$"
+      ],
+      "correct": [
+        true,
+        true,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "id": "capital",
+      "variants": [
+        "What is the capital of Australia?",
+        "Australia's capital city is which city?",
+        "capital of australia??",
+        "Australia ki capital kya hai?"
+      ],
+      "answers": [
+        "The capital of Australia is Canberra. 🇦🇺",
+        "The capital of Australia is Canberra. 🇦🇺 It was selected as a compromise between the two rival cities, Sydney and Melbourne.\n\nCanberra isn’t just the capital; it’s a planned city built from scratch to settle a long-standing rivalry between Sydney and Melbourne, which were both claiming the title. The Australian Constitution actually mandated that the new federal seat be located within New South Wales but at least 100 miles away from Sydney, ensuring neither rival got too close an advantage. This compromise meant Canberra was essentially created as a neutral ground for government, distinct from the commercial hubs of the coast.\n\nThe city’s design reflects this political purpose through its layout, which is heavily influenced by American planning principles rather than British colonial styles. The architect Walter Burley Griffin won the international competition to design it in 1912 with a vision centered on nature and geometry. His plan used natural topography as part of the structure: Mount Ainslie was meant to anchor one side, Black Mountain another, and Capital Hill sits at the convergence point where these axes meet. This isn’t just aesthetic; it creates sightlines that connect key government buildings like Old Parliament House with the new Parliamentary Triangle across Lake Burley Griffin.\n\nA concrete example of this design in action is the way the city handles its ceremonial axis versus its functional life. If you stand at the base of Capital Hill and look west, you see a straight line stretching past the National Library, through the lake, to Mount Ainslie on the horizon. This \"Parliamentary Triangle\" forces visitors into a specific approach: you walk or drive down these wide avenues lined with native trees before reaching the gates of government power. It creates a sense of arrival and separation from daily life that feels intentional rather than accidental. The city grows outward in concentric circles around this center, keeping residential areas distinct but connected by green belts, which reinforces its identity as a place for governance first and living second.",
+        "Canberra. 🇦🇺 Canberra wasn’t always the capital; Sydney and Melbourne were fighting over that title for years. To break the deadlock, they agreed on a compromise: build a brand-new city in New South Wales, but far enough from Sydney to keep it distinct. That’s why Canberra feels so planned—it was designed by Walter Burley Griffin as a geometric garden city rather than growing organically like older towns. It sits inland near the coast because being too close to either rival would have upset the balance of power between them.\n\nThe reason this matters today is that Canberra functions differently from Sydney or Melbourne precisely because it’s the seat of government, not an economic hub. Most residents work for the federal public service rather than finance or manufacturing. For example, if you look at a map of the Australian Capital Territory (ACT), you’ll see Parliament House isn’t just tucked away; it dominates the landscape on Capital Hill, facing directly toward Old Parliament House below to symbolize continuity and authority. This layout reinforces its role as a political center where policy is made, distinct from Sydney’s financial district or Melbourne’s cultural scene.\n\nCanberra’s layout is essentially a giant diagram of how Australian democracy connects to the land. Walter Burley Griffin didn’t just pick random streets; he used topography as his blueprint, aligning major axes with distant mountain peaks and using natural ridges to separate neighborhoods. This creates a city that feels open because it respects the hills rather than flattening them, which is why you often see Parliament House sitting high on Capital Hill while Old Parliament House rests in the valley below—it’s a physical hierarchy of power where the new seat looks down on the old one.\n\nThe way this works practically means that government isn’t just an industry here; it shapes every part of urban life. For example, consider the National Circle, which connects key institutions like the High Court and the Australian War Memorial through underground tunnels and wide pedestrian paths. This design encourages a \"civic walk\" where you can move from legal to historical sites without ever needing a car or dealing with traffic noise. It forces visitors—and residents—to experience these symbols of national identity in sequence, creating a narrative flow that feels intentional rather than accidental.\n\nThis structure also isolates the political core from commercial chaos. Unlike Sydney’s CBD, which is dense and noisy, Canberra’s central area is largely pedestrianized around Lake Burley Griffin. The lake itself acts as both an aesthetic anchor and a climate buffer, cooling the air in summer while reflecting the government buildings at night to reinforce their prominence. So when you’re standing on the bridge looking toward Parliament House, you aren’t just seeing architecture; you’re experiencing a carefully engineered relationship between nature, politics, and public space that defines what it means to live in Australia’s capital.",
+        "Canberra 🇦🇺 Canberra is the capital of Australia 🇦🇺. Most people guess Sydney or Melbourne because they are bigger and more famous, but Canberra was actually built from scratch to be the seat of government. It sits right in between those two cities—about halfway—which solved a long-standing rivalry over which city should win the title. The Australian Constitution even required that the capital be located within New South Wales, but at least 100 miles away from Sydney, so it wouldn't look like just another suburb of NSW.\n\nThe reason this matters is how Australia's federal system works. Unlike countries with a single national government running everything locally, Australia has states and territories with their own powers. By placing the capital in its own dedicated territory (the Australian Capital Territory), rather than inside an existing state, it stays neutral ground for all of them.\n\nFor example, if you look at where Parliament House sits today, you'll see it's on a hill facing Old Parliament House behind it. This layout was designed so that the government looks out toward the people and the landscape, not just inward to itself. It’s a physical reminder that while Canberra is political headquarters, Australia is still very much about its open spaces and communities outside those walls 🏛️✨ The reason Canberra exists at all is because of a fierce rivalry between Sydney and Melbourne in the late 1800s 🏛️. When Australia federated, both cities wanted to be the national capital. To break the deadlock, they compromised by building a brand-new city halfway between them that neither state could claim as its own. This ensures no single region dominates the political landscape just because it has more people or money 💰.\n\nHow this actually works is through the Australian Capital Territory (ACT). Unlike other states where local councils manage roads and trash, the ACT government handles almost everything locally while also hosting federal institutions like Parliament House 🏛️. This creates a unique setup where you have state-level services running inside a territory dedicated to national governance. It keeps things neutral but sometimes means Canberra residents don't get all the same rights as people in other states when it comes to voting for certain parliamentary roles ✍️.\n\nA concrete example of this is Parliament House itself 🏛️. Built on Capital Hill, its design flips traditional architecture upside down so that visitors enter through a large grassy slope at ground level and walk \"down\" into the chambers below. This symbolizes that government is accessible to everyone from street level, not elevated above them 👥. The building sits right next to Old Parliament House, which still houses museums today 🏛️✨"
+      ],
+      "correct": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "passed": true
+    }
+  ],
+  "summary": {
+    "conversations": 13,
+    "conversations_passed": 12,
+    "constraints": 17,
+    "constraints_held": 16,
+    "metamorphic_groups": 3,
+    "metamorphic_consistent": 3,
+    "metamorphic_variants": 11,
+    "metamorphic_variants_correct": 11
+  },
+  "scope": "Code-graded multi-turn and paraphrase probes. Inspect the replies: regex checks can miss a correct answer phrased unusually, and passing these does not prove general reliability."
+}

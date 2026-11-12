@@ -26,7 +26,7 @@ _log = logging.getLogger(__name__)
 GLASS = {
     "BLACK": "#070B17", "PANEL": "#131B30", "PANEL_2": "#1C2642", "PANEL_HOVER": "#26335A",
     "LINE": "#33446F", "WHITE": "#F3F6FF", "MUTED": "#A3AFD0", "GOLD": "#E8C46C",
-    "GOLD_SOFT": "#F6DFA2", "ROYAL": "#3E6CFF", "ROYAL_SOFT": "#ADC4FF", "HOLO": "#8FE3FF",
+    "GOLD_SOFT": "#F6DFA2", "ROYAL": "#3861E6", "EDGE": "#67769C", "ROYAL_SOFT": "#ADC4FF", "HOLO": "#8FE3FF",
     "OLIVE": "#4FAF8F", "OLIVE_SOFT": "#94E2C4", "ALERT": "#FF6B7B",
 }
 

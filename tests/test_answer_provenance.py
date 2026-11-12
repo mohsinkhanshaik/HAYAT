@@ -26,5 +26,20 @@ def test_a_brain_answer_lists_its_checks():
                              last_dual_review={"state": "reviewed", "revised": True}))
     text = "\n".join(lines)
     assert "hayat:latest" in text and "Answer depth: normal, 12 words." in text
-    assert "Questioned itself first: 3 questions, 1 left open and said so." in text
+    assert "Questioned itself first: 3 questions, 1 marked unresolved." in text
     assert "revised before you saw it" in text
+
+
+def test_incomplete_checks_never_look_like_successful_verification():
+    text = '\n'.join(describe(runtime('brain', last_inquiry={'state': 'unavailable'},
+                                     last_dual_review={'state': 'revision_failed'})))
+    assert 'did not complete' in text and 'original draft was retained' in text
+    assert 'revised before you saw it' not in text
+
+
+def test_model_settled_points_are_not_presented_as_verified_facts():
+    text = '\n'.join(describe(runtime('brain', last_inquiry={'state': 'examined', 'questions': 2, 'open_points': 0},
+                                     last_dual_review={'state': 'reviewed', 'same_model': True,
+                                                       'issues': ['Could explain an alternative.'], 'revised': False})))
+    assert 'none marked unresolved' in text and 'not independent evidence' in text
+    assert 'same model' in text and 'does not verify' in text and 'no revision was applied' in text

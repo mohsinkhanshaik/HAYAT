@@ -291,6 +291,11 @@ class DiscoveryStore:
     def update(self, source_id: int, **fields: Any) -> None:
         if not fields:
             return
+        # Column names go into the statement itself, so they must be plain identifiers: a name carrying
+        # punctuation could rewrite the UPDATE. Values are always bound as parameters.
+        bad = [key for key in fields if not key.isidentifier()]
+        if bad:
+            raise ValueError(f"Not a column name: {bad[0]!r}")
         names = ", ".join(f"{key}=?" for key in fields)
         with self._lock, self.db() as db:
             db.execute(f"UPDATE sources SET {names}, checked_at=? WHERE id=?", (*fields.values(), now(), source_id))
@@ -793,7 +798,12 @@ class SourceScout:
         while not self._stop.is_set():
             allowed, reason = self.may_run()
             if allowed:
-                self.cycle()
+                from app.nervous_system import BODY
+
+                with BODY.round("source discovery", self._stop):
+                    if self._stop.is_set():
+                        break
+                    self.cycle()
                 self._stop.wait(self.interval_seconds)
             else:
                 self.last = {"at": now(), "job": "waiting", "detail": reason}

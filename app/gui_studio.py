@@ -4,6 +4,7 @@ from __future__ import annotations
 import queue
 import threading
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -88,7 +89,7 @@ class ControlStudio(tk.Toplevel):
             button.pack(side="left", padx=3)
             self.page_buttons[key] = button
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.withdraw).pack(side="right")
-        self.status = StringVar(self, "Ready")
+        self.status = DisplayVar(self, "Ready")
         self.status_area = tk.Frame(self, bg=gui.PANEL)
         self.status_area.pack(side="bottom", fill="x")
         self.progress = ttk.Progressbar(self.status_area, mode="indeterminate",
@@ -193,7 +194,7 @@ class ControlStudio(tk.Toplevel):
         scrollbar.pack(side="right", fill="y")
         self.models.configure(yscrollcommand=scrollbar.set)
         self.models.pack(fill="both", expand=True)
-        self.model_detail = StringVar(self, "Select a row to see its full model name.")
+        self.model_detail = DisplayVar(self, "Select a row to see its full model name.")
         tk.Label(footer, textvariable=self.model_detail, bg=self.palette.BLACK, fg=self.palette.HOLO,
                  wraplength=680, justify="left", anchor="w", font=("Segoe UI", 9)).pack(fill="x", pady=(8, 0))
         self.models.bind("<<TreeviewSelect>>", lambda event: self.model_detail.set(
@@ -208,16 +209,28 @@ class ControlStudio(tk.Toplevel):
         if not hasattr(self.gui.runtime, 'colibri_service'):
             self.gui.runtime.colibri_service = ColibriService()
         self.colibri = self.gui.runtime.colibri_service
+        # A flat outline in the theme's line colour: Tk's default groove drew a pale grey frame.
         colibri = tk.LabelFrame(footer, text='Colibri · optional local comparison', bg=self.palette.BLACK,
-                               fg=self.palette.WHITE, padx=8, pady=6)
+                               fg=self.palette.WHITE, padx=8, pady=6, relief='flat', bd=0, highlightthickness=1,
+                               highlightbackground=self.palette.LINE, font=('Segoe UI Semibold', 10))
         colibri.pack(fill='x', pady=(0, 6))
-        self.colibri_status = StringVar(self, 'Starts only on request. Default HAYAT models stay configured.')
+        self.colibri_status = DisplayVar(self, 'Starts only on request. Default HAYAT models stay configured. '
+                                               "HAYAT's brain must be unloaded first: both don't fit in memory together.")
         tk.Label(colibri, textvariable=self.colibri_status, bg=self.palette.BLACK, fg=self.palette.GOLD_SOFT,
                  wraplength=660, justify='left', anchor='w').pack(fill='x')
         row = tk.Frame(colibri, bg=self.palette.BLACK)
         row.pack(fill='x', pady=4)
+        from app.models.colibri_service import ENGINES, PROFILES
+        # Which weights: HAYAT's own (the same file Ollama serves) is first when it is imported.
+        installed = self.colibri.installed()
+        order = sorted(PROFILES, key=lambda name: (not installed.get(name), name != 'foundation'))
+        self._colibri_profiles = {PROFILES[name]['label']: name for name in order}
+        self.colibri_profile = StringVar(self, PROFILES[order[0]]['label'])
+        ttk.Combobox(row, textvariable=self.colibri_profile, values=tuple(self._colibri_profiles), state='readonly',
+                     width=38).pack(side='left')
         self.colibri_backend = StringVar(self, 'cpu')
-        ttk.Combobox(row, textvariable=self.colibri_backend, values=('cpu', 'vulkan'), state='readonly', width=8).pack(side='left')
+        ttk.Combobox(row, textvariable=self.colibri_backend, values=tuple(ENGINES), state='readonly',
+                     width=7).pack(side='left', padx=(4, 0))
         for title, action in (('Start Colibri', self.start_colibri), ('Check status', self.check_colibri), ('Stop Colibri', self.stop_colibri)):
             ttk.Button(row, text=title, command=action).pack(side='left', padx=4)
         self.colibri_prompt = ttk.Entry(colibri)
@@ -234,10 +247,14 @@ class ControlStudio(tk.Toplevel):
 
     def start_colibri(self):
         backend = self.colibri_backend.get()
-        self._colibri_job('Starting Colibri', lambda: self.colibri.start(backend))
+        profile = self._colibri_profiles.get(self.colibri_profile.get(), 'original')
+        self._colibri_job('Starting Colibri', lambda: self.colibri.start(backend, profile))
 
     def check_colibri(self):
-        self.run_job('Checking Colibri', self.colibri.status, lambda value: self.colibri_status.set(_plain(value)))
+        from app.models.colibri_service import describe_status
+        self.run_job('Checking Colibri', self.colibri.status,
+                     lambda value: self.colibri_status.set(describe_status(value) if isinstance(value, dict)
+                                                           else _plain(value)))
 
     def stop_colibri(self):
         self.run_job('Stopping owned Colibri', self.colibri.stop, lambda value: self.colibri_status.set(_plain(value)))

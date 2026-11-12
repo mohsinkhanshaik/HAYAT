@@ -3,6 +3,12 @@
   "private": true,
   "description": "REA (morluto/rea, MIT) for HAYAT: pinned, installed with --ignore-scripts",
   "dependencies": {
-    "rea-agents": "6.7.0"
+    "rea-agents": "6.8.0"
+  },
+  "overrides": {
+    "zod": "4.6.7",
+    "fast-uri": "3.1.9",
+    "glob": "14.0.4",
+    "minimatch": "11.0.5"
   }
 }

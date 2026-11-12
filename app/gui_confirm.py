@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import threading
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -86,7 +87,7 @@ class ConfirmDialog(tk.Toplevel):
         self.checked = BooleanVar(self, False)
         ttk.Checkbutton(self.body, text="I have checked these details and I want HAYAT to do this now.",
                         variable=self.checked, command=self._sync).pack(anchor="w", pady=(12, 0))
-        self.status_var = StringVar(self, "Nothing has been sent yet. It expires 10 minutes after it was prepared.")
+        self.status_var = DisplayVar(self, "Nothing has been sent yet. It expires 10 minutes after it was prepared.")
         self.status = tk.Label(self, textvariable=self.status_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9),
                                anchor="w", justify="left", wraplength=700)
         self.status.pack(fill="x", pady=(10, 4))

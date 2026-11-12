@@ -9,6 +9,7 @@ from tkinter import filedialog, ttk
 
 from app.gui_intelligence_parts import FlowRow
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
@@ -34,7 +35,7 @@ class LocalImageToolsWindow(tk.Toplevel):
         self.bind('<Escape>', lambda _e: self.close())
         self.bind('<Destroy>', self._destroyed, add='+')
         self.path, self.other = StringVar(self, path), StringVar(self, other)
-        self.status = StringVar(self, 'Choose local images, then select an action. No analysis starts automatically.')
+        self.status = DisplayVar(self, 'Choose local images, then select an action. No analysis starts automatically.')
 
         head = tk.Frame(self, bg=p.BLACK, padx=14, pady=10)
         head.pack(fill='x')

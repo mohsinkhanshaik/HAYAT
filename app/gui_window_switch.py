@@ -54,6 +54,9 @@ class WindowSwitch(tk.Toplevel):
         self.query = tk.StringVar(self, "")
         entry = tk.Entry(inner, textvariable=self.query, width=44, bg=gui.PANEL if hasattr(gui, "PANEL") else "#1b1f24",
                          fg=gui.WHITE, insertbackground=gui.WHITE, relief="flat")
+        if hasattr(gui, "GOLD"):
+            from app.gui_theme import field_outline
+            field_outline(entry, gui)
         entry.pack(fill="x", pady=(6, 6))
         self.listbox = tk.Listbox(inner, height=8, width=44, activestyle="none",
                                   bg=gui.PANEL if hasattr(gui, "PANEL") else "#1b1f24", fg=gui.WHITE,

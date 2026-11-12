@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any
 
-from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 IN, OUT, RISK = "#4ADE80", "#F05D5E", "#E8C46A"
 
@@ -24,7 +24,7 @@ class DeepTab:
         self.frame = tk.Frame(studio.body, bg=p.PANEL, padx=12, pady=10)
         studio.tab_frames["Deep review"] = self.frame
         self.value: dict[str, Any] | None = None
-        self.title = StringVar(studio, "Reading your books…")
+        self.title = DisplayVar(studio, "Reading your books…")
         tk.Label(self.frame, textvariable=self.title, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI Semibold", 13), anchor="w").pack(fill="x")
         tk.Label(self.frame, text="Where the money is, when it should arrive, and what to do first. From your own records, plus pay in "
                                   "the job postings HAYAT collected; nothing is sent or changed.",

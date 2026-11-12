@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import filedialog, ttk
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_windows import place_over
 from app.revenue_inputs import input_guide
 
@@ -81,9 +82,9 @@ class RevenueIntake(tk.Toplevel):
         attach.pack(fill='x', padx=16, pady=8)
         ttk.Button(attach, text='Attach files', command=self.attach).pack(side='left')
         ttk.Button(attach, text='Clear attachments', command=self.clear_attachments).pack(side='left', padx=6)
-        self.attachment_label = StringVar(self, 'No attachments')
+        self.attachment_label = DisplayVar(self, 'No attachments')
         ttk.Label(attach, textvariable=self.attachment_label).pack(side='left')
-        self.status = StringVar(self, 'Enter your real inputs. Results and errors appear below.')
+        self.status = DisplayVar(self, 'Enter your real inputs. Results and errors appear below.')
         ttk.Label(self, textvariable=self.status, wraplength=670).pack(fill='x', padx=16)
         from app.gui_theme import DarkScrolledText
         self.output = DarkScrolledText(self, height=7, wrap='word', bg=p.BLACK, fg=p.WHITE, font=('Segoe UI', 10))

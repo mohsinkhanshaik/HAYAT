@@ -129,8 +129,10 @@ class ResourceController:
                 admission = {}
             if admission.get("already_warm"):
                 return {"preloading": False, "model": model, "reason": "already loaded"}
-            if admission and not admission.get("allowed", True):
-                return {"preloading": False, "model": model, "reason": "not enough free memory"}
+            # The brain is preloaded whenever it fits the machine at all: Ollama spreads it over GPU and RAM, and a
+            # momentary shortage of free RAM (other programs open) must not leave HAYAT cold and unable to answer.
+            if admission and not admission.get("allowed", True) and not admission.get("fits_machine"):
+                return {"preloading": False, "model": model, "reason": "the model is larger than this machine's memory"}
         payload = {"model": model, "keep_alive": getattr(provider, "keep_alive", "10m"),
                    "options": {"num_ctx": int(getattr(provider, "num_ctx", 0) or 8192)}}
         post = poster or httpx.post

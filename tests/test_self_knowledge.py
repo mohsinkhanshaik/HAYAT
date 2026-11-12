@@ -125,3 +125,15 @@ def test_the_guide_explains_how_and_limits(shared_tk):
         limits.destroy()
     finally:
         guide.destroy()
+
+
+def test_the_weaknesses_question_reaches_the_self_review_with_the_owners_verdicts(runtime):
+    # The generic self-knowledge branch used to catch SELF_REVIEW first and answer
+    # "I couldn't read that about myself right now." every time.
+    from app.owner_feedback import OwnerFeedback
+
+    OwnerFeedback.beside(runtime.memory).record(-1, "wrong", "it is Canberra", "What is the capital of Australia?",
+                                                "Sydney.", "s")
+    answer = runtime.assistant.handle("what are your weaknesses?").display_response
+    assert "couldn't read that about myself" not in answer
+    assert "Your feedback on my replies:" in answer and "marked wrong" in answer

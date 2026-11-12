@@ -34,7 +34,9 @@ def test_the_local_time_comes_from_the_clock_and_other_places_do_not():
 
 
 def test_a_named_image_file_goes_to_the_vision_model(tmp_path):
-    picture = tmp_path / "invoice 4721.png"
+    directory = tmp_path / 'startup business ideas'
+    directory.mkdir()
+    picture = directory / "invoice 4721.png"
     picture.write_bytes(b"\x89PNG\r\n\x1a\n")
     text = f"Describe the image {picture}. What number is on it?"
     assert image_file_in(text) == str(picture)

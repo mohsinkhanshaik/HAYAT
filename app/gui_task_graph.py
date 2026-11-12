@@ -1,6 +1,7 @@
 """Keyboard-accessible dependency editor with a visual graph and saved drafts."""
 import json
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -14,7 +15,7 @@ class TaskGraphEditor(tk.Frame):
         self.runtime, self.palette, self.compose = runtime, palette, compose
         self.store = GraphStore(runtime.memory.path.parent / "workspace.db")
         self.nodes = []
-        self.status = StringVar(self, "Add steps, then choose which steps each one depends on.")
+        self.status = DisplayVar(self, "Add steps, then choose which steps each one depends on.")
         self.name = StringVar(self, "My plan")
         self.dependencies = StringVar(self)
         top = ttk.Frame(self)

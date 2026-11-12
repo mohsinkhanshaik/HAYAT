@@ -21,10 +21,21 @@ What actually limits a team on this machine:
 
 Everything here is measured or derived, and explained in plain words, so HAYAT
 can say how many workers it can run and why.
+
+**Grouped teams.** A flat team is limited because the Verification Agent and the
+final answer read every worker's findings at MIN_WORKER_CHARS or more each.
+Beyond that limit workers are organised in groups (app/agents/team_groups.py):
+each group's lead reads its members' full findings in its own window and
+condenses them into a cited group report, and the Verification Agent and the
+final answer read the group reports instead. A worker then needs only
+MIN_DIGEST_CHARS of the top window (at least one cited claim with its link),
+plus a fixed header per group, so more workers fit. The number is computed
+here from the window (see grouped_workers); it is not a fixed multiple.
 """
 from __future__ import annotations
 
 import json
+import math
 import statistics
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -44,6 +55,21 @@ MAX_WORKER_CHARS = 6000
 #: Until this machine has run teams, assume a worker takes this long.
 DEFAULT_WORKER_SECONDS = 90.0
 STEPS_PER_WORKER = 5
+
+#: In a grouped team the Verification Agent and the final answer see each worker
+#: only through its group report: at least one cited claim with its source link
+#: (about 50 tokens). The worker's full findings are read by its group lead.
+MIN_DIGEST_CHARS = 200
+#: Each group report's fixed lines: name, counts and focus (up to ~250), the item
+#: count and "left out to fit" lines (~210) and section titles.
+GROUP_HEADER_CHARS = 500
+#: The labels the verifier and the final answer put around each group report.
+GROUP_WRAP_CHARS = 150
+#: A group lead's condensed answer is at most one worker's largest share.
+LEAD_ANSWER_TOKENS = MAX_WORKER_CHARS // CHARS_PER_TOKEN
+#: The Verification Agent opens at most 3 links in each of its 5 steps, so a
+#: team never has more groups than it can check at least one link from.
+MAX_GROUPS = STEPS_PER_WORKER * 3
 
 
 @dataclass
@@ -75,28 +101,115 @@ class TeamCapacity:
         """All findings together in the final answer's prompt."""
         return max(MIN_WORKER_CHARS, self._final_chars)
 
-    def team_seconds(self, workers: int) -> float:
-        """Time budget: each worker's measured time, doubled for slack, plus the final answer."""
-        return max(1200.0, workers * self.seconds_per_worker * 2 + 300)
+    # ------------------------------------------------------------ grouped teams
+
+    @property
+    def _lead_chars(self) -> int:
+        """What a group lead can read: its window less its instructions and its condensed answer."""
+        return max(0, (self.context_tokens - INSTRUCTION_TOKENS - LEAD_ANSWER_TOKENS) * CHARS_PER_TOKEN)
+
+    @property
+    def members_per_group(self) -> int:
+        """Most members one lead can read at MIN_WORKER_CHARS each and still digest into one report."""
+        by_window = self._lead_chars // MIN_WORKER_CHARS
+        by_report = (MAX_WORKER_CHARS - GROUP_HEADER_CHARS - GROUP_WRAP_CHARS) // MIN_DIGEST_CHARS
+        return max(0, min(by_window, by_report))
+
+    def lead_share_chars(self, members: int) -> int:
+        """Each member's share of its lead's window."""
+        return max(MIN_WORKER_CHARS, min(MAX_WORKER_CHARS, self._lead_chars // max(1, members)))
+
+    def group_share_chars(self, groups: int) -> int:
+        """Room for one group report when the verifier reads `groups` reports and the final answer
+        reads them plus the verifier's own findings."""
+        groups = max(1, groups)
+        return min(self._verifier_chars // groups, self._final_chars // (groups + 1), MAX_WORKER_CHARS)
+
+    def group_report_chars(self, groups: int) -> int:
+        """The text budget of one group report (its share less the labels put around it)."""
+        return max(0, self.group_share_chars(groups) - GROUP_WRAP_CHARS)
+
+    def group_sizes(self, members: int) -> list[int] | None:
+        """The fewest groups that hold `members` workers within every window, as balanced sizes.
+
+        None when they do not fit. Every group report must hold a header plus
+        MIN_DIGEST_CHARS per member, inside the share the verifier and the final
+        answer can give it; every lead must read its members at MIN_WORKER_CHARS.
+        """
+        per_lead = self.members_per_group
+        if members < 2 or per_lead < 1:
+            return None
+        for groups in range(2, MAX_GROUPS + 1):
+            largest = math.ceil(members / groups)
+            if largest > per_lead or largest < 1:
+                continue
+            if largest * MIN_DIGEST_CHARS + GROUP_HEADER_CHARS <= self.group_report_chars(groups):
+                base, extra = divmod(members, groups)
+                return [base + (1 if index < extra else 0) for index in range(groups)]
+        return None
+
+    @property
+    def grouped_workers(self) -> int:
+        """Largest grouped team (the Verification Agent included); never below the flat limit."""
+        for members in range(MAX_GROUPS * self.members_per_group, 1, -1):
+            if self.group_sizes(members) is not None:
+                return max(self.max_workers, members + 1)
+        return self.max_workers
+
+    @property
+    def team_limit(self) -> int:
+        return max(self.max_workers, self.grouped_workers)
+
+    def layout(self, workers: int) -> list[int]:
+        """Group sizes for a team of `workers` (Verification Agent included); [] for a flat team."""
+        if workers <= self.max_workers:
+            return []
+        return self.group_sizes(workers - 1) or []
+
+    def expected_seconds(self, workers: int) -> float:
+        """Plain estimate for the owner: every worker and every group lead takes one brain turn."""
+        return (workers + len(self.layout(workers))) * self.seconds_per_worker
+
+    def team_seconds(self, workers: int, groups: int = 0) -> float:
+        """Time budget: each worker's (and group lead's) measured time, doubled for slack, plus the final answer."""
+        return max(1200.0, (workers + groups) * self.seconds_per_worker * 2 + 300)
 
     def team_tool_calls(self, workers: int) -> int:
         return max(40, workers * STEPS_PER_WORKER + 10)
 
     def explain(self, workers: int | None = None) -> str:
-        lines = [
-            f"I can run teams of up to {self.max_workers} workers on this machine (the Verification Agent included), "
-            f"and {self.concurrent_teams} team{'s' if self.concurrent_teams != 1 else ''} at a time.",
-            *[f"- {reason}" for reason in self.reasons],
-        ]
+        grouped = self.grouped_workers
+        sizes = self.layout(grouped)
+        if grouped > self.max_workers:
+            first = (f"I can run teams of up to {grouped} workers on this machine (the Verification Agent included): "
+                     f"up to {self.max_workers} as one flat team, and up to {grouped} organised in {len(sizes)} groups "
+                     f"whose leads condense their findings ({grouped / self.max_workers:.1f}x the flat limit). ")
+        else:
+            first = (f"I can run teams of up to {self.max_workers} workers on this machine (the Verification Agent "
+                     "included); this window is too small for grouped teams to add more. ")
+        lines = [first + f"{self.concurrent_teams} team{'s' if self.concurrent_teams != 1 else ''} can run at a time.",
+                 *[f"- {reason}" for reason in self.reasons]]
         if workers:
-            minutes = workers * self.seconds_per_worker / 60
-            lines.append(f"A team of {workers} would take about {minutes:.0f} minutes "
-                         f"(budget {self.team_seconds(workers) / 60:.0f} min, {self.team_tool_calls(workers)} tool calls).")
+            groups = len(self.layout(workers))
+            lines.append(f"A team of {workers} would take about {duration(self.expected_seconds(workers))} "
+                         f"(budget {duration(self.team_seconds(workers, groups))}, {self.team_tool_calls(workers)} tool calls).")
+        if grouped > self.max_workers:
+            lines.append(f"The largest team, {grouped} workers, would take about {duration(self.expected_seconds(grouped))}: "
+                         "more workers cover more ground, but they still think one after another.")
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, Any]:
         return {**asdict(self), "worker_share_chars_at_max": self.share_chars(self.max_workers),
+                "flat_workers": self.max_workers, "grouped_workers": self.grouped_workers,
+                "grouped_layout": self.layout(self.grouped_workers),
+                "members_per_group": self.members_per_group,
                 "example_team_of_10_minutes": round(10 * self.seconds_per_worker / 60, 1)}
+
+
+def duration(seconds: float) -> str:
+    """"about 40 minutes" / "about 4.9 hours", for telling the owner how long a team takes."""
+    minutes = max(0.0, seconds) / 60
+    return f"{minutes:.0f} minutes" if minutes < 90 else f"{minutes / 60:.1f} hours"
 
 
 def measured_worker_seconds(reports: Path, limit: int = 20) -> tuple[float, int]:
@@ -135,7 +248,20 @@ def measure(model: Any = None, *, reports: Path | None = None, hardware_profile:
     fit = min(capacity._final_chars, capacity._verifier_chars) // MIN_WORKER_CHARS
     capacity.max_workers = max(3, int(fit))
     reasons.append(f"Each worker needs at least {MIN_WORKER_CHARS:,} characters of that window to report "
-                   f"anything useful, so {capacity.max_workers} fit.")
+                   f"anything useful, so {capacity.max_workers} fit in one flat team.")
+    grouped = capacity.grouped_workers
+    if grouped > capacity.max_workers:
+        sizes = capacity.layout(grouped)
+        reasons.append(
+            f"Beyond that I organise workers in groups. Each group lead reads its members' full findings in its own "
+            f"window (up to {capacity.members_per_group} members at {MIN_WORKER_CHARS:,} characters each) and condenses "
+            "them into a cited group report; the Verification Agent and my final answer then read the group reports, "
+            f"which need only {MIN_DIGEST_CHARS} characters per worker (at least one claim with its source link) plus "
+            f"{GROUP_HEADER_CHARS + GROUP_WRAP_CHARS} per group. So {grouped - 1} workers fit in {len(sizes)} groups of "
+            f"up to {max(sizes)}, plus the Verification Agent: {grouped} in all. Each group lead adds one more brain "
+            "turn, and every claim keeps its link or is marked unverified.")
+    else:
+        reasons.append("Grouping would not add workers at this window size, so teams stay flat.")
     seconds, runs = measured_worker_seconds(reports) if reports is not None else (DEFAULT_WORKER_SECONDS, 0)
     capacity.seconds_per_worker, capacity.measured_from_runs = seconds, runs
     reasons.append(

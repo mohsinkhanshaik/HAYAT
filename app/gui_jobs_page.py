@@ -8,7 +8,8 @@ from app.gui_panels import ScrollableColumn
 
 
 class JobsPage(ScrollableColumn):
-    def __init__(self, parent, palette):
+    def __init__(self, parent, palette, minimum_width=780):
+        self.minimum_width = minimum_width
         super().__init__(parent, palette)
         self._fit_after = None
         self.bind("<Destroy>", self._cancel_fit, add="+")
@@ -40,7 +41,7 @@ class JobsPage(ScrollableColumn):
 
     def _fit(self, width, height):
         # Preserve room for the filters and split panes at compact sizes.
-        self.canvas.itemconfigure(self._window, width=max(780, width),
+        self.canvas.itemconfigure(self._window, width=max(self.minimum_width, width),
                                   height=max(height, self.body.winfo_reqheight()))
 
     def _key_scroll(self, count, mode):

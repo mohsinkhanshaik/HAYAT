@@ -14,7 +14,9 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any
 
+from app.gui_a11y import activatable
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_fonts import DISPLAY
 
 #: The four stages a spoken request passes through, keyed by voice states.
@@ -112,7 +114,7 @@ class VoicePage:
             self.listening_button.state(["disabled"])
         if self.voice is None or not hasattr(self.voice, "use_reference_voice"):
             self.reference_button.state(["disabled"])
-        self.detail = StringVar(self.page, "Voice off")
+        self.detail = DisplayVar(self.page, "Voice off")
         tk.Label(self.main, textvariable=self.detail, bg=p.BLACK, fg=p.HOLO, anchor="w", justify="left",
                  font=("Segoe UI", 9)).pack(fill="x")
         conversation = self._card(self.main, "Conversation")
@@ -188,7 +190,7 @@ class VoicePage:
         speed_row.pack(fill="x")
         tts = getattr(self.voice, "tts", None)
         self.speed = tk.DoubleVar(self.page, float(getattr(tts, "speed", 1.0) or 1.0))
-        self.speed_label = StringVar(self.page, f"{self.speed.get():.1f}×")
+        self.speed_label = DisplayVar(self.page, f"{self.speed.get():.1f}×")
         self.speed_scale = ttk.Scale(speed_row, from_=0.5, to=2.0, variable=self.speed, command=lambda _value: self.set_speed())
         self.speed_scale.pack(side="left", fill="x", expand=True)
         tk.Label(speed_row, textvariable=self.speed_label, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI", 9), width=5).pack(side="right")
@@ -213,6 +215,7 @@ class VoicePage:
                 part.pack(fill="x")
             for widget in (tile, *parts):
                 widget.bind("<Button-1>", lambda _event, text=phrase: self.try_sample(text))
+            activatable(tile, lambda text=phrase: self.try_sample(text), p, keys_only=True)
 
     def open_reference_voice(self) -> None:
         from app.gui_voice_reference import open_reference_voice

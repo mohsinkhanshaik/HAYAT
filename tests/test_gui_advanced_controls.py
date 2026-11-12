@@ -128,10 +128,12 @@ def test_real_research_dashboard_stop_branch_colibri_and_3d(shared_tk, research,
         controls = gui._control_studio
         pump(gui, lambda: not controls.busy)
         calls = []
-        monkeypatch.setattr(controls.colibri, 'start', lambda backend: calls.append((backend, threading.get_ident())) or {'started': True})
+        monkeypatch.setattr(controls.colibri, 'start', lambda backend, profile='original': calls.append(
+            (backend, threading.get_ident(), profile)) or {'started': True})
         controls.start_colibri()
         pump(gui, lambda: (controls.update_live({}, {}, False), not controls.busy)[1])
         assert calls and calls[0][1] != threading.get_ident()
+        assert calls[0][2] in ('original', 'foundation')
         controls.withdraw()
 
         gui.emergency_button.invoke()

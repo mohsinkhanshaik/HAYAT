@@ -333,6 +333,14 @@ class ToolRegistry:
                     result.duration_ms = int((time.perf_counter() - started) * 1000)
                     return result
                 budget.consume(name)
+                from app.outbound import ACTION_CATEGORIES
+
+                if tool.permission in ACTION_CATEGORIES:
+                    # Reaches outside this computer: recorded by destination for the reply's privacy line.
+                    from app.outbound import action_text
+                    from app.transfers import transfers
+
+                    transfers().action(PRIVATE_TEXT if is_private_tool(name) else action_text(name, tool.permission, arguments))
                 # Registered while it runs, so the status line can say which
                 # tool is taking the time instead of only that something is.
                 from app.activity import ACTIVITY

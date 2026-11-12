@@ -24,25 +24,49 @@ class Palette:
     OLIVE = "#8C9B4E"
     OLIVE_SOFT = "#C2D18D"
     ALERT = "#F05D5E"
+    # The edge of something you can type in, tick or drag. LINE (dividers, card outlines) sat near 2:1 against
+    # the surfaces, so an empty search box was a dark field with no visible edge; WCAG 2.2 asks 3:1 for the
+    # boundary of a control (1.4.11). Each appearance's EDGE clears 3:1 on BLACK, PANEL and PANEL_2.
+    EDGE = "#76826F"
+    # The fill of a button that stops or deletes. White text on it is 7.6:1; ALERT itself is a text colour.
+    DANGER = "#992C3A"
     BG, TEXT, ACCENT, SUCCESS, WARNING = BLACK, WHITE, GOLD, OLIVE_SOFT, GOLD
 
 
 DARK = {key: value for key, value in vars(Palette).items() if key.isupper()}
 MIDNIGHT = {**DARK, "BLACK": "#080F18", "PANEL": "#101C29", "PANEL_2": "#182737",
-            "PANEL_HOVER": "#24384B", "LINE": "#3A5068", "WHITE": "#F3F6FC",
+            "PANEL_HOVER": "#24384B", "LINE": "#3A5068", "EDGE": "#61778D", "WHITE": "#F3F6FC",
             "MUTED": "#A9BACD", "GOLD": "#F1C765", "GOLD_SOFT": "#FFE1A0",
             "ROYAL": "#235ACA", "ROYAL_SOFT": "#8FC4FF", "HOLO": "#5BD3E5",
             "OLIVE": "#299D78", "OLIVE_SOFT": "#65DBA7"}
 LIGHT = {**DARK, "BLACK": "#F6F7FA", "PANEL": "#FFFFFF", "PANEL_2": "#E8EDF5",
-         "PANEL_HOVER": "#DCE5F3", "LINE": "#BEC9D8", "WHITE": "#152033", "MUTED": "#4C5D73",
+         "PANEL_HOVER": "#DCE5F3", "LINE": "#BEC9D8", "EDGE": "#738298", "WHITE": "#152033", "MUTED": "#4C5D73",
          "GOLD": "#946400", "GOLD_SOFT": "#805600", "ROYAL": "#2257B2", "ROYAL_SOFT": "#1C4C99", "HOLO": "#19729C",
-         "OLIVE": "#626F2E", "OLIVE_SOFT": "#4B5B22", "ALERT": "#B52635"}
+         "OLIVE": "#626F2E", "OLIVE_SOFT": "#4B5B22", "ALERT": "#B52635", "DANGER": "#A82331"}
 CONTRAST = {**DARK, "BLACK": "#000000", "PANEL": "#080808", "PANEL_2": "#161616",
-            "LINE": "#D5D5D5", "WHITE": "#FFFFFF", "MUTED": "#D8D8D8", "ROYAL_SOFT": "#AECBFF"}
+            "LINE": "#D5D5D5", "EDGE": "#E0E0E0", "WHITE": "#FFFFFF", "MUTED": "#D8D8D8", "ROYAL_SOFT": "#AECBFF"}
 # Glass: frosted panels over a deep cool backdrop (app/gui_glass.py).
 from app.gui_glass import GLASS, install_title_bars, refresh_backdrops  # noqa: E402
 
-THEMES = {"Midnight": MIDNIGHT, "Dark": DARK, "Light": LIGHT, "High contrast": CONTRAST, "Glass": {**DARK, **GLASS}}
+AURORA = {**MIDNIGHT, "BLACK": "#080D16", "PANEL": "#121E2D", "PANEL_2": "#1A2A3E",
+          "PANEL_HOVER": "#263C53", "LINE": "#425D77", "EDGE": "#637B92", "WHITE": "#F1F7FF", "MUTED": "#B1C1D5",
+          "GOLD": "#72E1DE", "GOLD_SOFT": "#B7F6F2", "HOLO": "#99BDFF",
+          "ROYAL": "#3D59B5", "ROYAL_SOFT": "#B9CDFF", "OLIVE_SOFT": "#93E7B5"}
+# Obsidian (2026-11-09): neutral charcoal and graphite surfaces with no colour cast, one cyan for the main action
+# and violet for what is chosen. The roles are the same as every other appearance; only the tokens differ.
+OBSIDIAN = {**DARK, "BLACK": "#0B0C0F", "PANEL": "#15171C", "PANEL_2": "#1E2128", "PANEL_HOVER": "#2A2E38",
+            "LINE": "#3A3F4B", "EDGE": "#737B8D", "WHITE": "#F2F4F8", "MUTED": "#A9B0BF",
+            "GOLD": "#5CD6F5", "GOLD_SOFT": "#A8ECFF", "ROYAL": "#5B4FD6", "ROYAL_SOFT": "#C3BEFF",
+            "HOLO": "#8FB7FF", "OLIVE": "#2F9E7E", "OLIVE_SOFT": "#7BE0B8", "ALERT": "#F26D6D"}
+# Nebula is an optional instrument-panel appearance: deep ink surfaces, cyan primary actions and violet selection.
+# Each role has a distinct value so live theme switching stays reversible; field edges remain visible on every surface.
+NEBULA = {**DARK, "BLACK": "#070B14", "PANEL": "#0F1828", "PANEL_2": "#182338", "PANEL_HOVER": "#253651",
+          "LINE": "#3C5070", "EDGE": "#7287A4", "WHITE": "#EEF5FF", "MUTED": "#A7B9CF",
+          "GOLD": "#4FE0F4", "GOLD_SOFT": "#ADF6FF", "ROYAL": "#6447C5", "ROYAL_SOFT": "#CCBDFF",
+          "HOLO": "#80AFFF", "OLIVE": "#299E85", "OLIVE_SOFT": "#7DE8BE", "ALERT": "#FF858D",
+          "DANGER": "#9D304B"}
+THEMES = {"Aurora": AURORA, "Obsidian": OBSIDIAN, "Nebula": NEBULA, "Midnight": MIDNIGHT, "Dark": DARK, "Light": LIGHT,
+          "High contrast": CONTRAST, "Glass": {**DARK, **GLASS}}
 TEXT_SCALES = {"Standard": 1.0, "Comfortable": 1.15, "Large": 1.3, "Extra large": 1.5}
 ICONS = {"chat": "◇", "history": "≡", "tasks": "☑", "task_graph": "⋈", "gallery": "▧",
          "models": "◉", "background": "↻", "operator": "⌘", "research": "⌕", "tools": "⚒",
@@ -59,8 +83,11 @@ def tokens(name):
 
 def style_controls(root, palette):
     style = ttk.Style(root)
+    edge = getattr(palette, "EDGE", palette.LINE)  # palettes made before EDGE existed keep their LINE
     for name in ("TFrame", "TLabel", "TLabelframe", "TLabelframe.Label"):
         style.configure(name, background=palette.BLACK, foreground=palette.WHITE)
+    # clam's own pale grey frame line around grouped settings.
+    style.configure("TLabelframe", bordercolor=palette.LINE, lightcolor=palette.BLACK, darkcolor=palette.BLACK)
     style.configure("TLabel", font=("Segoe UI", 10))
     style.configure("TNotebook", background=palette.BLACK, borderwidth=0, tabmargins=(0, 0, 0, 6),
                     bordercolor=palette.LINE, lightcolor=palette.LINE, darkcolor=palette.LINE)
@@ -98,19 +125,19 @@ def style_controls(root, palette):
     # The tick box itself: clam drew a white square with a dark cross on every dark panel.
     for name in ("TCheckbutton", "TRadiobutton"):
         style.configure(name, indicatorbackground=palette.PANEL, indicatorforeground=palette.GOLD,
-                        upperbordercolor=palette.LINE, lowerbordercolor=palette.LINE, indicatormargin=(0, 0, 8, 0))
+                        upperbordercolor=edge, lowerbordercolor=edge, indicatormargin=(0, 0, 8, 0))
         style.map(name, indicatorbackground=[("pressed", palette.PANEL_HOVER), ("selected", palette.PANEL)],
                   indicatorforeground=[("disabled", palette.MUTED)])
     # Spin boxes looked like a white form field with grey arrows; they now match the entries beside them.
-    # Fields are recessed (the panel colour with a visible edge) and buttons raised: both used the same fill,
+    # Fields are recessed (the panel colour with an EDGE outline) and buttons raised: both used the same fill,
     # so a form such as Private networking read as a stack of buttons. The edge turns gold while typing.
     for name in ("TEntry", "TCombobox", "TSpinbox"):
         style.configure(name, fieldbackground=palette.PANEL, foreground=palette.WHITE,
-                        insertcolor=palette.GOLD, padding=6, bordercolor=palette.LINE,
+                        insertcolor=palette.GOLD, padding=6, bordercolor=edge,
                         lightcolor=palette.PANEL, darkcolor=palette.PANEL, borderwidth=1,
                         selectbackground=palette.ROYAL, selectforeground="#FFFFFF")
     from app.gui_glass import blend
-    hover = blend(palette.LINE, palette.MUTED, .45)  # a hint under the pointer; gold is for the field being typed in
+    hover = blend(edge, palette.MUTED, .45)  # a hint under the pointer; gold is for the field being typed in
     style.map("TEntry", bordercolor=[("focus", palette.GOLD), ("hover", hover)],
               lightcolor=[("focus", palette.GOLD)], fieldbackground=[("disabled", palette.BLACK)],
               foreground=[("disabled", palette.MUTED)])
@@ -118,8 +145,15 @@ def style_controls(root, palette):
         style.configure(name, background=palette.PANEL_2, arrowcolor=palette.WHITE)
         style.map(name, background=[("active", palette.PANEL_HOVER)], arrowcolor=[("disabled", palette.MUTED)])
         style.map(name, fieldbackground=[("readonly", palette.PANEL_2)], foreground=[("readonly", palette.WHITE)],
-                  bordercolor=[("focus", palette.GOLD), ("hover", hover), ("!focus", palette.LINE)],
+                  bordercolor=[("focus", palette.GOLD), ("hover", hover), ("!focus", edge)],
                   lightcolor=[("focus", palette.GOLD)])
+    # Sliders (the video player's seek bar and volume): clam drew a light grey trough and
+    # bevelled grip on the dark card. A recessed trough with a gold grip matches the fields.
+    style.configure("Horizontal.TScale", troughcolor=palette.PANEL, background=palette.GOLD_SOFT,
+                    bordercolor=edge, lightcolor=palette.GOLD_SOFT, darkcolor=palette.GOLD,
+                    gripcount=0, sliderthickness=14, troughrelief="flat", borderwidth=1)
+    style.map("Horizontal.TScale", background=[("active", palette.GOLD), ("disabled", palette.LINE)],
+              lightcolor=[("active", palette.GOLD)], troughcolor=[("disabled", palette.BLACK)])
     for name in ("Treeview", "Workspace.Treeview"):
         style.configure(name, background=palette.PANEL_2, fieldbackground=palette.PANEL_2,
                         foreground=palette.WHITE, rowheight=32, font=("Segoe UI", 10), borderwidth=0)
@@ -150,9 +184,10 @@ def style_controls(root, palette):
                     darkcolor=palette.LINE, sashthickness=6, gripcount=0, handlesize=0)
     # The side rails keep the 9-pixel bar they were laid out around.
     style.configure("HayatThin.Vertical.TScrollbar", arrowsize=9, width=9)
+    # clam framed the trough in its own light grey, so a bar at a few percent read as an empty white box.
     style.configure("Hayat.Horizontal.TProgressbar", background=palette.GOLD,
                     troughcolor=palette.PANEL_2, borderwidth=0, lightcolor=palette.GOLD,
-                    darkcolor=palette.GOLD)
+                    darkcolor=palette.GOLD, bordercolor=palette.LINE)
     root.option_add("*TCombobox*Listbox.background", palette.PANEL_2)
     root.option_add("*TCombobox*Listbox.foreground", palette.WHITE)
 
@@ -201,6 +236,39 @@ def style_hayat_buttons(root, palette):
                                                  ("active", blend(palette.PANEL_2, palette.ROYAL, .75))],
               foreground=[("disabled", palette.MUTED)], bordercolor=[("focus", palette.GOLD)],
               relief=[("pressed", "flat"), ("!pressed", "flat")])
+    # A card's title that is also its button (Home's task cards): the card's own fill, text on the card's
+    # left edge like the description under it. Centred, the six titles read as a column of loose buttons.
+    style.configure("HayatCard.TButton", background=palette.PANEL_2, foreground=palette.WHITE, anchor="w",
+                    bordercolor=palette.PANEL_2, lightcolor=palette.PANEL_2, darkcolor=palette.PANEL_2,
+                    focuscolor=palette.GOLD, borderwidth=1, relief="flat", padding=(4, 5),
+                    font=("Segoe UI Semibold", 10))
+    style.map("HayatCard.TButton", background=[("pressed", palette.ROYAL), ("active", palette.PANEL_HOVER)],
+              foreground=[("pressed", "#FFFFFF"), ("active", palette.GOLD_SOFT)],
+              bordercolor=[("focus", palette.GOLD), ("active", palette.PANEL_HOVER)],
+              lightcolor=[("active", palette.PANEL_HOVER)], darkcolor=[("active", palette.PANEL_HOVER)],
+              relief=[("pressed", "flat"), ("!pressed", "flat")])
+    # Stop or remove: the one red fill. It lived in gui.py as fixed hex values, so the Light appearance kept a
+    # dark-theme red and a second Emergency stop (Operation view) was a plain grey button.
+    danger = getattr(palette, "DANGER", "#992C3A")
+    for name in ("HayatDanger.TButton", "Emergency.TButton"):
+        style.configure(name, background=danger, foreground="#FFFFFF", bordercolor=danger, lightcolor=danger,
+                        darkcolor=danger, focuscolor=palette.GOLD, borderwidth=1, relief="flat", padding=(10, 5),
+                        font=("Segoe UI Semibold", 9))
+        style.map(name, background=[("disabled", blend(danger, palette.BLACK, .45)), ("pressed", blend(danger, "#000000", .2)),
+                                    ("active", blend(danger, "#FFFFFF", .12))],
+                  foreground=[("disabled", "#FFFFFF")], bordercolor=[("focus", palette.GOLD)],
+                  relief=[("pressed", "flat"), ("!pressed", "flat")])
+
+
+def field_outline(entry: tk.Entry, palette) -> tk.Entry:
+    """A classic tk.Entry's edge: the EDGE outline the ttk fields have, gold while typing.
+
+    ttk styles never reach tk.Entry, and with relief="flat" the Searches query box was a dark band with no
+    visible edge at all.
+    """
+    edge = getattr(palette, "EDGE", getattr(palette, "LINE", Palette.EDGE))
+    entry.configure(highlightthickness=1, highlightbackground=edge, highlightcolor=getattr(palette, "GOLD", Palette.GOLD))
+    return entry
 
 
 def _scaled_size(base: int, scale: float) -> int:
@@ -295,8 +363,10 @@ def style_text_scale(root: tk.Misc, scale: float) -> None:
     style.configure("TLabel", font=("Segoe UI", _scaled_size(10, scale)))
     for name in ("TButton", "TCheckbutton", "TRadiobutton"):
         style.configure(name, font=("Segoe UI", _scaled_size(10, scale)))
-    for name in ("Hayat.TButton", "HayatAccent.TButton", "HayatRoyal.TButton", "HayatChosen.TButton"):
+    for name in ("Hayat.TButton", "HayatAccent.TButton", "HayatRoyal.TButton", "HayatChosen.TButton",
+                 "HayatDanger.TButton", "Emergency.TButton"):
         style.configure(name, font=("Segoe UI Semibold", _scaled_size(9, scale)))
+    style.configure("HayatCard.TButton", font=("Segoe UI Semibold", _scaled_size(10, scale)))
     for name in ("Treeview", "Workspace.Treeview"):
         style.configure(name, font=("Segoe UI", _scaled_size(10, scale)),
                         rowheight=max(32, round(32 * scale)))
@@ -384,15 +454,27 @@ def appearance_dialog(gui):
     dialog._appearance_motion = reduce_motion
     dialog._appearance_text_size = size_name
 
-    body = tk.Frame(dialog, bg=gui.BLACK, padx=22, pady=18)
-    body.pack(fill="both", expand=True)
+    # Reserve the actions first: all appearances and text settings stay reachable
+    # on short displays, while Save and Cancel remain visible outside the scroll.
+    actions = tk.Frame(dialog, bg=gui.BLACK, padx=22, pady=12)
+    actions.pack(side="bottom", fill="x")
+    from app.gui_panels import ScrollableColumn
+
+    column = ScrollableColumn(dialog, type(gui), width=740)
+    column.configure(height=660)
+    column.pack(fill="both", expand=True, padx=22, pady=(18, 0))
+    dialog._appearance_column = column
+    body = column.body
     tk.Label(body, text="Make HAYAT comfortable to use", bg=gui.BLACK, fg=gui.WHITE,
              font=("Segoe UI Semibold", 15), anchor="w").pack(fill="x")
     tk.Label(body, text="Colors change as you choose. Escape restores the last applied look.",
              bg=gui.BLACK, fg=gui.MUTED, font=("Segoe UI", 9), anchor="w").pack(fill="x", pady=(3, 14))
 
     cards = {}
-    descriptions = {"Midnight": "Deep navy, warm gold and clear cyan accents",
+    descriptions = {"Aurora": "Deep navy surfaces, cool aqua actions and soft blue highlights",
+                    "Obsidian": "Neutral charcoal and graphite, cyan actions and violet for what is chosen",
+                    "Nebula": "Deep ink panels, luminous cyan actions and violet selection",
+                    "Midnight": "Deep navy, warm gold and clear cyan accents",
                     "Dark": "Black, gold, olive and royal blue", "Light": "Bright and clear in daylight",
                     "High contrast": "Sharper edges and brighter text",
                     "Glass": "Frosted navy panels over a soft aurora glow"}
@@ -465,9 +547,6 @@ def appearance_dialog(gui):
     preview_transparency()
     dialog._appearance_transparency = transparency
     ttk.Label(body, textvariable=status, wraplength=420).pack(anchor="w", pady=(9, 8))
-    actions = tk.Frame(body, bg=gui.BLACK)
-    actions.pack(fill="x", pady=(4, 0))
-
     def save():
         nonlocal committed_theme, committed_motion, committed_scale, committed_opacity
         gui._theme_name = name.get()
@@ -496,6 +575,23 @@ def appearance_dialog(gui):
     ttk.Button(actions, text="Cancel", style="Hayat.TButton", command=cancel).pack(side="right")
     ttk.Button(actions, text="Save appearance", style="HayatAccent.TButton",
                command=save).pack(side="right", padx=(0, 8))
+    column.adopt(body)
+
+    def reveal_focused(event):
+        top = event.widget.winfo_rooty() - body.winfo_rooty()
+        bottom = top + event.widget.winfo_height()
+        visible = column.canvas.canvasy(0)
+        height, total = column.canvas.winfo_height(), max(1, body.winfo_height())
+        if top < visible:
+            column.canvas.yview_moveto(top / total)
+        elif bottom > visible + height:
+            column.canvas.yview_moveto(max(0, bottom - height) / total)
+
+    pending = [body]
+    while pending:
+        widget = pending.pop()
+        widget.bind("<FocusIn>", reveal_focused, add="+")
+        pending.extend(widget.winfo_children())
     dialog.protocol("WM_DELETE_WINDOW", cancel)
     dialog.bind("<Escape>", lambda _event: (cancel(), "break")[1])
     from app.gui_windows import place_over
@@ -517,6 +613,11 @@ class DarkScrolledText(tk.Text):
     """
 
     def __init__(self, master: tk.Misc | None = None, **kw) -> None:
+        # Auto-detect reports when disabled; explicit False keeps an editor's
+        # contents exact even if its form is temporarily disabled.
+        self._output_policy = kw.pop("protect_output", None)
+        self._protect_output = self._output_policy is True or (
+            self._output_policy is None and kw.get("state") == "disabled")
         self.frame = tk.Frame(master, bg=kw.get("bg", kw.get("background", "")) or None)
         self.vbar = ttk.Scrollbar(self.frame, orient="vertical", style="Hayat.Vertical.TScrollbar")
         self.vbar.pack(side="right", fill="y")
@@ -533,6 +634,38 @@ class DarkScrolledText(tk.Text):
         for name in methods.difference(text_meths):
             if name[0] != "_" and name not in ("config", "configure"):
                 setattr(self, name, getattr(self.frame, name))
+
+    def insert(self, index, chars, *args):
+        if self._protect_output:
+            from app.gui_presentation import safe_text
+            chars = safe_text(chars)
+            args = tuple(safe_text(item) if position % 2 else item for position, item in enumerate(args))
+        return super().insert(index, chars, *args)
+
+    def configure(self, cnf=None, **kw):
+        options = {**(cnf if isinstance(cnf, dict) else {}), **kw}
+        if options.get("state") == "disabled" and self._output_policy is not False:
+            from app.gui_presentation import safe_text
+            self._protect_output = True
+            # A report can be inserted in pieces (with different tags). Check
+            # the complete buffer before it becomes selectable/copyable.
+            original = self.get("1.0", "end-1c")
+            cleaned = safe_text(original)
+            if cleaned != original:
+                import difflib
+                super().configure(state="normal")
+                for operation, a, b, c, d in reversed(difflib.SequenceMatcher(
+                        None, original, cleaned).get_opcodes()):
+                    if operation != "equal":
+                        # Text's +Nc modifier advances by Unicode characters,
+                        # including a whole emoji (unlike a raw Tcl length).
+                        start, end = f"1.0+{a}c", f"1.0+{b}c"
+                        tags = self.tag_names(start)
+                        super().delete(start, end)
+                        super().insert(start, cleaned[c:d], tags)
+        return super().configure(cnf, **kw)
+
+    config = configure
 
     def __str__(self) -> str:
         return str(self.frame)

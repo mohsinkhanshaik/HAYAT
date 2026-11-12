@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 import statistics
 import threading
 import time
@@ -103,6 +104,12 @@ PROVIDERS: dict[str, dict[str, Any]] = {
     "fi_trains": {"provider": "Fintraffic Digitraffic Rail", "types": ["TRANSIT", "LOCATION"], "coverage": "Finland",
                   "url": "https://rata.digitraffic.fi/api/v1/train-locations/latest/", "license": "CC BY 4.0",
                   "refresh_seconds": 30, "per_minute": 4, "restrictions": ""},
+    "transit_world": {"provider": "Operators' GTFS-realtime vehicle feeds (15 feeds, see transit.py)", "types": ["TRANSIT", "LOCATION"],
+                      "coverage": "Austin, Minneapolis–St Paul, Toronto, Mississauga, Hamilton, Durham Region, Guelph, Kingston, "
+                                  "Burlington, Helsinki, the Netherlands, Norway, South East Queensland, Rio de Janeiro",
+                      "url": "https://gtfs.org/realtime/", "license": "each operator's open-data licence (credited per answer)",
+                      "refresh_seconds": 20, "per_minute": 4,
+                      "restrictions": "Vehicles without GPS (most metros) are absent; Barrie and York Region need a licence accepted."},
     "met": {"provider": "MET Norway Locationforecast", "types": ["WEATHER"], "coverage": "World",
             "url": "https://api.met.no/weatherapi/locationforecast/2.0/", "license": "CC BY 4.0 (MET Norway)",
             "refresh_seconds": 1800, "per_minute": 10, "restrictions": "Model forecast, not a local measurement."},
@@ -128,8 +135,11 @@ PROVIDERS: dict[str, dict[str, Any]] = {
             "restrictions": "Position computed from published elements; accurate to a few kilometres."},
 }
 
+#: MBTA's vehicle states in the same words the GTFS-realtime feeds use (transit.STATUS).
+MBTA_STATUS = {"INCOMING_AT": "arriving", "STOPPED_AT": "stopped", "IN_TRANSIT_TO": "moving"}
+
 # Community receivers and republished geographic data remain community sources.
-for _provider in ('ais', 'mbta', 'fi_trains', 'met', 'gauges', 'elevation'):
+for _provider in ('ais', 'mbta', 'fi_trains', 'transit_world', 'met', 'gauges', 'elevation'):
     PROVIDERS[_provider]['official'] = True
 
 
@@ -152,6 +162,51 @@ class RateLimited(RuntimeError):
     pass
 
 
+#: Region words GeoNames spells out: "DC" is the District of Columbia, "UK" the United Kingdom.
+QUALIFIERS = {"dc": "district of columbia", "uk": "united kingdom", "usa": "united states", "us": "united states",
+              "uae": "united arab emirates"}
+
+
+def qualifier(text: str) -> set[str]:
+    """The ways a region qualifier ("DC", "Texas", "TX", "France", "fr") can appear in a GeoNames result."""
+    from app.intelligence.fusion import US_STATES
+
+    word = text.lower().replace(".", "").strip()
+    found = {word, QUALIFIERS.get(word, word)}
+    found |= {state for state, code in US_STATES.items() if code.lower() == word}
+    return found
+
+
+WIKIDATA_SEARCH = "https://www.wikidata.org/w/api.php?action=wbsearchentities&language=en&uselang=en&format=json&type=item&limit=5&search="
+WIKIDATA_CLAIMS = "https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims|labels|descriptions&languages=en&format=json&ids="
+EARTH = "http://www.wikidata.org/entity/Q2"
+
+
+def wikidata_place(get_json: Callable[[str], Any], name: str) -> dict[str, Any] | None:
+    """A landmark's coordinates (Wikidata P625): the first search hit that has a place on Earth.
+
+    Artworks and films share landmark names ("Eiffel Tower" is also a Delaunay painting) but carry no coordinate,
+    so requiring one picks the place. `get_json` must send Wikimedia's required contact user agent."""
+    from urllib.parse import quote
+
+    hits = [item["id"] for item in (get_json(WIKIDATA_SEARCH + quote(name[:80])) or {}).get("search") or []
+            if isinstance(item, dict) and re.fullmatch(r"Q\d{1,12}", str(item.get("id")))]
+    if not hits:
+        return None
+    entities = (get_json(WIKIDATA_CLAIMS + "|".join(hits)) or {}).get("entities") or {}
+    for identifier in hits:
+        entity = entities.get(identifier) or {}
+        for claim in (entity.get("claims") or {}).get("P625") or []:
+            value = ((claim.get("mainsnak") or {}).get("datavalue") or {}).get("value") or {}
+            latitude, longitude = _number(value.get("latitude")), _number(value.get("longitude"))
+            if latitude is None or longitude is None or value.get("globe", EARTH) != EARTH:
+                continue
+            return {"name": ((entity.get("labels") or {}).get("en") or {}).get("value") or name,
+                    "latitude": latitude, "longitude": longitude, "country": None, "country_code": None, "region": None,
+                    "description": ((entity.get("descriptions") or {}).get("en") or {}).get("value"), "source": "Wikidata"}
+    return None
+
+
 class LiveData:
     """On-demand providers with a per-provider rate limit and short cache. `get_json` is injectable for tests."""
 
@@ -162,6 +217,10 @@ class LiveData:
         self._cache: dict[str, tuple[float, Any]] = {}
         self._lock = threading.Lock()
         self.health: dict[str, dict[str, Any]] = {}
+        #: transit.WorldTransit, set by the runtime: GTFS-realtime feeds are protobuf, not JSON.
+        self.world_transit: Any = None
+        #: name → place for landmarks GeoNames does not list (wikidata_place); set by the runtime.
+        self.landmarks: Callable[[str], dict[str, Any] | None] | None = None
 
     def _fetch(self, provider: str, url: str) -> Any:
         meta = PROVIDERS[provider]
@@ -226,7 +285,8 @@ class LiveData:
         self.record("vessel", found, "Digitraffic AIS")
         return sorted(found, key=lambda item: item["distance_km"])[:200]
 
-    def transit(self, lat: float, lon: float, radius_km: float = 10) -> list[dict[str, Any]]:
+    def transit(self, lat: float, lon: float, radius_km: float = 10, world: bool = True) -> list[dict[str, Any]]:
+        """MBTA and Finland's trains here; the other operators' GTFS-realtime feeds through `world_transit` (transit.py)."""
         found = []
         if 41.8 <= lat <= 43.0 and -71.9 <= lon <= -70.5:
             data = self._fetch("mbta", "https://api-v3.mbta.com/vehicles?fields%5Bvehicle%5D=latitude,longitude,label,"
@@ -241,7 +301,7 @@ class LiveData:
                 found.append({"id": vehicle.get("id"), "label": attributes.get("label"),
                               "route": routes.get(route.get("id"), route.get("id")), "operator": "MBTA",
                               "latitude": attributes["latitude"], "longitude": attributes["longitude"],
-                              "status": attributes.get("current_status")})
+                              "status": MBTA_STATUS.get(attributes.get("current_status"), attributes.get("current_status"))})
         if 59.5 <= lat <= 70.5 and 19.5 <= lon <= 31.6:
             for train in self._fetch("fi_trains", PROVIDERS["fi_trains"]["url"]) or []:
                 coordinates = (train.get("location") or {}).get("coordinates") or []
@@ -251,7 +311,15 @@ class LiveData:
                                   "longitude": coordinates[0], "speed_kmh": train.get("speed")})
         for item in found:
             item["distance_km"] = round(distance_km(lat, lon, item["latitude"], item["longitude"]), 1)
-        return sorted([item for item in found if item["distance_km"] <= radius_km], key=lambda item: item["distance_km"])
+        found = [item for item in found if item["distance_km"] <= radius_km]
+        if world and self.world_transit is not None and self.world_transit.feeds_near(lat, lon, radius_km):
+            now = self.clock()
+            result = self.world_transit.near(lat, lon, radius_km)
+            found += result["vehicles"]
+            self.health["transit_world"] = ({"ok": False, "checked_at": _iso(now), "error": "; ".join(result["errors"].values())[:200]}
+                                            if result["errors"] and not result["feeds"] else
+                                            {"ok": True, "checked_at": _iso(now), "last_success": _iso(now)})
+        return sorted(found, key=lambda item: item["distance_km"])
 
     # ---------------------------------------------------------------- conditions
     def weather(self, lat: float, lon: float) -> dict[str, Any]:
@@ -333,16 +401,34 @@ class LiveData:
         return value if value is not None and value > -1000 else None
 
     def geocode(self, name: str) -> dict[str, Any] | None:
+        """A place by name: GeoNames through Open-Meteo, then "Town, Region" with the region as a filter
+        ("Washington DC", "Paris France"), then a landmark's coordinates from Wikidata ("the Eiffel Tower")."""
         from urllib.parse import quote
 
-        data = self._fetch("geocode", f"https://geocoding-api.open-meteo.com/v1/search?name={quote(name.strip()[:80])}&count=1")
-        results = (data or {}).get("results") or []
-        if not results:
+        cleaned = re.sub(r"^(?:the|city\s+of)\s+", "", " ".join(str(name).split()).strip(" .?!"), flags=re.I)[:80]
+        if not cleaned:
             return None
-        place = results[0]
-        return {"name": place.get("name"), "latitude": place.get("latitude"), "longitude": place.get("longitude"),
-                "country": place.get("country"), "country_code": place.get("country_code"),
-                "region": place.get("admin1"), "population": place.get("population")}
+
+        def search(text: str, count: int) -> list[dict[str, Any]]:
+            data = self._fetch("geocode", f"https://geocoding-api.open-meteo.com/v1/search?name={quote(text)}&count={count}")
+            return (data or {}).get("results") or []
+
+        results = search(cleaned, 1)
+        if not results and (split := re.fullmatch(r"(.+?)(?:\s*,\s*|\s+)([A-Za-z][\w.\s-]{1,40})", cleaned)):
+            wanted = qualifier(split[2])
+            results = [place for place in search(split[1], 10)
+                       if wanted & {str(place.get(key) or "").lower() for key in ("admin1", "country", "country_code")}][:1]
+        if results:
+            place = results[0]
+            return {"name": place.get("name"), "latitude": place.get("latitude"), "longitude": place.get("longitude"),
+                    "country": place.get("country"), "country_code": place.get("country_code"),
+                    "region": place.get("admin1"), "population": place.get("population")}
+        if self.landmarks is not None:
+            try:
+                return self.landmarks(cleaned)
+            except Exception:  # a landmark lookup failing is "not found", said by the caller
+                log_swallowed(_log, f"looking up the landmark {cleaned!r}")
+        return None
 
     def iss(self, track_minutes: int = 0) -> dict[str, Any]:
         """Where the International Space Station is now, computed with SGP4 from CelesTrak's elements.

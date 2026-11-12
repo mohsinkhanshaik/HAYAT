@@ -27,16 +27,21 @@ _FORWARD_2 = re.compile(
 _BACKWARD = re.compile(
     _LEAD + r"what\s+(?:date|day(?:\s+of\s+the\s+week)?|weekday)\s+(?:was\s+it|was)\s+" + _AMOUNT + r"\s+ago[?.!]*\s*$")
 _WEEKDAY = re.compile(
-    _LEAD + r"what\s+day\s+(?:of\s+the\s+week\s+)?(?:was|is|will\s+be|will|falls\s+on|did|does)\s+(?P<when>.+?)"
+    _LEAD + r"(?:what|which)\s+(?:day\s+(?:of\s+the\s+week\s+)?|weekday\s+)(?:was|is|will\s+be|will|falls\s+on|fell\s+on|did|does)\s+"
+    r"(?P<when>.+?)"
     r"(?:\s+(?:fall\s+on|be|on))?[?.!]*\s*$")
 _UNTIL = re.compile(
     _LEAD + r"how\s+many\s+days\s+(?:are\s+there\s+|is\s+it\s+|left\s+)?(?:until|till|til|to|before)\s+(?P<when>.+?)[?.!]*\s*$")
 
 _BETWEEN = re.compile(
-    _LEAD + r"how\s+many\s+days\s+(?:are\s+there\s+|is\s+it\s+|passed\s+|have\s+passed\s+)?(?:from|between)\s+"
+    _LEAD + r"(?:how\s+many\s+|(?:what(?:'s|’s|\s+is)\s+)?the\s+number\s+of\s+|number\s+of\s+|count\s+(?:the\s+)?)?"
+    r"(?P<span>days|weeks)\s+(?:are\s+there\s+|is\s+it\s+|passed\s+|have\s+passed\s+)?(?:from|between)\s+"
     r"(?P<start>.+?)\s+(?:to|and|until|till)\s+(?P<end>.+?)[?.!]*\s*$")
+_SINCE = re.compile(
+    _LEAD + r"how\s+(?:many\s+days|long)\s+(?:has\s+it\s+been\s+|is\s+it\s+|have\s+passed\s+|ago\s+was\s+)?(?:since|after)\s+"
+    r"(?P<when>.+?)[?.!]*\s*$")
 
-_FORMATS = ("%d %B %Y", "%d %b %Y", "%B %d %Y", "%b %d %Y", "%Y-%m-%d", "%d/%m/%Y", "%B %d", "%d %B", "%b %d", "%d %b")
+_FORMATS = ("%d %B %Y", "%d %b %Y", "%B %d %Y", "%b %d %Y", "%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%B %d", "%d %B", "%b %d", "%d %b")
 
 
 def _count(raw: str) -> int:
@@ -99,9 +104,20 @@ def date_answer(text: str, today: date | None = None) -> str | None:
         if start is not None and end is not None:
             gap = abs((end - start).days)
             first, last = sorted((start, end))
+            if match.group("span").lower() == "weeks":
+                weeks, days = divmod(gap, 7)
+                return (f"{weeks} week{'s' if weeks != 1 else ''}" + (f" and {days} day{'s' if days != 1 else ''}" if days else "")
+                        + f" from {_long(first)} to {_long(last)} ({gap} days).\nWorked out from the calendar.")
             # "How many days from A to B" is read two ways; give the difference and say the other.
             return (f"{gap} day{'s' if gap != 1 else ''} from {_long(first)} to {_long(last)} "
                     f"({gap + 1} if both of those days are counted).\nWorked out from the calendar.")
+    match = _SINCE.match(value)
+    if match:
+        day = parse_date(match.group("when"), today)
+        if day is not None and day <= today:
+            gap = (today - day).days
+            return (f"{gap} day{'s' if gap != 1 else ''} since {_long(day)}.\n"
+                    f"Worked out from this computer's calendar (today is {_long(today)}).")
     match = _WEEKDAY.match(value)
     if match:
         day = parse_date(match.group("when"), today)
@@ -126,13 +142,50 @@ _LETTERS_IN = re.compile(
     r"(?:the\s+word\s+|the\s+name\s+)?[\"'“‘]?(?P<word>[a-z][a-z'-]{0,40})[\"'”’]?[?.!]*\s*$")
 _LETTER_TIMES = re.compile(
     r"(?i)^\s*how\s+many\s+(?:times\s+does\s+(?:the\s+)?(?:letter\s+)?[\"'“‘]?(?P<a>[a-z])[\"'”’]?\s+(?:appear|occur|show\s+up)|"
-    r"[\"'“‘]?(?P<b>[a-z])[\"'”’]?'?s(?:\s+are)?(?:\s+there)?)\s+in\s+(?:the\s+word\s+)?[\"'“‘]?(?P<word>[a-z][a-z'-]{0,40})"
+    r"[\"'“‘]?(?P<b>[a-z])[\"'”’]?(?:'?s)?(?:\s+are)?(?:\s+there)?)\s+in\s+(?:the\s+word\s+)?[\"'“‘]?(?P<word>[a-z][a-z'-]{0,40})"
     r"[\"'”’]?[?.!]*\s*$")
 
 
+_COUNT_THE = re.compile(
+    r"(?i)^\s*count\s+(?:the\s+)?(?:letter\s+)?[\"'“‘]?(?P<a>[a-z])[\"'”’]?(?:'?s)?\s+in\s+(?:the\s+word\s+)?"
+    r"[\"'“‘]?(?P<word>[a-z][a-z'-]{0,40})[\"'”’]?[?.!]*\s*$")
+_NTH = re.compile(
+    r"(?i)^\s*(?:what(?:'s|’s|\s+is)\s+)?the\s+(?P<n>\d{1,2})(?:st|nd|rd|th)?\s+letter\s+(?:of|in)\s+(?:the\s+word\s+)?"
+    r"[\"'“‘]?(?P<word>[a-z][a-z'-]{0,40})[\"'”’]?[?.!]*\s*$|"
+    r"^\s*(?:what(?:'s|’s|\s+is)\s+)?the\s+(?P<which>first|last|second|third)\s+letter\s+(?:of|in)\s+(?:the\s+word\s+)?"
+    r"[\"'“‘]?(?P<word2>[a-z][a-z'-]{0,40})[\"'”’]?[?.!]*\s*$")
+_BACKWARDS = re.compile(
+    r"(?i)^\s*(?:(?:please\s+)?(?:spell|write|say|type|print)\s+(?:out\s+)?(?:the\s+word\s+)?)?[\"'“‘]?(?P<word>[a-z][a-z'-]{0,40})"
+    r"[\"'”’]?\s+(?:spelled\s+|written\s+)?(?:backwards?|in\s+reverse)(?:,?\s+letter\s+by\s+letter)?[?.!]*\s*$|"
+    r"^\s*reverse\s+(?:the\s+(?:word|letters\s+(?:of|in))\s+)?[\"'“‘]?(?P<word2>[a-z][a-z'-]{0,40})[\"'”’]?[?.!]*\s*$")
+
+
+def _ordinal(number: int) -> str:
+    suffix = "th" if 10 <= number % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
+    return f"{number}{suffix}"
+
+
 def letter_count_answer(text: str) -> str | None:
-    """Counting letters in a word, done exactly ("strawberry" has three r's)."""
+    """Counting letters in a word, done exactly ("strawberry" has three r's); a letter's place; a word backwards."""
     value = " ".join(str(text or "").split())
+    match = _COUNT_THE.match(value)
+    if match:
+        letter, word = match.group("a").lower(), match.group("word").strip("'-")
+        count = word.lower().count(letter)
+        return (f"The letter “{letter}” appears {count} time{'s' if count != 1 else ''} in “{word}”: "
+                + "-".join(word) + ".")
+    match = _NTH.match(value)
+    if match:
+        word = (match.group("word") or match.group("word2")).strip("'-")
+        which = (match.group("which") or "").lower()
+        position = {"first": 1, "second": 2, "third": 3}.get(which) or (len(word) if which == "last" else int(match.group("n") or 0))
+        if 1 <= position <= len(word):
+            return f"The {which or _ordinal(position)} letter of “{word}” is “{word[position - 1]}”: " + "-".join(word) + "."
+        return f"“{word}” has only {len(word)} letters."
+    match = _BACKWARDS.match(value)
+    if match:
+        word = (match.group("word") or match.group("word2")).strip("'-")
+        return f"“{word}” backwards is “{word[::-1]}”: " + "-".join(word[::-1]) + "."
     match = _LETTER_TIMES.match(value)
     if match:
         letter, word = (match.group("a") or match.group("b")).lower(), match.group("word").strip("'-")

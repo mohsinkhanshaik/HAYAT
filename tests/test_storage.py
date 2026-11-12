@@ -2,6 +2,18 @@
 from app.storage.manager import StorageManager
 
 
+def test_accounting_reuses_directory_entry_metadata(tmp_path, monkeypatch):
+    from pathlib import Path
+    (tmp_path / "example.txt").write_bytes(b"12345")
+    manager = StorageManager(project_root=tmp_path)
+    def expensive_stat(*args, **kwargs):
+        raise AssertionError("Accounting must reuse DirEntry.stat instead of opening each Path again")
+    monkeypatch.setattr(Path, "stat", expensive_stat)
+    categories = manager._scan()
+    assert sum(row["used_bytes"] for row in categories.values()) == 5
+    assert sum(row["files"] for row in categories.values()) == 1
+
+
 def test_model_metadata_is_parallel_cached_and_invalidated_by_digest(tmp_path, monkeypatch):
     import threading
     from types import SimpleNamespace
@@ -255,3 +267,42 @@ def test_storage_scan_matches_manual_walk(tmp_path):
     assert str(nested / "leaf.txt") in found
     assert str(tmp_path / "data/knowledge/top.txt") in found
     assert len(found) == 2
+
+
+def test_a_small_write_never_waits_for_a_slow_full_scan(tmp_path, monkeypatch):
+    """2026-11-09: a cold quota check walked all 568,670 project files (11.7 s idle, >20 s under load) before
+    saving one note, so the file editor's save looked hung. A small write now uses the last scan (refreshed in
+    the background) or, with none yet, waits a bounded time and then relies on the live disk reserve."""
+    import threading
+    import time as _time
+
+    manager = StorageManager({"root": str(tmp_path), "maximum_total_bytes": 10**12, "reserve_free_space_bytes": 0},
+                             project_root=tmp_path)
+    release = threading.Event()
+    real_scan = manager._scan
+    monkeypatch.setattr(manager, "_scan", lambda: (release.wait(30), real_scan())[1])
+    monkeypatch.setattr(StorageManager, "COLD_SCAN_WAIT_SECONDS", 0.2)
+    started = _time.monotonic()
+    manager.ensure_capacity(1024)  # cold: bounded wait, then the disk reserve decides
+    assert _time.monotonic() - started < 5
+    started = _time.monotonic()
+    manager.ensure_capacity(1024)  # the scan is still running: no second walk and no long wait
+    assert _time.monotonic() - started < 5
+    release.set()
+    deadline = _time.monotonic() + 10
+    while manager._cache_snapshot() is None and _time.monotonic() < deadline:
+        _time.sleep(0.05)
+    assert manager._cache_snapshot() is not None  # the background scan finished and is used from now on
+
+
+def test_a_stale_scan_still_enforces_the_budget_without_waiting(tmp_path):
+    (tmp_path / "existing.bin").write_bytes(b"12345678")
+    manager = StorageManager({"root": str(tmp_path), "maximum_total_bytes": 10, "reserve_free_space_bytes": 0},
+                             project_root=tmp_path)
+    manager.status()
+    manager._cache_monotonic -= 3600  # an hour old
+    try:
+        manager.ensure_capacity(3)
+        assert False, "the last known usage must still be enforced"
+    except OSError as exc:
+        assert "project budget" in str(exc)

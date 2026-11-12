@@ -189,6 +189,28 @@ class Runtime:
     #: app/experience.py ExperienceMemory and app/situation.py SituationModel.
     experience: Any = None
     situation: Any = None
+    #: app/topics.py ConversationTopics: conversations, topics and messages with ids.
+    topics: Any = None
+    #: app/dialogue_state.py DialogueState and app/investigation.py Investigator.
+    dialogue: Any = None
+    investigator: Any = None
+    #: app/cognitive_development.py CognitiveDevelopment.
+    development: Any = None
+    #: app/memory/retention.py, app/cognitive_scorecard.py, app/forecasts.py.
+    retention: Any = None
+    scorecard: Any = None
+    forecasts: Any = None
+    #: app/research_lab.py: app/model_discovery.py, app/robustness.py, app/code_defense.py.
+    model_discovery: Any = None
+    robustness: Any = None
+    code_defense: Any = None
+    #: Cause-and-effect estimates (app/causal_lab.py) and the graph network for link prediction (app/graph_network.py).
+    causal_lab: Any = None
+    graph_lab: Any = None
+    #: Coverage-guided fuzzing of HAYAT's own declared text handlers (app/fuzz_lab.py).
+    fuzz_lab: Any = None
+    #: Measured learning: strategies that transfer, a trained search guide, discovered concepts (app/skill_lab.py).
+    skill_lab: Any = None
     improvement: Any = None
     packages: Any = None
     tool_understanding: Any = None
@@ -302,6 +324,9 @@ class Runtime:
         if self._closed:
             return
         self._closed = True
+        from app.models import local as local_models
+        if getattr(self, "_service_recovery", None) is not None and local_models.SERVICE_RECOVERY is self._service_recovery:
+            local_models.SERVICE_RECOVERY = None  # a closed runtime brings nothing back
         from app.logging import redact
 
         def cleanup(component, operation):
@@ -359,6 +384,10 @@ class Runtime:
             cleanup("arabic voice", tutor_voice.close)
         if getattr(self, "languages", None) is not None:
             cleanup("language voices", self.languages.close)
+        if self.supervisor is not None:
+            # A model service this runtime started (automatic recovery) stops with it; the launcher's, the machine's
+            # and any other Ollama are left running (RuntimeSupervisor.shutdown checks ownership).
+            cleanup("local model service", lambda: self.supervisor.shutdown() and None)
         # The event writer remains available until the other cleanup attempts
         # are recorded. A failed shutdown keeps the liveness marker on disk.
         cleanup("events", self.events.close)
@@ -403,7 +432,15 @@ def known_contacts(business, memory_path) -> str:
 
 
 def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
-                  start_background_services: bool = True, safe_mode: bool = False) -> Runtime:
+                  start_background_services: bool = True, safe_mode: bool = False,
+                  on_progress=None) -> Runtime:
+    def progress(stage):
+        if on_progress is not None:
+            try:
+                on_progress(stage)
+            except Exception:
+                log_swallowed(_log, 'reporting startup progress')
+    progress('settings')
     ensure_data_directories()
     # HAYAT belongs to one owner; refuse to start if that identity was tampered with (app/identity.py).
     from app.identity import verify_owner
@@ -417,6 +454,7 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
                            not background_autostart_allowed(settings) or
                            os.getenv("HAYAT_DISABLE_BACKGROUND", "").strip().lower() in {"1", "true", "yes"})
     cost_policy = CostPolicy.from_settings(settings.get("cost_policy", {})); cost_policy.assert_zero_cost()
+    progress('stores')
     memory = MemoryDatabase()
     memory.initialize()
     permissions = PermissionManager()
@@ -463,6 +501,7 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     registry.authority = authority
     registry.failures = failures
     registry.events = events
+    progress('tools')
     tool_understanding = ToolUnderstanding()
     registry.understanding = tool_understanding
     secret_broker = connectors = connector_gateway = mcp_gateway = browser_extension = None
@@ -543,6 +582,15 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     from app.self_knowledge import register_self_knowledge_tools
     register_self_knowledge_tools(registry, lambda: runtime)
     register_memory_tools(registry, memory)
+    from app.chat_import import register_chat_import_tools
+
+    register_chat_import_tools(registry, memory)
+    from app.nervous_system import register_body_tools
+
+    register_body_tools(registry)
+    from app.startup import register_startup_tools
+    register_startup_tools(registry, lambda: runtime)
+    progress('models')
     router = ModelRouter(cost_policy=cost_policy)
     intelligent_router = IntelligentModelRouter(storage, router)
     embedding_config = router.config.get("embedding_model", {})
@@ -610,6 +658,8 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     from app.jobs.watcher import JobWatcher
     jobs = JobCenter(memory.path.parent.parent / 'jobs', PublicFetcher('HAYAT-Jobs/1.0', timeout=20, delay=1.0),
                      mailer=email, gate=confirmations, model=model, browser=browser)
+    # Employers' own boards are found with research's search chain (its words are recorded as sent out).
+    jobs.search_provider = research.search
     job_watcher = JobWatcher(jobs, lambda text: None)  # its notice is connected once the assistant exists
     register_job_tools(registry, jobs, job_watcher)
     from app.networking import NetworkingBook
@@ -742,12 +792,38 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     from app.intelligence.explore import Explore, register_explore_tools
     def camera_still(event_id):
         frame = intelligence.camera_frame(event_id)
+        if frame.get("stale"):  # counting vehicles on an old picture would report the past as now
+            raise ValueError(frame["basis"])
         row = intelligence.event_record(event_id)["event"]
         return {**frame, "title": row.get("title") or event_id, "latitude": row.get("latitude"), "longitude": row.get("longitude")}
     intelligence.explore = Explore(PublicFetcher('HAYAT-Explore/1.0', timeout=40, delay=.35),
                                    intelligence.store.path.parent / 'explore', intelligence.fusion.resolve,
                                    frame=camera_still, land=PROJECT_ROOT / 'app/assets/world-land.json')
     register_explore_tools(registry, intelligence.explore)
+    # More from gods-eye-view: live transit worldwide, GPS interference, US airspace, fire perimeters, whales, street photos.
+    from app.intelligence.airspace import Airspace, register_airspace_tools
+    from app.intelligence.gnss import GpsInterference, register_gnss_tools
+    from app.intelligence.ground import Ground, register_ground_tools
+    from app.intelligence.transit import WorldTransit, register_transit_tools
+    explore_fetcher = intelligence.explore.fetcher
+    intelligence.live.world_transit = WorldTransit(
+        lambda url, headers: bytes(explore_fetcher.fetch(url, 16 * 1024 * 1024, None, headers, timeout=20).content))
+    register_transit_tools(registry, intelligence.live, intelligence.fusion.resolve)
+    def explore_json(url, max_bytes=12 * 1024 * 1024, headers=None):
+        from app.intelligence.explore import JSON_TYPES
+        return json.loads(bytes(explore_fetcher.fetch(url, max_bytes, JSON_TYPES, headers).content))
+    # Landmarks GeoNames does not list ("the Eiffel Tower") come from Wikidata, which requires a contact user agent.
+    from functools import lru_cache
+    from app.intelligence.live import wikidata_place
+    from app.research.people_finder import WIKIMEDIA_HEADERS
+    intelligence.live.landmarks = lru_cache(maxsize=256)(
+        lambda name: wikidata_place(lambda url: explore_json(url, 4 * 1024 * 1024, WIKIMEDIA_HEADERS), name))
+    intelligence.gnss = GpsInterference(explore_json, intelligence.fusion.resolve)
+    register_gnss_tools(registry, intelligence.gnss)
+    intelligence.airspace = Airspace(explore_json, intelligence.store.path.parent / 'explore' / 'airspace', intelligence.fusion.resolve)
+    register_airspace_tools(registry, intelligence.airspace)
+    intelligence.ground = Ground(intelligence.explore)
+    register_ground_tools(registry, intelligence.ground)
     # Everything about one place at once, reasoned into findings with evidence and blind spots.
     from app.intelligence.deep import DeepLook, register_deep_tools
     intelligence.deep = DeepLook(intelligence, intelligence.explore)  # the atlas asks it too
@@ -826,6 +902,7 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     from app.intelligence.camera_eyes import CameraEyes, register_camera_eyes
     intelligence.eyes = CameraEyes(intelligence, vision)
     register_camera_eyes(registry, intelligence.eyes)
+    progress('skills')
     planner = Planner(registry, reasoning_model or model, int(settings.get("max_steps", 20)), research.knowledge)
     agent = Agent(planner, Executor(registry), Verifier(), memory, int(settings.get("max_steps", 20)))
     skills = SkillRegistry(registry)
@@ -933,9 +1010,63 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     intent_router = IntentRouter(classification_model)
     model_capabilities = ModelCapabilityRegistry(storage, router)
     evaluation = EvaluationManager()
+    progress('services')
     runtime = Runtime(agent, registry, memory, router, model, browser, computer, skills, scheduler, manager, conversation, vision, promoter, research, storage, session, intent_router, modes, projects, state, learning, training, model_capabilities, intelligent_router, embeddings, retrieval, evaluation, cost_policy, downloads, dependencies, camera, displays, clipboard, observability, model_resources, incidents, events, security, labs, backups, str(settings.get("proactive_assistance", "SUGGEST")).upper(), turns, authority, failures)
+    runtime.model_generation_requested = bool(use_model)
     runtime.screen_reader = screen_reader
     runtime.networking = networking
+    from app.memory.plasticity import MemoryNetwork
+
+    runtime.memory_network = MemoryNetwork(memory)
+    from app.nervous_system import BODY
+
+    runtime.nervous_system = BODY
+    # Tools matched by meaning as well as words, with the local embedding model (app/tools/relevance.SemanticTools):
+    # held-out tool recall 90% -> 95%. Their vectors are prepared in the background so no request waits for it.
+    from app.tools.relevance import use_embeddings
+    semantic_tools = use_embeddings(embeddings.active, memory.path.parent.parent / "embeddings" / "tool-vectors.json")
+    if start_background_services:
+        def warm_tools() -> None:
+            if semantic_tools is not None:
+                try:
+                    semantic_tools.prepare(registry.describe())
+                except Exception:  # the next request prepares it, or words alone are used
+                    log_swallowed(_log, "preparing tool vectors")
+                try:
+                    # Memories embedded with another model (or not yet) are embedded with the active one; already
+                    # embedded ones are skipped, so this is quick after the first time.
+                    memory.reindex_embeddings()
+                except Exception:  # recall still works on words until the next start
+                    log_swallowed(_log, "re-embedding memories with the active embedding model")
+            # The speller learns HAYAT's own words (tool and capability words) and the owner's vocabulary, so
+            # "routr" reads as "router" and "mohsin" or "jaadoo" are never "corrected" (app/intent/spelling.py).
+            try:
+                import re
+
+                from app.capabilities import CATALOG
+                from app.intent import spelling
+
+                spelling.add_words((part for name in registry.names() for part in name.split("_")), preferred=True)
+                spelling.add_words(word for tool in registry.describe()
+                                   for word in re.findall(r"[A-Za-z]{3,}", str(tool.get("description", ""))))
+                spelling.add_words(word for capability in CATALOG for keyword in capability.keywords
+                                   for word in str(keyword).split())
+                with memory.connect() as db:
+                    said = [row[0] for row in db.execute(
+                        "SELECT content FROM conversations WHERE role='user' ORDER BY id DESC LIMIT 5000")]
+                spelling.learn_owner_words(said)
+                # Words the owner said are right as written ("Keep my spelling" in the chat).
+                spelling.load_kept_words(Path(memory.path).parent / "owner-words.json")
+                spelling.correct("warm up")  # builds the word index now, not on the owner's first message
+            except Exception:  # words are then read as typed until the next start
+                log_swallowed(_log, "teaching the speller HAYAT's and the owner's words")
+            # Then the memory network consolidates: past tasks bound to their lessons and to the task before
+            # them, task memories with the same purpose linked. Bounded (20 s, 400 memories) and idempotent.
+            from app.nervous_system import BODY
+
+            with BODY.round("memory consolidation"):
+                runtime.memory_network.consolidate()
+        threading.Thread(target=warm_tools, name="hayat-tool-vectors", daemon=True).start()
     from app.executive import ExecutiveCortex
     from app.dual_brain import DualBrain
     from app.inquiry import SelfInquiry
@@ -964,7 +1095,20 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
                                            runtime.dual_brain,
                                            lambda: select_conversation_model('reasoning', ['DEEP']),
                                            invention_research)
+    from app.invention_handoff import completed_research_result
+
+    runtime.invention.research_result_supplier = lambda job_id: completed_research_result(runtime, job_id)
+    if research is not None:
+        # Published work for the workbench: OpenAlex through the same polite public fetcher as research.
+        from app.invention_literature import papers as published_papers
+
+        runtime.invention.literature = lambda question: published_papers(question, research.fetcher.get_json)
     register_invention_tools(registry, runtime.invention, runtime.executive, runtime.dual_brain)
+    if research is not None:
+        # Prior art, novelty, other fields, feasibility and risks for an idea (app/invention_prior_art.py).
+        from app.invention_prior_art import register_prior_art_tool
+
+        register_prior_art_tool(registry, research)
     monitor_settings = settings.get("development", {}).get("code_monitor", {})
     from app.output import get_output
 
@@ -1005,6 +1149,14 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
         ),
         events=events, failures=failures,
     )
+    if use_model and (not os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("HAYAT_LIVE") == "1"):
+        # A request that finds the model service not listening (still starting, or crashed) has it brought back
+        # and tries once more, instead of every later question answering "main model unavailable".
+        # Not under ordinary tests: a refused fake endpoint there must never start a real Ollama.
+        from app.models import local as local_models
+        runtime._service_recovery = lambda: runtime.supervisor.recover("a request found the model service not listening",
+                                                                       timeout=150.0)
+        local_models.SERVICE_RECOVERY = runtime._service_recovery
     # The repair specialist diagnoses from the runtime's own evidence -- the
     # failure log, the supervisor, doctor -- so it needs the assembled runtime,
     # which does not exist when the specialists are constructed.
@@ -1023,17 +1175,62 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     from app.experience import ExperienceMemory
     from app.situation import SituationModel, register_situation_tools
     runtime.experience = ExperienceMemory(memory.path.parent / "experience.db")
+    # The optional Colibri engine: created idle (no process, no network until its status is asked), so the
+    # Studio panel and the brain view share one owner of any process it starts.
+    from app.models.colibri_service import ColibriService
+    runtime.colibri_service = ColibriService()
     runtime.situation = SituationModel(memory.path.parent / "experience.db", runtime=lambda: runtime)
     agent.experience = runtime.experience
     agent.situation_brief = runtime.situation.brief
     conversation.situation_supplier = runtime.situation.brief
     register_situation_tools(registry, runtime.situation)
+    # Which conversation and topic each message belongs to; replies see only their topic's history.
+    from app.topics import ConversationTopics, register_topic_tools
+    runtime.topics = ConversationTopics(memory.path.parent / "topics.db")
+    conversation.topic_scope = runtime.topics.scope_history
+    register_topic_tools(registry, runtime.topics, lambda: runtime.session)
+    # What the conversation has established: goals, permanent facts vs dated circumstances, refused replies
+    # (app/dialogue_state.py); goal-sized questions weighed by their size (app/ambition.py); failures investigated
+    # from the recorded events and logs (app/investigation.py).
+    from app.dialogue_state import DialogueState, register_dialogue_tools
+    from app.ambition import register_ambition_tools
+    from app.investigation import Investigator, register_investigation_tools
+    runtime.dialogue = DialogueState(memory.path.parent / "dialogue.db")
+    conversation.dialogue_supplier = runtime.dialogue.brief
+    register_dialogue_tools(registry, runtime.dialogue, lambda: runtime.session)
+    register_ambition_tools(registry, runtime.dialogue)
+    runtime.investigator = Investigator(getattr(events, "path", None), storage.root / "data/logs", topics=runtime.topics)
+    register_investigation_tools(registry, runtime.investigator, lambda: runtime.session)
+    # Development stages assessed from measured records, never from a neuron count.
+    from app.cognitive_development import CognitiveDevelopment, register_development_tools
+    runtime.development = CognitiveDevelopment(lambda: runtime, memory.path.parent / "development.db")
+    register_development_tools(registry, runtime.development)
+    # Spaced retention practice, the measured scorecard with its keep-only-gains gate, and the forecast ledger.
+    from app.memory.retention import RetentionPractice, register_retention_tools
+    from app.cognitive_scorecard import Scorecard, register_scorecard_tools
+    from app.forecasts import ForecastLedger, register_forecast_tools
+    runtime.retention = RetentionPractice(memory, memory.path.parent / "retention.db")
+    runtime.scorecard = Scorecard(lambda: runtime, memory.path.parent / "scorecard.db")
+    runtime.forecasts = ForecastLedger(memory.path.parent / "forecasts.db")
+    register_retention_tools(registry, runtime.retention)
+    register_scorecard_tools(registry, runtime.scorecard)
+    register_forecast_tools(registry, runtime.forecasts)
+    # Research & advanced intelligence: robustness, code defence and model discovery (app/research_lab.py).
+    from app.research_lab import install as install_research_lab
+    install_research_lab(runtime, registry, memory.path.parent, events)
+    # Their activity goes on the event bus (ids and counts only), which is what lights their Brain 5D neurons.
+    for part in (runtime.topics, runtime.retention, runtime.forecasts, runtime.dialogue):
+        part.events = events
     if not background_disabled:
         # Once, when these are new: learn from the history and task logs already on disk.
         def _learn_from_history() -> None:
+            from app.nervous_system import BODY
+
             try:
-                runtime.situation.backfill(memory)
-                runtime.experience.backfill_from_logs(storage.root / "data/logs")
+                with BODY.round("learning from history"):
+                    runtime.situation.backfill(memory)
+                    runtime.experience.backfill_from_logs(storage.root / "data/logs")
+                    runtime.dialogue.backfill(memory)
             except Exception:
                 log_swallowed(_log, "learning from history on first start", level=logging.WARNING)
 
@@ -1136,6 +1333,13 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
         retry_delay_seconds=float(learning_settings.get("retry_delay_seconds", 60)),
         maintenance_interval_seconds=float(learning_settings.get("maintenance_interval_seconds", 900)),
     )
+    # What a research run still could not answer after its second look is learned later, while the owner is away.
+    if research is not None:
+        research.open_question = lambda topic: runtime.learner.enqueue(topic, source="open_question", priority=55)
+        # What the owner said just now decides which meaning of a word research looks for (app/research/senses.py).
+        research.conversation_context = lambda: " ".join(
+            item["content"] for item in memory.conversation_history(runtime.session.session_id, 6)
+            if item.get("role") == "user")
     for topic in learning_settings.get("seed_topics", []) or []:
         runtime.learner.enqueue(str(topic), source="configured_learning_seed", priority=40)
     if learning_settings.get("enabled", False) and start_background_services and not background_disabled:
@@ -1183,4 +1387,9 @@ def build_runtime(interactive_approvals: bool = False, use_model: bool = True,
     register_discovery_tools(registry, runtime.discovery)
     if discovery_settings.get("enabled", True) and intelligence.enabled and not background_disabled:
         runtime.discovery.start()
+    # Late-registered mesh/research tools must be visible to declarative
+    # skills too; otherwise valid built-ins were silently skipped at startup.
+    if not safe_mode:
+        skills.reload()
+    progress('ready')
     return runtime

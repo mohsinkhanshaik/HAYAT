@@ -10,6 +10,7 @@ import tempfile
 import threading
 import time
 from app.gui_resources import DoubleVar, StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from pathlib import Path
@@ -77,11 +78,13 @@ def format_activity_countdown(
         elapsed = max(0.0, float(item.get("seconds", 0.0)))
         remaining = max(0.0, float(item.get("remaining_seconds", 0.0)))
         headline = str(item.get("label") or summary.get("headline") or phase).replace("_", " ")
-        return f"{phase}: {headline} · ~{_countdown_duration(remaining)} left · {elapsed:.1f}s elapsed"
+        estimate = f" · ~{_countdown_duration(remaining)} left" if remaining > 0 else ''
+        if not estimate and float(item.get('estimated_seconds', 0) or 0) > 0:
+            estimate = ' · taking longer than estimated'
+        return f"{phase}: {headline}{estimate} · {elapsed:.1f}s elapsed"
     if working_since is not None:
         elapsed = max(0.0, moment - working_since)
-        remaining = max(0.0, float(fallback_estimate) - elapsed)
-        return f"Thinking · ~{_countdown_duration(remaining)} left · {elapsed:.1f}s elapsed"
+        return f"Thinking · {elapsed:.1f}s elapsed"
     return "Ready"
 
 
@@ -190,6 +193,15 @@ def reserve_window() -> bool:
         return False
 
 
+def startup_window() -> tk.Tk:
+    """Claim the same STA root for the boot screen and completed workspace."""
+    global _RESERVED_ROOT
+    reserve_window()
+    if _RESERVED_ROOT is None:
+        _RESERVED_ROOT = (tk.Tk(), False)
+    return _RESERVED_ROOT[0]
+
+
 from app.gui_execution import ExecutionControlsMixin
 from app.gui_operation_monitor import OperationPreviewMixin
 
@@ -269,6 +281,9 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._media_serial = 0
         from concurrent.futures import ThreadPoolExecutor
         self._preview_workers = ThreadPoolExecutor(max_workers=2, thread_name_prefix="hayat-preview")
+        # Reading and saving a file being edited never waits behind slow previews (PDF pages, media): its own worker.
+        # A save queued behind two previews timed out under load (2026-11-09 full-suite runs).
+        self._edit_workers = ThreadPoolExecutor(max_workers=1, thread_name_prefix="hayat-edit")
         # Tk drops a PhotoImage the instant nothing references it, and an image
         # embedded in the transcript then renders as an empty box. Holding the
         # references here keeps generated pictures on screen for the life of the
@@ -338,6 +353,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._focus_mode = False
         self._explorer_panels = {}
         self._build()
+        from app.gui_screen_shield import ScreenShield
+        self.screen_shield = ScreenShield(self)
         from app.gui_workspace import DraftController, DraftStore
         self._command_palette = None
         self._draft = DraftController(
@@ -350,11 +367,11 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.show_view("chat")
         try:
             appearance = json.loads((runtime.memory.path.parent / "appearance.json").read_text(encoding="utf-8"))
-            self._theme_name = appearance.get("theme", "Dark")
+            self._theme_name = appearance.get("theme", "Nebula")
             self._set_workspace_motion(appearance.get("motion", True))
             self._text_scale = appearance.get("text_scale", 1.0)
         except (OSError, ValueError, AttributeError):
-            self._theme_name = "Dark"
+            self._theme_name = "Nebula"
             self._text_scale = 1.0
         if self._text_scale not in TEXT_SCALES.values():
             self._text_scale = 1.0
@@ -605,6 +622,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         centre = tk.Frame(body, bg=self.BLACK, padx=12, pady=10)
         centre.pack(side="left", fill="both", expand=True)
         self._build_centre(centre)
+        from app.gui_main_layout import MainNavigationLayout
+        self._navigation_layout = MainNavigationLayout(self)
         from app.gui_overview_layout import OverviewLayout
         self._overview_layout = OverviewLayout(self)
         # Both targets exist only once the centre is finished: the compose
@@ -637,11 +656,18 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         # Greeting first, because the window belongs to one person and saying
         # so is the cheapest way for it to feel like his rather than a tool's.
         greeting = bar.add(tk.Frame(bar, bg=self.PANEL))
-        self.greeting_var = StringVar(master=self.root, value=f"Hello, {IDENTITY.owner_short}")
-        tk.Label(greeting, textvariable=self.greeting_var, bg=self.PANEL, fg=self.WHITE,
+        self.navigation_button = ttk.Button(greeting, text='Menu', style='Hayat.TButton',
+                                             command=self._toggle_navigation)
+        self.navigation_button.pack(side='left', padx=(0, 12))
+        self.home_button = ttk.Button(greeting, text='Home', style='Compact.Hayat.TButton', command=self._show_home)
+        self.home_button.pack(side='left', padx=(0, 12))
+        greeting_words = tk.Frame(greeting, bg=self.PANEL)
+        greeting_words.pack(side='left', fill='both', expand=True)
+        self.greeting_var = DisplayVar(master=self.root, value="HAYAT workspace")
+        tk.Label(greeting_words, textvariable=self.greeting_var, bg=self.PANEL, fg=self.WHITE,
                  font=("Segoe UI Semibold", 13), anchor="w").pack(fill="x")
-        self.header_clock = StringVar(master=self.root, value="")
-        self._header_clock_label = tk.Label(greeting, textvariable=self.header_clock, bg=self.PANEL, fg=self.MUTED,
+        self.header_clock = DisplayVar(master=self.root, value="")
+        self._header_clock_label = tk.Label(greeting_words, textvariable=self.header_clock, bg=self.PANEL, fg=self.MUTED,
                                             font=("Segoe UI", 9), anchor="w")
         self._header_clock_label.pack(fill="x")
 
@@ -651,11 +677,17 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.online_dot = tk.Label(centre, text="●", bg=self.PANEL, fg=self.OLIVE,
                                    font=("Segoe UI", 9))
         self.online_dot.pack(side="left", padx=(0, 6))
-        self.online_var = StringVar(master=self.root, value="Starting…")
+        self.online_var = DisplayVar(master=self.root, value="Starting…")
         tk.Label(centre, textvariable=self.online_var, bg=self.PANEL, fg=self.WHITE,
                  font=("Segoe UI", 10)).pack(side="left")
         metrics = bar.add(tk.Frame(bar, bg=self.PANEL, pady=8))
         actions = bar.add(tk.Frame(bar, bg=self.PANEL))
+        self.command_search_button = ttk.Button(actions, text='Search commands', style='Hayat.TButton',
+                                                command=self._show_command_palette)
+        self.command_search_button.pack(side='left', padx=(0, 8))
+        from app.gui_help import Tooltip
+        Tooltip(self.command_search_button, 'Search workspaces and actions · Ctrl+Shift+P', type(self))
+        Tooltip(self.navigation_button, 'Show or hide navigation · Ctrl+Shift+B', type(self))
         self.metric_vars: dict[str, StringVar] = {}
         self.focus_mode_button = ttk.Button(
             actions, text="Focus Mode", style="Hayat.TButton", command=self._toggle_focus_mode,
@@ -675,10 +707,14 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         header_menu = tk.Menu(self.header_more_button, tearoff=0, bg=self.PANEL_2, fg=self.WHITE,
                               activebackground=self.PANEL_HOVER, activeforeground=self.WHITE)
         for label, command in (("Show / hide overview", self._toggle_overview),
-                               ("Focus mode", self._toggle_focus_mode), ("Help", self._open_help),
+                               ("Show / hide navigation", self._toggle_navigation),
+                               ("Focus mode", self._toggle_focus_mode), ("How to use this page", self._open_page_guide),
+                               ("Help", self._open_help),
                                ("Find a workspace", self._focus_workspace_search),
                                ("Commands", self._show_command_palette), ("Appearance", self._show_appearance)):
             header_menu.add_command(label=label, command=command)
+        header_menu.add_separator()
+        header_menu.add_command(label="Cover all HAYAT windows · Ctrl+Shift+H", command=self._toggle_screen_shield)
         self.header_more_button.configure(menu=header_menu)
         for key, label in (("gpu", "GPU"), ("ram", "RAM"), ("cpu", "CPU")):
             variable = StringVar(master=self.root, value=f"{label} --")
@@ -687,11 +723,12 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             self.metric_vars[key] = variable
         # What Mohsin has earned and can withdraw, always in sight; a click
         # opens the Business window's books and wallet.
-        self.wallet_var = StringVar(master=self.root, value="Wallet --")
+        self.wallet_var = DisplayVar(master=self.root, value="Open wallet")
         self.wallet_badge = tk.Label(metrics, textvariable=self.wallet_var, bg=self.PANEL_2, fg=self.OLIVE_SOFT,
                                      font=("Segoe UI Semibold", 9), padx=10, pady=4, cursor="hand2")
         self.wallet_badge.pack(side="right", padx=(9, 4))
-        self.wallet_badge.bind("<Button-1>", lambda _event: self._open_business())
+        from app.gui_a11y import activatable
+        activatable(self.wallet_badge, lambda: self._open_business(), type(self))
         self._wallet_checked = 0.0
         self._header_actions_default = list(bar.items)
 
@@ -709,6 +746,9 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.features_button.pack(side='left', padx=(0, 6))
         self.activity_button = ttk.Button(bar, text='Activity', style='Compact.Hayat.TButton', command=self._open_activity)
         self.activity_button.pack(side='left', padx=(0, 10))
+        self.screen_shield_button = ttk.Button(bar, text='Screen shield', style='Compact.Hayat.TButton',
+                                               command=self._toggle_screen_shield)
+        self.screen_shield_button.pack(side='right', padx=(6, 0))
         # One click to each main workspace, like tabs across the top of the window.
         self.nav_buttons: dict[str, ttk.Button] = {}
         # Five buttons: a sixth wrapped the bar on narrower windows and took height from the brain view.
@@ -723,14 +763,14 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.workspace_overflow_menu = tk.Menu(self.workspace_overflow, tearoff=False, bg=self.PANEL, fg=self.WHITE,
                                               activebackground=self.GOLD, activeforeground=self.BLACK)
         for label, command in (('Global intelligence', self._open_intelligence), ('Searches', self._open_searches),
+                               ('Scientific Workbench', self._open_scientific_workbench),
+                               ('Connected AI', self._open_connected_ai),
                                ('Trade Center', self._open_markets), ('Reverse engineering', self._open_reverse_engineer),
                                ('My cameras', self._open_my_cameras), ('Business', self._open_business),
                                ('Voice & models', lambda: self._open_control_studio('voice')),
                                ('Show / hide overview', self._toggle_overview)):
             self.workspace_overflow_menu.add_command(label=label, command=command)
         self.workspace_overflow.configure(menu=self.workspace_overflow_menu)
-        style.configure('Emergency.TButton', background='#992c3a', foreground='white', padding=(10, 5))
-        style.map('Emergency.TButton', background=[('active', '#b43646'), ('disabled', '#662936')], foreground=[('disabled', '#ffffff')])
         self.emergency_button = ttk.Button(bar, text='Emergency stop', command=self._emergency_stop, style='Emergency.TButton')
         self.emergency_button.pack(side='right', padx=(8, 0))
         self.transparency_stop = self.emergency_button
@@ -739,8 +779,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.transparency_state = StringVar(self.root, 'Checking live state…')
         # Shown in the strip: the same state in short words, so it fits one line beside the tabs (the tooltip and
         # Activity keep the full sentence). The long form wrapped and left "off" alone on a second line at 1536 px.
-        self.transparency_brief = StringVar(self.root, 'Checking live state…')
-        self.transparency_last = StringVar(self.root, 'No tool actions recorded in this window session yet.')
+        self.transparency_brief = DisplayVar(self.root, 'Checking live state…')
+        self.transparency_last = DisplayVar(self.root, 'No tool actions recorded in this window session yet.')
         words = tk.Frame(bar, bg=self.PANEL)
         words.pack(side='left', fill='x', expand=True)
         self._transparency_words = words
@@ -754,7 +794,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                              font=('Segoe UI', 8), anchor='w', justify='left', wraplength=650)
         last_label.pack(fill='x')
         self._transparency_last_label = last_label
-        words.bind('<Configure>', lambda event: (state_label.configure(wraplength=max(1, event.width)),
+        words.bind('<Configure>', lambda event: (state_label.configure(
+                                                    wraplength=0 if getattr(self, '_very_short', False) else max(1, event.width)),
                                                 last_label.configure(wraplength=max(1, event.width))))
 
     def _paint_transparency(self) -> None:
@@ -788,8 +829,20 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         window.deiconify()
         window.lift()
         if query:
+            window.tabs.select(window.catalog_page)
+            window.category.set('Everything')
             window.query.set(query)
         window.entry.focus_set()
+
+    def _open_connections(self) -> None:
+        """The same tool inventory, focused on its declared relationships."""
+        self._open_features()
+        self._features_window.tabs.select(self._features_window.connections)
+        self._features_window.connections.entry.focus_set()
+
+    def _open_invention_project(self, project_id: str) -> None:
+        self.show_view('invention')
+        self._explorer_panels['invention'].open_saved_project(project_id)
 
     def _open_activity(self) -> None:
         from app.gui_activity import ActivityWindow
@@ -807,6 +860,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._sidebar = rail
 
         brand = tk.Frame(rail, bg=self.BLACK, padx=8, pady=6)
+        self._sidebar_brand = brand
         brand.pack(fill="x", pady=(0, 8))
         tk.Label(brand, text="H", bg=self.GOLD, fg=self.BLACK, width=3,
                  font=(DISPLAY, 17), pady=4).pack(side="left", padx=(0, 10))
@@ -814,15 +868,19 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         brand_words.pack(side="left", fill="x", expand=True)
         tk.Label(brand_words, text="HAYAT", bg=self.BLACK, fg=self.WHITE,
                  font=(DISPLAY, 16), anchor="w").pack(fill="x")
-        tk.Label(brand_words, text="YOUR LOCAL AI", bg=self.BLACK,
-                 fg=self.MUTED, font=("Segoe UI", 8), anchor="w").pack(fill="x", pady=(2, 0))
+        self._sidebar_tagline = tk.Label(brand_words, text="LOCAL AI", bg=self.BLACK,
+                                         fg=self.MUTED, font=("Segoe UI", 8), anchor="w")
+        self._sidebar_tagline.pack(fill="x", pady=(2, 0))
 
         ttk.Button(rail, text='+ New chat', style='HayatAccent.TButton',
                    command=self.clear_chat).pack(fill='x', pady=(0, 8))
         workspace_button = ttk.Menubutton(rail, text='Open workspace ▾', style='Hayat.TButton')
+        self._sidebar_workspace_button = workspace_button
         workspace_menu = tk.Menu(workspace_button, tearoff=0, bg=self.PANEL_2, fg=self.WHITE,
                                  activebackground=self.PANEL_HOVER, activeforeground=self.WHITE)
         for label, command in (('Home / Command centre', self._show_home),
+                               ('Scientific Workbench', self._open_scientific_workbench),
+                               ('Connected AI', self._open_connected_ai),
                                ('Business & earning plans', self._open_revenue),
                                ('Voice studio', lambda: self._open_control_studio('voice')),
                                ('World observation', self._open_intelligence)):
@@ -831,8 +889,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         workspace_button.pack(fill='x', pady=(0, 4))
 
         from app.gui_navigation import WorkspaceNavigation
-        self.workspace_navigation = WorkspaceNavigation(rail, type(self), self.VIEWS, self.show_view)
-        self.workspace_navigation.pack(fill="both", expand=True)
+        self.workspace_navigation = WorkspaceNavigation(rail, type(self), self.VIEWS, self.show_view,
+                                                        lambda: self._navigate_history(-1), lambda: self._navigate_history(1))
         self.nav = self.workspace_navigation.items
 
         # The clock lives in the header; the rail footer is one compact row,
@@ -843,12 +901,38 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         ttk.Button(profile, text="Settings", style="Hayat.TButton", width=0,
                    command=lambda: self.show_view("settings")).pack(side="bottom", fill='x', pady=(6, 0))
         tk.Frame(rail, bg=self.LINE, height=1).pack(fill="x", side="bottom", pady=(4, 0))
-        tk.Label(profile, text=f"Local workspace · {IDENTITY.owner_short}", bg=self.BLACK, fg=self.MUTED,
+        tk.Label(profile, text="Local workspace", bg=self.BLACK, fg=self.MUTED,
                  font=("Segoe UI", 8), anchor="w").pack(fill="x")
         if IDENTITY.creator != IDENTITY.owner:
             # Every copy credits its creator (NOTICE, AGPL section 7(b)).
             tk.Label(profile, text=f"HAYAT by {IDENTITY.creator}", bg=self.BLACK, fg=self.MUTED,
                      font=("Segoe UI", 8), anchor="w").pack(fill="x")
+        # Reserve the footer before the expanding list on short desktops.
+        self.workspace_navigation.pack(fill="both", expand=True)
+        rail.bind('<Configure>', self._fit_sidebar, add='+')
+
+    def _fit_sidebar(self, event=None):
+        if event is not None and event.widget is not self._sidebar:
+            return
+        scale = max(1.0, float(getattr(self.root, '_hayat_text_scale', 1.0)))
+        height = event.height if event is not None else self._sidebar.winfo_height()
+        compact = height / scale < 700
+        if compact == getattr(self, '_sidebar_compact', None):
+            return
+        self._sidebar_compact = compact
+        self._sidebar_brand.configure(pady=1 if compact else 6)
+        if compact:
+            self._sidebar_tagline.pack_forget()
+            self._sidebar_brand.pack_forget()
+            self._sidebar_workspace_button.pack_forget()
+        else:
+            if not self._sidebar_brand.winfo_manager():
+                first = self._sidebar.pack_slaves()[0]
+                self._sidebar_brand.pack(fill='x', pady=(0, 8), before=first)
+            if not self._sidebar_workspace_button.winfo_manager():
+                self._sidebar_workspace_button.pack(fill='x', pady=(0, 4), before=self.workspace_navigation)
+            self._sidebar_tagline.pack(fill='x', pady=(2, 0))
+        self.workspace_navigation.set_compact(compact)
 
     # ---------------------------------------------------------------- centre
 
@@ -866,20 +950,25 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         header.pack(fill="x")
         self._conversation_actions = header
         heading = header.add(tk.Frame(header, bg=self.PANEL, padx=2, pady=4))
-        self.view_title = StringVar(master=self.root, value="Conversation")
+        self.view_title = DisplayVar(master=self.root, value="Conversation")
         tk.Label(heading, textvariable=self.view_title, bg=self.PANEL, fg=self.WHITE,
                  font=("Segoe UI Semibold", 13)).pack(side="left")
         self.view_badge = tk.Label(heading, text="Active", bg=self.PANEL_2, fg=self.OLIVE_SOFT,
                                    font=("Segoe UI", 8), padx=8, pady=3)
         self.view_badge.pack(side="left", padx=10)
+        # The badge names the conversation's current topic and switches topic on click (app/gui_topic_chip.py).
+        from app.gui_topic_chip import TopicChip
+        self._topic_chip = TopicChip(self, self.view_badge)
         self.chat_actions_button = ttk.Menubutton(header, text="Chat actions ▾", style="Hayat.TButton")
         self.chat_actions_menu = tk.Menu(self.chat_actions_button, tearoff=0,
                                         bg=self.PANEL_2, fg=self.WHITE, activebackground=self.PANEL_HOVER,
                                         activeforeground=self.WHITE, bd=0, font=("Segoe UI", 10))
         header.add(ttk.Button(header, text='Stop & correct', command=self._stop_and_correct, style='Hayat.TButton'))
+        self.chat_actions_menu.add_command(label='How to use this page', command=self._open_page_guide)
         self.chat_actions_menu.add_command(label='Continue from earlier?', command=self._open_chat_rewind)
         self.chat_actions_menu.add_command(label="Save transcript", command=self.save_transcript)
         self.chat_actions_menu.add_command(label="Team workspace", command=self._open_team_workspace)
+        self.chat_actions_menu.add_command(label="Reasoning desk", command=self._open_reasoning_desk)
         self.chat_actions_menu.add_command(label="Revenue workspace", command=self._open_revenue)
         self.chat_actions_menu.add_command(label="Understand a customer", command=lambda: self.use_example('Customer NAME: Paste the actual inquiry here.\nAudience: \nBudget: \nDeadline: '))
         self.chat_actions_menu.add_command(label="Show customers", command=lambda: self.use_example('Show my customers'))
@@ -914,13 +1003,15 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.core_button = ttk.Button(header, text="Conversation", width=0, style="Hayat.TButton",
                                       command=self._toggle_core)
         header.add(self.core_button)
+        self.page_guide_button = ttk.Button(header, text='How to use', style='Hayat.TButton', command=self._open_page_guide)
+        header.add(self.page_guide_button)
         self._conversation_actions_default = list(header.items)
         self.view_help = StringVar(self.root, "Ask a question, attach a file, or choose an action below.")
         self._chat_find_open = False
         self._chat_find_matches: list[tuple[str, str]] = []
         self._chat_find_index = -1
         self._chat_find_var = StringVar(self.root, "")
-        self._chat_find_status = StringVar(self.root, "Type to search visible messages")
+        self._chat_find_status = DisplayVar(self.root, "Type to search visible messages")
         find_bar = tk.Frame(parent, bg=self.PANEL, padx=8, pady=5)
         self._chat_find_bar = find_bar
         tk.Label(find_bar, text="Find in chat", bg=self.PANEL, fg=self.WHITE,
@@ -968,6 +1059,15 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                 shortcut_menu.add_command(label=title, command=button.invoke)
             self.depth_shortcuts[key] = button
         more_shortcuts.pack(side="left", padx=2)
+        # The same shortcuts under "Chat actions", for when this row folds away in a
+        # running conversation (see _fit_conversation).
+        self.open_menu = tk.Menu(self.chat_actions_menu, tearoff=0, bg=self.PANEL_2, fg=self.WHITE,
+                                 activebackground=self.PANEL_HOVER, activeforeground=self.WHITE, bd=0,
+                                 font=("Segoe UI", 10))
+        for key, button in self.depth_shortcuts.items():
+            if key != "chat":
+                self.open_menu.add_command(label=button.cget("text"), command=button.invoke)
+        self.chat_actions_menu.insert_cascade(0, label="Open", menu=self.open_menu)
         self._build_brain_strip(parent)
         self._brain_outer.pack_forget()
 
@@ -1004,6 +1104,9 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.chat.tag_configure("find_match", background=self.ROYAL, foreground=self.WHITE)
         self.chat.tag_configure("find_active", background=self.GOLD, foreground=self.BLACK)
         self.chat.tag_configure("stamp", foreground=self.MUTED, font=("Segoe UI", 9))
+        # Under each reply: what it sent out of this computer (app/outbound.py).
+        self.chat.tag_configure("privacy", foreground=self.MUTED, font=("Segoe UI", 9), lmargin1=12, lmargin2=12,
+                                spacing1=0, spacing3=6)
         # A listing, a file or a script's output lines up in a block.
         self.chat.tag_configure("block", font=("Cascadia Mono", 11), background=self.PANEL_2,
                                 lmargin1=14, lmargin2=14, rmargin=14, spacing1=0, spacing3=0)
@@ -1015,6 +1118,12 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.chat.tag_bind("steps_toggle", "<Enter>", lambda _event: self.chat.configure(cursor="hand2"))
         self.chat.tag_bind("steps_toggle", "<Leave>", lambda _event: self.chat.configure(cursor=""))
         self._steps: dict[str, list[str]] = {}
+        # 👍 / 👎 under every reply, typed or spoken (app/gui_feedback.py).
+        from app.gui_feedback import ReplyFeedback
+        self._reply_feedback = ReplyFeedback(self)
+        # "I read “rember” as “remember”" with Keep my spelling (app/gui_reading.py).
+        from app.gui_reading import ReadingNotes
+        self._reading_notes = ReadingNotes(self)
         # Formatted replies: headings, bullets, bold, code -- replies arrive as
         # Markdown, and raw "**" and "$\\times$" made them hard to read.
         self.chat.tag_configure("md_heading", font=("Segoe UI Semibold", 13), foreground=self.GOLD_SOFT,
@@ -1045,13 +1154,25 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._welcome = tk.Frame(self.chat.frame, bg=self.PANEL)
         home_header = tk.Frame(self._welcome, bg=self.PANEL, padx=18, pady=6)
         home_header.pack(fill='x')
-        tk.Label(home_header, text='What will you build today?', bg=self.PANEL, fg=self.WHITE,
-                 font=(DISPLAY, 20), anchor='w').pack(fill='x', pady=(2, 2))
-        tk.Label(home_header, text='Speak, research, create and turn a plan into finished work.',
-                 bg=self.PANEL, fg=self.MUTED, font=('Segoe UI', 10), anchor='w').pack(fill='x')
+        home_heading = FlowRow(home_header, self.PANEL, gap=8, height=38)
+        home_heading.pack(fill='x')
+        self.home_title = home_heading.add(tk.Label(home_heading, text='What would you like to do?', bg=self.PANEL, fg=self.WHITE,
+                 font=(DISPLAY, 18), anchor='w'))
+        self.home_mode_button = home_heading.add(ttk.Button(home_heading, text='3D view', style='Compact.Hayat.TButton',
+                                                 command=self._switch_home_mode))
+        home_heading.add(ttk.Button(home_heading, text='Getting started', style='Compact.Hayat.TButton',
+                                    command=lambda: self._open_page_guide('chat')))
+        home_subtitle = tk.Label(home_header, text='Choose a starting point, or type your request below.',
+                                 bg=self.PANEL, fg=self.MUTED, font=('Segoe UI', 10), anchor='w')
+        home_subtitle.pack(fill='x')
         from app.gui_intelligence_parts import FlowRow
         home_actions = FlowRow(self._welcome, self.PANEL, gap=6, height=36)
         home_actions.pack(fill='x', padx=16, pady=(0, 8))
+        # On a short window these two rows left the 3D scene under 170 px, where
+        # it draws only its six cards and the core vanished. They step aside
+        # there (every action stays in the menus and command search).
+        self._home_extras = (home_subtitle, home_actions)
+        self._welcome.bind('<Configure>', self._fit_home, add='+')
         # Short labels: six starting points on one row down to 1440 px (a seventh wrapped and squeezed the 3D scene).
         for label, command in (('Earning plan', self._open_earning_plan),
                                ('Attach', self._add_files),
@@ -1063,6 +1184,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.depth_view_title = StringVar(self.root, "Workspace")
         self.depth_view_detail = StringVar(self.root, "Drag to rotate · Scroll to zoom · Choose a capability")
         scene_controls = tk.Frame(self._welcome, bg=self.PANEL, padx=10, pady=4)
+        self._scene_controls = scene_controls
         scene_controls.pack(side="bottom", fill="x")
         self.depth_motion_button = ttk.Button(scene_controls, text="Pause motion", width=0,
                                               style="Hayat.TButton", command=self._toggle_depth_motion)
@@ -1095,6 +1217,11 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                                ("Models", lambda: self._open_control_studio("models")),
                                ("Learn a language", self._open_learn),
                                ("Learning atlas", self._open_learning_atlas),
+                               ("Mind: topics, growth, scorecard", self._open_mind),
+                               ("Tools & connections", self._open_connections),
+                               ("Research lab: robustness, security, models", self._open_research_lab),
+                               ("Scientific Workbench: data, statistics, relationships", self._open_scientific_workbench),
+                               ("Connected AI: OpenAI, Anthropic, Gemini", self._open_connected_ai),
                                ("Languages & persona", self._open_languages),
                                ("Searches", self._open_searches),
                                ("Reverse engineering (REA)", self._open_reverse_engineer),
@@ -1133,6 +1260,82 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.depth_nav.pack(fill="both", expand=True)
         if self.runtime.voice is not None:
             self.depth_nav.voice_levels = self.runtime.voice.levels
+        # Home sphere: one particle per real tool/area/feed/model, lit by real tool
+        # calls; a click explains the part in chat (docs/home-sphere-capabilities-2026-11-08.md).
+        self.depth_nav.attach_runtime(self.runtime, explain=lambda title, work: self._background(
+            title, work, show_in_chat=True))
+        from app.gui_guidance import TaskHome
+        self.task_home = TaskHome(self._welcome, type(self), self._open_home_task)
+        self._set_home_mode('tasks')
+
+    #: Below this home height the subtitle and quick-action row fold away.
+    HOME_ROOMY_HEIGHT = 430
+
+    def _fit_home(self, event: Any = None) -> None:
+        height = event.height if event is not None else self._welcome.winfo_height()
+        if height <= 1:
+            return
+        subtitle, actions = self._home_extras
+        if getattr(self, '_home_mode', '3d') == 'tasks':
+            actions.pack_forget()
+            if height < 180:
+                subtitle.pack_forget()
+            elif not subtitle.winfo_manager():
+                subtitle.pack(fill='x')
+            return
+        if height < self.HOME_ROOMY_HEIGHT:
+            subtitle.pack_forget()
+            actions.pack_forget()
+        elif not actions.winfo_manager():
+            subtitle.pack(fill='x')
+            actions.pack(fill='x', padx=16, pady=(0, 8), after=subtitle.master)
+
+    def _set_home_mode(self, mode):
+        self._home_mode = '3d' if mode == '3d' else 'tasks'
+        if self._home_mode == 'tasks':
+            self.depth_nav.pack_forget()
+            self._scene_controls.pack_forget()
+            self.task_home.pack(fill='both', expand=True, padx=10, pady=(2, 10))
+            self.home_mode_button.configure(text='3D view')
+            self.home_title.configure(text='What would you like to do?')
+        else:
+            self.task_home.pack_forget()
+            self._scene_controls.pack(side='bottom', fill='x')
+            self.depth_nav.pack(fill='both', expand=True)
+            self.home_mode_button.configure(text='Task view')
+            self.home_title.configure(text='Explore HAYAT’s tools')
+        self._fit_home()
+
+    def _switch_home_mode(self):
+        self._set_home_mode('3d' if self._home_mode == 'tasks' else 'tasks')
+
+    def _open_home_task(self, key):
+        if key == 'chat':
+            self._welcome_pending = self._core_requested = False
+            self.show_view('chat')
+            self.input.focus_set()
+        elif key == 'jobs':
+            self._open_jobs()
+        elif key == 'invention':
+            self.show_view('invention')
+        elif key == 'cameras':
+            self._open_public_cameras()
+        elif key == 'files':
+            self._add_files()
+        elif key == 'research':
+            self.show_view('research')
+        elif key == 'systems':
+            self._open_connections()
+        elif key == 'lab':
+            self._open_research_lab()
+        elif key == 'science':
+            self._open_scientific_workbench()
+        elif key == 'brain':
+            self.show_view('operator')
+
+    def _open_page_guide(self, key=None):
+        from app.gui_guidance import open_page_guide
+        return open_page_guide(self.root, type(self), key or self.current_view)
 
     def _show_welcome(self) -> None:
         visible = (self._welcome_pending or self._core_requested) and self.current_view == "chat"
@@ -1151,7 +1354,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         # the notices waiting behind the workspace says both.
         unseen = getattr(self, "_unseen_notices", 0)
         if not workspace_visible:
-            text = "3D workspace"
+            text = "Home"
         elif unseen:
             text = f"Conversation ({unseen} new)"
         else:
@@ -1253,7 +1456,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._brain_outer = outer
         heading = tk.Frame(outer, bg=self.PANEL)
         heading.pack(fill="x", pady=(0, 6))
-        self.brain_overview = StringVar(self.root, "Workspace status")
+        self.brain_overview = DisplayVar(self.root, "Workspace status")
         tk.Label(heading, textvariable=self.brain_overview, bg=self.PANEL, fg=self.MUTED,
                  font=("Segoe UI", 9)).pack(side="left")
         self._brain_expanded = False
@@ -1320,17 +1523,22 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         hint = tk.Frame(parent, bg=self.BLACK, pady=4)
         hint.pack(side="bottom", fill="x")
         self._compose_hint = hint
-        self.activity_var = StringVar(master=self.root, value="Ready")
-        tk.Label(hint, textvariable=self.activity_var, bg=self.BLACK, fg=self.GOLD_SOFT,
-                 font=("Segoe UI", 9)).pack(side="left")
-        self.reasoning_button = ttk.Button(hint, text='Beast mode', style='Hayat.TButton',
+        hint.columnconfigure(0, weight=1)
+        self.activity_var = DisplayVar(master=self.root, value="Ready")
+        self._activity_label = tk.Label(hint, textvariable=self.activity_var, bg=self.BLACK,
+                                        fg=self.GOLD_SOFT, anchor='w', width=1, font=("Segoe UI", 9))
+        self._activity_label.grid(row=0, column=0, sticky='ew')
+        from app.gui_help import Tooltip
+        activity_tip = Tooltip(self._activity_label, self.activity_var.get(), type(self))
+        self.activity_var.trace_add('write', lambda *_: setattr(activity_tip, 'text', self.activity_var.get()))
+        self.reasoning_button = ttk.Button(hint, text='Deep review', style='Hayat.TButton',
                                           command=self._toggle_god_mode)
-        self.reasoning_button.pack(side='right', padx=(8, 0))
+        self.reasoning_button.grid(row=0, column=3, padx=(8, 0))
         self._paint_reasoning_mode()
         self.activity_progress_var = DoubleVar(master=self.root, value=0.0)
         progress = ttk.Progressbar(
             hint, variable=self.activity_progress_var, maximum=100,
-            length=96, mode="determinate", style="Hayat.Horizontal.TProgressbar",
+            length=64, mode="determinate", style="Hayat.Horizontal.TProgressbar",
         )
         self._activity_progress = progress
 
@@ -1342,16 +1550,18 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             except (tk.TclError, ValueError):
                 busy = False
             if busy and not progress.winfo_manager():
-                progress.pack(side="left", padx=(10, 0))
+                progress.grid(row=0, column=1, padx=(10, 8))
             elif not busy and progress.winfo_manager():
-                progress.pack_forget()
+                progress.grid_remove()
 
         self.activity_progress_var.trace_add("write", show_progress)
-        self.voice_hint = StringVar(self.root, "Mic off · Voice settings")
+        self.voice_hint = DisplayVar(self.root, "Mic off · Voice settings")
         voice_link = tk.Label(hint, textvariable=self.voice_hint, bg=self.BLACK,
                              fg=self.ROYAL_SOFT, font=("Segoe UI", 9), cursor="hand2")
-        voice_link.pack(side="right", padx=(0, 8))
-        voice_link.bind("<Button-1>", lambda _event: self._open_control_studio("voice"))
+        self._voice_hint_link = voice_link
+        voice_link.grid(row=0, column=2, padx=(8, 0))
+        from app.gui_a11y import activatable
+        activatable(voice_link, lambda: self._open_control_studio("voice"), type(self))
 
         compose_surface = DepthSurface(parent, type(self), padding=9)
         self._compose_surface = compose_surface
@@ -1375,7 +1585,6 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.send_button.pack(side="right", padx=(9, 0), anchor="n")
         self.reply_stop_button = ttk.Button(compose, text="Stop reply", style="Hayat.TButton",
                                             command=self._cancel_reply, state="disabled")
-        self.reply_stop_button.pack(side="right", padx=(9, 0), anchor="n")
         # Right where a file would be attached in any other chat.
         self.input = tk.Text(
             compose, height=2, wrap="word", bg=self.PANEL, fg=self.WHITE,
@@ -1387,10 +1596,11 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.input.bind("<Shift-Return>", lambda event: None)
         from app.gui_composer import ComposerSizing
         self._composer_sizing = ComposerSizing(self.input)
-        self._input_placeholder = tk.Label(self.input, text='Ask HAYAT · attach files or paste a link…   Enter sends · Shift+Enter: new line',
+        self._input_placeholder = tk.Label(self.input, text='Ask a question, or describe the result you need…',
                                           bg=self.PANEL,
                                           fg=self.MUTED, font=('Segoe UI', 11), cursor='xterm', justify='left')
         self._input_placeholder.bind('<Button-1>', lambda _event: self.input.focus_set())
+        Tooltip(self.input, 'Enter sends · Shift+Enter: new line · Draft recovery follows your privacy setting.', type(self))
         def refresh_placeholder(_event=None):
             self._input_placeholder.configure(wraplength=max(120, self.input.winfo_width() - 28))
             if self.input.get('1.0', 'end-1c').strip() or self.input.focus_get() is self.input:
@@ -1412,27 +1622,30 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         close = tk.Label(self.standing_chip, text="  ✕", bg=self.PANEL_2, fg=self.MUTED,
                          font=("Segoe UI Semibold", 9), cursor="hand2")
         close.pack(side="left")
-        close.bind("<Button-1>", lambda _event: self._end_standing_instruction())
+        from app.gui_a11y import activatable
+        activatable(close, lambda: self._end_standing_instruction(), type(self))
         self._refresh_standing_chip()
         self.composer_buttons = {}
+        action_labels = {'Attach': 'Attach file', 'Image': 'Add image', 'Video': 'Video tools',
+                         'Mic': 'Voice', 'Web search': 'Web search', 'Tools': 'More tools'}
         for label, command in (
                 ('Attach', self._add_files), ('Image', lambda: self._add_files('image')),
                 ('Video', self._open_video_studio), ('Mic', self._toggle_voice),
                 ('Web search', self._research), ('Tools', self._toggle_tools_drawer)):
-            button = media_tools.add(ttk.Button(media_tools, text=label, command=command,
+            button = media_tools.add(ttk.Button(media_tools, text=action_labels[label], command=command,
                                                 style='Compact.Hayat.TButton'))
             self.composer_buttons[label] = button
         self._composer_more = ttk.Menubutton(media_tools, text="Actions ▾", style="Compact.Hayat.TButton")
         composer_menu = tk.Menu(self._composer_more, tearoff=0, bg=self.PANEL_2, fg=self.WHITE,
                                 activebackground=self.PANEL_HOVER, activeforeground=self.WHITE)
         for label, button in self.composer_buttons.items():
-            composer_menu.add_command(label=label, command=button.invoke)
+            composer_menu.add_command(label=action_labels[label], command=button.invoke)
         composer_menu.add_command(label='Research an image…', command=self._research_image)
         self._composer_more.configure(menu=composer_menu)
         media_tools.add(self._composer_more)
         self._composer_actions_default = list(media_tools.items)
         media_tools.max_items = len(media_tools.items) - 1
-        self.draft_status = StringVar(self.root, value="")
+        self.draft_status = DisplayVar(self.root, value="")
         draft_label = ttk.Label(parent, textvariable=self.draft_status, font=("Segoe UI", 8))
         self._draft_label = draft_label
         def show_draft_status(*_args: Any) -> None:
@@ -1457,7 +1670,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             font=("Segoe UI Semibold", 11), cursor="hand2",
         )
         self.drop_icon.pack(side="left", padx=(0, 7))
-        self.attachment_status = StringVar(
+        self.attachment_status = DisplayVar(
             master=self.root,
             value="Drop files or images anywhere · HAYAT will read and remember them",
         )
@@ -1583,6 +1796,9 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         ("<Control-Shift-L>", "_open_activity"),
         ("<Control-Shift-P>", "_show_command_palette"),
         ("<Control-Shift-K>", "_focus_workspace_search"),
+        ("<Control-Shift-B>", "_toggle_navigation"),
+        ("<Alt-Left>", "_navigate_back"),
+        ("<Alt-Right>", "_navigate_forward"),
         ("<Control-grave>", "_open_window_switch"),
         ("<Control-k>", "_toggle_camera"),
         ("<Control-l>", "_look"),
@@ -1593,6 +1809,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         ("<Control-m>", "_show_memory"),
         ("<Control-e>", "save_transcript"),
         ("<Control-Shift-F>", "_toggle_focus_mode"),
+        ("<Control-Shift-H>", "_toggle_screen_shield"),
         ("<F11>", "_toggle_focus_mode"),
         ("<F1>", "_open_help"),
         ("<Control-slash>", "_show_shortcuts"),
@@ -1607,6 +1824,9 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         "_open_activity": "Show the activity log",
         "_show_command_palette": "Command palette",
         "_focus_workspace_search": "Search the workspace",
+        "_toggle_navigation": "Show / hide navigation",
+        "_navigate_back": "Previous workspace",
+        "_navigate_forward": "Next workspace",
         "_open_window_switch": "Switch between open windows",
         "_toggle_camera": "Camera on / off",
         "_look": "Look through the camera",
@@ -1617,6 +1837,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         "_show_memory": "Show memory",
         "save_transcript": "Export conversation",
         "_toggle_focus_mode": "Focus mode",
+        "_toggle_screen_shield": "Cover / reveal HAYAT windows",
         "_open_help": "Help — what can HAYAT do?",
         "_show_shortcuts": "This shortcut list",
         "_stop": "Stop the current work",
@@ -1636,10 +1857,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             self.root.bind_all(sequence, lambda event, run=handler: (run(), "break")[1])
 
     def _focus_workspace_search(self) -> None:
-        if self._focus_mode:
-            self._focus_mode = False
-            self.focus_mode_button.configure(text="Focus Mode")
-            self._arrange_rails()
+        self._navigation_layout.reveal()
         self.workspace_navigation.entry.focus_set()
         self.workspace_navigation.entry.selection_range(0, "end")
 
@@ -1661,6 +1879,14 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                         ("Show diagnostics", "_show_doctor", "health errors"),
                         ("Open settings", "_show_settings", "preferences"),
                         ("Focus workspace", "_toggle_focus_mode", "panels fullscreen"),
+                        ("Toggle navigation", "_toggle_navigation", "sidebar menu drawer"),
+                        ("Screen shield", "_toggle_screen_shield", "hide cover private screen sharing"),
+                        ("Startup readiness", "_show_startup_readiness", "boot loading skills brain mesh"),
+                        ("Scientific Workbench", "_open_scientific_workbench", "science csv data statistics distribution histogram correlation analysis"),
+                        ("Connected AI", "_open_connected_ai", "openai anthropic claude google gemini api cloud models research documents tools"),
+                        ("Reasoning desk", "_open_reasoning_desk", "think intelligence decision constraints evidence learning review"),
+                        ("Previous workspace", "_navigate_back", "back navigation history"),
+                        ("Next workspace", "_navigate_forward", "forward navigation history"),
                         ("Export conversation", "save_transcript", "save history"),
                         ("Stop current work", "_stop", "cancel"),
                     )]
@@ -1700,6 +1926,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                                          "language install voice persona human reply software winget"))
         for label, opener, words in (
                 ("Command Center", self._open_command_center, "dashboard overview live everything mission control"),
+                ("Tools & connections", self._open_connections, "linked tools subsystems contracts scientific system inventory neurons"),
                 ("Downloads & web activity", self._open_downloads, "downloads download history transfers network web requests sites"),
                 ("Trade Center", self._open_markets, "markets crypto stocks bitcoin chart scenarios odds prediction heatmap"),
                 ("Web3 explorer & agentic web", self._open_web3, "blockchain address transaction ens defi web4 llms.txt crawlers"),
@@ -1719,13 +1946,23 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         from app.gui_features import inventory_commands
         commands.extend(inventory_commands(self))
         commands = list({command.label.casefold(): command for command in commands}.values())
-        self._command_palette = CommandPalette(self.root, commands)
+        self._command_palette = CommandPalette(self.root, commands, type(self))
 
     def _toggle_focus_mode(self) -> None:
         """Give chat/workspace the full window without losing rail state."""
         self._focus_mode = not self._focus_mode
         self.focus_mode_button.configure(text="Restore Rails" if self._focus_mode else "Focus Mode")
         self._arrange_rails()
+
+    def _toggle_navigation(self) -> None:
+        self._navigation_layout.toggle()
+
+    def _toggle_screen_shield(self):
+        return self.screen_shield.toggle()
+
+    def _show_startup_readiness(self):
+        from app.startup import readiness, readiness_lines
+        self._background('Startup readiness', lambda: '\n'.join(readiness_lines(readiness(self.runtime))))
 
     def _on_window_resize(self, event: Any) -> None:
         if event.widget is not self.root or self._closed or event.width < 100:
@@ -1736,8 +1973,10 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         # also pumps idle geometry, which may deliver a newer event recursively.
         # Apply the current size, and let a newer layout supersede this one.
         width, height = self.root.winfo_width(), self.root.winfo_height()
+        if self._navigation_layout.update_mode():
+            self._arrange_rails(settle=False)
         self._overview_layout.reflow()
-        state = (width < 1380, height < 800)
+        state = (width < 1380, height <= 800)
         previous = self._layout_state
         tall_before = getattr(self, "_window_height", 0) >= self.TALL_WINDOW
         self._window_height = height
@@ -1748,7 +1987,11 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._layout_state = state
         self._compact_layout = state[0]
         if previous is None or previous[0] != state[0]:
-            self._overview_open = self._overview_layout.preferred_open(state[0])
+            preferred_overview = self._overview_layout.preferred_open(state[0])
+            if getattr(self, '_inspection_active', False):
+                self._inspection_saved_overview = preferred_overview
+            else:
+                self._overview_open = preferred_overview
             self._arrange_rails(settle=False)
             if self._layout_state != state:
                 return
@@ -1790,7 +2033,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
     VERY_SHORT_WINDOW = 600
 
     def _fit_very_short(self, height: int) -> None:
-        very_short = height < self.VERY_SHORT_WINDOW
+        scale = max(1.0, float(getattr(self.root, '_hayat_text_scale', 1.0)))
+        very_short = height / scale < self.VERY_SHORT_WINDOW
         if self._closed or getattr(self, "_very_short", None) == very_short or not hasattr(self, "input"):
             return
         self._very_short = very_short
@@ -1798,9 +2042,13 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         # one row and its tooltip; Beast mode keeps its place at a compact size.
         if very_short:
             self._header_clock_label.pack_forget()
+            self._voice_hint_link.grid_remove()
         else:
             self._header_clock_label.pack(fill="x")
-        self._transparency_state_label.configure(height=1 if very_short else 2)
+            self._voice_hint_link.grid()
+        self._transparency_state_label.configure(
+            height=1 if very_short else 2,
+            wraplength=0 if very_short else max(1, self._transparency_words.winfo_width()))
         self.reasoning_button.configure(style="Compact.Hayat.TButton" if very_short else "Hayat.TButton")
         self._compose_hint.configure(pady=1 if very_short else 4)
         # The composer sizes the message box (one line here). The status bar
@@ -1822,9 +2070,14 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
     def _fit_accessible_controls(self) -> None:
         if self._closed or not hasattr(self, "_composer_actions_default"):
             return
+        navigation = getattr(self, '_navigation_layout', None)
+        if navigation is not None and hasattr(self, '_overview_layout') and navigation.update_mode():
+            self._arrange_rails(settle=False)
+        self._fit_sidebar()
+        self._fit_very_short(self.root.winfo_height())
         # Short windows need the same primary controls at normal text size:
         # Windows DPI scaling can make every toolbar consume several rows.
-        compact = self.root.winfo_height() < 800
+        compact = self.root.winfo_height() <= 800
         if getattr(self, "_accessible_compact_controls", None) == compact:
             return
         self._accessible_compact_controls = compact
@@ -1853,11 +2106,12 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             self._composer_actions.items = primary + [item for item in self._composer_actions_default if item not in primary]
             self._composer_actions.max_items = len(primary)
         else:
-            self.header_more_button.pack_forget()
+            self.header_more_button.pack(side='right')
             self._header_actions.items = list(self._header_actions_default)
             self._header_actions.max_items = None
-            for button in (self.focus_mode_button, self.overview_button, self.help_button):
-                button.pack(side="right", padx=(10, 0))
+            for button in (self.focus_mode_button, self.help_button):
+                button.pack_forget()
+            self.overview_button.pack(side="right", padx=(10, 0))
             self._conversation_actions.items = list(self._conversation_actions_default)
             self._conversation_actions.max_items = None
             self._composer_actions.items = list(self._composer_actions_default)
@@ -1881,7 +2135,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         if self._closed or getattr(self, "_inspection_active", False) or not hasattr(self, "_compose_controls"):
             return
         started = not (self._welcome_pending or self._core_requested)
-        short = bool(self._layout_state and self._layout_state[1])
+        short = self.root.winfo_height() <= 800
         tall = getattr(self, "_window_height", 0) >= self.TALL_WINDOW
         show_chips = not short and not started
         show_quick = not started or tall
@@ -1893,7 +2147,11 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                 details.pack(fill='x', pady=(0, 8), **({'before': siblings[0]} if siblings else {}))
             else:
                 details.pack_forget()
-        if home or (short and getattr(self, "_accessible_compact_controls", False)):
+        # In a running conversation below a tall window, the mode row (Chat, Documents, Web
+        # search, Code, Voice) mostly repeats the composer's buttons; the transcript gets its
+        # ~50 px instead. Every entry stays under Chat actions > Open.
+        folded_tabs = started and not tall and self.current_view == "chat"
+        if home or folded_tabs or (short and getattr(self, "_accessible_compact_controls", False)):
             # Home already has capability cards and task shortcuts. Repeated
             # toolbar rows used to squeeze the 3D scene into a 100px strip.
             show_chips = show_quick = False
@@ -1936,8 +2194,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._overview_layout.hide_grip()
         overview = getattr(self, "_overview_open", True) and not self._focus_mode
         compact = getattr(self, "_compact_layout", False)
-        if not self._focus_mode:
-            self._sidebar.pack(side="left", fill="y")
+        self._navigation_layout.mount()
         if overview and not compact:
             self.right_rail.pack(side="right", fill="y")
             self._overview_layout.dock_grip()
@@ -1946,6 +2203,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             self.right_rail.place(relx=1, y=0, anchor="ne", width=self._overview_layout.width(), relheight=1)
             self.right_rail.lift()
         self._overview_layout.reflow()
+        self._navigation_layout.overlay()
         self.overview_button.configure(text="Hide overview" if overview else "Show overview")
         if settle:
             self.root.update_idletasks()
@@ -1987,6 +2245,19 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._expand_all_button = control("▼ Expand all", "Open every panel in this column.", self._expand_all_panels)
         self._collapse_all_button = control("▶ Collapse all", "Fold every panel to its one-line summary.", self._collapse_all_panels)
 
+    def _keep_chrome_above(self) -> None:
+        """Stack the header and status bars over a docked movable card.
+
+        The intelligence card is the root's child so it can float over the window, and docking only packs it
+        into the scrolling column. A canvas clips its own children, not the root's, so the docked card's map
+        was drawn across the status bar (the Uptime pill and health line were cut) and, scrolled, over the
+        header. Raising the window's own bars hides whatever part of the card leaves the column.
+        """
+        body = getattr(self, "_body", None)
+        for widget in self.root.pack_slaves():
+            if widget is not body:
+                tk.Misc.tkraise(widget)  # not .lift(): on a Canvas (the header surface) that raises drawn items
+
     def _collapse_all_panels(self) -> None:
         self._folds.fold_all()
 
@@ -2008,12 +2279,20 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.resource_charts = ResourceCharts(resources.body, type(self))
         self.resource_charts.pack(fill="x")
 
+        # The conversations he was just in, one click from picking one up again.
+        recent = section(column, type(self), fold=self._folds, title="Recent chats",
+                         action=("All", lambda: self.show_view("history")))
+        recent.pack(fill="x", pady=(0, 8))
+        from app.gui_home import RecentChats
+        self.recent_chats = RecentChats(recent.body, self)
+
         # Global intelligence lives beside the workspace, with a mini world map
         # of the newest located events; the 3D workspace keeps the centre.
         if getattr(self.runtime, 'intelligence', None) is not None:
             from app.gui_intelligence_home import IntelligenceHomeCard
             self._intelligence_home = IntelligenceHomeCard(column, self, pack={'fill': 'x', 'pady': (0, 8)},
                                                          show_map=True, movable=True)
+            self._keep_chrome_above()
 
         # -- everything running, foreground and background. The owner asked
         # that nothing run out of sight: every tool, model call, search and
@@ -2043,7 +2322,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.preview_dot = tk.Label(head, text="●", bg=self.PANEL, fg=self.MUTED,
                                     font=("Segoe UI", 9))
         self.preview_dot.pack(side="left")
-        self.preview_detail = StringVar(master=self.root, value="camera off")
+        self.preview_detail = DisplayVar(master=self.root, value="camera off")
         tk.Label(head, textvariable=self.preview_detail, bg=self.PANEL, fg=self.MUTED,
                  font=("Segoe UI", 8)).pack(side="left", padx=6)
         # Watch mode must never be invisible: while HAYAT is watching on its
@@ -2102,10 +2381,10 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         wifi_head.pack(fill="x")
         self.wifi_dot = tk.Label(wifi_head, text="●", bg=self.PANEL, fg=self.MUTED, font=("Segoe UI", 9))
         self.wifi_dot.pack(side="left")
-        self.wifi_status_var = StringVar(master=self.root, value="Not connected")
+        self.wifi_status_var = DisplayVar(master=self.root, value="Not connected")
         tk.Label(wifi_head, textvariable=self.wifi_status_var, bg=self.PANEL, fg=self.MUTED, anchor="w",
                  font=("Segoe UI", 8)).pack(side="left", padx=6, fill="x", expand=True)
-        self.wifi_level_var = StringVar(master=self.root, value="")
+        self.wifi_level_var = DisplayVar(master=self.root, value="")
         self.wifi_level_label = tk.Label(wifi_head, textvariable=self.wifi_level_var, bg=self.PANEL, fg=self.MUTED,
                                          font=("Segoe UI Semibold", 9))
         self.wifi_level_label.pack(side="right")
@@ -2156,11 +2435,11 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             font=("Segoe UI", 9),
         )
         self.mindstream_live_dot.pack(side="left")
-        self.mindstream_status_var = StringVar(master=self.root, value="LIVE · READY")
+        self.mindstream_status_var = DisplayVar(master=self.root, value="LIVE · READY")
         tk.Label(live_band, textvariable=self.mindstream_status_var, bg=self.PANEL_2,
                  fg=self.WHITE, anchor="w", font=("Segoe UI Semibold", 9)).pack(
                      side="left", fill="x", expand=True, padx=(6, 0))
-        self.mindstream_activity_var = StringVar(master=self.root, value="0 active")
+        self.mindstream_activity_var = DisplayVar(master=self.root, value="0 active")
         tk.Label(live_band, textvariable=self.mindstream_activity_var, bg=self.PANEL_2,
                  fg=self.MUTED, anchor="e", font=("Segoe UI", 8)).pack(side="right")
         self.mindstream_progress_var = DoubleVar(master=self.root, value=0.0)
@@ -2201,7 +2480,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.mindstream_pages: dict[str, tk.Widget] = {}
         self.mindstream_feed = LiveConsole(self.mindstream_page_host, type(self), height=5)
         self.mindstream_pages["feed"] = self.mindstream_feed
-        self.mindstream_learning_detail = StringVar(
+        self.mindstream_learning_detail = DisplayVar(
             master=self.root, value="Learning state is being measured…")
         learning_page = tk.Label(
             self.mindstream_page_host, textvariable=self.mindstream_learning_detail,
@@ -2209,7 +2488,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             wraplength=375, font=("Segoe UI", 9),
         )
         self.mindstream_pages["learning"] = learning_page
-        self.mindstream_prediction_detail = StringVar(
+        self.mindstream_prediction_detail = DisplayVar(
             master=self.root, value="Prediction evidence is being measured…")
         prediction_page = tk.Label(
             self.mindstream_page_host, textvariable=self.mindstream_prediction_detail,
@@ -2252,6 +2531,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.learning_toggle_button = learning_controls.add("Start Learning", self._toggle_background_learning)
         learning_controls.add("Learn Next", self._learn_next_now)
         learning_controls.add("Skills", self._show_skill_learning)
+        learning_controls.add("Evidence & self-check", self._open_knowledge)
         learning_controls.add("Adapt", self._adapt_learning, style="HayatAccent.TButton")
 
         # -- system status
@@ -2280,8 +2560,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         remote = section(column, type(self), fold=self._folds, title="Secure Access & Memory",
                          action=("Details", self._show_remote))
         remote.pack(fill="x", pady=(10, 0))
-        self.remote_access_var = StringVar(master=self.root, value="Remote access: checking...")
-        self.resource_mode_var = StringVar(master=self.root, value="Memory mode: Balanced")
+        self.remote_access_var = DisplayVar(master=self.root, value="Remote access: checking...")
+        self.resource_mode_var = DisplayVar(master=self.root, value="Memory mode: Balanced")
         tk.Label(remote.body, textvariable=self.remote_access_var, bg=self.PANEL,
                  fg=self.WHITE, anchor="w", justify="left", font=("Segoe UI", 9),
                  wraplength=390).pack(fill="x")
@@ -2357,6 +2637,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         entry = tk.Entry(command_row, textvariable=self.command_var, bg=self.PANEL_2,
                          fg=self.WHITE, insertbackground=self.GOLD, relief="flat",
                          font=("Cascadia Mono", 9))
+        from app.gui_theme import field_outline
+        field_outline(entry, type(self))
         entry.pack(side="left", fill="x", expand=True, ipady=5, padx=(0, 6))
         entry.bind("<Return>", lambda _event: self.run_command())
         ttk.Button(command_row, text="Run", style="Hayat.TButton", width=5,
@@ -2436,6 +2718,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
     def _set_text_scale(self, scale: float) -> None:
         self._text_scale = scale if scale in TEXT_SCALES.values() else 1.0
         apply_text_scale(self.root, self._text_scale)
+        self._fit_accessible_controls()
 
     def _scale_new_window(self, event: Any) -> None:
         if isinstance(event.widget, tk.Toplevel) and not self._closed:
@@ -2492,7 +2775,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._status_bar = bar
         # One line: the health summary is packed first on the right, so the
         # pills share its row instead of pushing it onto a second line.
-        self.health_var = StringVar(master=self.root, value="Starting…")
+        self.health_var = DisplayVar(master=self.root, value="Starting…")
         tk.Label(bar, textvariable=self.health_var, bg=self.PANEL, fg=self.OLIVE_SOFT,
                  font=("Segoe UI", 9)).pack(side="right", padx=14)
         inner = tk.Frame(bar, bg=self.PANEL, pady=3)
@@ -2542,6 +2825,22 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             self._compose_controls.pack(side="bottom", fill="x", pady=(4, 6))
             self._fit_conversation()
 
+    def _navigate_back(self):
+        self._navigate_history(-1)
+
+    def _navigate_forward(self):
+        self._navigate_history(1)
+
+    def _navigate_history(self, direction):
+        history = getattr(self, '_view_history', None)
+        key = history.move(direction) if history is not None else None
+        if key is not None:
+            self._history_replaying = True
+            try:
+                self.show_view(key)
+            finally:
+                self._history_replaying = False
+
     def show_view(self, key: str) -> None:
         """Open one of the sidebar views.
 
@@ -2553,6 +2852,13 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         """
         if self._closed:
             return
+        self._navigation_layout.dismiss()
+        from app.gui_navigation import NavigationHistory
+        if not hasattr(self, '_view_history'):
+            self._view_history = NavigationHistory()
+        if not getattr(self, '_history_replaying', False):
+            self._view_history.push(key)
+        self.workspace_navigation.history_state(self._view_history.can_back, self._view_history.can_forward)
         self.current_view = key
         if key == "chat" and self._chat_find_open:
             self._pack_chat_find_bar()
@@ -2568,12 +2874,14 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             button.configure(style="HayatChosen.TButton" if name == key else "Hayat.TButton")
         for name, item in self.nav.items():
             item.select(name == key)
+        self.workspace_navigation.set_active(key)
         titles = {name: title for name, _icon, title, _sub in self.VIEWS}
         self.view_title.set("Conversation" if key == "chat" else titles.get(key, key.title()))
         descriptions = {name: subtitle for name, _icon, _title, subtitle in self.VIEWS}
         self.view_help.set("Ask a question, attach a file, or choose an action below." if key == "chat"
                            else descriptions.get(key, "Choose an item to inspect it."))
         self.view_badge.configure(text="Active" if key == "chat" else "Report")
+        self._topic_chip.show(key == "chat")
         for pane in self._explorer_panels.values():
             pane.pack_forget()
         # Views report. They never prompt.
@@ -2692,6 +3000,19 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                 check_cancelled()
             if reply.display_response:
                 self._post(self._append, "assistant", f"HAYAT\n{reply.display_response}")
+                outbound = (getattr(getattr(reply, "response", None), "metadata", None) or {}).get("outbound")
+                if outbound:
+                    self._post(self._append_privacy_line, outbound)
+                from app.gui_reading import changes_of, topic_of
+
+                read_as = changes_of(reply)
+                if read_as:
+                    self._post(self._reading_notes.attach, text, read_as)
+                # "↪ Read in the topic … as …" / "↩ Back to …", with the click that undoes it (app/topics.py).
+                placed = topic_of(reply)
+                if placed:
+                    self._post(self._reading_notes.attach_topic, placed)
+                self._post(self._topic_chip.refresh, placed)
                 from app.observed_reply import steps_trace
 
                 steps = steps_trace(getattr(reply, "intent", None), getattr(reply, "outcome", None))
@@ -2730,7 +3051,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             return
         current = manager.snapshot()['configured']
         god = 'DEEP' in current and 'ADVERSARIAL' in current
-        self.reasoning_button.configure(text='Beast mode: on' if god else 'Beast mode',
+        self.reasoning_button.configure(text='Deep review: on' if god else 'Deep review',
                                         style='HayatChosen.TButton' if god else 'Hayat.TButton')
 
     def _paint_reply_controls(self) -> None:
@@ -2835,6 +3156,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
     def _append(self, tag: str, text: str) -> None:
         if self._closed:
             return
+        from app.gui_presentation import safe_text
+        text = safe_text(text)
         if tag != "system":
             self._welcome_pending = False
             self._core_requested = False
@@ -2873,6 +3196,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                     self._insert_formatted(rest.rstrip(), tag)
                 else:
                     emoji_insert(self.chat, "end", rest.rstrip() + "\n", tag)
+                if tag == "user":
+                    self._reply_feedback.note_request(rest)
             else:
                 emoji_insert(self.chat, "end", body + "\n", tag)
                 self._transcript.write(body + "\n")
@@ -2885,6 +3210,9 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                 self._embed_document_link(body)
                 self._embed_video_link(body)
                 self._embed_video_request(body)
+            if tag == "assistant" and "\n" in body:
+                # Under the whole reply, its pictures and players included.
+                self._reply_feedback.attach(body.partition("\n")[2])
             self._trim(self.chat, self.MAX_TRANSCRIPT_LINES)
             if hasattr(self, 'chat_details'):
                 self.chat_details.observe(tag, body)
@@ -2911,6 +3239,25 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.chat.configure(state="disabled")
         if follow:
             self.chat.see("end")
+
+    def _append_privacy_line(self, outbound: dict) -> None:
+        """One quiet line under the reply it belongs to: nothing left this computer, or exactly what did."""
+        if self._closed:
+            return
+        from app.gui_emoji import insert as emoji_insert
+        from app.gui_motion import reading_position
+        from app.outbound import describe
+
+        lines = describe(outbound)
+        if not lines:
+            return
+        mark = "🔒 " if outbound.get("nothing_sent") else "🌐 "
+        text = mark + " ".join(lines)
+        with reading_position(self.chat, follow=self._chat_follows()):
+            self.chat.configure(state="normal")
+            emoji_insert(self.chat, "end", text + "\n", "privacy")
+            self._transcript.write(text + "\n")
+            self.chat.configure(state="disabled")
 
     def _append_evidence(self, evidence: dict) -> None:
         if self._closed:
@@ -2940,20 +3287,30 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
                                              self.runtime.manager.roles())
 
     def _toggle_god_mode(self) -> None:
+        current = self.runtime.modes.snapshot()['configured']
+        enabled = 'DEEP' in current and 'ADVERSARIAL' in current
+        self._set_reasoning_profile('automatic' if enabled else 'deep')
+
+    def _set_reasoning_profile(self, profile: str) -> None:
         if self._working_since is not None:
             self.draft_status.set('Finish or stop the current reply before switching reasoning mode.')
             return
         def change():
             manager = self.runtime.modes
-            current = manager.snapshot()['configured']
-            enabled = 'DEEP' in current and 'ADVERSARIAL' in current
-            # Preserve all fixed specialist and privacy/local preferences.
-            retained = [mode for mode in current if mode not in {'AUTO', 'FAST', 'BALANCED', 'DEEP', 'ADVERSARIAL'}]
-            manager.set((retained + ['BALANCED'] if retained else ['AUTO']) if enabled else retained + ['BEAST'])
+            manager.set_reasoning(profile)
             self._post(self._paint_reasoning_mode)
-            return ('Automatic reasoning restored.' if enabled and not retained else 'Balanced reasoning restored.' if enabled
-                    else 'Beast mode enabled: deeper reasoning, alternatives and conclusion checks. Replies may take longer; accuracy still needs evidence.')
+            return ('Deep review enabled: self-questioning and a skeptical check. Replies may take longer; accuracy still needs evidence.'
+                    if profile == 'deep' else 'Reasoning updated: ' + ' + '.join(manager.snapshot()['configured']) + '.')
         self._background('Reasoning mode', change)
+
+    def _open_reasoning_desk(self) -> None:
+        window = getattr(self, '_reasoning_desk', None)
+        if window is not None and window.winfo_exists():
+            window.deiconify()
+            window.lift()
+            return
+        from app.gui_reasoning import ReasoningDesk
+        self._reasoning_desk = ReasoningDesk(self)
 
     def _toggle_steps(self, key: str) -> str:
         """Open or close one reply's steps in place, leaving the rest alone."""
@@ -3203,11 +3560,17 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         try:
             from PIL import Image, ImageTk
 
+            from app.gui_image_card import preview_box
+
             with Image.open(path) as source:
                 source.load()
                 full_width, full_height = source.width, source.height
                 image = source.copy()
-                image.thumbnail((380, 260), Image.LANCZOS)
+                # Sized to the conversation, not a fixed 380x260: a 2048 px render
+                # shown as a stamp hid exactly the detail it was made for.
+                width = self.chat.winfo_width()
+                # Before the first layout the text widget reports 1 px; assume a typical conversation.
+                image.thumbnail(preview_box(width if width > 200 else 820), Image.LANCZOS)
                 photo = ImageTk.PhotoImage(image, master=self.chat)
         except Exception:
             return
@@ -3222,11 +3585,34 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.chat.tag_add(tag, start, "end-1c")
         kb = path.stat().st_size // 1024
         self.chat.insert("end", "\n")
-        self.chat.insert("end", f"  Open full size  ({full_width}x{full_height}, {kb} KB) ↗\n", tag)
+        self.chat.insert("end", f"  Open full size  ({full_width}x{full_height}, {kb} KB) ↗", tag)
+        self._link_tag(tag, lambda p=path: self._open_file(p))
+        from app.gui_image_card import copy_image, generation_record, reveal
+
+        actions = [("Show in folder", lambda p=path: reveal(p)),
+                   ("Copy image", lambda p=path: self.draft_status.set(copy_image(p)))]
+        record = generation_record(path)
+        if record.get("prompt"):
+            actions.append(("Make another", lambda prompt=record["prompt"]: self.use_example(
+                f"Generate an image of {prompt}")))
+        for label, command in actions:
+            self._media_serial += 1
+            action_tag = f"imgact_{self._media_serial}"
+            self.chat.insert("end", "   ·   ", "stamp")
+            self.chat.insert("end", label, action_tag)
+            self._link_tag(action_tag, command)
+        self.chat.insert("end", "\n")
+
+    def _link_tag(self, tag: str, command: Any) -> None:
+        """Style a text tag as a link and run `command` when it is clicked."""
         self.chat.tag_config(tag, foreground=self.ROYAL_SOFT, underline=True)
         self.chat.tag_bind(tag, "<Enter>", lambda _e: self.chat.config(cursor="hand2"))
         self.chat.tag_bind(tag, "<Leave>", lambda _e: self.chat.config(cursor=""))
-        self.chat.tag_bind(tag, "<Button-1>", lambda _e, p=path: self._open_file(p))
+        self.chat.tag_bind(tag, "<Button-1>", lambda _e: command())
+        actions = self.__dict__.setdefault("_link_actions", {})
+        actions[tag] = command
+        while len(actions) > 400:
+            actions.pop(next(iter(actions)))
 
     @staticmethod
     def _open_file(path: Any) -> None:
@@ -3367,6 +3753,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self._pdf_windows = windows
 
     def _append_trace(self, text: str) -> None:
+        from app.gui_presentation import safe_text
+        text = safe_text(text)
         if self._closed:
             return
         self.trace.configure(state="normal")
@@ -3552,13 +3940,22 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             return ""
         try:
             running = teams.status()["running"]
-            capacity = teams.capacity()
+            # Measuring runs nvidia-smi and PowerShell (about 0.6 s); this line is
+            # painted on the UI thread every tick, so the first measurement
+            # happens on a worker and the line fills in once it is known.
+            measured = getattr(teams, "measured_capacity", None)
+            capacity = measured() if callable(measured) else teams.capacity()
+            if capacity is None and not getattr(self, "_measuring_team_capacity", False):
+                self._measuring_team_capacity = True
+                threading.Thread(target=teams.capacity, name="hayat-team-capacity", daemon=True).start()
         except Exception:
             log_swallowed(_log, "reading agent team status for the home card")
             return ""
         busy = (f"{len(running)} running ("
                 + ", ".join(f"{row.get('current_worker') or 'starting'} {row.get('done', 0)}/{row.get('total', '?')}"
                             for row in running[:2]) + ")") if running else "none running"
+        if capacity is None:
+            return f"👥 Agent teams: {busy} · measuring this machine · open team workspace"
         return (f"👥 Agent teams: {busy} · up to {capacity.max_workers} workers each · "
                 f"{capacity.concurrent_teams} at once · open team workspace")
 
@@ -3637,10 +4034,25 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             self._post(self._append, "assistant", f"HAYAT\n{response.display_response}")
 
     def _tick(self) -> None:
-        if self._closed:
+        if self._closed or getattr(self, '_tick_running', False):
             return
-        # Keep polling even when a single widget/status source fails.
-        self._schedule(250, self._tick)
+        pending = getattr(self, '_tick_pending', None)
+        if pending:
+            self.root.after_cancel(pending)
+            self._after_handles.discard(pending)
+        self._tick_pending = None
+        self._tick_running = True
+        try:
+            self._paint_tick()
+        finally:
+            self._tick_running = False
+            # Reserve breathing room after painting. Scheduling beforehand
+            # makes a slow repaint perpetually overdue and can starve input
+            # and geometry events, especially with larger text.
+            if not self._closed:
+                self._tick_pending = self._schedule(250, self._tick)
+
+    def _paint_tick(self) -> None:
         self._drain_voice_results()
         if getattr(self, "_stream_preview", None) is not None:
             self._stream_preview.drain()
@@ -3698,7 +4110,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.clock_var.set_if_changed(time.strftime("%I:%M %p\n%b %d, %Y"))
         hour = time.localtime().tm_hour
         part = "morning" if hour < 12 else "afternoon" if hour < 18 else "evening"
-        self.greeting_var.set_if_changed(f"Good {part}, {IDENTITY.owner_short} 👋")
+        self.greeting_var.set_if_changed(f"Good {part} · HAYAT")
         self.header_clock.set_if_changed(time.strftime("%I:%M %p  ·  %b %d, %Y").lstrip("0"))
         self._paint_info()
         if time.monotonic() >= self._next_health_check and not self._health_check_running:
@@ -3902,13 +4314,16 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             intelligence["research"].set_if_changed(
                 f"{knowledge.get('knowledge', 0)} summaries / {knowledge.get('claims', 0)} claims")
             intelligence["evidence"].set_if_changed(
-                f"{knowledge.get('stale', 0)} stale / {knowledge.get('disputed_claims', 0)} disputed")
+                f"{knowledge.get('verified_current_claims', 'Unknown')} current / {knowledge.get('stale_claims', 0)} stale claims"
+                if knowledge else "Evidence measurement unavailable")
             intelligence["learning"].set_if_changed(
                 f"{'running' if learning.get('running') else 'idle'} / {queue_counts.get('pending', 0)} queued")
             intelligence["training"].set_if_changed(
                 f"{training.get('eligible', 0)} eligible / {training.get('private_local_records', 0)} private")
             intelligence["control"].set_if_changed(
-                f"{int(control.get('curriculum_candidates', 0) or 0)} gaps / verified delegation")
+                f"{int(control.get('curriculum_candidates', 0) or 0)} gaps / "
+                + (f"{len(control['observation_errors'])} unreadable checks" if control.get('observation_errors')
+                   else "measured priorities" if control else "measurement unavailable"))
             intelligence["authority"].set_if_changed(
                 f"{len(authority.get('auto_categories') or [])} local auto / "
                 f"{len(authority.get('always_protected') or [])} protected")
@@ -4173,7 +4588,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.pills["uptime"].set(human_duration(time.monotonic() - self._started_at), True)
 
         online = not self._closed and bool(self.runtime.model or self.runtime.registry.names())
-        self.online_var.set("System Online" if online else "Limited")
+        self.online_var.set("App ready" if online else "Needs attention")
         self.online_dot.configure(fg=self.OLIVE if online else self.GOLD)
 
     def run_command(self) -> None:
@@ -4403,12 +4818,10 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         if learner is None:
             self._append("error", "The bounded background learner is unavailable.")
             return
-        allowed, reason = learner.may_run()
-        if not allowed:
-            self._append("system", f"Learning did not start: {reason}.")
-            return
-
         def work() -> Any:
+            allowed, reason = learner.may_run()
+            if not allowed:
+                return {"action": "skipped", "detail": reason}
             topic = learner.next_topic()
             if not topic:
                 return {"action": "idle", "detail": "No verified knowledge gap is waiting."}
@@ -5028,19 +5441,10 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         self.draft_status.set("Press Send to try it, or change it first.")
 
     def refresh_wallet_badge(self) -> None:
-        """Show the money available to withdraw in the header, per currency."""
+        """Keep balances inside the deliberately opened financial workspace."""
         self._wallet_checked = time.monotonic()
-        ledger = getattr(self.runtime, "business", None)
-        if ledger is None or not hasattr(self, "wallet_var"):
-            return
-        try:
-            balances = ledger.wallet(activity=0)["balances"]
-        except Exception:
-            log_swallowed(_log, "reading the wallet for the header badge")
-            self.wallet_var.set("Wallet --")
-            return
-        shown = [b["available"] for b in balances if b["available_cents"]]
-        self.wallet_var.set("Wallet " + (" · ".join(shown[:2]) if shown else "0.00"))
+        if hasattr(self, "wallet_var"):
+            self.wallet_var.set("Open wallet")
 
     def _open_revenue(self) -> None:
         if getattr(self.runtime, 'revenue', None) is None:
@@ -5092,6 +5496,12 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         if deep_look:
             window.explore_place.set('here')
             window.explore_run('Deep look')
+
+    def _open_public_cameras(self):
+        self._open_intelligence()
+        window = getattr(self, '_intelligence_window', None)
+        if window is not None and window.winfo_exists() and 'cameras' in getattr(window, 'tabs', {}):
+            window.notebook.select(window.tabs['cameras'])
 
     def _open_atlas(self) -> None:
         """The browser atlas: places, cameras, live layers, the video wall and deep looks."""
@@ -5383,6 +5793,46 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
             return
         self._languages_studio = LanguagesStudio(self)
 
+    def _open_mind(self) -> None:
+        """Topics, development stages, scorecard, forecasts and memory, from HAYAT's own records (app/gui_mind.py)."""
+        from app.gui_mind import MindWindow
+        existing = getattr(self, "_mind_window", None)
+        if existing is not None and existing.winfo_exists():
+            existing.lift()
+            existing.refresh()
+            return
+        self._mind_window = MindWindow(self)
+
+    def _open_research_lab(self) -> None:
+        """Robustness, cyber defence, software analysis and model discovery (app/gui_research_lab.py)."""
+        from app.gui_research_lab import ResearchLab
+        existing = getattr(self, "_research_lab", None)
+        if existing is not None and existing.winfo_exists():
+            existing.lift()
+            existing.refresh()
+            return
+        self._research_lab = ResearchLab(self)
+
+    def _open_scientific_workbench(self) -> None:
+        """Inspect local measurements without starting inference or a web search."""
+        from app.gui_scientific_workbench import ScientificWorkbench
+        existing = getattr(self, '_scientific_workbench', None)
+        if existing is not None and existing.winfo_exists():
+            existing.deiconify()
+            existing.lift()
+            return
+        self._scientific_workbench = ScientificWorkbench(self)
+
+    def _open_connected_ai(self) -> None:
+        """Explicit cloud research with account models, scoped keys and tool evidence."""
+        from app.gui_connected_ai import ConnectedAIStudio
+        existing = getattr(self, '_connected_ai_studio', None)
+        if existing is not None and existing.winfo_exists():
+            existing.deiconify()
+            existing.lift()
+            return
+        self._connected_ai_studio = ConnectedAIStudio(self)
+
     def _open_learning_atlas(self) -> None:
         from app.gui_learning_atlas import LearningAtlas
         existing = getattr(self, '_learning_atlas', None)
@@ -5523,6 +5973,8 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         the UI thread, keeping the gist of what was said for next time without
         holding up the clear.
         """
+        self._unread_messages = 0
+        self.latest_button.configure(text='Latest ↓')
         if hasattr(self, 'chat_details'):
             self.chat_details.reset()
         for card in self._evidence_cards:
@@ -5775,7 +6227,7 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         names = ", ".join(Path(item).name for item in paths[:3])
         more = f" and {len(paths) - 3} more" if len(paths) > 3 else ""
         self.show_view('chat')
-        self._append('user', f'{IDENTITY.owner_short}\nAttached {names}{more}')
+        self._append('user', f'You\nAttached {names}{more}')
         from app.gui_attachments import AttachmentBatchCard
         card = AttachmentBatchCard(self.chat, self, paths)
         self._evidence_cards.append(card)
@@ -6369,6 +6821,12 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         if self._closed:
             return
         self._remember_window()
+        workbench = getattr(self, '_scientific_workbench', None)
+        if workbench is not None and workbench.winfo_exists():
+            workbench.destroy()
+        connected = getattr(self, '_connected_ai_studio', None)
+        if connected is not None and connected.winfo_exists():
+            connected.close()
         # Watch mode never outlives the window: it is not remembered, and the
         # camera it opened is released.
         mode = getattr(self.runtime, "watch", None)
@@ -6401,6 +6859,9 @@ class HayatGUI(Palette, BrainOperatorMixin, RemoteAccessMixin, ExecutionControls
         if studio is not None and studio.winfo_exists():
             studio.close()
         self._preview_workers.shutdown(wait=False, cancel_futures=True)
+        edits = getattr(self, "_edit_workers", None)
+        if edits is not None:
+            edits.shutdown(wait=False, cancel_futures=False)  # a save in progress finishes; nothing new starts
         self._transcript.close()
         # Before anything is destroyed. A callback that fires against a
         # half-torn-down interpreter is the thing being prevented here.

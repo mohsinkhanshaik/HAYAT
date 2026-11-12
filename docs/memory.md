@@ -76,3 +76,22 @@ Measured on a store where the correct answer was inserted first and then buried:
 Before the change, the answer was not retrieved at all at 600 and the top result was an unrelated log entry.
 
 This keeps SQLite authoritative, adds no dependency, sends nothing off the machine, and leaves the vector format and reindex path unchanged. A dedicated vector index remains a reasonable future option; it is not required to remove the correctness defect.
+
+## Recall integrity across links and indexes (2026-11-11)
+
+Three defects in recall were found by reading the graph and index paths, and fixed with tests in
+[tests/test_intelligence_recall.py](../tests/test_intelligence_recall.py):
+
+- **A contradiction warning was lost after one hop.** The recursive association walk only flagged a path whose
+  *last* link was `contradicts`; two hops later the warning was gone. The walk now carries the flag along the whole
+  path ([app/memory/database.py](../app/memory/database.py), `associations_many`).
+- **A memory that failed its integrity check, or another session's transient memory, could come back through a
+  link** or act as a bridge to reach others. Graph recall now drops such memories along the path, not only at the
+  seeds.
+- **The cross-object index compared vectors from different embedding models.** A stored vector is used only when its
+  provider, model, version, dimension and content hash all match the query's embedding and every value is finite;
+  otherwise the hashed lexical score is used and `neural_available` is false in the retrieval details. A lexical-only
+  search no longer wakes the embedding service, and an object updated into something no longer eligible for recall
+  has its old indexed version removed ([app/memory/retrieval.py](../app/memory/retrieval.py)).
+
+Traversal work stays bounded on a dense graph (12 seeds, depth 4, 200 nodes at most).

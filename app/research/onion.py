@@ -336,7 +336,9 @@ def research_tor_web(parent, query: str, level: str = 'deep', *, check=None):
                             max_seconds=150, max_bytes=8 * 1024 * 1024, min_sources=2, max_workers=2)
     try:
         with TemporaryDirectory(prefix='hayat-tor-web-') as scratch:
-            child = ResearchManager({**parent.settings, 'database': str(Path(scratch) / 'evidence.db')}, parent.model, search)
+            # No second look: this budget keeps the load on Tor small on purpose (app/research/deepening.py).
+            child = ResearchManager({**parent.settings, 'database': str(Path(scratch) / 'evidence.db'),
+                                     'second_look': False}, parent.model, search)
             child.fetcher.close()
             child.fetcher = fetcher
             try:

@@ -90,6 +90,10 @@ def stop_owned_process(
     if process is None and pid is None:
         return False, "no owned process is recorded"
     target = pid if pid is not None else process.pid  # type: ignore[union-attr]
+    # The descendants are recorded while the parent is still alive: once it exits, Windows can no longer walk the
+    # tree from it ("taskkill /T" on a dead parent finds nothing). 2026-11-07, live: each close stopped ollama.exe
+    # but left its llama-server runner holding 7 GB of the 8 GB GPU, until the next brain load had no room.
+    descendants = _descendants(target)
 
     detail = "stopped"
     if process is not None:
@@ -114,7 +118,43 @@ def stop_owned_process(
         detail = f"{detail}; also stopped {len(survivors)} child process(es)"
     else:
         _tree_kill(target)
+    orphans = _stop_recorded(descendants)
+    if orphans:
+        detail = f"{detail}; also stopped {orphans} process(es) it had spawned"
     return True, detail
+
+
+def _descendants(pid: int) -> list[Any]:
+    """psutil handles for every process below `pid` now (empty without psutil or when the parent is gone)."""
+    try:
+        import psutil
+        return psutil.Process(pid).children(recursive=True)
+    except Exception:  # no psutil, or the parent already exited: the sweep above is all there is
+        return []
+
+
+def _stop_recorded(processes: list[Any], timeout: float = 5.0) -> int:
+    """Stop the recorded descendants still running. psutil's handles notice a reused PID, so a stranger that
+    took one of these numbers in the meantime is never touched."""
+    if not processes:
+        return 0
+    try:
+        import psutil
+    except ImportError:
+        return 0
+    alive = [process for process in processes if process.is_running()]
+    for process in alive:
+        try:
+            process.terminate()
+        except psutil.Error:
+            continue
+    _gone, still = psutil.wait_procs(alive, timeout=timeout)
+    for process in still:
+        try:
+            process.kill()
+        except psutil.Error:
+            continue
+    return len(alive)
 
 
 def is_running(pid: int | None) -> bool:

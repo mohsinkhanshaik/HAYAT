@@ -1,0 +1,427 @@
+{
+  "version": "bounce-v1",
+  "model": "hayat:latest",
+  "checked_at": "2026-10-31T22:52:22.583362+00:00",
+  "seconds": 1326.5,
+  "cases": [
+    {
+      "id": "budget-kept",
+      "family": "constraint_tracking",
+      "turns": [
+        "Plan a 3-day trip to Chicago for a budget of $600. Keep it short.",
+        "Actually make it 2 days instead.",
+        "Keep the original budget. Show the final plan."
+      ],
+      "replies": [
+        "Here is a tight $600 plan for one person (flight paid). Day 1: Millennium Park and Riverwalk ($0), Portillo’s lunch ($20), Architecture Center exterior walk ($0), Deep-dish dinner (~$35), HI Chicago Hostel sleep (~$140). Day 2: Field Museum ticket (~$36), Halal street food lunch/dinner (~$35 total), Lakefront Trail walk (free), CTA day pass ($5). Day 3: Navy Pier exterior, Wicker Park stroll (free), sandwich shop meals (~$35 total), final transit. Total is ~$490–$510 depending on exact meal choices and hotel fluctuation.",
+        "Here’s a tight $600 plan for two days in Chicago (flight paid).\n\nDay 1: The Icons & Deep Dish\n- Morning: Millennium Park (\"The Bean\") and Art Institute exterior walk. Free. 🏛️\n- Lunch: Portillo’s Hot Dogs (~$25). Classic, filling, cheap. 🌭\n- Afternoon: Chicago Riverwalk stroll to the Architecture Center (exterior) or just people-watch along the river. Free. 🚶‍♂️\n- Dinner: Deep Dish Pizza at Lou Malnati’s or Giordano’s (~$35). Go early; it takes time and you’ll want dessert too. 🍕\n- Sleep: HI Chicago Hostel (dorm bed) ~ $70–80/night. 💤\n\nDay 2: Museums & Lakefront\n- Morning: Field Museum or Shedd Aquarium ticket (~$36). Pick one; they’re both world-class and expensive otherwise. 🦕\n- Lunch: Halal cart on the South Side (if you head that way) or a quick diner sandwich near Grant Park (~$15–20). 🌯\n- Afternoon: Walk the Lakefront Trail along Michigan Avenue beach. Free and beautiful, even in October if it’s crisp. 🏖️\n- Dinner: Jibarito (Puerto Rican burger on fried plantains) at a local spot like La Placita (~$15–20). Unique Chicago experience. 🥪\n- Transit: CTA Day Pass ($20 for 3-day, but you only need one day here). 💳\n\nBudget Breakdown (Estimates):\n- Hostel: $80\n- Food/Drink: ~$105 (Portillo’s + Pizza + Halal/Jibarito + snacks/coffee)\n- Museum Ticket: $36\n- Transit: $20\n- Total Ground Cost: ~$241\n\nRemaining Budget: ~$359. You have plenty of room for a nicer dinner, drinks in the West Loop, or upgrading your hotel to a budget motel like Motel 6 if you prefer privacy over dorms.",
+        "Here is your tight $600, two-day Chicago plan (solo traveler, flight paid).\n\nDay 2: Museums & Lakefront\n- Breakfast: Diner coffee/pastry (~$15). ☕\n- Morning: Field Museum ticket (~$36). Pick one; it’s world-class and expensive otherwise. 🦕\n- Lunch: Jibarito (Puerto Rican burger on fried plantains) at La Placita (~$20). Unique Chicago experience. 🥪\n- Afternoon: Walk the Lakefront Trail along Michigan Avenue beach or Navy Pier exterior. Free and beautiful, even in October if it’s crisp. 🏖️\n- Dinner: Casual dinner near Grant Park (~$35). 🍽️\n- Transit: CTA 1-Day Pass ($5) for getting to the museum and back. 💳\n\nBudget Breakdown (Estimates):\n- Hotel: $180\n- Food/Drink: ~$140 (Portillo’s + Pizza + Diner Breakfast + Jibarito + Casual Dinner + Snacks/Coffee)\n- Museum Ticket: $36\n- Transit: $5\n- Total Ground Cost: ~$361\n\nRemaining Budget: ~$239. You have plenty of room for a nice drink in the West Loop, an Architecture River Cruise (~$75 if you swap it for one museum), or extra souvenirs/coffee."
+      ],
+      "checks": [
+        {
+          "turn": 2,
+          "constraint": "keeps the $600 budget",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 2,
+          "constraint": "uses 2 days, not 3",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 327.4
+    },
+    {
+      "id": "long-reference",
+      "family": "long_distance_reference",
+      "turns": [
+        "For a project: my budget is $1,200 and my deadline is March 3. Just acknowledge.",
+        "What is 15% of 80?",
+        "Name one primary colour.",
+        "What was my deadline?"
+      ],
+      "replies": [],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "answers 12",
+          "passed": false,
+          "missing": [
+            "\\b12\\b"
+          ],
+          "violated": []
+        },
+        {
+          "turn": 3,
+          "constraint": "recalls March 3",
+          "passed": false,
+          "missing": [
+            "(?i)march\\s*3|3(?:rd)?\\s*march"
+          ],
+          "violated": []
+        }
+      ],
+      "passed": false,
+      "error": "ModelError: All bounded model fallbacks failed: hayat:latest: ModelError: Ollama answered 500 for a generation request.",
+      "seconds": 77.3
+    },
+    {
+      "id": "name-correction",
+      "family": "user_correction",
+      "turns": [
+        "My sister's name is Aisha.",
+        "Sorry, I meant her name is Amina, not Aisha.",
+        "What is my sister's name? One word."
+      ],
+      "replies": [
+        "Got it, Mohsin. I've noted that your sister's name is Aisha 📝. Is there anything specific you'd like to do with this information? For example, create a contact entry or add her to a list of family members?",
+        "My mistake, Mohsin. Amina it is 📝.",
+        "Amina"
+      ],
+      "checks": [
+        {
+          "turn": 2,
+          "constraint": "uses the corrected name",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 103.2
+    },
+    {
+      "id": "original-number",
+      "family": "referent_tracking",
+      "turns": [
+        "Remember the number 47 for this conversation.",
+        "Add 5 to it.",
+        "Now double the original number, not the new one. Just the result."
+      ],
+      "replies": [
+        "Understood. I’ll remember that.",
+        "System: Windows-11-10.0.26300-SP0, Python 3.14.2, 3.2 TB free of 3.6 TB on disk.",
+        "94 94\n\nI could not properly cover: Now double the original number, not the new one. Just the result."
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "47 + 5 = 52",
+          "passed": false,
+          "missing": [
+            "\\b52\\b"
+          ],
+          "violated": []
+        },
+        {
+          "turn": 2,
+          "constraint": "doubles 47, not 52",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": false,
+      "error": "",
+      "seconds": 55.2
+    },
+    {
+      "id": "unit-followup",
+      "family": "units",
+      "turns": [
+        "A rectangle is 3 m by 4 m. What is its area?",
+        "Give that in square feet."
+      ],
+      "replies": [
+        "The area is $3 \\text{ m} \\times 4 \\text{ m} = 12 \\text{ square meters}$ (or $12 \\text{ m}^2$). 📐",
+        "12 square meters converts to approximately 129.17 square feet. 📏\n\nHere’s the quick working:\n$3 \\text{ m} = 9.8425 \\text{ ft}$\n$4 \\text{ m} = 13.1233 \\text{ ft}$\nArea $= 9.8425 \\times 13.1233 \\approx 129.17 \\text{ sq ft}$\n\n(Or simply: $12 \\text{ m}^2 \\times 10.7639 = 129.17 \\text{ sq ft}$) The reason the number jumps from 12 to nearly 130 is that a square meter covers more ground than a square foot because each side of a meter is longer than a single foot. Specifically, one meter equals about 3.28 feet. When you calculate area, you multiply length by width, so you are effectively multiplying those conversion factors together ($3.28 \\times 3.28$), which gives us the multiplier of roughly $10.76$. This means every single square meter in your rectangle holds enough space for nearly eleven standard square feet.\n\nTo see this clearly, imagine laying down foot-long tiles on that three-by-four-meter floor. Along the short side (the 3 meters), you would fit about nine and a half of those tiles ($3 \\times 3.28$). Along the long side (the 4 meters), you would fit roughly thirteen and a third tiles ($4 \\times 3.28$). If you multiply that row count by the column count, you get approximately $9.5 \\times 13.3$, which lands right around $126-127$. The slight difference from our precise calculation comes from rounding those intermediate steps; if we keep all the decimal places for each side before multiplying them together, we arrive at that exact figure of roughly $129.17$ square feet. It is a simple matter of scaling up two dimensions rather than just one!"
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "12 square metres",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 1,
+          "constraint": "about 129 square feet",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 103.5
+    },
+    {
+      "id": "change-one-item",
+      "family": "partial_edit",
+      "turns": [
+        "Write a numbered packing list of exactly 3 items for a rainy day. Items only.",
+        "Change only the second item to something else and keep the other two exactly the same. Show the list."
+      ],
+      "replies": [
+        "Wrote file: D:\\AI\\rainy_day_packing_list.txt (43 bytes)",
+        "1. Rain boots\n2. Umbrella\n3. Waterproof jacket"
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "items 1 and 3 unchanged, item 2 changed",
+          "passed": false,
+          "missing": [
+            "changed_item: before=[] after=['rain boots', 'umbrella', 'waterproof jacket']"
+          ],
+          "violated": []
+        }
+      ],
+      "passed": false,
+      "error": "",
+      "seconds": 74.1
+    },
+    {
+      "id": "reverse-list",
+      "family": "reversal",
+      "turns": [
+        "List exactly three fruits as a numbered list, nothing else.",
+        "Reverse the order of that list. Numbered, nothing else."
+      ],
+      "replies": [
+        "1. Apple\n2. Banana\n3. Orange",
+        "1. Orange\n2. Banana\n3. Apple"
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "same three items in reverse order",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 55.8
+    },
+    {
+      "id": "pronoun-which",
+      "family": "pronoun_resolution",
+      "turns": [
+        "Paris and Rome are both capital cities. Which of them is in Italy? One word."
+      ],
+      "replies": [
+        "Rome Rome\n\nI could not properly cover: Paris, Rome are both capital cities. Which of them is in Italy? One word."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "Rome",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 19.6
+    },
+    {
+      "id": "contradiction",
+      "family": "contradictory_constraints",
+      "turns": [
+        "I need a laptop that costs under $500 but it must cost at least $800. Which one should I buy?"
+      ],
+      "replies": [
+        "Given that no single laptop can simultaneously cost under $500 and at least $800, the choice depends on which constraint is more flexible. However, if forced to choose between the two distinct categories implied:\n\nRecommendation: Buy a mid-range machine ($800+).\n\nWhile the \"under $500\" option saves money upfront, laptops in that price range often have shorter lifespans and lower performance ceilings (limited RAM, slower storage). The \"$800+\" tier typically offers significantly better build quality, faster processors, and more future-proofing. Unless budget is strictly capped at $499, the higher initial investment usually provides a much better user experience over time.\n\nIf your budget is rigidly under $500, then you must choose that option for basic tasks like web browsing and document editing."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "names the contradiction",
+          "passed": false,
+          "missing": [
+            "(?i)contradict|conflict|can'?t (?:both|be both)|cannot (?:both|be both)|not possible|impossible|both under \\$?500 and|mutually exclusive|no laptop can|doesn'?t make sense|clarify"
+          ],
+          "violated": []
+        }
+      ],
+      "passed": false,
+      "error": "",
+      "seconds": 47.3
+    },
+    {
+      "id": "impossible-prime",
+      "family": "impossible_constraint",
+      "turns": [
+        "Give me a prime number strictly between 24 and 28."
+      ],
+      "replies": [
+        "There are no prime numbers strictly between 24 and 28. 🚫\n\nThe integers in that gap are:\n- 25: $5 \\times 5$ (composite)\n- 26: $2 \\times 13$ (even, composite)\n- 27: $9 \\times 3$ (multiple of 3, composite)\n\nThe closest primes are 23 and 29.\n\nTo see why there’s nothing in that gap, we just need to look at the three integers sitting between 24 and 28: 25, 26, and 27. A prime number is defined as a whole number greater than 1 that has no divisors other than 1 and itself. If any of these numbers can be broken down into smaller factors, they aren’t prime.\n\nLet’s walk through 25 first because it’s the most obvious trap in this range. It looks like an odd number, which often makes people suspect it might be prime (since all primes greater than 2 are odd). But if you try to divide 25 by small integers, you quickly find that $5 \\times 5 = 25$. Since it has a divisor other than 1 and itself—specifically the number 5—it is composite.\n\nThen we have 26. This one is easy because it’s even. Any even number greater than 2 is divisible by 2, so 26 splits into $2 \\times 13$. That immediately knocks it out of prime territory. Finally, there’s 27, which feels like a \"prime candidate\" to some because it doesn’t end in an even digit or five. However, if you add its digits ($2 + 7 = 9$), and that sum is divisible by 3, the whole number is too. Indeed, $3 \\times 9 = 27$.\n\nSo we have a square of primes (5²), a multiple of two (even), and a multiple of three. There’s simply no room left for a prime in this specific slice of integers. The \"prime gap\" here spans from the prime at 23 all the way to the next one at 29, leaving those middle numbers fully composite."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "says there is none",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 55.9
+    },
+    {
+      "id": "typo-percent",
+      "family": "typos",
+      "turns": [
+        "wat is 25 percnt of 240"
+      ],
+      "replies": [
+        "25% of 240 = 60 (240 × 25 / 100).\nCalculated locally from your numbers."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "60",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 0.0
+    },
+    {
+      "id": "hinglish-sum",
+      "family": "code_switching",
+      "turns": [
+        "Mujhe batao 12 aur 15 ka sum kya hai?"
+      ],
+      "replies": [
+        "12 + 15 = 27 🧮"
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "27",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 31.2
+    },
+    {
+      "id": "urdu-mixed-days",
+      "family": "code_switching",
+      "turns": [
+        "Ek hafte mein kitne din hote hain? Number batao."
+      ],
+      "replies": [
+        "7 📅 It is seven because the week is a fixed cycle of days that repeats continuously: Monday through Sunday (or whichever day your local calendar starts with). The number does not change based on months, years, or holidays; it is just the count of distinct days in one full rotation. For example, if you start counting from Tuesday and go until the next Monday arrives, you pass exactly seven unique days before that same starting point repeats again. This structure helps us organize time into manageable chunks for work, rest, and planning without needing to track every single day individually.\n\nThe number 7 sticks because the week is a social agreement rather than an astronomical fact like the moon’s phases or the sun’s rise and set 🌞. It doesn’t matter where you are in the world; whether it’s New York, Mumbai, or London, we all agree that seven days make up one cycle so our calendars stay synchronized for work, school, and rest. This structure is ancient but practical because it breaks time into chunks small enough to plan around yet large enough to feel like a complete period of activity before the routine resets.\n\nThink about your own schedule this month: if you start on Tuesday the 3rd and count forward until you hit next Monday the 9th, you pass through Wednesday, Thursday, Friday, Saturday, Sunday, Monday, and then back to Tuesday. That is exactly seven distinct days. If you were to stop at just six days, your work week would feel incomplete because it wouldn’t include a full weekend break; if you went to eight, the cycle would never align with the same day of the month in a predictable way for long periods. The number 7 creates that perfect balance between structure and flexibility 📅."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "7",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 63.7
+    }
+  ],
+  "metamorphic": [
+    {
+      "id": "percent",
+      "variants": [
+        "What is 17% of 340?",
+        "340 multiplied by 0.17 equals what?",
+        "Compute seventeen percent of three hundred forty.",
+        "whats 17 percnt of 340"
+      ],
+      "answers": [
+        "17% of 340 = 57.8 (340 × 17 / 100).\nCalculated locally from your numbers.",
+        "57.8",
+        "57.8 🧮",
+        "17% of 340 = 57.8 (340 × 17 / 100).\nCalculated locally from your numbers."
+      ],
+      "correct": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "id": "speed",
+      "variants": [
+        "A car travels 240 km in 3 hours. What is its average speed in km/h?",
+        "In 3 hours a car covers 240 kilometres. Average speed in km per hour?",
+        "Average speed in km/h if you drive 240 km over 3 hours, with a coffee stop that doesn't change the totals?"
+      ],
+      "answers": [
+        "The average speed is 80 km/h.\n\nHere’s how we get that:\nSpeed = Distance ÷ Time\nSo, $80 \\text{ km/h} = 240 \\text{ km} / 3 \\text{ hours}$ 🚗💨",
+        "80 km/h 🚗💨",
+        "80 km/h 🚗☕️"
+      ],
+      "correct": [
+        true,
+        true,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "id": "capital",
+      "variants": [
+        "What is the capital of Australia?",
+        "Australia's capital city is which city?",
+        "capital of australia??",
+        "Australia ki capital kya hai?"
+      ],
+      "answers": [
+        "The capital of Australia is Canberra 🇦🇺.",
+        "Canberra 🇦🇺 It’s Canberra because the founders of Australia couldn’t decide between Sydney and Melbourne 🏙️🤝. When they were drafting the constitution in 1898, these two rival cities each insisted on being the capital. To break the deadlock, they agreed that the new federal territory would be built from scratch somewhere in New South Wales (but at least 100 miles away from Sydney), and Melbourne would serve as the temporary seat of government until it was ready.\n\nThis is why Canberra looks so different from other Australian cities—it’s a planned city designed by American architects Walter Burley Griffin and Marion Mahony Griffin, who won an international competition for its design in 1912. The layout features geometric patterns and natural landscapes rather than the organic growth seen in older towns like Sydney or Melbourne 🌳📐. It wasn’t until 1927 that Parliament actually moved there from Melbourne’s temporary chambers at the Royal Exhibition Building, making it a relatively young capital compared to many others around the world.\n\nThe reason Canberra exists at all is that the Australian Constitution didn’t actually name a capital; it just demanded one be built within New South Wales, provided it was far enough away from Sydney to avoid being swallowed by it 🏙️🚫. This created a massive political headache because Melbourne and Sydney were locked in an intense rivalry for national prestige. To keep the peace during Federation negotiations, they agreed that while Canberra would technically sit in NSW, Parliament would meet in Melbourne until the new city was ready. That compromise meant Melbourne served as the temporary capital from 1901 to 1927, which is why you’ll still find old government buildings there today 🏛️⚖️.\n\nThe real magic happens when you look at how that political deadlock shaped the physical layout of Canberra itself. The founders didn’t want a city that grew organically like Sydney or Melbourne; they wanted something entirely new to represent their young nation’s ideals. They held an international design competition in 1912, which was won by two American architects: Walter Burley Griffin and his wife Marion Mahony Griffin 🇺🇸💍. Their plan used the natural landscape as its primary structure rather than imposing a rigid grid over it.\n\nTo see how this works in practice, look at the \"Parliamentary Triangle\" that connects Old Parliament House to the new one on Capital Hill 🔼. The Griffins designed these three sides of the triangle not just as streets, but as visual axes that frame specific landmarks. If you stand near the National Library and walk toward the War Memorial, your line of sight is perfectly aligned with the peak of Mount Ainslie in the distance 🏔️👁️. This wasn’t accidental; it was a deliberate attempt to blend military symbolism (the memorial) with civic power (Parliament) using the hills as natural backdrops. The city’s layout literally forces you to see the government buildings and the mountains they sit between, creating a sense of openness that feels very different from the dense urban canyons of Sydney or Melbourne 🌿🏢.",
+        "Canberra 🇦🇺 Canberra wasn’t always the capital; Sydney and Melbourne were fighting over that title for years 🥊. To break the deadlock, they agreed on a compromise: build a brand-new city in between them. That’s why Canberra looks so different from other Australian cities—it was designed by an American architect named Walter Burley Griffin with strict geometric rules rather than growing organically like Sydney did. It sits high up on a plateau about 600 meters above sea level, which gives it those crisp winters and cold nights that locals joke about but tourists often forget to pack for ❄️.\n\nThe reason this matters today is because Canberra was built specifically to house the government, not commerce or industry. You will notice there are no skyscrapers blocking the view of Parliament House; in fact, the building itself is half-buried into a hill so it looks like a flagpole waving from above rather than an imposing tower looking down on you 🏛️. This design choice reinforces its role as the administrative heart of the country, separate from the financial hub which remains firmly in Sydney.\n\nThe way Canberra functions is tied directly to its layout, which splits the city into two distinct zones: the Parliamentary Triangle and the central business district 🏛️. The Parliament House sits on Capital Hill at the end of a long ceremonial avenue that starts near the old High Court building. This isn’t just for show; it creates a visual line where you can stand in front of the old court and look straight up to see the new parliament, symbolizing how one branch checks another while both serve the people 🧭.\n\nThe city also uses an unusual grid system based on letters rather than numbers for its suburbs. You will find areas named after historical figures or local landmarks instead of sequential digits like \"Suburb 1\" or \"Suburb 2\". For example, if you are looking for a place in the suburb called \"Braddon,\" it is actually located just north of that main ceremonial avenue and was originally designed as an industrial area before becoming what we now know as a trendy hub for cafes and small businesses ☕.\n\nA concrete way to see how this works in practice is by visiting Lake Burley Griffin, which runs right through the middle of the city 🌊. The lake acts like a central park that separates the government buildings from the rest of the urban sprawl. On any given weekend, you will find people kayaking on one side while others are walking their dogs along the foreshore paths on the other. This design ensures that no matter where you live in Canberra, you are never more than ten minutes away from a large green space or water feature 🌳.",
+        "Canberra 🇦🇺 Canberra is the capital of Australia 🇦🇺. It’s located in New South Wales, but it sits inside its own special territory called ACT (Australian Capital Territory). The city was built because Sydney and Melbourne couldn’t agree on who should be the capital! So they compromised by creating a brand-new city from scratch.\n\nIt’s not just an administrative center; Canberra is also home to many important national institutions like Parliament House, the National Gallery of Australia, and the Australian War Memorial. It’s designed with wide avenues and large open spaces, which makes it quite different from older cities that grew organically over time. If you visit, you’ll notice how green and planned everything feels compared to places like Sydney or Melbourne.\n\nCanberra isn’t just a city that grew; it’s an idea made real through law and geometry. The reason it exists comes down to the fierce rivalry between Sydney and Melbourne in the late 1800s. When they joined forces to form Australia, neither would accept the other as the capital. So Section 125 of the Australian Constitution stepped in with a compromise: the seat of government had to be in New South Wales, but at least 100 miles from Sydney, and it couldn’t be Sydney itself. To keep Melbourne happy too, they added that the federal parliament must meet there for at least six months every year until a permanent home was built elsewhere—though Parliament never actually left Canberra once it opened in 1927.\n\nThe city you see today is largely the result of the Burley Griffin Plan from 1913. Walter Burley Griffin, an American architect, won the competition to design it by treating the landscape like a canvas rather than just laying out streets on top of hills. He used geometric shapes—circles and octagons—to organize the city’s layout, connecting key landmarks with long sightlines that cut through nature. For example, look at Capital Hill (Parliament House). It sits right on top of Mount King George, which was originally a separate hill but is now part of the artificial \"Capital Hill\" mound because Griffin raised it to be higher than the natural peak nearby called Red Hill. This wasn’t just for aesthetics; by building Parliament on the land rather than next to it, he made government feel integrated with the environment instead of dominating it.\n\nThis design philosophy explains why Canberra feels so different from Sydney or Melbourne today. Those cities grew organically around harbors and trade routes, resulting in dense, irregular grids that reflect their commercial history. Canberra was planned for governance first. Its wide boulevards are meant to handle ceremonial processions and military parades (like the Anzac Parade leading up to Parliament), while its vast parklands separate neighborhoods rather than concrete walls or highways. This is why you’ll find more green space per capita in Canberra than almost any other major city—it was designed as a \"garden city\" where nature acts as the primary divider between communities, creating that distinct sense of calm and order Mohsin often appreciates in structured systems."
+      ],
+      "correct": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "passed": true
+    }
+  ],
+  "summary": {
+    "conversations": 13,
+    "conversations_passed": 9,
+    "constraints": 17,
+    "constraints_held": 12,
+    "metamorphic_groups": 3,
+    "metamorphic_consistent": 3,
+    "metamorphic_variants": 11,
+    "metamorphic_variants_correct": 11
+  },
+  "scope": "Code-graded multi-turn and paraphrase probes. Inspect the replies: regex checks can miss a correct answer phrased unusually, and passing these does not prove general reliability."
+}

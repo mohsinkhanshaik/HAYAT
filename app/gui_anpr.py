@@ -10,6 +10,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
 
@@ -31,8 +32,8 @@ class AnprDashboard(tk.Toplevel):
         self._worker = None
         self._updates: queue.Queue = queue.Queue()
         self._photo = self._crop_photo = None
-        self.status = StringVar(self, 'Loading the recogniser…')
-        self.progress = StringVar(self, 'Open an image or video, or start a webcam or registered camera.')
+        self.status = DisplayVar(self, 'Loading the recogniser…')
+        self.progress = DisplayVar(self, 'Open an image or video, or start a webcam or registered camera.')
         self.title('HAYAT · Plate recognition (ANPR)')
         self.configure(bg=p.BLACK)
         self.minsize(1100, 700)

@@ -53,6 +53,10 @@ _TRANSIENT_MARKERS = re.compile(
 def classify(memory_type: str, content: str = "", metadata: dict | None = None) -> StateClass:
     """Decide a memory's state class from its type and substance."""
     normalized = (memory_type or "").strip().lower()
+    if isinstance(metadata, dict) and metadata.get("imported_id"):
+        # A conversation imported from another assistant (app/chat_import.py) is history, even when it talks
+        # about screenshots or VRAM: it is not a snapshot of this machine.
+        return StateClass.HISTORICAL
     blob = f"{content} {metadata or ''}"
     if normalized in {"camera_observation", "screen_observation", "window_state", "system_state"}:
         return StateClass.TRANSIENT

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 import time
@@ -278,6 +279,7 @@ class ConversationService:
         self.executive = None
         self.dual_brain = None
         self.last_dual_review = None
+        self.last_recalled: list[dict] = []
         #: Self-questioning before a hard answer (app.inquiry); set by the runtime.
         self.inquiry = None
         #: Set by the runtime: saved leads and clients as text, the record a reply's contact details must match.
@@ -310,6 +312,12 @@ class ConversationService:
         self.persona_supplier: Callable[[], str] = lambda: ""
         #: Set for one turn by the assistant when Mohsin's message is in another language.
         self.incoming_language: str | None = None
+        #: Set for one turn by the assistant: the message's conversation topic (app/topics.py TopicDecision).
+        self.topic_decision: Any = None
+        #: app/dialogue_state.py DialogueState.brief: goals, facts in their two classes, refused replies.
+        self.dialogue_supplier: Callable[..., str] | None = None
+        #: Set by the runtime: (session_id, history, decision) -> (history in this topic, titles set aside).
+        self.topic_scope: Callable[..., tuple[list[dict[str, Any]], list[str]]] | None = None
         # Exact, context-independent questions can recur while debugging or
         # learning. Re-running a local LLM for the same completed answer adds
         # seconds and can produce a less consistent result. This cache is
@@ -341,9 +349,13 @@ class ConversationService:
         self.last_assessment = None
         self.last_dual_review = None
         self.last_inquiry = None
+        self.last_recalled = []
         if model is not None and self.answer_model_name and getattr(model, "model", None) != self.answer_model_name:
             raise ValueError("Only HAYAT's identity model may write the answer; use the council for advice")
-        self.memory.record_message(self.session_id, "user", text)
+        topic = self._topic_for(text)
+        # A follow-up read through its topic is recorded as the owner typed it; the reading goes in a note.
+        self.memory.record_message(self.session_id, "user",
+                                   topic.original if topic is not None and topic.anchored == text else text)
         active_mode_list = list(modes or [])
         language = self._reply_language()
         if language == 'en' and _PROPOSAL_FOLLOWUP.fullmatch(text.strip()):
@@ -464,10 +476,22 @@ class ConversationService:
         else:
             history = self.memory.conversation_history(self.session_id, 6 if fast else 20)
             limit = 2 if fast else 8 if deep else 5
+        # Only this topic's exchanges (and, on a return, the topic's earlier ones restored): an unrelated thread
+        # earlier in the same chat is set aside instead of being written next to (app/topics.py).
+        if topic is not None and self.topic_scope is not None:
+            try:
+                history, topic.set_aside = self.topic_scope(self.session_id, history, topic)
+            except Exception:
+                log_swallowed(_log, "keeping the reply's history to its topic")
         # Passing the session engages the current-state policy: another
         # session's camera/screen/window snapshots are dropped before ranking
         # rather than being handed over with a warning label attached.
         lookup = recall_query(text, history)
+        # A complaint about the last answer is not a subject to remember things about: searched as typed, "this is
+        # same reply u store ... look deeper" recalled August task records (2026-11-11). Search what it is about.
+        feedback = getattr(topic, "feedback", None) or {}
+        if feedback.get("kinds"):
+            lookup = str(feedback.get("restated") or getattr(topic, "topic_subject", "") or lookup)
         # A short "what do you mean by that?" needs the current exchange,
         # already in history. Pulling older indexed memories for the pronoun
         # can replace its referent with an unrelated subject from last week.
@@ -572,6 +596,26 @@ class ConversationService:
                 "likely_next as a pattern with its evidence, never as something he said. Do not recite this block "
                 "unless he asks what is going on:\n" + __import__("json").dumps(situation, ensure_ascii=False, default=str)
             ), optional_context=True))
+        topic_note = topic.note() if topic is not None else ""
+        if topic_note:
+            messages.append(Message("system", "Where this message sits in the conversation (HAYAT's topic record): "
+                                    + topic_note))
+        # Goals he stated, what is permanent about him and what is only today's circumstance, and the answers he
+        # refused (app/dialogue_state.py). Without it a goal said once was lost at the next topic, and "I have $0"
+        # was treated as a limit he could not change.
+        dialogue_note = ""
+        if self.dialogue_supplier is not None and not child_safe:
+            try:
+                dialogue_note = str(self.dialogue_supplier(self.session_id, text,
+                                                          topic_id=getattr(topic, "topic_id", "") or "") or "")
+            except Exception:
+                log_swallowed(_log, "reading the dialogue record for a reply")
+        if dialogue_note:
+            messages.append(Message("system", "What this conversation has established (HAYAT's dialogue record; "
+                                    "the owner's own words, with dates):\n" + dialogue_note))
+        owner_verdicts = self._owner_feedback_note(text) if not child_safe else ""
+        if owner_verdicts:
+            messages.append(Message("system", owner_verdicts))
         if earlier_facts:
             messages.append(Message("system", (
                 "Earlier in this same conversation, before the recent messages above, the user told you:\n"
@@ -707,6 +751,7 @@ class ConversationService:
             messages.insert(-1, Message('system', f"The user's standing instruction, still in force for this answer: "
                                                   f"{standing}. Follow it exactly."))
         turn_shape = budget.shape if budget is not None else ''
+        open_questions = []
         if (self.inquiry is not None and executive_frame is not None
                 and self.inquiry.eligible(text, active_modes, turn_shape)):
             # Question itself first: settle assumptions and edge cases, and
@@ -717,6 +762,7 @@ class ConversationService:
             if notes is not None:
                 messages.insert(-1, notes)
             self.last_inquiry = inquiry.report
+            open_questions = [item['question'] for item in inquiry.open_points]
         result = generate_answer(
             selected_model, messages, temperature=0.2 if fast else 0.3,
             max_tokens=budget.answer_tokens if budget is not None else None,
@@ -768,7 +814,12 @@ class ConversationService:
                              if item.get("role") in {"user", "assistant"}]
             reviewed = self.dual_brain.review(text, result, selected_model, frame=executive_frame,
                                               max_tokens=budget.answer_tokens if budget else 1400,
-                                              conversation=earlier_turns)
+                                              conversation=earlier_turns, open_questions=open_questions,
+                                              constraints=[standing] if standing else (),
+                                              reference_context=[{'kind': kind, 'content': content} for kind, content in (
+                                                  ('attached_files', recalled_files), ('earlier_user_statements', '\n'.join(earlier_facts)),
+                                                  ('tool_registry', facts), ('retrieved_memory', memory_text),
+                                                  ('runtime_snapshot', json.dumps(state, ensure_ascii=False, default=str))) if content])
             result = reviewed.response
             response = result.content.strip() or response
             self.last_dual_review = reviewed.report
@@ -821,6 +872,15 @@ class ConversationService:
             record_metadata["advisors"] = [{"model": note.model, "seconds": note.seconds} for note in advice]
         if claim_record:
             record_metadata.update(claim_record)
+        from app.memory.plasticity import CO_RECALL_LIMIT, recalled_memory_ids
+
+        # Kept with the reply so the owner's "that's right" / "that's wrong" teaches these memories
+        # (app/owner_feedback.record_from_message -> app/memory/plasticity.reinforce).
+        recalled = recalled_memory_ids(memories)[:CO_RECALL_LIMIT]
+        if recalled:
+            record_metadata["recalled_memory_ids"] = recalled
+        # What the self-review of this reply reads (app/self_review.py): the memories it was built from.
+        self.last_recalled = [dict(item) for item in memories if isinstance(item, dict)][:CO_RECALL_LIMIT]
         self.memory.record_message(
             self.session_id, "assistant", response, model_label, metadata=record_metadata or None)
         from app.answers import looks_degenerate
@@ -1098,6 +1158,26 @@ class ConversationService:
                          + ", ".join(final.missing)
                          + ".")
         return response, result
+
+    def _topic_for(self, text: str) -> Any:
+        """This turn's topic decision, only when it was made for this very message (not a redo or a summary)."""
+        topic = self.topic_decision
+        if topic is None:
+            return None
+        value = " ".join(owner_words(text).split())
+        return topic if value in {topic.original, topic.anchored} else None
+
+    def _owner_feedback_note(self, text: str) -> str:
+        """The owner's earlier verdicts on similar questions (app/owner_feedback.py)."""
+        if not hasattr(self.memory, "path"):
+            return ""
+        try:
+            from app.owner_feedback import OwnerFeedback
+
+            return OwnerFeedback.beside(self.memory).prompt_note(text)
+        except Exception:
+            log_swallowed(_log, "reading the owner's feedback for a reply")
+            return ""
 
     def _situation(self) -> dict[str, Any]:
         if self.situation_supplier is None:

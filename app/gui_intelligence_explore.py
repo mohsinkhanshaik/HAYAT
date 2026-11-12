@@ -1,4 +1,5 @@
-"""The Explore tab of Global Intelligence: launches, satellites, fires, weather maps, imagery, routes, bikes, aircraft.
+"""The Explore tab of Global Intelligence: launches, satellites, fires, weather maps, imagery, routes, bikes, aircraft,
+live transit, GPS interference, US airspace and fire perimeters, whale sightings and street photos.
 
 Every button runs one registered tool (app/intelligence/explore.py) through the window's normal
 `work()` path, so it is recorded in Activity and keeps the usual permission gates.
@@ -7,11 +8,14 @@ import tkinter as tk
 from tkinter import ttk
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 #: Icons from app/gui_icons.py, kept on each button so HAYAT's app-wide icon pass leaves them alone.
 ICONS = {'Deep look': 'brain', 'Growing fires': 'alert', 'Launches': 'play', 'Recent launches': 'history', 'Satellites overhead': 'globe', 'ISS passes': 'eye',
          'Fires nearby': 'pin', 'Fires worldwide': 'alert', 'Weather map': 'cloud', 'Satellite image': 'image',
-         'Directions': 'pin', 'Bike share': 'pin', 'Aircraft info': 'search', 'Use map center': 'globe'}
+         'Directions': 'pin', 'Bike share': 'pin', 'Aircraft info': 'search', 'Use map center': 'globe',
+         'Live transit': 'pin', 'GPS interference': 'alert', 'Airspace (US)': 'lock', 'Fire perimeters (US)': 'alert',
+         'Whale sightings': 'eye', 'Street photo': 'image'}
 #: (button label, tool, how its arguments are built from the form)
 ACTIONS = (
     ('Deep look', 'intelligence_deep_look', lambda form: {'place': form['place'], 'reason': True}),
@@ -27,6 +31,20 @@ ACTIONS = (
     ('Directions', 'route_directions', lambda form: {'origin': form['place'], 'destination': form['destination'], 'mode': form['mode']}),
     ('Bike share', 'bike_share', lambda form: {'place': form['place']}),
     ('Aircraft info', 'aircraft_info', lambda form: {'query': form['aircraft']}),
+    # 2026-11-06 (transit.py, gnss.py, airspace.py, ground.py).
+    ('Live transit', 'transit_vehicles', lambda form: {'place': form['place'], 'radius_km': 3}),
+    ('GPS interference', 'gps_interference', lambda form: {'place': form['place']}),
+    ('Airspace (US)', 'airspace_check', lambda form: {'place': form['place']}),
+    ('Fire perimeters (US)', 'fire_perimeters', lambda form: {'place': form['place'], 'radius_km': 300}),
+    ('Whale sightings', 'whale_sightings', lambda form: {'place': form['place']}),
+    ('Street photo', 'street_photo', lambda form: {'place': form['place']}),
+)
+#: The buttons as they are laid out: one row per group (every ACTIONS label exactly once).
+GROUPS = (
+    ('This place', ('Deep look', 'Live transit', 'GPS interference', 'Airspace (US)', 'Street photo', 'Whale sightings')),
+    ('Fires', ('Growing fires', 'Fires nearby', 'Fires worldwide', 'Fire perimeters (US)')),
+    ('Sky & space', ('Launches', 'Recent launches', 'Satellites overhead', 'ISS passes', 'Aircraft info')),
+    ('Maps & travel', ('Weather map', 'Satellite image', 'Directions', 'Bike share')),
 )
 WEATHER_KINDS = {'Clouds (infrared)': 'clouds', 'Visible': 'visible', 'Water vapour': 'water_vapor', 'Radar (US)': 'radar',
                  'Lightning (Americas)': 'lightning'}
@@ -71,13 +89,19 @@ class IntelligenceExploreViews:
         button.pack(side='right')
         button._hayat_icon = ICONS['Use map center']
         self.explore_buttons = {}
-        row = FlowRow(tab, p.BLACK, height=64)
-        row.pack(fill='x', pady=4)
-        for label, tool, _build in ACTIONS:
-            self.explore_buttons[label] = row.add(ttk.Button(row, text=label, style='Compact.Hayat.TButton',
-                                                             command=lambda value=label: self.explore_run(value)))
-            self.explore_buttons[label]._hayat_icon = ICONS[label]
-        self.explore_status = StringVar(self, 'Pick a place ("here", a city, or "latitude, longitude") and a button. '
+        # Nineteen buttons in one wall were hard to scan (2026-11-06 review): one wrapping row per group, heading first.
+        groups = tk.Frame(tab, bg=p.BLACK)
+        groups.pack(fill='x', pady=4)
+        for heading, labels in GROUPS:
+            row = FlowRow(groups, p.BLACK, height=30)
+            row.pack(fill='x', pady=1)
+            # pady: level with the buttons' text, which sits lower in their taller frames.
+            row.add(tk.Label(row, text=heading, width=12, anchor='w', bg=p.BLACK, fg=p.MUTED, font=('Segoe UI Semibold', 9), pady=5))
+            for label in labels:
+                self.explore_buttons[label] = row.add(ttk.Button(row, text=label, style='Compact.Hayat.TButton',
+                                                                 command=lambda value=label: self.explore_run(value)))
+                self.explore_buttons[label]._hayat_icon = ICONS[label]
+        self.explore_status = DisplayVar(self, 'Pick a place ("here", a city, or "latitude, longitude") and a button. '
                                               'Each answer names its public source.')
         tk.Label(tab, textvariable=self.explore_status, wraplength=700, justify='left', anchor='w', bg=p.BLACK,
                  fg=p.WHITE).pack(fill='x')
@@ -92,7 +116,7 @@ class IntelligenceExploreViews:
         left = tk.Frame(body, bg=p.BLACK)
         self.explore_text = text_box(left, p, 10)
         picture = tk.Frame(body, bg=p.PANEL)
-        self.explore_image = tk.Label(picture, bg=p.PANEL, fg=p.MUTED, text='Weather maps, satellite images and\ncamera vehicle counts show here.')
+        self.explore_image = tk.Label(picture, bg=p.PANEL, fg=p.MUTED, text='Weather maps, satellite images, street photos\nand camera vehicle counts show here.')
         self.explore_image.pack(fill='both', expand=True)
         self.explore_image.bind('<Configure>', lambda _event: self._explore_fit())
         self.explore_image.bind('<Double-1>', lambda _event: self.explore_open_image())
@@ -222,6 +246,9 @@ class IntelligenceExploreViews:
             self.deep_view.show(value)
         if value.get('explore') == 'traffic':
             self.camera_message.set(text.split('\n')[0])
+        shown = value.get('path') if isinstance(value.get('path'), str) else value.get('image')
+        if shown:  # the picture is beside the text; its file path is noise here (chat still gets it)
+            text = '\n'.join(line for line in text.splitlines() if line.strip() != str(shown))
         set_text(self.explore_text, text)
         self.explore_status.set(f"{self._explore_pending or 'Explore'}: done · "
                                 + (f"situation {value['situation']}" if value.get('deep_look') else value.get('source', '')))

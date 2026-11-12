@@ -7,6 +7,7 @@ a worker thread; Tk only paints finished results, as in the gallery.
 import queue
 import threading
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -42,8 +43,8 @@ class TrainingReview(tk.Frame):
         self._pending = False
         self.offset = 0
         self.current = None
-        self.status = StringVar(self, "Collected examples waiting for your decision")
-        self.heading = StringVar(self, "")
+        self.status = DisplayVar(self, "Collected examples waiting for your decision")
+        self.heading = DisplayVar(self, "")
         self.query = StringVar(self, "")
         self.category = StringVar(self, "All categories")
         self.scope = StringVar(self, "All examples")
@@ -53,7 +54,7 @@ class TrainingReview(tk.Frame):
         from app.gui_intelligence_parts import FlowRow
         tk.Label(self, text="Review collected examples", bg=palette.BLACK, fg=palette.WHITE,
                  anchor="w", font=("Segoe UI Semibold", 12)).pack(fill="x", pady=(8, 4))
-        self.readiness = StringVar(self, "Checking fine-tuning readiness…")
+        self.readiness = DisplayVar(self, "Checking fine-tuning readiness…")
         self.readiness_label = tk.Label(self, textvariable=self.readiness, bg=palette.PANEL_2, fg=palette.WHITE,
                                        justify="left", anchor="w", padx=12, pady=9, font=("Segoe UI", 9),
                                        wraplength=640)

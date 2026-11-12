@@ -101,7 +101,9 @@ class DepthSurface(tk.Canvas):
             self.configure(height=wanted)
 
     def _resize(self, event: Any) -> None:
-        self.itemconfigure(self._body_window, width=max(1, event.width - 16))
+        width = max(1, self.winfo_width() - 16)
+        if int(float(self.itemcget(self._body_window, 'width') or 0)) != width:
+            self.itemconfigure(self._body_window, width=width)
         self.refresh_theme()
 
     def refresh_theme(self) -> None:
@@ -409,12 +411,29 @@ class DepthNavigator(tk.Canvas):
         changed, busy = self._advance(min(.1, now - self._last_frame), now)
         self._last_frame = now
         visible = self._visible()
+        started = self._clock()
         if changed and visible:
             self.redraw()
             self._rehover()
         if visible and self._overlay(redrawn=changed):
             busy = True
-        self._frame = self.after(self.FRAME_MS if busy else self.IDLE_MS, self._animate)
+        self._frame = self.after(self._next_frame_delay(self._clock() - started, busy), self._animate)
+
+    #: The most of the interface thread that animation may take: a move the owner asked for, and idle spinning.
+    #: A frame that costs 80 ms every 50 ms left typing, scrolling and every other window waiting on the globe.
+    BUSY_SHARE, IDLE_SHARE, MAX_FRAME_GAP_MS = 0.6, 0.3, 400
+
+    def _next_frame_delay(self, cost: float, busy: bool) -> int:
+        """Milliseconds until the next frame, so drawing never exceeds its share of the interface thread.
+
+        The camera advances by real elapsed time, so an expensive scene turns at the same speed with fewer
+        frames instead of holding the whole interface back. A cheap scene keeps its normal frame rate.
+        """
+        base = self.FRAME_MS if busy else self.IDLE_MS
+        share = self.BUSY_SHARE if busy else self.IDLE_SHARE
+        rest = cost * 1000 * (1 / share - 1)
+        self.frame_cost_ms = round(cost * 1000, 1)
+        return int(min(self.MAX_FRAME_GAP_MS, max(base, rest)))
 
     def _overlay(self, *, redrawn: bool) -> bool:
         """Per-frame hook for a layer that animates without the camera.
@@ -631,8 +650,34 @@ class DepthNavigator(tk.Canvas):
                 old_spin, old_tilt = self._velocity
                 self._velocity = (old_spin*.4 + spin/dt*.6, old_tilt*.4 + tilt/dt*.6)
             self._idle_after = now + self.IDLE_DELAY
-            self.redraw()
+            self._drag_frame()
         self._drag_x, self._drag_y, self._drag_at = x, y, now
+
+    def _drag_frame(self) -> None:
+        """Draw the dragged view, once per batch of pointer moves instead of once per move.
+
+        The pointer reports faster than an expensive scene can be drawn. Drawing for every report made the view
+        trail behind the hand: each queued move was drawn in turn, long after the pointer had left it. A move
+        that arrives while (or just after) a frame was being drawn only updates the camera; one frame for the
+        latest position follows as soon as the queue is empty.
+        """
+        import time
+
+        if time.perf_counter() - getattr(self, "_drag_drawn_at", 0.0) >= getattr(self, "_drag_cost", 0.0):
+            self._drag_draw()
+        elif getattr(self, "_drag_pending", None) is None:
+            self._drag_pending = self.after_idle(self._drag_draw)
+
+    def _drag_draw(self) -> None:
+        import time
+
+        self._drag_pending = None
+        if not self.winfo_exists():
+            return
+        started = time.perf_counter()
+        self.redraw()
+        self._drag_drawn_at = time.perf_counter()
+        self._drag_cost = self._drag_drawn_at - started
 
     def _release(self, event: Any) -> None:
         pressed = self._drag_x is not None

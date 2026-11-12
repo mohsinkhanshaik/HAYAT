@@ -166,6 +166,10 @@ class IntelligenceMapViews:
         self.feedback.set('Filters cleared. Public cameras remain available in Cameras and the Layers control.')
 
     def fit_results(self):
+        if self.globe_on():
+            if self.globe_fit_points(self.map_rows.values()):
+                self.feedback.set('Turned the globe to the loaded map observations.')
+            return
         if self.viewport.fit_points(self.map_rows.values()):
             self.view_changed()
             self.feedback.set('Fitted the loaded map observations. Map loaded shows whether further matching records are omitted.')

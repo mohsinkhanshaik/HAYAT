@@ -83,8 +83,8 @@ def register_image_tools(registry: ToolRegistry, generator: ImageGenerator | Non
                 "negative": {"type": "string", "description": "What to keep out of it."},
                 "steps": {"type": "integer", "minimum": 1, "maximum": 50,
                           "description": "More steps look better and take longer."},
-                "width": {"type": "integer", "minimum": 64, "maximum": 1024},
-                "height": {"type": "integer", "minimum": 64, "maximum": 1024},
+                "width": {"type": "integer", "minimum": 64, "maximum": 1536},
+                "height": {"type": "integer", "minimum": 64, "maximum": 1536},
                 "seed": {"type": "integer", "description": "Reuse to reproduce an image."},
                 # "auto" reads free VRAM and asks for what the card can
                 # actually deliver. It was accepted by the generator and

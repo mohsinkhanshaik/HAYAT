@@ -57,6 +57,9 @@ class ModelResourceManager:
         # was loaded and ready ("HAYAT's main model is currently unavailable").
         reclaimable = sum(int(item.get("loaded_memory_bytes") or 0) for item in status["models"] if item.get("loaded"))
         fits = needed <= (available + reclaimable) * .85
+        # Whether it fits this machine at all (all RAM plus all video memory), whatever else is open right now.
+        # The router lets HAYAT's own brain try a load on that basis alone (intelligent_router.provider).
+        machine = int(status["system"]["ram"].get("total_bytes") or 0) + int(gpu.get("vram_total_mb") or 0) * 1024 * 1024
         return {"allowed": warm or fits, "model": model, "estimated_bytes": needed, "available_ram_plus_vram_bytes": available,
                 "reclaimable_loaded_model_bytes": reclaimable, "already_warm": warm, "shares_weights_with": twin,
-                "automatic_eviction_performed": False}
+                "fits_machine": bool(needed) and needed <= machine * .85, "automatic_eviction_performed": False}

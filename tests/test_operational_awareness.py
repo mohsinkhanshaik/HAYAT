@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from types import SimpleNamespace
+import time
 
 import pytest
 
@@ -68,6 +69,11 @@ def test_real_agent_reports_active_retries_then_clears_current_evidence(tmp_path
         future = pool.submit(agent.run, 'Complete the measured fixture')
         try:
             assert reached.wait(10)
+            # Both steps only read, so `finish` starts together with `measure` (app/agent/parallel.py); wait until
+            # the agent has checked and retried `measure` and moved on to `finish`, which is still running.
+            deadline = time.monotonic() + 10
+            while execution_state(agent, session)['current']['current_tool'] != 'finish' and time.monotonic() < deadline:
+                time.sleep(0.01)
             current = execution_state(agent, session)['current']
             assert current['current_tool'] == 'finish' and current['attempts'] == 2
             assert current['verified_attempts'] == 1 and current['failed_checks'] == 1

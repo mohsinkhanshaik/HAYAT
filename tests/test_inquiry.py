@@ -106,3 +106,26 @@ def test_hard_question_outside_deep_mode_is_also_reviewed(tmp_path):
     metadata = memory.conversation_history('inquiry-test')[-1]['metadata']
     assert metadata['dual_brain_review']['revised'] and metadata['self_inquiry']['questions'] == 3
     assert service.executive.status()['last_goal']['calls'] == 4
+    # The critic and reviser must retain unresolved preliminary questions.
+    for call in model.calls[2:]:
+        payload = json.loads(call[-1].content)
+        assert payload['open_questions'] == ['Which language and runtime does the user use?', 'Are re-entrant locks involved?']
+
+
+@pytest.mark.parametrize('questions', [[], [{'question': None, 'answer': 'yes', 'basis': 'context'}],
+                                     [{'question': 'Does it work?', 'answer': {}, 'basis': 'reasoning'}],
+                                     [{'question': 'Does it work?', 'answer': ' ', 'basis': 'unknown'}],
+                                     [{'question': 'Q', 'answer': 'A', 'basis': 'context'}] * 5])
+def test_empty_or_mistyped_model_notes_do_not_count_as_completed_checks(questions):
+    model = ScriptedModel(json.dumps({'questions': questions}))
+    result = SelfInquiry(ExecutiveCortex()).examine(HARD, model, [])
+    assert result.report['state'] == 'unavailable'
+    assert result.report['questions'] == 0 and result.message() is None
+
+
+def test_inquiry_private_guidance_prioritizes_one_question_without_claiming_evidence():
+    model = ScriptedModel(NOTES)
+    result = SelfInquiry(ExecutiveCortex()).examine(HARD, model, [])
+    text = result.message().content
+    assert 'not independent verification' in text
+    assert 'only the most consequential missing question' in text

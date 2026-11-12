@@ -119,6 +119,9 @@ class InlinePanel:
         if self._before is not None and self._before.winfo_exists() and self._before.winfo_manager() == 'pack':
             options['before'] = self._before
         self.card.pack(**options)
+        keep_above = getattr(self.gui, '_keep_chrome_above', None)
+        if callable(keep_above):
+            keep_above()
 
     def show(self):
         if self.floating and self.box is not None:

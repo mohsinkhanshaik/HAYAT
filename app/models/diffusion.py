@@ -297,7 +297,7 @@ def validate_video(path: Path, minimum_bytes: int = 1024) -> tuple[bool, str]:
 #: anything else is rejected by the engine after the model has loaded, which
 #: is a slow way to learn about a typo.
 SIZE_MULTIPLE = 64
-MAX_DIMENSION = 1024
+MAX_DIMENSION = 1536
 
 
 def find_engine(root: Path | None = None) -> Path | None:
@@ -305,8 +305,52 @@ def find_engine(root: Path | None = None) -> Path | None:
     base = root or ENGINE_ROOT
     if not base.is_dir():
         return None
+    # The engine SDXL and video were measured on, as recorded when it was fetched. A newer
+    # build beside it (for Z-Image) must not take over by sorting: "master-1030" sorts
+    # before "master-820" as text, and a switch should be a decision, not an accident.
+    try:
+        recorded = Path(json.loads((base / "provenance-sd.json").read_text(encoding="utf-8"))["extracted_to"])
+        pinned = next((path for path in (recorded / "sd-cli.exe", recorded / "sd-cli")
+                       if path.is_file() and path.parent.parent == base), None)
+        if pinned is not None:
+            return pinned
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
     candidates = sorted(base.glob("stable-diffusion*/sd-cli.exe")) or sorted(base.glob("*/sd-cli"))
     return candidates[-1] if candidates else None
+
+
+#: Z-Image Turbo: a 6B model with a Qwen3 language model as its text encoder. It
+#: draws readable text and keeps more of a long prompt than SDXL (a sign drawn as
+#: "HAYAAT / AO CAFE"). Its files live in their own folder, and it is used only
+#: once scripts/setup_z_image.py has rendered a valid test picture with the engine
+#: build it needs and written ready.json; HAYAT_IMAGE_MODEL=sdxl switches back.
+Z_IMAGE_ROOT = MODEL_ROOT / "z-image"
+#: Turbo is distilled for about 8 steps at guidance 1.0 (the documented settings).
+Z_IMAGE_STEPS = {"fast": 6, "balanced": 8, "quality": 8, "ultra": 9}
+Z_IMAGE_CFG = 1.0
+
+
+def find_z_image(root: Path | None = None) -> dict[str, Path] | None:
+    """Z-Image's engine, model, text encoder and VAE once its setup proved them; else None."""
+    base = root or Z_IMAGE_ROOT
+    try:
+        ready = json.loads((base / "ready.json").read_text(encoding="utf-8"))
+        engine = Path(str(ready["engine"]))
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    files: dict[str, Path] = {}
+    for path in base.iterdir():
+        name = path.name.lower()
+        if name.startswith("z_image") and name.endswith(".gguf"):
+            files["model"] = path
+        elif name.startswith("qwen3") and name.endswith(".gguf"):
+            files["llm"] = path
+        elif name in {"ae.safetensors", "ae.sft"}:
+            files["vae"] = path
+    if not engine.is_file() or set(files) != {"model", "llm", "vae"}:
+        return None
+    return {**files, "engine": engine}
 
 
 #: Community fine-tunes that are a clear step up from base SD 1.5, in
@@ -558,6 +602,65 @@ class ImageResult:
         return payload
 
 
+#: The frames SDXL was trained on, about one megapixel each, by aspect ratio.
+#: A 16:9 request rendered square, or squeezed into 1024x576, loses the
+#: composition or ~40% of the pixels; these keep both.
+ASPECT_FRAMES = {
+    "1:1": (1024, 1024), "16:9": (1344, 768), "9:16": (768, 1344), "4:3": (1152, 896), "3:4": (896, 1152),
+    "3:2": (1216, 832), "2:3": (832, 1216), "21:9": (1536, 640), "9:21": (640, 1536),
+}
+#: How a request names its shape, checked in order (the most specific first).
+_ASPECT_WORDS: tuple[tuple[str, "re.Pattern[str]"], ...] = tuple((ratio, re.compile(pattern, re.I)) for ratio, pattern in (
+    ("21:9", r"\b(?:21\s*[:x]\s*9|ultra[- ]?wide|panoram\w*|banner|header image|cover photo)\b"),
+    ("9:21", r"\b9\s*:\s*21\b"),
+    ("9:16", r"\b(?:9\s*:\s*16|(?:phone|mobile|iphone|android|lock ?screen) wallpaper|vertical|instagram stor(?:y|ies)|"
+             r"reels?|tiktok|shorts)\b"),
+    ("16:9", r"\b(?:16\s*:\s*9|wide ?screen|desktop wallpaper|wallpaper|youtube thumbnail|thumbnail|horizontal|"
+             r"wide shot|landscape(?: orientation| format| mode)?|presentation slide|slide background)\b"),
+    ("2:3", r"\b(?:2\s*:\s*3|poster|book cover|album cover art|portrait|full[- ]body|full length)\b"),
+    ("3:2", r"\b3\s*:\s*2\b"),
+    ("4:3", r"\b4\s*:\s*3\b"),
+    ("3:4", r"\b3\s*:\s*4\b"),
+    ("1:1", r"\b(?:1\s*:\s*1|square|instagram post|profile (?:picture|photo)|avatar|app icon|icon|logo|sticker)\b"),
+))
+_PIXELS = re.compile(r"\b(\d{3,4})\s*[x×]\s*(\d{3,4})\b")
+
+
+def aspect_ratio(prompt: str) -> str | None:
+    """The frame shape a request asks for ("16:9", "9:16", ...), or None when it does not say.
+
+    Explicit pixel sizes ("1920x1080") pick the nearest trained shape.
+    """
+    value = str(prompt or "")
+    pixels = _PIXELS.search(value)
+    if pixels:
+        wanted = int(pixels.group(1)) / max(1, int(pixels.group(2)))
+        return min(ASPECT_FRAMES, key=lambda key: abs(ASPECT_FRAMES[key][0] / ASPECT_FRAMES[key][1] - wanted))
+    for ratio, pattern in _ASPECT_WORDS:
+        if pattern.search(value):
+            return ratio
+    return None
+
+
+#: A request for particular words in the picture: "a sign that says HAYAT", "with the text 'Open'".
+_LETTERING = re.compile(
+    r"(?i)\b(?:says|saying|reads|reading|that read|with the (?:text|words?|caption|title)|caption(?:ed)?|"
+    r"lettering|written|spell(?:ed|ing)?|label(?:l)?ed|titled|logo (?:text|with))\b"
+    r"|[\"“][^\"”]{2,60}[\"”]")
+
+
+def asks_for_text(prompt: str) -> bool:
+    """Whether a request wants specific words drawn into the picture (SDXL cannot spell reliably)."""
+    return bool(_LETTERING.search(str(prompt or "")))
+
+
+def frame_for(ratio: str, base: int) -> tuple[int, int]:
+    """The trained frame for a ratio, scaled to the tier's pixel budget (base x base)."""
+    width, height = ASPECT_FRAMES.get(ratio, (1024, 1024))
+    scale = base / 1024
+    return _round_dimension(width * scale), _round_dimension(height * scale)
+
+
 def _round_dimension(value: int) -> int:
     """Snap to the latent grid, and keep it inside what the card can hold."""
     value = max(SIZE_MULTIPLE, min(int(value), MAX_DIMENSION))
@@ -579,6 +682,9 @@ class ImageGenerator:
         self.video_root = video_root or (output_root / "videos" if output_root else VIDEO_ROOT)
         self.timeout = timeout
         self._process: subprocess.Popen | None = None
+        # Only the default installation looks for Z-Image; a caller naming its own
+        # engine or model (tests, tools) gets exactly what it named.
+        self.z_image = find_z_image() if engine_path is None and model_path is None else None
 
     # ----------------------------------------------------------- readiness
 
@@ -605,6 +711,10 @@ class ImageGenerator:
             "model_gb": round(self.model_path.stat().st_size / 1024**3, 2)
             if self.model_path and self.model_path.is_file() else None,
             "placement": verdict.get("placement"), "expect": verdict.get("expect"),
+            "image_model_in_use": (self._z_image_files()["model"].name if self._z_image_files()
+                                   else self.model_path.name if self.model_path else None),
+            "z_image": ("ready" if self.z_image else "downloaded, waiting for scripts/setup_z_image.py"
+                        if (Z_IMAGE_ROOT / "provenance.json").is_file() else "not installed"),
             "output_directory": str(self.output_root),
             "manifest": str(self.output_root / "manifest.jsonl"),
             "video_directory": str(self.video_root),
@@ -682,8 +792,10 @@ class ImageGenerator:
         if quality not in QUALITY_PRESETS:
             quality = "balanced"
         preset = QUALITY_PRESETS[quality]
+        z_image = self._z_image_files()
         if steps is None:
-            steps = int(preset["steps"])
+            # Z-Image Turbo is distilled to a handful of steps; SDXL's 24-50 would only cost time.
+            steps = Z_IMAGE_STEPS.get(quality, 8) if z_image else int(preset["steps"])
         steps = max(MIN_STEPS, min(int(steps), MAX_STEPS))
         # Resolution follows the tier when the caller did not ask for one: 512
         # fast, 640 quality, 768 ultra. A higher frame is the detail lever, and
@@ -695,8 +807,12 @@ class ImageGenerator:
         # anyway. 768 SDXL already beats 512 SD 1.5 on faces, which is the whole
         # reason for it. SD 1.5 keeps its tier size.
         sdxl = is_sdxl_model(self.model_path)
-        tier_size = SDXL_TIER_SIZE.get(quality, 1024) if sdxl else int(preset.get("size", 512))
+        # Z-Image is native 1024 like SDXL, so it uses the same tier frames.
+        tier_size = SDXL_TIER_SIZE.get(quality, 1024) if sdxl or z_image else int(preset.get("size", 512))
         cfg = SDXL_CFG.get(quality, 5.0) if sdxl else float(preset["cfg"])
+        if width is None and height is None and aspect_ratio(prompt):
+            # "a 16:9 wallpaper of ..." asked for a shape; the square default ignored it.
+            width, height = frame_for(aspect_ratio(prompt) or "1:1", tier_size)
         width = tier_size if width is None else width
         height = tier_size if height is None else height
         width, height = _round_dimension(width), _round_dimension(height)
@@ -714,20 +830,33 @@ class ImageGenerator:
         stem = re.sub(r"[^a-zA-Z0-9_-]+", "-", (name or prompt)[:48]).strip("-").lower() or "image"
         target = self.output_root / f"{stem}-{uuid.uuid4().hex[:8]}.png"
 
-        command = [
-            str(self.engine_path), "-M", "img_gen", "-m", str(self.model_path),
-            "-p", generation_prompt, "--steps", str(steps), "-W", str(width), "-H", str(height),
-            "--sampling-method", str(preset["sampler"]), "--scheduler", str(preset["scheduler"]),
-            "--cfg-scale", str(cfg), "--auto-fit",
-            "-o", str(target),
-        ]
-        if sdxl:
+        if z_image:
+            # The documented Z-Image Turbo invocation (stable-diffusion.cpp docs/z_image.md):
+            # its own diffusion model, Qwen3 text encoder and VAE, guidance 1.0 (so no
+            # negative prompt), weights offloaded so it fits beside other work. Its language
+            # model reads a plain description, so SD's quality tag list is not appended.
+            generation_prompt, negative, cfg = prompt, "", Z_IMAGE_CFG
+            command = [
+                str(z_image["engine"]), "--diffusion-model", str(z_image["model"]), "--vae", str(z_image["vae"]),
+                "--llm", str(z_image["llm"]), "-p", generation_prompt, "--cfg-scale", str(cfg),
+                "--steps", str(steps), "-W", str(width), "-H", str(height), "--offload-to-cpu",
+                "-o", str(target),
+            ]
+        else:
+            command = [
+                str(self.engine_path), "-M", "img_gen", "-m", str(self.model_path),
+                "-p", generation_prompt, "--steps", str(steps), "-W", str(width), "-H", str(height),
+                "--sampling-method", str(preset["sampler"]), "--scheduler", str(preset["scheduler"]),
+                "--cfg-scale", str(cfg), "--auto-fit",
+                "-o", str(target),
+            ]
+        if sdxl and not z_image:
             # Flash attention shrinks the diffusion buffer and tiled decoding
             # lets the VAE run on the GPU instead of the CPU; together they fit
             # native 1024 on the 8 GB card. Its VAE is baked in, so the SD 1.5
             # one is not added.
             command += ["--diffusion-fa", "--vae-tiling"]
-        else:
+        elif not z_image:
             vae = find_vae(VAE_ROOT)
             if vae is not None:
                 command += ["--vae", str(vae)]
@@ -742,7 +871,7 @@ class ImageGenerator:
         # politely; they take the machine with them.
         from app.resources import NotEnoughMemory, heavy
 
-        model_bytes = self.model_path.stat().st_size
+        model_bytes = (z_image["model"] if z_image else self.model_path).stat().st_size
         try:
             with heavy(f"image: {prompt[:40]}", needs_bytes=model_bytes):
                 self._process = subprocess.Popen(
@@ -794,7 +923,7 @@ class ImageGenerator:
         # returned width/height reflect what is actually on disk.
         final_width, final_height = width, height
         upscale_target = int(preset.get("upscale", 0) or 0)
-        if upscale_target and sdxl:
+        if upscale_target and (sdxl or z_image):
             upscale_target = SDXL_UPSCALE_TARGET
         if upscale_target and max(width, height) < upscale_target:
             upscaled = self._upscale(target, upscale_target)
@@ -812,8 +941,19 @@ class ImageGenerator:
             sampler=preset["sampler"], scheduler=preset["scheduler"], cfg_scale=cfg,
             base_size=f"{width}x{height}", generation_prompt=generation_prompt,
             released_models=released_models,
+            model=z_image["model"].name if z_image else self.model_path.name,
         )
         return result
+
+    def _z_image_files(self) -> dict[str, Path] | None:
+        """Z-Image's files when it was set up and proven, and not switched off; else None (SDXL is used)."""
+        import os
+
+        if getattr(self, "z_image", None) is None:
+            return None
+        if os.environ.get("HAYAT_IMAGE_MODEL", "").strip().lower() in {"sdxl", "realvisxl", "off"}:
+            return None
+        return self.z_image
 
     def _upscale(self, target: Path, long_edge: int) -> tuple[int, int] | None:
         """Enlarge an image in place to `long_edge` on its longer side.

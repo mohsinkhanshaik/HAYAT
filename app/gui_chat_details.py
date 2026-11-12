@@ -6,7 +6,8 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import ttk
 
-from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
+from app.gui_presentation import safe_text
 
 
 class ChatDetails(tk.Frame):
@@ -18,8 +19,8 @@ class ChatDetails(tk.Frame):
         self.gui = gui
         self.messages = 0
         self.sources = []
-        self.subject = StringVar(self, value='Your conversation')
-        self.stats = StringVar(self, value=self.EMPTY_STATS)
+        self.subject = DisplayVar(self, value='Your conversation')
+        self.stats = DisplayVar(self, value=self.EMPTY_STATS)
         self.expanded = False
         header = tk.Frame(self, bg=gui.PANEL)
         header.pack(fill='x')
@@ -42,12 +43,12 @@ class ChatDetails(tk.Frame):
         self.detail_scroll = ScrollableColumn(details, gui, width=315)
         self.detail_scroll.pack(fill='both', expand=True)
         details = self.detail_scroll.body
-        self.model = StringVar(self, value='Model: checking runtime')
+        self.model = DisplayVar(self, value='Model: checking runtime')
         self.model_label = ttk.Label(details, textvariable=self.model, wraplength=315)
         self.model_label.pack(anchor='w')
         ttk.Label(details, text='How the last answer was made', foreground=gui.GOLD_SOFT,
                   font=('Segoe UI Semibold', 9)).pack(anchor='w', pady=(8, 0))
-        self.provenance = StringVar(self, value='No answer yet.')
+        self.provenance = DisplayVar(self, value='No answer yet.')
         self.provenance_label = ttk.Label(details, textvariable=self.provenance, wraplength=315, justify='left')
         self.provenance_label.pack(anchor='w')
         self.evidence_label = ttk.Label(details, text='Corrections stay with the conversation. Web learning requires source evidence.',
@@ -107,6 +108,7 @@ class ChatDetails(tk.Frame):
         widget._chat_row_keys = tuple(values)
 
     def observe(self, tag, text):
+        text = safe_text(text)
         if tag not in {'user', 'assistant'}:
             return
         self.messages += 1
@@ -124,11 +126,11 @@ class ChatDetails(tk.Frame):
         count = len(self.gui._video_cards) + len(self.gui._video_link_cards) + len(self.gui._inline_images)
         self.stats.set(f'{self.messages} messages · {count} media cards · {len(self.sources)} links')
         model = getattr(self.gui.runtime, 'model', None)
-        self.model.set('Reply model: ' + str(getattr(model, 'model', None) or 'Unavailable'))
+        self.model.set(safe_text('Reply model: ' + str(getattr(model, 'model', None) or 'Unavailable')))
         if tag == 'assistant':
             from app.answer_provenance import describe
 
-            self.provenance.set('\n'.join('• ' + line for line in describe(self.gui.runtime)))
+            self.provenance.set(safe_text('\n'.join('• ' + line for line in describe(self.gui.runtime))))
 
     def reset(self):
         self.messages = 0

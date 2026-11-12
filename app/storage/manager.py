@@ -86,15 +86,31 @@ class StorageManager:
     def _stale(snapshot, max_age_seconds):
         return snapshot is None or max_age_seconds <= 0 or time.monotonic() - snapshot[2] > max_age_seconds
 
+    def _disk_free(self) -> int:
+        disk = os.statvfs(self.root) if hasattr(os, "statvfs") else None
+        if disk:
+            return int(disk.f_bavail * disk.f_frsize)
+        return shutil.disk_usage(self.root).free
+
+    def _refresh_in_background(self) -> threading.Thread | None:
+        """Start one background rescan unless one is already running (then None)."""
+        if self._scan_lock.locked():
+            return None
+
+        def refresh() -> None:
+            try:
+                self.status()
+            except Exception:
+                log_swallowed(_log, "refreshing storage usage in the background")
+
+        thread = threading.Thread(target=refresh, name="hayat-storage-scan", daemon=True)
+        thread.start()
+        return thread
+
     def _status_from_snapshot(self, snapshot) -> dict[str, Any]:
         categories, scanned_at, scanned_monotonic = snapshot
         used = sum(item["used_bytes"] for item in categories.values())
-        disk = os.statvfs(self.root) if hasattr(os, "statvfs") else None
-        if disk:
-            disk_free = int(disk.f_bavail * disk.f_frsize)
-        else:
-            import shutil
-            disk_free = shutil.disk_usage(self.root).free
+        disk_free = self._disk_free()
         usable_free = max(0, disk_free - self.reserve)
         remaining = max(0, min(self.maximum - used, usable_free))
         percent = used / max(1, self.maximum) * 100
@@ -209,7 +225,17 @@ class StorageManager:
                 log_swallowed(_log, "reading Ollama model details")
                 return {}
         try:
-            response = httpx.get(base_url + "/api/tags", timeout=3, trust_env=not local)
+            try:
+                response = httpx.get(base_url + "/api/tags", timeout=3, trust_env=not local)
+            except httpx.ConnectError:
+                # Nothing listening: the brain would look "not installed" and every reply would be "main model
+                # unavailable" without a request ever reaching the recovery in the provider. Bring the service
+                # back here, where the outage is first seen, and read the list once more (app/models/local.py).
+                from app.models import local as local_models
+                recover = local_models.SERVICE_RECOVERY
+                if recover is None or not local or not recover()[0]:
+                    raise
+                response = httpx.get(base_url + "/api/tags", timeout=3, trust_env=not local)
             response.raise_for_status()
             items = response.json().get("models", [])
             with ThreadPoolExecutor(max_workers=4, thread_name_prefix="model-metadata") as pool:
@@ -245,9 +271,34 @@ class StorageManager:
                 item["loaded"] = None
         return {"models": models, "downloads_automatic": False}
 
+    #: Writes up to this size never wait for a full walk of the project (568,670 files took 11.7 s idle on
+    #: 2026-11-09 and over 20 s under load, so saving one note looked hung). They use the last completed scan,
+    #: refreshed in the background, while free disk space is always read live.
+    SMALL_WRITE_BYTES = 64 * 1024 * 1024
+    #: With no completed scan at all, a small write waits this long for one before relying on the disk reserve.
+    COLD_SCAN_WAIT_SECONDS = 3.0
+
     def ensure_capacity(self, additional_bytes: int, category: str | None = None) -> None:
         additional = max(0, int(additional_bytes))
-        status = self.status()
+        if additional <= self.SMALL_WRITE_BYTES:
+            snapshot = self._cache_snapshot()
+            if snapshot is None or self._stale(snapshot, 60.0):
+                scan = self._refresh_in_background()
+                if snapshot is None:
+                    if scan is not None:
+                        scan.join(self.COLD_SCAN_WAIT_SECONDS)  # a small tree finishes well inside this
+                    elif self._scan_lock.acquire(timeout=self.COLD_SCAN_WAIT_SECONDS):  # another scan is running
+                        self._scan_lock.release()
+                    snapshot = self._cache_snapshot()
+            if snapshot is None:
+                # No scan has finished yet: the physical-disk reserve is still enforced now; the project budget
+                # applies from the first completed scan (at most one small write can precede it).
+                if additional > max(0, self._disk_free() - self.reserve):
+                    raise OSError(f"The write would violate the configured {self.human(self.reserve)} physical-disk reserve.")
+                return
+            status = self._status_from_snapshot(snapshot)
+        else:
+            status = self.status()
         quota_remaining = max(0, status["maximum_total_bytes"] - status["used_bytes"])
         disk_remaining = max(0, status["disk_free_bytes"] - status["reserve_free_space_bytes"])
         if additional > quota_remaining:
@@ -306,21 +357,34 @@ class StorageManager:
 
     def _scan(self) -> dict[str, dict[str, Any]]:
         values: dict[str, dict[str, Any]] = {}
+        last_access: dict[str, float] = {}
+        prefix_length = len(str(self.root).rstrip("\\/")) + 1
         priorities = {"temporary": 1, "web_cache": 2, "screenshots": 3, "logs": 4, "research_sources": 5, "task_history": 6, "artifacts": 7, "knowledge": 8, "learning": 9, "models": 9, "datasets": 9, "backups": 10, "dependencies": 8, "projects": 10}
-        for path in self._files():
-            category = self._category(path)
+        for file_entry in self._file_entries():
+            # Every entry comes directly from our traversal under the resolved
+            # root. Avoid rebuilding/normalizing a WindowsPath per file.
+            relative = file_entry.path[prefix_length:].replace("\\", "/").lower()
+            category = self._category_relative(relative)
             try:
-                stat = path.stat()
+                # On Windows scandir already has size/time metadata from the
+                # directory enumeration. Path.stat discards it and opens every
+                # file again, making a cold quota check take tens of seconds.
+                stat = file_entry.stat(follow_symlinks=False)
             except OSError:
                 continue
             entry = values.setdefault(category, {"used_bytes": 0, "files": 0, "last_accessed": None, "quota_bytes": self.category_quotas.get(category), "cleanup_priority": priorities.get(category, 8)})
             entry["used_bytes"] += stat.st_size
             entry["files"] += 1
-            accessed = datetime.fromtimestamp(stat.st_atime, UTC).isoformat()
-            entry["last_accessed"] = max(entry["last_accessed"] or accessed, accessed)
+            last_access[category] = max(last_access.get(category, stat.st_atime), stat.st_atime)
+        for category, accessed in last_access.items():
+            values[category]["last_accessed"] = datetime.fromtimestamp(accessed, UTC).isoformat()
         return values
 
     def _files(self):
+        for entry in self._file_entries():
+            yield Path(entry.path)
+
+    def _file_entries(self):
         """Walk the tree with os.scandir rather than Path.rglob.
 
         rglob does one stat-equivalent call per path component per entry;
@@ -345,7 +409,7 @@ class StorageManager:
                         if entry.is_dir(follow_symlinks=False):
                             stack.append(Path(entry.path))
                         elif entry.is_file(follow_symlinks=False):
-                            yield Path(entry.path)
+                            yield entry
                     except OSError:
                         continue
 
@@ -355,6 +419,10 @@ class StorageManager:
         # `self.root`'s already-resolved prefix -- no per-file .resolve()
         # syscall needed here.
         relative = path.relative_to(self.root).as_posix().lower()
+        return self._category_relative(relative)
+
+    @staticmethod
+    def _category_relative(relative: str) -> str:
         if relative.startswith(".venv/"):
             return "dependencies"
         if relative.startswith("data/models/"):

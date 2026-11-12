@@ -145,7 +145,7 @@ def test_camera_card_uses_verified_results_and_stop_closes_connection(shared_tk)
         card._launch_timer = None
         assert not card.slider.winfo_manager()
         card._publish({'kind': 'ready'})
-        card._publish({'kind': 'state', 'seconds': 5, 'playing': True, 'muted': True, 'width': 1280, 'height': 720})
+        card._publish({'kind': 'state', 'seconds': 5, 'playing': True, 'muted': True, 'width': 1280, 'height': 720, 'frames': 1})
         card._drain()
         assert 'Playing' in card.detail.get() and '1280' in card.detail.get()
         assert card.mute_button['text'] == 'Unmute'

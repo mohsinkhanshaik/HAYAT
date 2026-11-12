@@ -177,7 +177,8 @@ def provision_models() -> None:
         print("    Then rerun this script, or provision models yourself (see README).")
         return
     print("    Ollama found. Provisioning models (best-effort; failures are non-fatal).")
-    # all-minilm is the embedding model and is small and always available.
+    # nomic-embed-text is the embedding model (about 270 MB); all-minilm (46 MB) is its fallback.
+    run(["ollama", "pull", "nomic-embed-text"], check=False)
     run(["ollama", "pull", "all-minilm"], check=False)
     # Build HAYAT's identity model from its Modelfile. `ollama create` pulls the
     # FROM base automatically when it is a registry model.

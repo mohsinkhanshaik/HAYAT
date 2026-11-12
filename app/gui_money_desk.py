@@ -21,6 +21,7 @@ from tkinter import ttk
 from typing import Any, Callable
 
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.money_desk import PURPOSES
 from app.gui_fonts import DISPLAY
 
@@ -68,7 +69,7 @@ class MoneyDeskWindow(tk.Toplevel):
             self.card_values[key].pack(fill="x")
         self.other = tk.Label(self, text="", bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 8), anchor="w")
         self.other.pack(fill="x", padx=16)
-        self.message = StringVar(self, "")
+        self.message = DisplayVar(self, "")
         tk.Label(self, textvariable=self.message, bg=p.BLACK, fg=p.GOLD_SOFT, font=("Segoe UI", 9), anchor="w", justify="left",
                  wraplength=1120).pack(side="bottom", fill="x", padx=16, pady=(0, 10))
         self.tabs = ttk.Notebook(self)

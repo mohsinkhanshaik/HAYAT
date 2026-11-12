@@ -80,8 +80,10 @@ def test_status_check_does_not_start_or_change_the_shared_session(monkeypatch):
 
 
 @pytest.mark.parametrize('version,accepted', [
-    ('v22.18.0', False), ('v22.19.0', True), ('v23.9.0', False), ('v24.10.0', False),
-    ('v24.11.0', True), ('v24.18.0', True), ('v25.0.0', False), ('v26.0.0', True),
+    ('v22.18.0', False), ('v22.19.0', False), ('v22.23.3', False), ('v22.23.4', True),
+    ('v23.9.0', False), ('v24.10.0', False), ('v24.11.0', False), ('v24.18.0', False),
+    ('v24.22.0', False), ('v24.22.1', True), ('v24.22.2', True), ('v25.0.0', False),
+    ('v26.0.0', False), ('v26.12.0', False), ('v26.12.1', True), ('v27.0.0', True),
     ('not-a-version', False), ('v24.18.0-rc.1', False),
 ])
 def test_node_versions_follow_the_pinned_rea_contract(version, accepted):
@@ -96,7 +98,7 @@ def test_setup_bundles_node_and_npm_and_then_runs_without_system_tools(tmp_path)
     npm = source / 'node_modules/npm/bin/npm-cli.js'
     npm.parent.mkdir(parents=True)
     npm.write_text('npm fixture')
-    run = lambda *a, **k: SimpleNamespace(stdout='v24.18.0\n')
+    run = lambda *a, **k: SimpleNamespace(stdout='v24.22.2\n')
     node, cli = bundle_toolchain(tmp_path, find=lambda name: str(source / 'node.exe') if name == 'node' else None, run=run)
     assert node.read_bytes() == b'node-fixture' and cli.read_text() == 'npm fixture'
     assert (node.parent / 'LICENSE').read_text() == 'Node license fixture'
@@ -116,7 +118,7 @@ def test_setup_preserves_an_incomplete_npm_install(tmp_path):
     npm.write_text('fixture')
     with pytest.raises(SystemExit, match='preserved'):
         bundle_toolchain(tmp_path, find=lambda name: str(source / 'node.exe') if name == 'node' else None,
-                         run=lambda *a, **k: SimpleNamespace(stdout='v24.18.0'))
+                         run=lambda *a, **k: SimpleNamespace(stdout='v24.22.2'))
     assert (incomplete / 'owner-file').read_text() == 'preserve'
 
 
@@ -126,9 +128,9 @@ def test_bundled_node_keeps_its_license_even_when_the_system_install_lacks_one(t
     def fetch(url, **kwargs):
         calls.append(url)
         return SimpleNamespace(content=b'Node.js license fixture', raise_for_status=lambda: None)
-    ensure_node_license(node, 'v24.18.0', fetch=fetch)
-    ensure_node_license(node, 'v24.18.0', fetch=lambda *a, **k: pytest.fail('an existing license is retained'))
-    assert calls == ['https://raw.githubusercontent.com/nodejs/node/v24.18.0/LICENSE']
+    ensure_node_license(node, 'v24.22.2', fetch=fetch)
+    ensure_node_license(node, 'v24.22.2', fetch=lambda *a, **k: pytest.fail('an existing license is retained'))
+    assert calls == ['https://raw.githubusercontent.com/nodejs/node/v24.22.2/LICENSE']
     assert (tmp_path / 'LICENSE').read_bytes() == b'Node.js license fixture'
 
 

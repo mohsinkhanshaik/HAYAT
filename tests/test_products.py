@@ -104,3 +104,22 @@ def test_product_requests_reach_executor(text):
 
 def test_product_advice_is_not_a_command():
     assert not IntentRouter().route('What is a digital product?').is_action
+
+
+def test_a_sale_counts_in_the_month_of_its_local_date_not_its_utc_date(tools):
+    # Sales are stamped in UTC; a sale at 01:00 UTC on 1 November happened on 31 October evening in
+    # Michigan, and the October report must include it (text comparison had moved it to November).
+    from datetime import datetime
+
+    store, *_ = tools if isinstance(tools, tuple) else (tools,)
+    product = create(store)
+    assert store.record_sale(product['id'], 'late-order', '9.00', '0')['recorded']
+    stamp = '2026-11-01T01:00:00+00:00'
+    db = store._db()
+    with db:
+        db.execute("UPDATE sales SET recorded=? WHERE reference='late-order'", (stamp,))
+    db.close()
+    local_day = datetime.fromisoformat(stamp).astimezone().date().isoformat()
+    month_start = local_day[:8] + '01'
+    next_month = '2026-11-01' if local_day < '2026-11-01' else '2026-12-01'
+    assert store.net_by_currency(month_start, next_month) == {product['currency']: 900}

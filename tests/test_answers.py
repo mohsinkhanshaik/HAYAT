@@ -521,3 +521,24 @@ def test_statements_edits_and_conditionals_have_no_fake_topics():
         assert detect_depth(text, god) in {Depth.NORMAL, Depth.QUICK}, text
     for text in ("my laptop is slow", "Add a section explaining how TCP congestion control works"):
         assert detect_depth(text, god) is Depth.DEEP, text
+
+
+# 2026-11-07, live: "In one short sentence: what is the capital of Japan?" was graded as a deep question in the owner's
+# saved Deep mode and sent back twice as "7 words for a deep answer", growing past 150 words.
+@pytest.mark.parametrize("text,brief", [
+    ("In one short sentence: what is the capital of Japan?", True),
+    ("Give me a quick one-line answer: why is the sky blue?", True),
+    ("Explain in a few short sentences how vaccines work", True),
+    ("Answer in two short sentences: what is DNA?", True),
+    ("in one brief line, who wrote Hamlet?", True),
+    ("give me a one-liner on recursion", True),
+    ("just a quick answer: is 91 prime?", True),
+    # A subject, not a format.
+    ("Explain in detail how a one-line shell script works", False),
+    ("What is a short answer question?", False),
+    ("Explain how a one-liner script in bash works", False),
+])
+def test_a_request_for_a_short_answer_is_heard_whatever_word_describes_it(text, brief):
+    from app.answers import Depth, brief_output_requested, detect_depth
+    assert brief_output_requested(text) is brief
+    assert (detect_depth(text, {"DEEP", "ADVERSARIAL"}) is Depth.QUICK) is brief

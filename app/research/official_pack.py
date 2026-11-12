@@ -5,7 +5,10 @@ This adds retrievable knowledge; it never trains weights or executes page text.
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import datetime, timedelta
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -22,6 +25,38 @@ OFFICIAL_HOSTS = frozenset({
     "support.microsoft.com",
 })
 
+OFFICIAL_PATHS = {
+    'www.investor.gov': {'/introduction-investing', '/introduction-investing/investing-basics/save-and-invest/figure-out-your-finances'},
+    'www.eia.gov': {'/energyexplained/electricity/measuring-electricity.php'},
+    'www.imf.org': {'/en/publications/fandd/issues/series/back-to-basics/inflation'},
+    'main.un.org': {'/securitycouncil/en/content/current-members'},
+    'www.un.org': {'/about-us/un-charter/chapter-5'},
+    'www.stlouisfed.org': {'/publications/page-one-economics/2024/03/01/the-inflation-rate-is-falling-but-prices-are-not'},
+}
+
+
+#: Government and intergovernmental publishers: their own pages are the
+#: official record for public reference facts (earth science, energy,
+#: finance regulation, tax law, public health, archives). Only pages a
+#: reviewed catalog names are accepted, not every page on such a host.
+GOVERNMENT_SUFFIXES = (".gov", ".mil", ".gov.in", ".nic.in", ".gov.uk", ".gc.ca", ".gov.au", ".europa.eu")
+INTERGOVERNMENTAL_HOSTS = frozenset({"www.who.int", "www.imf.org", "www.worldbank.org", "www.oecd.org", "wmo.int",
+                                     "www.ipcc.ch", "www.iea.org", "www.un.org", "data.un.org"})
+REVIEWED_CATALOGS = tuple(Path(__file__).resolve().parents[2] / "config" / name
+                          for name in ("reference-knowledge.json",))
+
+
+@lru_cache(maxsize=1)
+def _reviewed_government_pages() -> frozenset[tuple[str, str]]:
+    pages = set()
+    for catalog in REVIEWED_CATALOGS:
+        for entry in json.loads(catalog.read_text(encoding="utf-8")):
+            parts = urlsplit(str(entry.get("url", "")))
+            host = (parts.hostname or "").lower()
+            if host.endswith(GOVERNMENT_SUFFIXES) or host in INTERGOVERNMENTAL_HOSTS:
+                pages.add((host, parts.path.rstrip("/")))
+    return frozenset(pages)
+
 
 def _official_url(url: str) -> bool:
     parts = urlsplit(url)
@@ -30,9 +65,11 @@ def _official_url(url: str) -> bool:
         and parts.port in {None, 443}
         and (
             parts.hostname in OFFICIAL_HOSTS
+            or ((parts.hostname or "").lower(), parts.path.rstrip("/")) in _reviewed_government_pages()
+            or parts.path.rstrip('/') in OFFICIAL_PATHS.get(parts.hostname, set())
             or (parts.hostname == "huggingface.co" and parts.path.startswith("/docs/"))
             or (parts.hostname == "science.nasa.gov" and parts.path.rstrip("/") in
-                {"/earth/facts", "/mars/facts", "/moon/facts"})
+                {"/earth/facts", "/mars/facts", "/moon/facts", "/uap/faqs"})
             or (parts.hostname == "github.com" and parts.path.rstrip("/") == "/SYSTRAN/faster-whisper")
         )
     )
@@ -60,9 +97,13 @@ def refresh_official_pack(
             if not topic or not facts or not 1 <= days <= 30:
                 raise ValueError("A topic, facts, and a 1–30 day refresh interval are required")
             resource = fetcher.fetch(url, max_bytes=4 * 1024 * 1024)
+            outcome["response_status"] = resource.status_code
             if not _official_url(resource.final_url) or urlsplit(url).hostname != urlsplit(resource.final_url).hostname:
                 raise ValueError("Source redirected outside its official host")
             source, _ = extractor.extract(resource, query=topic)
+            if not source.text.strip():
+                raise ValueError(f"Source returned no readable content (HTTP {resource.status_code}); "
+                                 "its facts were not refreshed")
             # Primary describes authorship. Confidence remains the verifier's
             # heuristic, not a claim of infallibility or an accuracy score.
             source.primary = True
@@ -118,3 +159,69 @@ def refresh_official_pack(
         report["entries"].append(outcome)
     report["failed_sources"] = sum(item["status"] == "failed" for item in report["entries"])
     return report
+
+
+#: Curated catalogs and the report each refresh writes: (catalog, report).
+PACKS = (
+    ("config/official-knowledge.json", "data/knowledge/official-pack-report.json"),
+    ("config/foundational-knowledge.json", "data/knowledge/foundational-upgrade-2026-10-31.json"),
+    ("config/reference-knowledge.json", "data/knowledge/reference-pack-report.json"),
+)
+
+
+def due_entries(entries: list[dict[str, Any]], report: dict[str, Any] | None, now: datetime,
+                margin: timedelta = timedelta(days=2)) -> list[dict[str, Any]]:
+    """Entries never imported, last failed, or expiring within the margin."""
+    last = {item.get("url"): item for item in (report or {}).get("entries", [])}
+    due = []
+    for entry in entries:
+        outcome = last.get(entry.get("url"))
+        try:
+            fresh = (outcome is not None and outcome.get("status") == "imported"
+                     and datetime.fromisoformat(str(outcome["valid_until"])) > now + margin)
+        except (KeyError, TypeError, ValueError):
+            fresh = False
+        if not fresh:
+            due.append(entry)
+    return due
+
+
+def refresh_due_packs(store: KnowledgeStore, fetcher: PublicFetcher, root: Path,
+                      now: datetime | None = None) -> dict[str, Any]:
+    """Re-verify only the expiring or failed entries of each curated pack.
+
+    The packs' facts expire after at most 30 days by design; without this they
+    went stale until someone re-ran the script. Each report keeps the latest
+    outcome per source, so a source that fails now is retried next time and a
+    fresh one is left alone.
+    """
+    now = now or datetime.now().astimezone()
+    summary: dict[str, Any] = {"checked": 0, "refreshed": 0, "failed": 0}
+    for catalog_name, report_name in PACKS:
+        catalog, report_path = root / catalog_name, root / report_name
+        if not catalog.exists():
+            continue
+        entries = json.loads(catalog.read_text(encoding="utf-8"))
+        report = json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else None
+        due = due_entries(entries, report, now)
+        summary["checked"] += len(entries)
+        if not due:
+            continue
+        fresh = refresh_official_pack(due, store, fetcher)
+        summary["refreshed"] += fresh["imported_sources"]
+        summary["failed"] += fresh["failed_sources"]
+        merged = {item.get("url"): item for item in (report or {}).get("entries", [])}
+        for item in fresh["entries"]:
+            previous = merged.get(item["url"])
+            # A failed retry must not erase the record of the last good import.
+            if item["status"] == "imported" or previous is None or previous.get("status") != "imported":
+                merged[item["url"]] = item
+            else:
+                previous["last_refresh_error"] = item.get("error", "")
+        rows = [merged[entry["url"]] for entry in entries if entry.get("url") in merged]
+        written = {"imported_sources": sum(row["status"] == "imported" for row in rows),
+                   "supported_claims": sum(int(row.get("claims", 0)) for row in rows if row["status"] == "imported"),
+                   "entries": rows, "failed_sources": sum(row["status"] == "failed" for row in rows)}
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(written, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return summary

@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.learning.atlas import learning_atlas
@@ -28,7 +29,7 @@ class LearningAtlas(tk.Toplevel):
         header.pack(fill='x')
         tk.Label(header, text='Your learning atlas', bg=p.BLACK, fg=p.WHITE,
                  font=(DISPLAY, 21)).pack(anchor='w')
-        self.status = StringVar(self)
+        self.status = DisplayVar(self)
         tk.Label(header, textvariable=self.status, bg=p.BLACK, fg=p.MUTED,
                  font=('Segoe UI', 10)).pack(anchor='w', pady=4)
         self.sky = tk.Canvas(self, height=200, bg=p.PANEL, highlightthickness=0)

@@ -1,0 +1,16 @@
+{
+  "accepted_at": "2026-11-10T06:41:32+00:00",
+  "note": "adds robustness: injection guard 4/8 -> after new patterns; routing under 20% misspellings",
+  "metrics": {
+    "topic_relation_accuracy": 1.0,
+    "topic_relation_accuracy_held_out": 1.0,
+    "topic_grouping_accuracy": 1.0,
+    "follow_up_resolution": 1.0,
+    "context_contamination": 0.0,
+    "fixture_recall_at_5": 0.95,
+    "fixture_mean_reciprocal_rank": 0.95,
+    "injection_detection": 1.0,
+    "injection_false_alarms": 0.0,
+    "routing_accuracy_misspelt": 0.962
+  }
+}

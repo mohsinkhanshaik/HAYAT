@@ -17,7 +17,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -99,8 +99,8 @@ class InfoCard(tk.Frame):
         # tkinterdnd2 creates a root of its own, and a StringVar that
         # attached to that one is simply never displayed by a label
         # living on the window -- every value silently blank.
-        self.primary = StringVar(master=self, value="--")
-        self.secondary = StringVar(master=self, value="")
+        self.primary = DisplayVar(master=self, value="--")
+        self.secondary = DisplayVar(master=self, value="")
         tk.Label(self, textvariable=self.primary, bg=palette.PANEL_2, fg=palette.WHITE,
                  font=("Segoe UI", 9), anchor="w", justify="left").pack(fill="x", pady=(3, 0))
         tk.Label(self, textvariable=self.secondary, bg=palette.PANEL_2, fg=palette.MUTED,
@@ -137,6 +137,8 @@ class LiveConsole(tk.Frame):
         self.last_line = ""
 
     def write(self, source: str, message: str, *, level: str = "") -> None:
+        from app.gui_presentation import diagnostic_text
+        source, message = diagnostic_text(source, 40), diagnostic_text(message, 200)
         follow = self.text.yview()[1] >= .98
         stamp = time.strftime("%H:%M:%S")
         body = "alert" if level == "error" else "gold" if level == "notable" else "body"
@@ -327,7 +329,7 @@ class StatusPill(tk.Frame):
         self.dot = tk.Label(self, text="●", bg=palette.PANEL, fg=palette.MUTED,
                             font=("Segoe UI", 8))
         self.dot.pack(side="left", padx=(0, 6))
-        self.value = StringVar(master=self, value=f"{name}: --")
+        self.value = DisplayVar(master=self, value=f"{name}: --")
         tk.Label(self, textvariable=self.value, bg=palette.PANEL, fg=palette.WHITE,
                  font=("Segoe UI", 9)).pack(side="left")
         self.name = name
@@ -351,9 +353,12 @@ class ScrollableColumn(tk.Frame):
     silently disappearing.
     """
 
-    def __init__(self, parent: tk.Misc, palette: Any, width: int = 430) -> None:
+    def __init__(self, parent: tk.Misc, palette: Any, width: int = 430, fill_height: bool = False) -> None:
         super().__init__(parent, bg=palette.BLACK, width=width)
         self.palette = palette
+        #: Stretch the body to at least the visible height, so a section packed with expand=True takes the space
+        #: left over (the invention workbench's result text sat above 200 px of nothing, 2026-11-07).
+        self.fill_height = fill_height
         self.pack_propagate(False)
         self.canvas = tk.Canvas(self, bg=palette.BLACK, highlightthickness=0, bd=0)
         # A themed bar: the classic Tk scrollbar ignores these colours on
@@ -378,26 +383,61 @@ class ScrollableColumn(tk.Frame):
         # transcript should scroll the transcript.
         from app.gui_motion import attach
         self._smooth = attach(self.canvas)
+        if fill_height:
+            # With its height set, the body no longer reports growth when sections are added later, and Tk has
+            # no event for "wants more height". A cheap twice-a-second comparison keeps new content scrollable.
+            self.after(500, self._watch_height)
+
+    def _watch_height(self) -> None:
+        try:
+            if not self.winfo_exists():
+                return
+            self._fit_height()
+            self._resized_bounds()
+            self.after(500, self._watch_height)
+        except tk.TclError:  # the window closed between checks
+            return
+
+    def _resized_bounds(self) -> None:
+        bounds = self.canvas.bbox("all")
+        if bounds != getattr(self, '_scroll_bounds', None):
+            self._scroll_bounds = bounds
+            self.canvas.configure(scrollregion=bounds)
 
     def _resized(self, _event: Any = None) -> None:
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self._fit_height()
+        self._resized_bounds()
+
+    def _fit_height(self) -> None:
+        if not self.fill_height:
+            return
+        # As tall as the view, or as tall as the content needs when that is more (then it scrolls as before).
+        height = max(self.canvas.winfo_height(), self.body.winfo_reqheight())
+        if height > 1 and int(float(self.canvas.itemcget(self._window, 'height') or 0)) != height:
+            self.canvas.itemconfigure(self._window, height=height)
 
     def _canvas_resized(self, event: Any) -> None:
         # Keep the inner frame exactly as wide as the visible canvas, so
         # sections fill the column instead of sitting at their natural width.
-        self.canvas.itemconfigure(self._window, width=event.width)
+        width = self.canvas.winfo_width()
+        if int(float(self.canvas.itemcget(self._window, 'width') or 0)) != width:
+            self.canvas.itemconfigure(self._window, width=width)
+        self._fit_height()
 
     def _mapped(self, _event: Any = None) -> None:
         try:
+            if not self.winfo_viewable():
+                return
             self.canvas.itemconfigure(self._window, state="normal")
-            self.after_idle(lambda: self.canvas.itemconfigure(self._window, state="normal"))
+            self.after_idle(lambda: self.winfo_exists() and self.winfo_viewable() and
+                            self.canvas.itemconfigure(self._window, state="normal"))
         except tk.TclError:
             pass
 
-    def _wheel(self, event: Any) -> str:
+    def _wheel(self, event: Any) -> str | None:
         if self.body.winfo_height() > self.canvas.winfo_height():
-            self._smooth.wheel(event)
-        return "break"
+            return self._smooth.wheel(event)
+        return None
 
     def adopt(self, widget: tk.Misc) -> None:
         """Make a newly added section scroll with the wheel too."""
@@ -447,7 +487,8 @@ class ToolTile(tk.Frame):
             self.pin = tk.Label(self, text="＋", bg=palette.PANEL_2, fg=palette.MUTED,
                                 font=("Segoe UI", 11), cursor="hand2")
             self.pin.pack(side="right")
-            self.pin.bind("<Button-1>", lambda event: (on_pin(self.key), "break")[1])
+            from app.gui_a11y import activatable
+            activatable(self.pin, lambda: on_pin(self.key), palette)
             self.pin.bind("<Enter>", lambda _e: self.pin.configure(fg=palette.GOLD))
             self.pin.bind("<Leave>", lambda _e: self.pin.configure(fg=palette.MUTED))
 
@@ -455,6 +496,10 @@ class ToolTile(tk.Frame):
             widget.bind("<Button-1>", lambda _event: on_run(self.key))
             widget.bind("<Enter>", lambda _event: self._hover(True))
             widget.bind("<Leave>", lambda _event: self._hover(False))
+        # Tab reaches the tile and Enter runs it; the outline it already has turns gold with focus.
+        from app.gui_a11y import activatable
+        activatable(self, lambda: on_run(self.key), palette, keys_only=True)
+        self.configure(highlightbackground=palette.LINE)
 
     def _hover(self, entering: bool) -> None:
         colour = getattr(self.palette, "PANEL_HOVER", "#20242C") if entering else self.palette.PANEL_2
@@ -498,8 +543,10 @@ class Workspace(tk.Frame):
                      ).pack(fill="both", expand=True)
             return
         for index, (key, icon, title) in enumerate(self.pinned):
+            # Flat with a line edge like every other tile: a raised 2-pixel bevel drew white and black edges.
             chip = tk.Frame(self.body, bg=self.palette.PANEL_2, padx=9, pady=6,
-                            cursor="hand2", relief="raised", bd=2)
+                            cursor="hand2", relief="flat", bd=0, highlightthickness=1,
+                            highlightbackground=self.palette.LINE)
             chip.grid(row=index // 4, column=index % 4, sticky="ew", padx=3, pady=3)
             label = tk.Label(chip, text=f"{icon}  {title}", bg=self.palette.PANEL_2,
                              fg=self.palette.WHITE, font=("Segoe UI", 9))
@@ -507,9 +554,12 @@ class Workspace(tk.Frame):
             remove = tk.Label(chip, text="✕", bg=self.palette.PANEL_2, fg=self.palette.MUTED,
                               font=("Segoe UI", 8), cursor="hand2")
             remove.pack(side="left", padx=(8, 0))
-            remove.bind("<Button-1>", lambda _e, k=key: (self.on_remove(k), "break")[1])
+            from app.gui_a11y import activatable
+            activatable(remove, lambda k=key: self.on_remove(k), self.palette)
             for widget in (chip, label):
                 widget.bind("<Button-1>", lambda _e, k=key: self.on_run(k))
+            activatable(chip, lambda k=key: self.on_run(k), self.palette, keys_only=True)
+            chip.configure(highlightbackground=self.palette.LINE)
         for column in range(4):
             self.body.grid_columnconfigure(column, weight=1, uniform="pinned")
 
@@ -526,6 +576,7 @@ class ButtonRow(tk.Frame):
         self.buttons: list[ttk.Button] = []
         self._columns = 0
         self.bind("<Configure>", self._layout)
+        self.bind("<Map>", self._layout, add="+")
 
     def add(self, text: str, command: Callable[[], Any], style: str = "Hayat.TButton") -> ttk.Button:
         button = ttk.Button(self, text=text, style=style, command=command)
@@ -536,6 +587,12 @@ class ButtonRow(tk.Frame):
 
     def _layout(self, _event: Any = None) -> None:
         if not self.buttons:
+            return
+        # A hidden rail has no usable allocation. Re-gridding against its
+        # stale width after a shared font change can alternate its requested
+        # size indefinitely, keeping Tk.update() from returning. Initial
+        # construction still establishes the natural size; Map settles it.
+        if self._columns and not self.winfo_viewable():
             return
         width = self.winfo_width()
         widest = max(button.winfo_reqwidth() for button in self.buttons) + 2
@@ -620,7 +677,11 @@ def section(parent: tk.Misc, palette: Any, title: str,
     # It has a line of its own under the title: beside it, a long title, a header button or larger text cut it off.
     peek = tk.Label(outer.content, text="", bg=palette.PANEL, fg=palette.MUTED, font=("Segoe UI", 9), anchor="w",
                     justify="left")
-    outer.content.bind("<Configure>", lambda event: peek.configure(wraplength=max(80, event.width - 48)), add="+")
+    def wrap_peek(event):
+        width = max(80, event.width - 48)
+        if int(peek.cget('wraplength') or 0) != width:
+            peek.configure(wraplength=width)
+    outer.content.bind("<Configure>", wrap_peek, add="+")
     if action is not None:
         label, command = action
         tk.Button(header, text=label, command=command, bg=palette.PANEL_2,

@@ -1,0 +1,12 @@
+name: startup_and_mesh_check
+description: Inspect startup readiness and independently check the cooperating brain nodes and their shared authority contracts.
+inputs: []
+tools: [startup_readiness, brain_mesh_self_check]
+steps:
+  - tool: startup_readiness
+    arguments: {}
+  - tool: brain_mesh_self_check
+    arguments: {deep: false}
+success_criteria:
+  - Separate configured, deferred, unverified and attention states without treating registration as successful execution.
+trusted: true

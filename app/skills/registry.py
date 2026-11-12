@@ -14,17 +14,26 @@ class SkillRegistry:
         self.tools = tools
         self.loader = loader or SkillLoader()
         self.skills: dict[str, dict[str, Any]] = {}
+        self.issues: list[dict[str, Any]] = []
 
     def reload(self) -> None:
         self.skills.clear()
+        self.issues.clear()
         builtin = SkillLoader(Path(__file__).parent / 'builtin')
         for skill in [*builtin.discover(), *self.loader.discover()]:
             if skill.get("valid") is False:
+                self.issues.append({'name': skill['name'], 'reason': 'Invalid declarative skill definition'})
                 continue
             unknown = set(skill["tools"]) - set(self.tools.names())
             if unknown:
+                self.issues.append({'name': skill['name'], 'reason': 'Missing registered tools: ' + ', '.join(sorted(unknown))})
                 continue
             self.skills[skill["name"]] = skill
+
+    def inventory(self) -> dict[str, Any]:
+        return {'trusted': sum(bool(skill.get('trusted')) for skill in self.skills.values()),
+                'untrusted': sum(not bool(skill.get('trusted')) for skill in self.skills.values()),
+                'names': sorted(self.skills), 'issues': deepcopy(self.issues)}
 
     def execute(self, name: str, inputs: dict[str, Any]) -> list[ToolResult]:
         skill = self.skills[name]

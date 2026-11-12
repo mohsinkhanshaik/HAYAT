@@ -9,6 +9,7 @@ from tkinter import filedialog, ttk
 
 from app.gui_intelligence_parts import FlowRow
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
@@ -37,7 +38,7 @@ class EnrolledFacesWindow(tk.Toplevel):
         self.bind('<Destroy>', self._destroyed, add='+')
         self.name, self.image_path = StringVar(self), StringVar(self)
         self.consent = BooleanVar(self, False)
-        self.status = StringVar(self, 'Choose a local image or refresh your enrolled list. No camera, network or download starts here.')
+        self.status = DisplayVar(self, 'Choose a local image or refresh your enrolled list. No camera, network or download starts here.')
 
         header = tk.Frame(self, bg=p.BLACK, padx=14, pady=10)
         header.pack(fill='x')
@@ -90,7 +91,7 @@ class EnrolledFacesWindow(tk.Toplevel):
         gallery = tk.Frame(self.body, bg=p.BLACK)
         gallery_head = tk.Frame(gallery, bg=p.BLACK)
         gallery_head.pack(fill='x', pady=(0, 3))
-        self.gallery_summary = StringVar(self, 'Your enrolled gallery')
+        self.gallery_summary = DisplayVar(self, 'Your enrolled gallery')
         tk.Label(gallery_head, textvariable=self.gallery_summary, bg=p.BLACK, fg=p.WHITE, anchor='w').pack(side='left')
         self.gallery_filter = StringVar(self)
         self.filter_entry = ttk.Entry(gallery_head, textvariable=self.gallery_filter, width=20)

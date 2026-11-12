@@ -493,3 +493,21 @@ CoinGecko (`/api/v3`) and Binance (all paths). HAYAT honours these refusals.
 Code: [markets](../app/markets.py), [Trade Center window](../app/gui_markets.py),
 [views](../app/gui_markets_views.py), [periods](../app/market_periods.py), [background alerts](../app/market_alerts.py),
 tests in [test_markets](../tests/test_markets.py).
+
+## Market intelligence: scorecard, event impact, positioning, news tone, brief (2026-11-09)
+
+Built on the live prices, scenarios, periods, signal lab and influences above
+([app/market_intelligence.py](../app/market_intelligence.py)). Every relationship is tested against chance
+before HAYAT says it exists, and every number carries its sample size.
+
+| Ask | What HAYAT does | Source |
+| --- | --- | --- |
+| "How good have your market predictions been?" (`market_track_record`) | Every scenario HAYAT gives (odds of being higher in a day and a week, and the weak-to-strong range) is recorded, then scored when its time is up: Brier score against simply quoting the usual rate, and how often the price landed inside the 80 % range. After 20 scored forecasts, a model that did worse than the usual rate is **replaced by the usual rate** in future scenarios, and the scenario says so. | HAYAT's own record (`data/memory/market-forecasts.db`), Kraken closes |
+| "How does bitcoin react to earthquakes?" (`market_event_study`) | For one kind of world event recorded by Global Intelligence, the asset's move over 1, 3 or 7 days after those days, against all days, with a permutation test. Live 2026-11-09: BTC after 24 earthquake days and 252 cyber-attack days, **no measurable effect** (p 0.70 and 0.74). | Global Intelligence record, Kraken daily closes |
+| "How are big funds positioned in bitcoin futures?" (`market_positioning`) | CFTC Commitments of Traders (Traders in Financial Futures) for Bitcoin, Ether, S&P 500, Nasdaq-100, euro, yen and VIX futures: asset managers, leveraged funds and dealers, net position as a share of open interest, the weekly change, and where it stands in three years. For BTC and ETH, whether changes in leveraged funds' position preceded the next week's move. Live 2026-11-09: leveraged funds net short but near their least short in three years; their changes did **not** predict the next week (r −0.02 over 154 weeks). | publicreporting.cftc.gov (robots allow, 1 request/s) |
+| "Is the news about nvidia negative?" (`market_sentiment`) | The average tone of worldwide news coverage by day for three months, the last week against usual, and whether a change in tone ever preceded the next day's move. Cached three hours; GDELT allows one request every five seconds and sometimes answers "too many requests", which HAYAT reports instead of guessing. | GDELT 2.0 DOC API |
+| "Give me a full bitcoin brief" (`market_brief`, Trade Center → Scenarios → **Full brief**) | The situation, what could happen this week with odds and a weak/middle/strong range, what moves it, big players' positioning, news tone, HAYAT's own track record and the risks (big-move frequency, positioning at a three-year extreme), in plain words, with what was not available. | All of the above |
+
+Not built: company fundamentals. SEC EDGAR asks every client to declare a contact e-mail in its user agent,
+and HAYAT never sends the owner's address without being asked; tokenized-stock prices come from Kraken.
+Nothing here is a forecast or advice, and HAYAT never trades.

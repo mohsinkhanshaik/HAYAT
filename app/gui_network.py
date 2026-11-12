@@ -19,6 +19,7 @@ from typing import Any
 
 from app.gui_empty import show_empty
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.logging import log_swallowed
 
 _log = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class RouterPanel:
 
         router = self.studio._card(parent, "Router & connection")
         router.grid(row=0, column=0, sticky="nsew", padx=(0, 10), pady=(10, 10))
-        self.router_name = StringVar(self.parent, "Reading the router…")
+        self.router_name = DisplayVar(self.parent, "Reading the router…")
         tk.Label(router, textvariable=self.router_name, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI Semibold", 13),
                  anchor="w").pack(fill="x", pady=(4, 2))
         self.rows: dict[str, StringVar] = {}
@@ -86,7 +87,7 @@ class RouterPanel:
         top.pack(fill="x", pady=(4, 2))
         self.bars_label = tk.Label(top, text="", bg=p.PANEL, fg=p.GOLD, font=("Segoe UI Semibold", 15))
         self.bars_label.pack(side="left")
-        self.cell_detail = StringVar(self.parent, "")
+        self.cell_detail = DisplayVar(self.parent, "")
         tk.Label(top, textvariable=self.cell_detail, bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 9)).pack(side="left", padx=10)
         self.metrics: dict[str, tk.Label] = {}
         line = tk.Frame(cellular, bg=p.PANEL)
@@ -98,13 +99,13 @@ class RouterPanel:
             self.metrics[key] = label
         self.chart = tk.Canvas(cellular, width=CHART[0], height=CHART[1], bg=p.BLACK, highlightthickness=0)
         self.chart.pack(fill="x", pady=(4, 0))
-        self.cell_note = StringVar(self.parent, "")
+        self.cell_note = DisplayVar(self.parent, "")
         tk.Label(cellular, textvariable=self.cell_note, bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 8), anchor="w",
                  justify="left", wraplength=460).pack(fill="x", pady=(4, 0))
 
         air = self.studio._card(parent, "Wi-Fi around you")
         air.grid(row=1, column=0, sticky="nsew", padx=(0, 10), pady=(0, 10))
-        self.channel_var = StringVar(self.parent, "")
+        self.channel_var = DisplayVar(self.parent, "")
         tk.Label(air, textvariable=self.channel_var, bg=p.PANEL, fg=p.GOLD_SOFT, font=("Segoe UI", 9), anchor="w",
                  justify="left", wraplength=470).pack(fill="x", pady=(2, 4))
         self.nearby = ttk.Treeview(air, columns=("signal", "band", "channel", "load"), show="tree headings", height=6)
@@ -122,7 +123,7 @@ class RouterPanel:
                    command=self.name_selected).pack(side="left")
         ttk.Button(device_buttons, text="Update vendor names (IEEE, ~4 MB)", style="Hayat.TButton", width=0,
                    command=self.update_vendors).pack(side="left", padx=4)
-        self.devices_note = StringVar(self.parent, "")
+        self.devices_note = DisplayVar(self.parent, "")
         tk.Label(devices, textvariable=self.devices_note, bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 8), anchor="w",
                  justify="left", wraplength=470).pack(fill="x", pady=(2, 4))
         self.devices = ttk.Treeview(devices, columns=("name", "mac", "maker", "state"), show="tree headings", height=6)

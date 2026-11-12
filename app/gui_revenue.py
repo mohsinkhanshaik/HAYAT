@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_windows import place_over
 from app.gui_depth import DepthSurface
 from app.revenue_catalog import CATALOG, BY_NAME
@@ -33,7 +34,7 @@ class RevenueWindow(tk.Toplevel):
                  bg=p.PANEL, fg=p.WHITE, anchor='w').pack(fill='x')
         tk.Label(header, text='Discover opportunities. Prepare good work. Measure what earns.',
                  bg=p.PANEL, fg=p.MUTED, anchor='w').pack(fill='x', pady=(4, 10))
-        self.summary = StringVar(self)
+        self.summary = DisplayVar(self)
         tk.Label(header, textvariable=self.summary, bg=p.PANEL, fg=p.GOLD_SOFT,
                  anchor='w', justify='left', wraplength=850).pack(fill='x')
         footer_surface = DepthSurface(self, p, padding=10)

@@ -56,6 +56,74 @@ def test_incomplete_existing_install_is_preserved(tmp_path, monkeypatch):
     assert (target / 'owner-file').read_text() == 'keep'
 
 
+def test_upgrade_preserves_previous_engine_and_is_idempotent(tmp_path, monkeypatch):
+    monkeypatch.setattr(setup, 'ROOT', tmp_path)
+    digest = archive(tmp_path, {'jdk/bin/javac.exe': b'new-engine'})
+    target = tmp_path / 'runtime/java'
+    (target / 'bin').mkdir(parents=True)
+    (target / 'bin/javac.exe').write_bytes(b'old-engine')
+    setup.provision('https://example.org/new.zip', digest, 'fixture.zip', target, 'bin/javac.exe', upgrade=True)
+    backups = list((tmp_path / 'runtime').glob('java-backup-*'))
+    assert len(backups) == 1
+    assert (backups[0] / 'bin/javac.exe').read_bytes() == b'old-engine'
+    assert (target / 'bin/javac.exe').read_bytes() == b'new-engine'
+    setup.provision('https://example.org/new.zip', digest, 'fixture.zip', target, 'bin/javac.exe', upgrade=True)
+    assert len(list((tmp_path / 'runtime').glob('java-backup-*'))) == 1
+
+
+def test_failed_upgrade_restores_previous_engine(tmp_path, monkeypatch):
+    monkeypatch.setattr(setup, 'ROOT', tmp_path)
+    digest = archive(tmp_path, {'jdk/bin/javac.exe': b'new-engine'})
+    target = tmp_path / 'runtime/java'
+    (target / 'bin').mkdir(parents=True)
+    (target / 'bin/javac.exe').write_bytes(b'old-engine')
+    original = Path.rename
+    def locked_activation(source, destination):
+        if source.name.startswith('java-stage-') and destination == target:
+            raise PermissionError('locked fixture')
+        return original(source, destination)
+    monkeypatch.setattr(Path, 'rename', locked_activation)
+    with pytest.raises(PermissionError):
+        setup.provision('https://example.org/new.zip', digest, 'fixture.zip', target, 'bin/javac.exe', upgrade=True)
+    assert (target / 'bin/javac.exe').read_bytes() == b'old-engine'
+
+
+def test_upgrade_refuses_a_target_outside_runtime(tmp_path, monkeypatch):
+    monkeypatch.setattr(setup, 'ROOT', tmp_path)
+    outside = tmp_path / 'outside/java'
+    outside.mkdir(parents=True)
+    with pytest.raises(ValueError):
+        setup.provision('https://example.org/new.zip', 'unused', 'fixture.zip', outside, 'bin/javac.exe', upgrade=True)
+
+
+def test_installed_local_policy_admits_only_the_qualified_new_release():
+    import json
+    import subprocess
+    package = reverse_engineer.PROJECT_ROOT / 'runtime/rea/node_modules/rea-agents'
+    if not (package / 'hayat-ghidra-compatibility.json').is_file():
+        pytest.skip('Local REA 6.8 compatibility patch is not installed.')
+    uri = (package / 'dist/ghidra/GhidraReleasePolicy.js').as_uri()
+    code = f'''import {{ghidraReleaseCompatibility as classify, unverifiedGhidraBuildLimitation as limits}} from {json.dumps(uri)};
+console.log(JSON.stringify({{current:classify('12.2'), upstream:classify('12.1.4'),
+future:classify('12.3'), arbitrary:classify('13.0'), note:limits('12.2')}}));'''
+    result = subprocess.run([str(reverse_engineer.NODE), '--input-type=module', '-e', code],
+                            capture_output=True, text=True, check=True, timeout=20)
+    report = json.loads(result.stdout)
+    assert report['current']['status'] == 'compatible' and report['current']['raw'] == '12.2'
+    assert report['upstream']['status'] == 'verified'
+    assert report['future']['status'] == report['arbitrary']['status'] == 'unsupported'
+    assert 'locally admits exactly 12.2' in report['note']
+
+
+def test_fixture_verification_ignores_hashes_and_comments():
+    from scripts.verify_native_analysis import decompiled_fixture_returns_42 as verified
+    assert not verified({'report': 'return 42;', 'structured': {'subject': {'sha256': '42abc'},
+                                                             'normalized_result': 'return 0;'}})
+    assert not verified({'structured': {'normalized_result': '// return 42;\nreturn 0;'}})
+    assert not verified({'structured': {'normalized_result': None}})
+    assert verified({'structured': {'normalized_result': 'int entry(void) {return 0x2a;}'}})
+
+
 def test_native_engine_discovery_preserves_explicit_paths_and_parent_environment(tmp_path, monkeypatch):
     monkeypatch.setattr(reverse_engineer, 'PROJECT_ROOT', tmp_path)
     for folder, marker in [('ghidra', 'support/analyzeHeadless.bat'), ('java', 'bin/javac.exe')]:
@@ -117,7 +185,10 @@ def test_real_ghidra_run_writes_nothing_outside_the_project(tmp_path):
         found = set()
         for root, pattern in ((temp, 'hsperfdata_*/*'), (profile, '.ghidra*'), (profile, '.rea*')):
             if root.exists():
-                found |= {p for p in root.rglob(pattern) if p.is_file()}
+                # These engine artifacts live at the known root. Recursing the
+                # entire Windows profile also traverses unrelated browser/model
+                # caches and can exhaust the test deadline before REA starts.
+                found |= {p for p in root.glob(pattern) if p.is_file()}
         return found
     before = shot()
     target = tmp_path / 'owned.exe'
@@ -125,8 +196,9 @@ def test_real_ghidra_run_writes_nothing_outside_the_project(tmp_path):
     engine = reverse_engineer.ReverseEngineer(lambda: reverse_engineer.ReaSession())
     try:
         engine.act('open_binary', {'path': str(target), 'provider_id': 'ghidra'}, timeout=360)
-        pseudo = engine.read('procedure_pseudo_code', {'procedure': 'entry'}, timeout=180)['report']
-        assert '42' in pseudo or '0x2a' in pseudo.lower()
+        from scripts.verify_native_analysis import decompiled_fixture_returns_42
+        pseudo = engine.read('procedure_pseudo_code', {'procedure': 'entry'}, timeout=180)
+        assert decompiled_fixture_returns_42(pseudo)
     finally:
         engine.close()
     assert shot() - before == set(), 'REA/Ghidra wrote outside D:\\AI (profile or %TEMP%)'
@@ -144,8 +216,9 @@ def test_real_ghidra_decompiles_an_owned_pe_without_running_it(tmp_path):
     try:
         assert engine.act('open_binary', {'path': str(target), 'provider_id': 'ghidra'}, timeout=360)['ok']
         assert engine.read('binary_overview', {}, timeout=180)['ok']
-        decompiled = engine.read('procedure_pseudo_code', {'procedure': 'entry'}, timeout=180)['report']
-        assert '42' in decompiled or '0x2a' in decompiled.lower()
+        from scripts.verify_native_analysis import decompiled_fixture_returns_42
+        decompiled = engine.read('procedure_pseudo_code', {'procedure': 'entry'}, timeout=180)
+        assert decompiled_fixture_returns_42(decompiled)
         # A changing Ghidra note still cannot slip through the read path.
         with pytest.raises(PermissionError):
             engine.read('set_comment', {'address': '0x140001000', 'comment': 'x'})

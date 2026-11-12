@@ -30,7 +30,7 @@ _ENV = re.compile(r"^[A-Z_][A-Z0-9_]{0,63}$")
 
 def register_builtin_web_research(gateway: "MCPGateway", *, enabled: bool = True) -> dict[str, Any]:
     """Register HAYAT's audited project-local read-only research server."""
-    from app.integrations.web_research_mcp import READ_ONLY_TOOLS, SERVER_ID
+    from app.integrations.web_research_names import READ_ONLY_TOOLS, SERVER_ID
 
     return gateway.register(MCPServerManifest(
         server_id=SERVER_ID,
@@ -161,7 +161,7 @@ class MCPGateway:
     def _prepared(self, server_id: str) -> tuple[MCPServerManifest, dict[str, str]]:
         item = self.get(server_id)
         if self.zero_cost_only:
-            from app.integrations.web_research_mcp import READ_ONLY_TOOLS, SERVER_ID
+            from app.integrations.web_research_names import READ_ONLY_TOOLS, SERVER_ID
             if (item.server_id != SERVER_ID or item.command != sys.executable
                     or item.arguments != ["-m", "app.integrations.web_research_mcp"]
                     or item.secret_environment or not set(item.read_only_tools) <= set(READ_ONLY_TOOLS)):

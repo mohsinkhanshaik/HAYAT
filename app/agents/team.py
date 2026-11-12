@@ -25,7 +25,13 @@ The rules that keep this safe and honest:
 * each worker, and the whole team, has a step and time budget;
 * each worker appears in the running-activity list while it works, and the
   full report is saved, so nothing about the team is hidden;
-* workers are temporary: they exist for one goal and are gone when it ends.
+* workers are temporary: they exist for one goal and are gone when it ends;
+* a team bigger than the flat limit is organised in groups
+  (:mod:`app.agents.team_groups`): each group's lead condenses its members'
+  findings into a cited group report, code checks every claim's link against
+  what the members' tools returned (anything else is marked unverified, never
+  dropped), the Verification Agent reads and re-opens the group reports' links,
+  and covered items are counted once across groups. Teams that fit stay flat.
 """
 from __future__ import annotations
 
@@ -40,6 +46,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
 
+from app.agents.team_groups import LEAD_SCHEMA, TeamGroup, condense, distinct_coverage, lead_prompt, norm_url, parse_lead
 from app.logging import log_swallowed
 
 _log = logging.getLogger(__name__)
@@ -54,6 +61,9 @@ WORKER_TOOLS = (
     "content_idea_miner", "affiliate_opportunity_finder", "local_business_finder", "lead_list_builder",
 )
 VERIFIER = "Verification Agent"
+#: What every member of a grouped team returns, so its covered items can be counted across groups.
+GROUP_DELIVERABLE = ("Cited findings for your part, and each distinct item you covered with the exact source link "
+                     "you observed.")
 
 
 def _elapsed(started_at: str) -> float:
@@ -83,7 +93,24 @@ _EXPLICIT = re.compile(
     r"(?i)\b(?:use|create|spawn|build|assemble|make|start|run)\s+(?:a\s+|some\s+)?"
     r"(?:team|crew|squad|workers?|sub-?agents?|agents?|specialists?)\b"
     r"|\bmulti-?agent\b|\bteam\s+of\s+(?:agents|workers|specialists)\b"
+    r"|\b(?:team|crew|squad)\s+of\s+\d{1,4}\s+(?:[a-z-]+\s+)?(?:agents|workers|specialists)\b"
+    r"|\b(?:use|create|spawn|build|assemble|start|run|deploy|launch|with)\s+\d{1,4}\s+(?:[a-z-]+\s+)?"
+    r"(?:agents|workers|sub-?agents|specialists)\b"
+    r"|\b(?:biggest|largest|maximum|max|full[- ]size)\s+(?:possible\s+)?team\b"
 )
+#: How many workers the owner asked for: "a team of 60 agents", "use 40 workers".
+_REQUESTED = re.compile(
+    r"(?i)\b(?:team|crew|squad)\s+of\s+(\d{1,4})\b"
+    r"|\b(?:use|create|spawn|build|assemble|start|run|deploy|launch|with)\s+(\d{1,4})\s+(?:[a-z-]+\s+)?"
+    r"(?:agents|workers|sub-?agents|specialists)\b")
+_LARGEST = re.compile(r"(?i)\b(?:biggest|largest|maximum|max|full[- ]size)\s+(?:possible\s+)?team\b")
+#: "The largest team you can": as many as this machine allows.
+AS_MANY_AS_FIT = 10**6
+_ITEM_COUNT = re.compile(
+    r"(?i)\b(\d{1,4})\s+(?:(?!agents?\b|workers?\b|specialists?\b)[a-z-]+\s+){0,3}?"
+    r"(?:companies|startups|firms|businesses|products|tools|universities|colleges|schools|jobs|roles|positions|"
+    r"suppliers|vendors|competitors|apps|platforms|frameworks|libraries|countries|cities|markets|niches|courses|"
+    r"investors|funds|stocks|papers|items|sources|options)\b")
 #: Many items of one kind ("20 AI infrastructure companies")...
 _MANY_ITEMS = re.compile(
     r"(?i)\b(?:\d{1,3}|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|fifty|dozens?\s+of)\s+"
@@ -104,10 +131,31 @@ _CAPACITY = re.compile(
     r"|\b(?:agents?|workers?|teams?)\b.{0,20}?\b(?:limit|capacity|cap|maximum)\b")
 
 
+_QUESTION = re.compile(r"(?i)^(?:how|what|whats|what's|can|could|do|does|is|are|tell me|give me|show me)\b|\?\s*$")
+
+
 def capacity_question(text: str) -> bool:
-    """"How many agents can you run?" -- answered from the measured capacity, not by the model."""
+    """"How many agents can you run?" -- answered from the measured capacity, not by the model.
+
+    Only a question: "use the maximum number of agents to research X" is a request for a team.
+    """
     value = " ".join(str(text or "").split())
-    return len(value) <= 200 and bool(_CAPACITY.search(value))
+    return len(value) <= 200 and bool(_CAPACITY.search(value)) and bool(_QUESTION.search(value))
+
+
+def requested_workers(text: str) -> int | None:
+    """How many workers the owner asked for, AS_MANY_AS_FIT for "the largest team", else None."""
+    value = " ".join(str(text or "").split())
+    match = _REQUESTED.search(value)
+    if match:
+        number = int(match.group(1) or match.group(2))
+        return number if number > 0 else None
+    return AS_MANY_AS_FIT if _LARGEST.search(value) else None
+
+
+def _item_count(goal: str) -> int | None:
+    match = _ITEM_COUNT.search(goal)
+    return int(match.group(1)) if match and int(match.group(1)) > 0 else None
 
 
 def wants_team(text: str) -> bool:
@@ -126,6 +174,10 @@ class WorkerSpec:
     depends_on: list[str] = field(default_factory=list)
     deliverable: str = ""
     target_count: int | None = None
+    #: The group this worker belongs to in a grouped team ("" in a flat team).
+    group: str = ""
+    #: What a coverage row names: a company in the career workflow, any item in a grouped team.
+    item_label: str = "company"
 
 
 @dataclass
@@ -142,6 +194,11 @@ class WorkerResult:
     successful_tools: list[str] = field(default_factory=list)
     complete: bool = False
     coverage: list[dict[str, str]] = field(default_factory=list)
+    group: str = ""
+    #: "worker", or "group" for a group report handed to the verifier and the final answer.
+    kind: str = "worker"
+    #: Links this worker passed to a tool call that succeeded (how verification of links is measured).
+    opened: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -165,6 +222,15 @@ class TeamReport:
     max_seconds: float = 1200.0
     max_tool_calls: int = 40
     limits: dict = field(default_factory=dict)
+    #: A grouped team's groups and their condensed reports; empty for a flat team.
+    groups: list[TeamGroup] = field(default_factory=list)
+    #: Said to the owner when the team differs from what was asked ("you asked for 500...").
+    plan_note: str = ""
+    #: Distinct items covered across all groups (an item two groups covered counts once).
+    coverage_total: int = 0
+    #: Groups whose cited links the Verification Agent opened, and those it did not.
+    verified_groups: list[str] = field(default_factory=list)
+    unchecked_groups: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -225,6 +291,8 @@ class WorkerTeam:
         self._running: dict[str, TeamReport] = {}
         self._recent: list[TeamReport] = []
         self._capacity = None
+        # What plan() decided beyond the worker list (groups, a note), per planning thread.
+        self._planned = threading.local()
 
     # ------------------------------------------------------------- capacity
 
@@ -236,16 +304,28 @@ class WorkerTeam:
             self._capacity = measure(self.model, reports=self.root / "data" / "artifacts" / "teams")
         return self._capacity
 
+    def measured_capacity(self):
+        """The last measurement, or None: for displays that must not wait on nvidia-smi."""
+        return self._capacity
+
     def _new_report(self, goal: str) -> TeamReport:
         capacity = self.capacity(refresh=True)
+        self._planned.groups, self._planned.note = [], ""
         workers, planned_by = self.plan(goal)
         report = TeamReport(f"team-{uuid.uuid4().hex[:8]}", goal, datetime.now(UTC).isoformat(), workers,
                             planned_by=planned_by)
-        report.max_seconds = capacity.team_seconds(len(workers))
+        groups = list(getattr(self._planned, "groups", None) or [])
+        roles = {spec.role for spec in workers}
+        if groups and all(set(group.members) <= roles for group in groups):
+            report.groups = groups
+        report.plan_note = str(getattr(self._planned, "note", "") or "")
+        report.max_seconds = capacity.team_seconds(len(workers), len(report.groups))
         report.max_tool_calls = capacity.team_tool_calls(len(workers))
         report.limits = {"max_workers": capacity.max_workers, "context_tokens": capacity.context_tokens,
                          "seconds_per_worker": capacity.seconds_per_worker,
-                         "concurrent_teams": capacity.concurrent_teams}
+                         "concurrent_teams": capacity.concurrent_teams,
+                         "grouped_workers": capacity.grouped_workers, "groups": len(report.groups),
+                         "expected_seconds": (len(workers) + len(report.groups)) * capacity.seconds_per_worker}
         return report
 
     # ------------------------------------------------------------- planning
@@ -257,13 +337,177 @@ class WorkerTeam:
     def plan(self, goal: str) -> tuple[list[WorkerSpec], str]:
         """The team for this goal, designed by HAYAT's model, or a fixed fallback when it cannot."""
         tools = self.available_tools()
+        self._planned.groups, self._planned.note = [], ""
         career = self._career_plan(goal, tools)
         if career:
             return career, "career workflow"
-        designed = self._model_plan(goal, tools) if self.model is not None else None
+        requested = requested_workers(goal)
+        if requested:
+            capacity = self.capacity()
+            limit = capacity.team_limit
+            total = min(requested, limit)
+            if requested > limit and requested != AS_MANY_AS_FIT:
+                self._planned.note = (f"You asked for {requested} workers; this machine can run at most {limit} in one "
+                                      f"team (its {capacity.context_tokens:,}-token brain window must hold every group "
+                                      f"report), so this team has {total}.")
+            sizes = capacity.layout(total)
+            if sizes:
+                specs, groups, planned_by = self._grouped_plan(goal, tools, sizes)
+                self._planned.groups = groups
+                return specs, planned_by
+        designed = self._model_plan(goal, tools, requested=requested) if self.model is not None else None
         if designed:
             return designed, "model"
         return self._fallback_plan(goal, tools), "fallback"
+
+    # ------------------------------------------------------------- grouped teams
+
+    def _grouped_plan(self, goal: str, tools: list[str], sizes: list[int]) -> tuple[list[WorkerSpec], list[TeamGroup], str]:
+        """A team bigger than the flat limit: groups (designed by the model, else numbered parts) of members.
+
+        Each member starts as a working generic researcher for its part of the
+        group's focus; when its group begins, the model may give the members
+        distinct missions (``_design_members``). Every member returns a
+        structured report so covered items can be counted across groups.
+        """
+        groups = self._model_groups(goal, len(sizes)) if self.model is not None else None
+        planned_by = "grouped: model" if groups else "grouped: fallback"
+        if not groups:
+            groups = [TeamGroup(f"Group {index}", f"Part {index} of {len(sizes)} of the goal: {goal[:200]}")
+                      for index in range(1, len(sizes) + 1)]
+        items = _item_count(goal)
+        target = -(-items // sum(sizes)) if items else None
+        search = [name for name in ("research_topic", "web_search", "public_web_fetch", "public_api_get") if name in tools]
+        specs: list[WorkerSpec] = []
+        used = {VERIFIER.casefold()}
+        for group, size in zip(groups, sizes):
+            group.members, group.designed_by = [], "placeholder"
+            for index in range(1, size + 1):
+                role = self._unique_role(f"{group.name} Agent {index}", used)
+                specs.append(WorkerSpec(
+                    role, f"Part {index} of {size} of the {group.name} group's focus: {group.focus} Cover items the "
+                          "rest of the team has not covered yet (you are given that list) and cite the source link "
+                          "for every claim.",
+                    list(search), deliverable=GROUP_DELIVERABLE, target_count=target, group=group.name,
+                    item_label="item"))
+                group.members.append(role)
+        verifier = self._with_verifier(specs, tools)[-1]
+        verifier.depends_on = [group.name for group in groups]
+        verifier.mission = ("Each group report lists cited claims with the link a worker's tool returned. Re-open the "
+                            "most important cited links with your tools -- at least one from every group -- and say for "
+                            "each checked claim whether the page supports it. Reject unsupported claims, keep "
+                            "unverified ones labelled unverified, and name the groups you could not check.")
+        return specs + [verifier], groups, planned_by
+
+    @staticmethod
+    def _unique_role(role: str, used: set[str]) -> str:
+        role = " ".join(role.split())[:60] or "Worker Agent"
+        candidate, number = role, 2
+        while candidate.casefold() in used:
+            candidate, number = f"{role} {number}", number + 1
+        used.add(candidate.casefold())
+        return candidate
+
+    def _model_groups(self, goal: str, count: int) -> list[TeamGroup] | None:
+        prompt = (
+            f"Split the goal below into exactly {count} groups of temporary specialist workers. Each group takes one "
+            "distinct part of the work (a sub-topic, a region, a category or a slice of the items) so groups do not "
+            "repeat each other. Give each group a short name (two or three words, no 'verification'), a one-sentence "
+            "focus, and the earlier groups whose results it needs first (depends_on, earlier names only).\n"
+            f"Goal: {goal}\n"
+            'Reply with JSON only: {"groups": [{"name": "...", "focus": "...", "depends_on": []}]}')
+        schema = {"type": "object", "properties": {"groups": {"type": "array", "items": {
+            "type": "object", "properties": {"name": {"type": "string"}, "focus": {"type": "string"},
+                                             "depends_on": {"type": "array", "items": {"type": "string"}}},
+            "required": ["name", "focus"]}}}, "required": ["groups"]}
+        try:
+            reply = self.model.generate([{"role": "user", "content": prompt}], temperature=0.1,
+                                        response_schema=schema, max_tokens=120 * count + 200)
+            rows = json.loads(str(getattr(reply, "content", "") or "{}")).get("groups")
+        except Exception:
+            log_swallowed(_log, "designing the groups of a large worker team")
+            return None
+        if not isinstance(rows, list):
+            return None
+        groups: list[TeamGroup] = []
+        names: dict[str, str] = {VERIFIER.casefold(): VERIFIER}
+        for row in rows:
+            if not isinstance(row, dict) or len(groups) >= count:
+                continue
+            name = " ".join(str(row.get("name") or "").split())[:40]
+            focus = " ".join(str(row.get("focus") or "").split())[:300]
+            if not name or not focus or name.casefold() in names or "verif" in name.casefold():
+                continue
+            depends = list(dict.fromkeys(names[str(item).casefold()] for item in row.get("depends_on") or []
+                                         if str(item).casefold() in names))
+            names[name.casefold()] = name
+            groups.append(TeamGroup(name, focus, depends_on=depends))
+        if not groups:
+            return None
+        # Fewer usable groups than the layout needs: number the missing parts rather than drop workers.
+        for index in range(len(groups) + 1, count + 1):
+            name = self._unique_role(f"Group {index}", set(names))
+            names[name.casefold()] = name
+            groups.append(TeamGroup(name, f"Part {index} of {count} of the goal not covered by the other groups: "
+                                          f"{goal[:200]}"))
+        return groups
+
+    def _design_members(self, report: TeamReport, group: TeamGroup) -> None:
+        """Give a group's members distinct missions from the model when the group starts; else keep the parts."""
+        if self.model is None or not group.members:
+            return
+        tools = self.available_tools()
+        catalog = "\n".join(f"- {name}: {self._describe_tool(name)}" for name in tools)
+        size = len(group.members)
+        prompt = (
+            f"You organise the '{group.name}' group of a temporary team working on: {report.goal}\n"
+            f"Group focus: {group.focus}\nSplit this focus between exactly {size} workers, each covering a different "
+            "part so they do not repeat each other. Give each a short role name ending in 'Agent', a one-sentence "
+            "mission and the tools it needs from the catalog, and the earlier workers of this group whose findings it "
+            "needs (depends_on). Do not add a verification worker.\n"
+            f"Tool catalog:\n{catalog}\n"
+            'Reply with JSON only: {"workers": [{"role": "...", "mission": "...", "tools": ["..."], "depends_on": []}]}')
+        schema = {"type": "object", "properties": {"workers": {"type": "array", "items": {
+            "type": "object", "properties": {"role": {"type": "string"}, "mission": {"type": "string"},
+                                             "tools": {"type": "array", "items": {"type": "string"}},
+                                             "depends_on": {"type": "array", "items": {"type": "string"}}},
+            "required": ["role", "mission", "tools"]}}}, "required": ["workers"]}
+        try:
+            reply = self.model.generate([{"role": "user", "content": prompt}], temperature=0.1,
+                                        response_schema=schema, max_tokens=110 * size + 200)
+            rows = json.loads(str(getattr(reply, "content", "") or "{}")).get("workers")
+        except Exception:
+            log_swallowed(_log, f"designing the members of team group {group.name}")
+            group.designed_by = "placeholder (the model could not design the members)"
+            return
+        if not isinstance(rows, list):
+            group.designed_by = "placeholder (the model could not design the members)"
+            return
+        by_role = {spec.role: spec for spec in report.workers}
+        members = [by_role[role] for role in group.members if role in by_role]
+        used = {spec.role.casefold() for spec in report.workers if spec.group != group.name} | {VERIFIER.casefold()}
+        designed: dict[str, str] = {}
+        applied = 0
+        for row in rows:
+            if applied >= len(members) or not isinstance(row, dict):
+                continue
+            role = " ".join(str(row.get("role") or "").split())[:40]
+            mission = " ".join(str(row.get("mission") or "").split())[:300]
+            if not role or not mission or "verif" in role.casefold():
+                continue
+            spec = members[applied]
+            spec.role = self._unique_role(role, used)
+            spec.mission = mission
+            allowed = [name for name in row.get("tools") or [] if name in tools][:5]
+            spec.tools = allowed or spec.tools
+            spec.depends_on = list(dict.fromkeys(designed[str(name).casefold()] for name in row.get("depends_on") or []
+                                                 if str(name).casefold() in designed))
+            designed[role.casefold()] = spec.role
+            applied += 1
+        for spec in members[applied:]:           # placeholders keep their working generic mission
+            spec.role = self._unique_role(spec.role, used)
+        group.members = [spec.role for spec in members]
+        group.designed_by = f"model ({applied} of {len(members)} members)" if applied else "placeholder"
 
     def _career_plan(self, goal: str, tools: list[str]) -> list[WorkerSpec] | None:
         """A predictable five-role workflow, without an extra model round trip to plan it."""
@@ -310,12 +554,15 @@ class WorkerTeam:
         verifier.target_count = count
         return specs + [verifier]
 
-    def _model_plan(self, goal: str, tools: list[str]) -> list[WorkerSpec] | None:
+    def _model_plan(self, goal: str, tools: list[str], *, requested: int | None = None) -> list[WorkerSpec] | None:
         catalog = "\n".join(f"- {name}: {self._describe_tool(name)}" for name in tools)
+        limit = self.capacity().max_workers - 1
+        asked = (f"The owner asked for {requested} workers in all, so design {min(limit, max(2, requested - 1))} "
+                 "plus the verifier. " if requested and requested != AS_MANY_AS_FIT else "")
         prompt = (
             "Design a small team of temporary specialist workers for the goal below. Each worker does one part "
             "and passes its findings on. Use as many workers as the goal genuinely splits into: at least 2 and at "
-            f"most {self.capacity().max_workers - 1} on this machine; fewer when the work does not divide. Give each "
+            f"most {limit} on this machine; fewer when the work does not divide. {asked}Give each "
             "a short role name ending in 'Agent', a "
             "one-sentence mission, the tools it needs from the catalog, and the roles whose findings it needs "
             "first (depends_on, earlier roles only). Do not add a verification worker; one is always added. "
@@ -450,26 +697,21 @@ class WorkerTeam:
 
         started = time.monotonic()
         try:
-            with ACTIVITY.track("task", "Worker team", f"{len(report.workers)} workers: {report.goal[:120]}"):
-                for spec in report.workers:
-                    if report.cancelled or time.monotonic() - started >= report.max_seconds:
-                        report.results.append(WorkerResult(spec.role, spec.mission, spec.tools, False, "",
-                                                           note="skipped: team stopped" if report.cancelled else "skipped: the team's time budget ran out"))
-                        continue
-                    report.current_worker = spec.role
-                    inputs = [result for result in report.results if result.role in spec.depends_on] or (
-                        list(report.results) if spec.role == VERIFIER else [])
-                    with ACTIVITY.track("task", spec.role, spec.mission[:160]):
-                        report.results.append(self._run_worker(spec, report, inputs, deadline=started + report.max_seconds))
+            label = (f"{len(report.workers)} workers in {len(report.groups)} groups" if report.groups
+                     else f"{len(report.workers)} workers")
+            with ACTIVITY.track("task", "Worker team", f"{label}: {report.goal[:120]}"):
+                final_inputs = (self._run_grouped(report, started) if report.groups
+                                else self._run_flat(report, started))
                 if report.cancelled or time.monotonic() >= started + report.max_seconds:
                     report.answer = 'Team stopped before the final answer. Review the recorded findings and gaps in its report.'
                 else:
-                    report.answer = self._final_answer(report)
+                    report.answer = self._final_answer(report, final_inputs)
         finally:
             report.current_worker = ''
             report.finished = True
             report.complete = (not report.cancelled and not report.note and time.monotonic() < started + report.max_seconds
-                               and len(report.results) == len(report.workers) and all(item.complete for item in report.results))
+                               and len(report.results) == len(report.workers) and all(item.complete for item in report.results)
+                               and not report.unchecked_groups)
             report.seconds = round(time.monotonic() - started, 1)
             saved = self._save(report)
             report.report_path = str(saved) if saved is not None else ''
@@ -477,9 +719,125 @@ class WorkerTeam:
                 self._running.pop(report.team_id, None)
                 self._recent = ([report] + self._recent)[:10]
 
-    def _run_worker(self, spec: WorkerSpec, report: TeamReport, inputs: list[WorkerResult], *, deadline=float('inf')) -> WorkerResult:
+    @staticmethod
+    def _skipped(spec: WorkerSpec, report: TeamReport) -> WorkerResult:
+        return WorkerResult(spec.role, spec.mission, spec.tools, False, "", group=spec.group,
+                            note="skipped: team stopped" if report.cancelled else "skipped: the team's time budget ran out")
+
+    def _run_flat(self, report: TeamReport, started: float) -> list[WorkerResult]:
+        """Every worker in order; the verifier and the final answer read every worker's findings."""
+        from app.activity import ACTIVITY
+
+        for spec in report.workers:
+            if report.cancelled or time.monotonic() - started >= report.max_seconds:
+                report.results.append(self._skipped(spec, report))
+                continue
+            report.current_worker = spec.role
+            inputs = [result for result in report.results if result.role in spec.depends_on] or (
+                list(report.results) if spec.role == VERIFIER else [])
+            with ACTIVITY.track("task", spec.role, spec.mission[:160]):
+                report.results.append(self._run_worker(spec, report, inputs, deadline=started + report.max_seconds))
+        return list(report.results)
+
+    def _run_grouped(self, report: TeamReport, started: float) -> list[WorkerResult]:
+        """Group by group: members, then the group's lead condenses; the verifier reads the group reports."""
+        from app.activity import ACTIVITY
+
+        deadline = started + report.max_seconds
+        stopped = lambda: report.cancelled or time.monotonic() >= deadline
+        group_results: dict[str, WorkerResult] = {}
+        for group in report.groups:
+            if not stopped():
+                report.current_worker = f"{group.name} (planning)"
+                self._design_members(report, group)
+            by_role = {spec.role: spec for spec in report.workers}
+            members: list[WorkerResult] = []
+            for role in group.members:
+                spec = by_role[role]
+                if stopped():
+                    result = self._skipped(spec, report)
+                else:
+                    report.current_worker = spec.role
+                    inputs = [item for item in members if item.role in spec.depends_on]
+                    inputs += [group_results[name] for name in group.depends_on if name in group_results]
+                    covered = [row["company"] for row in distinct_coverage(
+                        row for item in report.results for row in item.coverage)]
+                    with ACTIVITY.track("task", spec.role, spec.mission[:160]):
+                        result = self._run_worker(spec, report, inputs, deadline=deadline, covered=covered)
+                    result.group = group.name
+                report.results.append(result)
+                members.append(result)
+            self._condense(report, group, members, deadline)
+            group_results[group.name] = self._group_result(group, members)
+        verifier = report.workers[-1]
+        if stopped():
+            checked = self._skipped(verifier, report)
+        else:
+            report.current_worker = verifier.role
+            with ACTIVITY.track("task", verifier.role, verifier.mission[:160]):
+                checked = self._run_worker(verifier, report, list(group_results.values()), deadline=deadline)
+        report.results.append(checked)
+        self._record_verification(report, checked)
+        report.coverage_total = len(distinct_coverage(row for group in report.groups for row in group.coverage))
+        return [*group_results.values(), checked]
+
+    def _condense(self, report: TeamReport, group: TeamGroup, members: list[WorkerResult], deadline: float) -> None:
+        """The group lead's turn: the model proposes condensed claims; code checks every link (team_groups)."""
+        from app.activity import ACTIVITY
+
         started = time.monotonic()
-        result = WorkerResult(spec.role, spec.mission, spec.tools, False, "")
+        capacity = self.capacity()
+        budget = capacity.group_report_chars(len(report.groups))
+        found = [item for item in members if item.findings]
+        data, why = None, ""
+        if not found:
+            why = "no member returned findings"
+        elif report.cancelled or time.monotonic() >= deadline:
+            why = "team stopped" if report.cancelled else "the team's time budget ran out"
+        elif self.model is None:
+            why = "no model is available for the group lead"
+        else:
+            report.current_worker = f"{group.name} lead"
+            prompt = lead_prompt(report.goal, group, members, capacity.lead_share_chars(len(found)), budget)
+            from app.agent.context import UNTRUSTED_DATA_NOTICE
+            from app.agents.capacity import LEAD_ANSWER_TOKENS
+            try:
+                with ACTIVITY.track("task", f"{group.name} lead", f"Condensing {len(found)} workers' findings"):
+                    reply = self.model.generate([{"role": "user", "content": prompt + "\n\n" + UNTRUSTED_DATA_NOTICE}],
+                                                temperature=0.1, response_schema=LEAD_SCHEMA,
+                                                max_tokens=LEAD_ANSWER_TOKENS)
+                data = parse_lead(str(getattr(reply, "content", "") or ""))
+                why = "" if data is not None else "the lead's reply was not a valid condensed report"
+            except Exception as exc:
+                why = f"the lead's model call failed: {type(exc).__name__}"
+                log_swallowed(_log, f"condensing team group {group.name}")
+        condense(group, members, data, budget=budget, why=why)
+        group.seconds = round(time.monotonic() - started, 1)
+
+    @staticmethod
+    def _group_result(group: TeamGroup, members: list[WorkerResult]) -> WorkerResult:
+        """A group report in the shape the verifier and the final answer read."""
+        sources = list(dict.fromkeys([*group.cited_sources(), *(row["source"] for row in group.coverage)]))
+        tools = list(dict.fromkeys(name for item in members for name in item.successful_tools))
+        return WorkerResult(f"{group.name} group", group.focus, [], any(item.ok for item in members), group.report,
+                            successful_tools=tools, sources=sources, complete=bool(members) and all(
+                                item.complete for item in members), coverage=list(group.coverage),
+                            note=f"{len(group.gaps)} gaps, listed in the group report" if group.gaps else "",
+                            group=group.name, kind="group")
+
+    @staticmethod
+    def _record_verification(report: TeamReport, verifier: WorkerResult) -> None:
+        """Which groups had a cited link actually re-opened by the Verification Agent's tools."""
+        opened = {norm_url(url) for url in verifier.opened} if verifier.successful_tools else set()
+        report.verified_groups, report.unchecked_groups = [], []
+        for group in report.groups:
+            cited = {norm_url(url) for url in group.cited_sources()}
+            (report.verified_groups if cited & opened else report.unchecked_groups).append(group.name)
+
+    def _run_worker(self, spec: WorkerSpec, report: TeamReport, inputs: list[WorkerResult], *, deadline=float('inf'),
+                    covered: list[str] | None = None) -> WorkerResult:
+        started = time.monotonic()
+        result = WorkerResult(spec.role, spec.mission, spec.tools, False, "", group=spec.group)
         if self.model is None:
             result.note = "no model is available to run this worker"
             return result
@@ -491,20 +849,41 @@ class WorkerTeam:
                 log_swallowed(_log, f"describing tool {name} to a worker")
         # Every input gets an equal share of the window, so none is cut off the end.
         share = self.capacity().share_chars(len(inputs), for_verifier=spec.role == VERIFIER)
-        handed ="\n\n".join(f"Findings from {item.role} ({'evidence gathered' if item.ok else 'UNVERIFIED'}):\n"
-                              f"{item.findings[:share]}\nSources: {', '.join(item.sources)}\n"
-                              f"Coverage: {json.dumps(item.coverage)}\n"
-                              f"Task complete: {item.complete}\nGaps: {item.note or 'none recorded'}"
-                              for item in inputs)
+
+        def hand(item: WorkerResult) -> str:
+            if item.kind == "group":
+                # A group report already carries its cited links, items and gaps, sized to fit.
+                return (f"Group report from the {item.role} ({'evidence gathered' if item.ok else 'UNVERIFIED'}):\n"
+                        f"{item.findings[:share]}")
+            return (f"Findings from {item.role} ({'evidence gathered' if item.ok else 'UNVERIFIED'}):\n"
+                    f"{item.findings[:share]}\nSources: {', '.join(item.sources)}\n"
+                    f"Coverage: {json.dumps(item.coverage)}\n"
+                    f"Task complete: {item.complete}\nGaps: {item.note or 'none recorded'}")
+
+        handed = "\n\n".join(hand(item) for item in inputs)
+        if covered:
+            names, shown = [], 0
+            for name in covered:
+                if shown + len(name) + 2 > 1500:
+                    break
+                names.append(name)
+                shown += len(name) + 2
+            more = f" (and {len(covered) - len(names)} more)" if len(names) < len(covered) else ""
+            handed = (handed + "\n\n" if handed else "") + (
+                f"Items the rest of the team has already covered -- do not repeat them, find others: "
+                f"{'; '.join(names)}{more}")
         contract = ''
         if spec.deliverable:
+            label = spec.item_label or 'company'
+            plural = 'companies' if label == 'company' else f'{label}s'
+            field_note = '' if label == 'company' else ' ("company" is the field name for any item)'
             contract = (f' Your required deliverable: {spec.deliverable} When finished, return JSON only with '
                         '"findings" (a readable summary with citations), "completion" ("complete", "partial" or "blocked"), '
-                        '"coverage" (a list of {"company": "name", "source": "exact observed URL"}), and "gaps" '
+                        '"coverage" (a list of {"company": "name", "source": "exact observed URL"})' + field_note + ', and "gaps" '
                         '(a list of unresolved issues). Each coverage row means that you completed your own mission for '
-                        'that company, not merely that its name was mentioned. List each company once. Unsupported or '
-                        'unchecked companies do not count. Mark partial if any requested work or profile evidence is missing. '
-                        + (f'The coverage target is {spec.target_count} distinct companies.' if spec.target_count else ''))
+                        f'that {label}, not merely that its name was mentioned. List each {label} once. Unsupported or '
+                        f'unchecked {plural} do not count. Mark partial if any requested work or profile evidence is missing. '
+                        + (f'The coverage target is {spec.target_count} distinct {plural}.' if spec.target_count else ''))
         from app.agent.context import UNTRUSTED_DATA_NOTICE
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": (
@@ -567,6 +946,7 @@ class WorkerTeam:
                         checked = Verifier().check({'type': 'tool_success'}, outcome)
                         if checked.passed:
                             result.successful_tools.append(name)
+                            result.opened = list(dict.fromkeys([*result.opened, *_source_urls(arguments)]))[:100]
                             raw_output = json.dumps(outcome.output, default=str)
                             observed = raw_output[:8000 if spec.deliverable else 4000]
                             result.sources = list(dict.fromkeys([*result.sources, *_source_urls(outcome.output)]))[:100]
@@ -638,15 +1018,18 @@ class WorkerTeam:
         valid_gaps = isinstance(gaps, list) and all(isinstance(gap, str) for gap in gaps)
         notes = [gap.strip() for gap in gaps if gap.strip()] if valid_gaps else ['missing or invalid gap report']
         if spec.target_count and len(result.coverage) < spec.target_count:
-            notes.append(f'Coverage: {len(result.coverage)} of {spec.target_count} requested companies; remaining work is incomplete')
+            plural = 'companies' if (spec.item_label or 'company') == 'company' else f'{spec.item_label}s'
+            notes.append(f'Coverage: {len(result.coverage)} of {spec.target_count} requested {plural}; remaining work is incomplete')
         if data.get('completion') != 'complete':
             notes.append('worker reported partial or blocked work')
         if notes:
             result.note = '; '.join(filter(None, [result.note, *notes]))
         result.complete = result.ok and data.get('completion') == 'complete' and valid_gaps and not notes
 
-    def _final_answer(self, report: TeamReport) -> str:
-        verified = next((item for item in report.results if item.role == VERIFIER and item.ok and item.findings), None)
+    def _final_answer(self, report: TeamReport, items: list[WorkerResult] | None = None) -> str:
+        """HAYAT's answer from the workers' findings (flat) or the group reports plus the verifier (grouped)."""
+        items = list(report.results) if items is None else items
+        verified = next((item for item in items if item.role == VERIFIER and item.ok and item.findings), None)
 
         def evidence(item: WorkerResult) -> str:
             if item.ok and item.successful_tools:
@@ -655,13 +1038,15 @@ class WorkerTeam:
             return "(NO EVIDENCE: no successful evidence-backed result; treat everything it says as unverified)"
 
         capacity = self.capacity()
-        share = capacity.share_chars(sum(bool(item.findings) for item in report.results))
+        share = capacity.share_chars(sum(bool(item.findings) for item in items))
         material = "\n\n".join(f"{item.role} {evidence(item)}:\n{item.findings[:share]}\n"
-                               f"Task complete: {item.complete}; company coverage: {len(item.coverage)}\n"
+                               f"Task complete: {item.complete}; {'item' if item.kind == 'group' else 'company'} "
+                               f"coverage: {len(item.coverage)}\n"
                                f"Gaps: {item.note or 'none recorded'}"
-                               for item in report.results if item.findings)
+                               for item in items if item.findings)
         if not material:
             return "The team could not gather any findings."
+        grouped = self._grouped_instructions(report) if report.groups else ""
         prompt = (
             f"You are HAYAT. Your temporary team worked on: {report.goal}\nWrite the final answer for {_owner()} from "
             "their findings. Lead with the answer, use short sections and lists, and keep each fact's source link. "
@@ -670,7 +1055,8 @@ class WorkerTeam:
             "verified unless the Verification Agent checked it with a tool. Never invent a link, job, number or "
             "company. Say plainly what could not be found or verified. Tool evidence alone does not mean a worker "
             "completed its mission. Preserve partial/blocked status and coverage counts; never present a provisional "
-            "job match as confirmed suitability when profile evidence is missing.\n\n" + material[:capacity.material_chars()]
+            "job match as confirmed suitability when profile evidence is missing.\n\n" + grouped
+            + material[:capacity.material_chars()]
             + (f"\n\nVerification Agent's verdict:\n{verified.findings[:3000]}" if verified else "")
         )
         try:
@@ -682,6 +1068,20 @@ class WorkerTeam:
             log_swallowed(_log, "writing a team's final answer")
             report.note = 'The final model answer failed; recorded worker findings are shown instead.'
             return material[:4000]
+
+    @staticmethod
+    def _grouped_instructions(report: TeamReport) -> str:
+        """What the final answer must keep straight about a grouped team (counted by code, not the model)."""
+        checked = (f"The Verification Agent re-opened no cited link from: {', '.join(report.unchecked_groups)}; say "
+                   "that those groups' claims are sourced but not re-checked. " if report.unchecked_groups
+                   else "The Verification Agent re-opened cited links from every group. ")
+        omitted = ("Some claims or items were left out of the group reports to fit the window; say the full lists are "
+                   "in the saved team report. " if any(group.omitted for group in report.groups) else "")
+        return (f"The team worked in {len(report.groups)} groups. Each group report was condensed by its lead and "
+                "checked by code: a cited claim's link was returned by a worker's own tool; an 'UNVERIFIED' claim has "
+                "no such link and must stay labelled unverified; an '(excerpt)' line was not condensed by the lead. "
+                f"Distinct items covered across all groups: {report.coverage_total} (an item two groups covered counts "
+                "once; use this number, not a sum of the groups). " + checked + omitted + "\n\n")
 
     @staticmethod
     def _call_name(call: Any) -> str:
@@ -733,19 +1133,44 @@ class WorkerTeam:
                       "", result.findings or "(no findings)", ""]
             lines += [f"- {item['company']}: {item['source']}" for item in result.coverage]
             lines += ['']
+        if report.groups:
+            lines += ["## Groups", "",
+                      f"{len(report.groups)} groups · {report.coverage_total} distinct items covered across groups · "
+                      f"Verification Agent re-opened cited links from {len(report.verified_groups)} of "
+                      f"{len(report.groups)} groups"
+                      + (f" (not: {', '.join(report.unchecked_groups)})" if report.unchecked_groups else ""), ""]
+            for group in report.groups:
+                lines += [f"### Group: {group.name}", "", f"Focus: {group.focus}",
+                          f"Members: {', '.join(group.members)} · designed by: {group.designed_by} · condensed by: "
+                          f"{group.condensed_by} · {group.seconds:.0f}s", "", "Group report as the verifier read it:",
+                          "", group.report or "(none)", "", "Every claim (nothing left out):", ""]
+                lines += [f"- [{claim['status']}] {claim['claim']} -- {claim['source'] or 'no link'} "
+                          f"({claim['member'] or 'unattributed'})" + (f" · {claim['reason']}" if claim['reason'] else "")
+                          for claim in group.claims] or ["- (no claims)"]
+                lines += ["", f"Items covered ({len(group.coverage)} distinct):", ""]
+                lines += [f"- {row['company']}: {row['source']}" for row in group.coverage] or ["- (none)"]
+                lines += [""] + ([f"Gaps: {' | '.join(group.gaps)}", ""] if group.gaps else [])
         return "\n".join(lines)
 
     @staticmethod
     def summary_text(report: TeamReport) -> str:
         done = sum(1 for result in report.results if result.ok)
+        roster = (f"{len(report.groups)} groups: {', '.join(group.name for group in report.groups)}"
+                  if report.groups else report.roster())
         header = (f"Team finished: {done} of {len(report.workers)} workers delivered "
-                  f"({report.roster()}) in {report.seconds:.0f}s with {report.tool_calls} tool calls.")
+                  f"({roster}) in {report.seconds:.0f}s with {report.tool_calls} tool calls.")
+        if report.groups:
+            header += (f" {report.coverage_total} distinct items covered across the groups (each counted once); the "
+                       f"Verification Agent re-opened cited links from {len(report.verified_groups)} of "
+                       f"{len(report.groups)} groups.")
         if not report.complete:
             header += ' The goal is incomplete; review the recorded gaps.'
         footer = f"\n\nFull team report: {report.report_path}" if report.report_path else ""
         return f"{header}\n\n{report.answer}" + (f'\n\n{report.note}' if report.note else '') + footer
 
     def started_text(self, report: TeamReport) -> str:
+        if report.groups:
+            return self._started_grouped(report)
         lines = [f"I've put together a temporary team of {len(report.workers)} workers for this:"]
         for spec in report.workers:
             after = f" (after {', '.join(spec.depends_on)})" if spec.depends_on and spec.role != VERIFIER else ""
@@ -757,7 +1182,35 @@ class WorkerTeam:
             minutes = len(report.workers) * report.limits["seconds_per_worker"] / 60
             lines.append(f"They share one brain and work one after another: expect about {minutes:.0f} minutes "
                          f"(budget {report.max_seconds / 60:.0f} min, {report.max_tool_calls} tool calls). This machine "
-                         f"can run teams of up to {report.limits['max_workers']} workers.")
+                         f"can run teams of up to {report.limits['max_workers']} workers"
+                         + (f" ({report.limits['grouped_workers']} when organised in groups)."
+                            if report.limits.get('grouped_workers', 0) > report.limits['max_workers'] else "."))
+        if report.plan_note:
+            lines.append(report.plan_note)
+        return "\n".join(lines)
+
+    def _started_grouped(self, report: TeamReport) -> str:
+        from app.agents.capacity import duration
+
+        members = len(report.workers) - 1
+        lines = [f"I've put together a temporary team of {len(report.workers)} workers for this, organised in "
+                 f"{len(report.groups)} groups ({members} researchers and the Verification Agent):"]
+        for group in report.groups:
+            after = f" (after {', '.join(group.depends_on)})" if group.depends_on else ""
+            lines.append(f"- **{group.name}** ({len(group.members)} workers): {group.focus}{after}")
+        lines.append(f"- **{VERIFIER}**: reads the group reports and re-opens their cited links, at least one per group.")
+        lines += ["", "Each group's lead condenses its members' findings into a short report that keeps every "
+                      "claim's source link; a claim without a link a worker actually observed is marked unverified, "
+                      "never dropped. Items are counted once across groups. They only read and research; none of "
+                      "them can send, submit or change anything. Watch them under Running now or Team workspace."]
+        if report.limits:
+            expected = report.limits.get("expected_seconds") or (
+                (len(report.workers) + len(report.groups)) * report.limits["seconds_per_worker"])
+            lines.append(f"They share one brain and work one after another (each group lead adds one turn): expect "
+                         f"about {duration(expected)} (budget {duration(report.max_seconds)}, {report.max_tool_calls} "
+                         f"tool calls). You can cancel it from Team workspace at any time; findings so far are kept.")
+        if report.plan_note:
+            lines.append(report.plan_note)
         return "\n".join(lines)
 
     def status(self) -> dict[str, Any]:
@@ -765,7 +1218,10 @@ class WorkerTeam:
             # What the GUI needs to show progress against this team's own machine-derived limits.
             return {'started_at': item.started_at, 'max_seconds': item.max_seconds,
                     'max_tool_calls': item.max_tool_calls, 'limits': dict(item.limits),
-                    'tool_calls': item.tool_calls, 'note': item.note}
+                    'tool_calls': item.tool_calls, 'note': item.note,
+                    'groups': [{'name': group.name, 'members': len(group.members), 'condensed_by': group.condensed_by,
+                                'claims': len(group.claims), 'items': len(group.coverage)} for group in item.groups],
+                    'coverage_total': item.coverage_total}
 
         with self._lock:
             running = [{"team_id": item.team_id, "goal": item.goal, "workers": item.roster(),

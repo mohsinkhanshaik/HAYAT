@@ -258,7 +258,9 @@ def shared_tk():
     try:
         window = tkinter.Tk()
     except tkinter.TclError as exc:
-        pytest.skip(f"Tk needs a display: {exc}")
+        if 'no display name' in str(exc).lower() or "couldn't connect to display" in str(exc).lower():
+            pytest.skip(f"Tk needs a display: {exc}")
+        raise
     window.withdraw()
     # HAYAT runs DPI-unaware, so Windows gives its Tk 96 DPI: a scaling of 96/72 points. Importing
     # pyautogui makes a process DPI-aware, and once any earlier test had imported it, this shared Tk
@@ -284,6 +286,15 @@ def shared_tk():
         window.destroy()
     except tkinter.TclError:
         pass
+
+
+@pytest.fixture(autouse=True)
+def _no_model_service_recovery_between_tests(monkeypatch):
+    """A runtime built by a live test installs a hook that can start HAYAT's Ollama (app/models/local.py
+    SERVICE_RECOVERY); it must never outlive that test and fire on a later test's refused fake endpoint."""
+    from app.models import local as local_models
+    monkeypatch.setattr(local_models, "SERVICE_RECOVERY", None)
+    yield
 
 
 @pytest.fixture(autouse=True)

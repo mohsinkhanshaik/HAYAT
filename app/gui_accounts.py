@@ -26,6 +26,7 @@ from typing import Any
 
 from app.gui_intelligence_parts import blend
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
 
@@ -70,10 +71,11 @@ class AccountsCenter(tk.Toplevel):
         self.selected = 'google'
         self.data: dict | None = None
         self.device: dict | None = None
+        self._device_request_key = ''
         self.device_deadline = 0.0
         self.next_poll = 0.0
         self.rows_data: list = []
-        self.status = StringVar(self, '')
+        self.status = DisplayVar(self, '')
         self.token = StringVar(self, '')
         self.webhook = StringVar(self, '')
         self.token_values: dict[str, StringVar] = {}
@@ -274,10 +276,14 @@ class AccountsCenter(tk.Toplevel):
             child.destroy()
         app_state = ('not needed' if not row['needs_app'] or row['connected'] and row['method'] == 'token'
                      else 'done' if row['client_id_set'] else 'to do')
-        steps = [('1', 'App setup', app_state), ('2', 'Sign in', 'done' if row['connected'] else 'to do'),
-                 ('3', 'Work with it', 'ready' if row['connected'] else 'waiting')]
+        needs_reconnect = row.get('connection_state') == 'reconnect'
+        work_state = ('reconnect' if needs_reconnect else 'not reached' if row.get('connection_state') == 'unreachable' else
+                      'check failed' if row.get('check_ok') is False else
+                      'checked' if row.get('check_ok') is True else 'not checked') if row['connected'] else 'waiting'
+        steps = [('1', 'App setup', app_state), ('2', 'Sign in', 'reconnect' if needs_reconnect else 'done' if row['connected'] else 'to do'),
+                 ('3', 'Provider access', work_state)]
         for index, (number, label, state) in enumerate(steps):
-            good = state in ('done', 'ready', 'not needed')
+            good = state in ('done', 'ready', 'not needed', 'checked')
             colour = UP if good else p.GOLD if state == 'to do' else p.MUTED
             chip = tk.Label(self.stepper, text=f" {'✓' if good else number}  {label} · {state} ", bg=blend(colour, p.BLACK, .8), fg=colour,
                             font=('Segoe UI Semibold', 9), padx=6, pady=3)
@@ -327,8 +333,13 @@ class AccountsCenter(tk.Toplevel):
             if row['key'] not in self.card_widgets:
                 self._card(row)
             widgets = self.card_widgets[row['key']]
-            if row['connected'] and row.get('check_ok') is False:
+            if row.get('connection_state') == 'reconnect':
+                state, colour = '⚠ expired sign-in · reconnect', DOWN
+            elif row['connected'] and row.get('check_ok') is False:
                 state, colour = '⚠ sign-in not working · check again or reconnect', DOWN
+            elif row.get('connection_state') == 'unreachable':
+                # Amber, not red: nothing answered, so the sign-in is untested rather than broken.
+                state, colour = '◌ provider not reached · sign-in untested', self.p.GOLD_SOFT
             elif row['connected']:
                 state, colour = '● connected · ' + row['connected_as'], UP
             else:
@@ -338,8 +349,10 @@ class AccountsCenter(tk.Toplevel):
             for name in ('card', 'words', 'name', 'state', 'badge'):
                 widgets[name].configure(bg=fill)
         failing = [row['name'] for row in self.data['accounts'] if row['connected'] and row.get('check_ok') is False]
+        untested = [row['name'] for row in self.data['accounts'] if row.get('connection_state') == 'unreachable']
         self.status.set(f"{len(self.data['connected'])} of {len(self.data['accounts'])} accounts connected"
-                        + (f" · {', '.join(failing)} not working" if failing else ''))
+                        + (f" · {', '.join(failing)} not working" if failing else '')
+                        + (f" · {', '.join(untested)} not reached (untested)" if untested else ''))
         for name, group in self.group_widgets.items():
             rows = [row for row in self.data['accounts'] if row.get('group') == name]
             connected = sum(1 for row in rows if row['connected'])
@@ -451,6 +464,8 @@ class AccountsCenter(tk.Toplevel):
 
     def select(self, key: str) -> None:
         changed = key != self.selected
+        if changed and (self.device or self._device_request_key):
+            self.cancel_device()
         self.selected = key
         for name, widgets in self.card_widgets.items():
             fill = blend(self.p.GOLD, self.p.PANEL, .82) if name == key else self.p.PANEL
@@ -460,7 +475,11 @@ class AccountsCenter(tk.Toplevel):
         if changed:
             self.token_values = {}
         self.title_label.configure(text=f"{row['name']} · {row['what']}")
-        if row['connected']:
+        if row['connected'] and row.get('connection_state') in ('reconnect', 'check_failed'):
+            self.state_label.configure(text='⚠ Saved sign-in · ' + row.get('connection_note', 'Check again or reconnect.'), fg=DOWN)
+        elif row['connected'] and row.get('connection_state') == 'unreachable':
+            self.state_label.configure(text=f"◌ Saved as {row['connected_as']} · " + row['connection_note'], fg=self.p.GOLD_SOFT)
+        elif row['connected']:
             self.state_label.configure(text=f"● Connected as {row['connected_as']} · {self.method_name(row['method'])} · since "
                                             f"{row['connected_at'][:16].replace('T', ' ')} UTC", fg=UP)
         else:
@@ -488,11 +507,19 @@ class AccountsCenter(tk.Toplevel):
             box.pack(fill='x', pady=(8, 4))
             words = tk.Frame(box, bg=p.PANEL)
             words.pack(side='left', fill='x', expand=True)
-            failed = row.get('check_ok') is False
-            tk.Label(words, text=f"Connected as {row['connected_as']}" if not failed else 'Saved, but the sign-in is not working',
-                     bg=p.PANEL, fg=DOWN if failed else UP, font=('Segoe UI Semibold', 12), anchor='w').pack(fill='x')
+            expired = row.get('connection_state') == 'reconnect'
+            untested = row.get('connection_state') == 'unreachable'
+            failed = row.get('check_ok') is False or expired
+            tk.Label(words, text='Saved, but the sign-in is not working' if failed else
+                     f"Saved as {row['connected_as']} · not tested" if untested else f"Connected as {row['connected_as']}",
+                     bg=p.PANEL, fg=DOWN if failed else p.GOLD_SOFT if untested else UP,
+                     font=('Segoe UI Semibold', 12), anchor='w').pack(fill='x')
             when = _local_time(row.get('checked_at', ''))
-            if failed:
+            if expired:
+                detail = row['connection_note']
+            elif untested:
+                detail = (f"Checked at {when}: " if when else '') + f"{row.get('check_error') or 'no answer'}. " + row['connection_note']
+            elif failed:
                 detail = f"Checked at {when}: {row.get('check_error') or 'no answer'}. Sign in again below." if when else \
                     f"{row.get('check_error') or 'No answer'}. Sign in again below."
             elif when:
@@ -674,11 +701,20 @@ class AccountsCenter(tk.Toplevel):
         self.note('App saved. Now choose a way to sign in above.', UP)
 
     def start_device(self) -> None:
+        if 'device' in self._busy or 'poll' in self._busy:
+            self.note('The previous sign-in request is finishing; try again in a moment.')
+            return
         key = self.selected
+        self._device_request_key = key
         self.note('Asking for a code…')
         self._run('device', lambda: self.manager.start_device(key))
 
     def done_device(self, value: dict | None, error: str | None) -> None:
+        if not self._device_request_key:
+            return
+        if value and (value['provider'] != self.selected or value['provider'] != self._device_request_key):
+            self.manager.cancel_device(value['provider'])
+            return
         if error:
             self.note('Could not start: ' + error.split(': ', 1)[-1], DOWN)
             return
@@ -710,8 +746,10 @@ class AccountsCenter(tk.Toplevel):
             self.clipboard_append(self.device['user_code'])
 
     def cancel_device(self) -> None:
-        if self.device:
-            self.manager.cancel_device(self.device['provider'])
+        key = self.device['provider'] if self.device else self._device_request_key
+        if key:
+            self.manager.cancel_device(key)
+        self._device_request_key = ''
         self.device = None
         self.paint_connect()
         self.note('Sign-in cancelled.')
@@ -870,6 +908,8 @@ class AccountsCenter(tk.Toplevel):
             self.note('Could not check: ' + error.split(': ', 1)[-1], DOWN)
         elif value.get('check_ok'):
             self.note(f"Working: {value['name']} answered as {value['connected_as']}.", UP)
+        elif value.get('connection_state') == 'unreachable':
+            self.note(f"Not tested: {value.get('check_error') or 'no answer'}. " + value['connection_note'], self.p.GOLD_SOFT)
         else:
             self.note(f"Not working: {value.get('check_error') or 'no answer'}. Sign in again below.", DOWN)
 
@@ -915,6 +955,8 @@ class AccountsCenter(tk.Toplevel):
         if not row['connected']:
             self.work_note.configure(text=f"Connect {row['name']} first (the Connect tab). Then its mail, calendar, files or other items "
                                           'can be read here, and things sent once you confirm.')
+        elif row.get('connection_state') in ('reconnect', 'check_failed', 'unreachable'):
+            self.work_note.configure(text=row.get('connection_note', 'Check the saved sign-in before using it.'))
         else:
             self.work_note.configure(text=f"Signed in as {row['connected_as']}. Read with a button; double-click a result to open it.")
         for operation in row['operations']:
@@ -1023,8 +1065,11 @@ class AccountsCenter(tk.Toplevel):
         if self._closed:
             return
         self._closed = True
-        if self.device:
-            self.manager.cancel_device(self.device['provider'])
+        key = self.device['provider'] if self.device else self._device_request_key
+        if key:
+            self.manager.cancel_device(key)
+        if self.browser_key:
+            self.manager.cancel_browser(self.browser_key)
         try:
             self.after_cancel(self._tick_id)
         except (tk.TclError, AttributeError):

@@ -130,7 +130,8 @@ class ChatRewind(tk.Toplevel):
             from app.emergency import branch_conversation
             result = branch_conversation(self.gui.runtime, row['id'], edit=edit)
         except ValueError as error:
-            self.status.configure(text=str(error))
+            from app.gui_presentation import diagnostic_text
+            self.status.configure(text=diagnostic_text(error))
             return
         # Do not call clear_chat: that deliberately summarizes the old tail.
         gui = self.gui

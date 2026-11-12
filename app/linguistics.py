@@ -107,8 +107,44 @@ def _expand_uncached(original: str, maximum_concepts: int) -> QueryExpansion:
                 additions.append(phrase)
         if len(matched) >= maximum_concepts:
             break
+    # The owner's misspellings, read as meant ("rember my sistr" also searches "remember", "sister"), and the
+    # everyday words people use for the same thing ("picture" also finds a memory about a "photo"). Added, never
+    # substituted: the typed words still lead, and rarity weighting keeps a synonym from outranking them.
+    from app.intent.spelling import recall_words
+
+    for word in [*recall_words(original), *synonyms_for(original)]:
+        if word.casefold() not in folded and word not in additions:
+            additions.append(word)
     expanded = " ".join([original, *additions]).strip()
     return QueryExpansion(expanded, tuple(matched))
+
+
+#: Everyday words that name the same thing. Small and checked by hand: a general thesaurus pairs "picture" with
+#: "impression" and "icon", which would pull unrelated memories into recall.
+SYNONYM_GROUPS: tuple[tuple[str, ...], ...] = (
+    ("image", "picture", "photo", "photograph", "pic"), ("video", "clip", "footage"), ("film", "movie"),
+    ("phone", "mobile", "smartphone", "cellphone"), ("laptop", "notebook"), ("car", "vehicle", "automobile"),
+    ("buy", "purchase"), ("price", "cost"), ("money", "cash", "funds"), ("job", "employment", "career"),
+    ("doctor", "physician"), ("medicine", "medication"), ("house", "home"), ("birthday", "birth date"),
+    ("email", "e-mail", "mail"), ("fix", "repair"), ("error", "bug", "fault"), ("big", "large"),
+    ("small", "little", "tiny"), ("fast", "quick", "rapid"), ("start", "begin"), ("finish", "end"),
+    ("song", "track"), ("kid", "child"), ("mom", "mother", "mum"), ("dad", "father"),
+    ("spouse", "wife", "husband"), ("meeting", "appointment"), ("trip", "journey", "travel"),
+    ("flat", "apartment"), ("shop", "store"), ("ill", "sick"), ("salary", "pay", "wage"),
+    ("invention", "invent", "inventing"), ("research", "study", "investigate"),
+)
+_SYNONYMS = {word: group for group in SYNONYM_GROUPS for word in group}
+
+
+def synonyms_for(text: str, *, limit: int = 6) -> list[str]:
+    """Other everyday words for the things the text names, at most ``limit`` in all."""
+    words = re.findall(r"[a-z][a-z-]+", text.casefold())
+    found: list[str] = []
+    for word in words:
+        for other in _SYNONYMS.get(word, ()):
+            if other != word and other not in words and other not in found:
+                found.append(other)
+    return found[:limit]
 
 
 # ------------------------------------------------------------------ acronyms

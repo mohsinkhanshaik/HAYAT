@@ -12,11 +12,13 @@ from __future__ import annotations
 import queue
 import threading
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
 from typing import Any
 
+from app.gui_a11y import activatable
 from app.gui_icons import apply_icons
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
@@ -67,7 +69,7 @@ class LearnStudio(tk.Toplevel):
         header = tk.Frame(self, bg=p.BLACK, padx=16, pady=10)
         header.pack(fill="x")
         tk.Label(header, text="Learn Arabic", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16)).pack(side="left")
-        self.unit_var = StringVar(self, "")
+        self.unit_var = DisplayVar(self, "")
         tk.Label(header, textvariable=self.unit_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 10)).pack(side="left", padx=12)
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.close).pack(side="right")
         ttk.Button(header, text="Alphabet", style="Hayat.TButton", command=self.show_alphabet).pack(side="right", padx=4)
@@ -92,12 +94,12 @@ class LearnStudio(tk.Toplevel):
         card = tk.Frame(self, bg=p.PANEL, padx=20, pady=14, highlightthickness=1, highlightbackground=p.LINE)
         card.pack(fill="both", expand=True, padx=16, pady=10)
         self.new_strip = tk.Frame(card, bg=p.PANEL)
-        self.skill_var = StringVar(self, "")
+        self.skill_var = DisplayVar(self, "")
         tk.Label(card, textvariable=self.skill_var, bg=p.PANEL, fg=p.GOLD, font=("Segoe UI Semibold", 10), anchor="w").pack(fill="x")
-        self.display_var = StringVar(self, "")
+        self.display_var = DisplayVar(self, "")
         self.display = tk.Label(card, textvariable=self.display_var, bg=p.PANEL, fg=p.WHITE, font=ARABIC_FONT)
         self.display.pack(fill="x", pady=(6, 2))
-        self.prompt_var = StringVar(self, "Opening the lesson…")
+        self.prompt_var = DisplayVar(self, "Opening the lesson…")
         self.prompt = tk.Label(card, textvariable=self.prompt_var, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI", 12),
                                wraplength=800, justify="center")
         self.prompt.pack(fill="x", pady=4)
@@ -113,8 +115,11 @@ class LearnStudio(tk.Toplevel):
 
         entry_row = tk.Frame(card, bg=p.PANEL)
         entry_row.pack(fill="x", pady=(8, 4))
-        self.answer = tk.Entry(entry_row, font=("Segoe UI", 20), bg=p.BLACK, fg=p.WHITE, insertbackground=p.GOLD,
-                               relief="flat", justify="center")
+        # A recessed field with a visible edge that turns gold while typing, like every other
+        # input; a borderless black slab read as an empty panel rather than a place to type.
+        self.answer = tk.Entry(entry_row, font=("Segoe UI", 20), bg=p.PANEL_2, fg=p.WHITE, insertbackground=p.GOLD,
+                               relief="flat", justify="center", highlightthickness=1,
+                               highlightbackground=getattr(p, "EDGE", p.LINE), highlightcolor=p.GOLD)
         self.answer.pack(side="left", fill="x", expand=True, ipady=6)
         self.answer.bind("<Return>", lambda _event: self.check())
         self.check_button = ttk.Button(entry_row, text="Check", style="HayatAccent.TButton", command=self.check)
@@ -136,14 +141,14 @@ class LearnStudio(tk.Toplevel):
             tk.Button(tail, text=text, font=("Segoe UI", 10), bg=p.PANEL_2, fg=p.WHITE, relief="flat",
                       activebackground=p.BLACK, activeforeground=p.GOLD, cursor="hand2", command=command).pack(side="left", padx=3)
 
-        self.feedback_var = StringVar(self, "")
+        self.feedback_var = DisplayVar(self, "")
         self.feedback = tk.Label(card, textvariable=self.feedback_var, bg=p.PANEL, fg=p.OLIVE_SOFT, font=("Segoe UI", 11),
                                  wraplength=800, justify="left", anchor="w")
         self.feedback.pack(fill="x", pady=(8, 0))
 
         footer = tk.Frame(self, bg=p.BLACK, padx=16, pady=6)
         footer.pack(fill="x", side="bottom")
-        self.status_var = StringVar(self, "")
+        self.status_var = DisplayVar(self, "")
         tk.Label(footer, textvariable=self.status_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9), anchor="w").pack(side="left")
         self.progress = ttk.Progressbar(footer, mode="indeterminate", length=120, style="Hayat.Horizontal.TProgressbar")
 
@@ -311,7 +316,7 @@ class LearnStudio(tk.Toplevel):
             tk.Label(cell, text=card["arabic"], bg=p.PANEL_2, fg=p.WHITE, font=CARD_FONT).pack()
             tk.Label(cell, text=f"{card['transliteration']} · {card['meaning']}", bg=p.PANEL_2, fg=p.GOLD_SOFT,
                      font=("Segoe UI", 9)).pack()
-            cell.bind("<Button-1>", lambda _e, text=card["arabic"]: self.tutor.say(text))
+            activatable(cell, lambda text=card["arabic"]: self.tutor.say(text), p)
         self.new_strip.pack(fill="x", pady=(0, 8), before=self.display)
 
     def _paint_progress(self) -> None:
@@ -363,6 +368,7 @@ class LearnStudio(tk.Toplevel):
                               bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 12))]
             for widget in (cell, *parts):
                 widget.bind("<Button-1>", lambda _e, text=letter.spoken: self.tutor.say(text))
+            activatable(cell, lambda text=letter.spoken: self.tutor.say(text), p, keys_only=True)
             for part in parts:
                 part.pack()
         ttk.Button(window, text="Close", style="Hayat.TButton", command=window.destroy).pack(pady=(0, 10))

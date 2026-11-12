@@ -5,6 +5,7 @@ import json
 import re
 import shutil
 import subprocess
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -14,11 +15,25 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def supported_node(version: str) -> bool:
-    match = re.fullmatch(r'v?(\d+)\.(\d+)\.\d+', version.strip())
+    match = re.fullmatch(r'v?(\d+)\.(\d+)\.(\d+)', version.strip())
     if not match:
         return False
-    major, minor = map(int, match.groups())
-    return major == 22 and minor >= 19 or major == 24 and minor >= 11 or major >= 26
+    major, minor, patch = map(int, match.groups())
+    return (major == 22 and (minor, patch) >= (23, 4)
+            or major == 24 and (minor, patch) >= (22, 1)
+            or major == 26 and (minor, patch) >= (12, 1) or major > 26)
+
+
+def rename_with_retry(source: Path, destination: Path) -> None:
+    """Windows scanners can briefly hold newly installed executable trees."""
+    for attempt in range(10):
+        try:
+            source.rename(destination)
+            return
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(0.2)
 
 
 def bundle_toolchain(root: Path, *, find=shutil.which, run=subprocess.run) -> tuple[Path, Path]:
@@ -28,10 +43,10 @@ def bundle_toolchain(root: Path, *, find=shutil.which, run=subprocess.run) -> tu
     system = find('node')
     node = bundled if bundled.is_file() else Path(system) if system else None
     if node is None:
-        raise SystemExit('Node.js is missing. Install Node.js 24.11+ in the 24.x series, then rerun setup.')
+        raise SystemExit('Node.js is missing. Install Node.js 24.22.1+ in the 24.x series, then rerun setup.')
     version = run([str(node), '--version'], capture_output=True, text=True, check=True, timeout=10).stdout.strip()
     if not supported_node(version):
-        raise SystemExit(f'Unsupported Node.js {version}; use 22.19+, 24.11+ or 26+.')
+        raise SystemExit(f'Unsupported Node.js {version}; use 22.23.4+, 24.22.1+ or 26.12.1+.')
     cli = destination / 'node_modules' / 'npm' / 'bin' / 'npm-cli.js'
     if not cli.is_file():
         candidates = [path for path in (Path(system).parent if system else None,
@@ -111,19 +126,26 @@ def install_release(root: Path, node: Path, npm: Path, *, run=subprocess.run) ->
                         capture_output=True, text=True, check=True, timeout=45)
             if probe.stdout.strip() != expected:
                 raise RuntimeError('The staged REA launcher failed its version check. Working release retained.')
+            if installed == '6.8.0':
+                from scripts.rea_ghidra_compat import apply_ghidra_compatibility
+                compatibility = apply_ghidra_compatibility(package)
+            else:
+                compatibility = None
             report = {'version': installed, 'verified_at': datetime.now(UTC).isoformat(),
                       'backup': str(backup) if target.exists() else None, 'lifecycle_scripts': False,
                       'checks': ['npm ci integrity', 'package version', 'launcher version'],
                       'scope': 'Installation and startup checks; run verify_native_analysis.py for Ghidra integration.'}
+            if compatibility:
+                report['ghidra_compatibility'] = compatibility
             (staging / 'hayat-install.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
             previous = target.exists()
             if previous:
-                target.rename(backup)
+                rename_with_retry(target, backup)
             try:
-                staging.rename(target)
+                rename_with_retry(staging, target)
             except OSError:
                 if previous:
-                    backup.rename(target)
+                    rename_with_retry(backup, target)
                 raise
             return report
         finally:

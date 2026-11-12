@@ -1,7 +1,8 @@
 """A deep look at one place: every public source HAYAT has, gathered at once and reasoned over.
 
 `intelligence_around` (fusion.py) gathers; this module also reads fires, traffic on the
-nearest cameras, the sky and launches, then turns the readings into findings. Each finding
+nearest cameras, the sky and launches, GPS interference, and for US places airspace
+restrictions and fire perimeters, then turns the readings into findings. Each finding
 names the measurements behind it and how sure it is, and the blind spots are listed as
 findings too: what HAYAT could not see is part of the answer. The rules are written out
 below, not learned, so every conclusion can be checked against its evidence. A local-model
@@ -66,18 +67,29 @@ class DeepLook:
             "sky": lambda: self.explore.satellite_pass(name, "ISS", days=2),
             "launches": lambda: self.explore.launches("upcoming", limit=40),
         }
+        # Added 2026-11-06 (gnss.py, airspace.py, ground.py): navigation integrity overhead, and for US places the
+        # airspace restrictions and mapped fire perimeters. Each is optional: a session without it simply skips it.
+        if getattr(self.manager, "gnss", None) is not None:
+            jobs["gnss"] = lambda: self.manager.gnss.around(name, 300)
+        from app.intelligence.airspace import in_us
+        if in_us(where["latitude"], where["longitude"]):
+            if getattr(self.manager, "airspace", None) is not None:
+                jobs["airspace"] = lambda: self.manager.airspace.check(name, min(radius_km, 50))
+            if getattr(self.manager, "ground", None) is not None:
+                jobs["perimeters"] = lambda: self.manager.ground.fire_perimeters(name, max(150.0, radius_km))
         cameras = [camera for camera in around.get("cameras") or [] if camera.get("image")][:max(0, min(traffic_cameras, 5))]
         for index, camera in enumerate(cameras):
             jobs[f"traffic:{index}"] = lambda camera=camera: self.explore.traffic_count(camera["id"])
         found: dict[str, Any] = {}
         gaps: dict[str, str] = dict(around.get("unavailable") or {})
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        with ThreadPoolExecutor(max_workers=6) as pool:
             futures = {key: pool.submit(job) for key, job in jobs.items()}
             for key, future in futures.items():
                 try:
                     found[key] = future.result(timeout=120)
                 except Exception as exc:  # each source may fail alone; the gap is reported, not hidden
-                    label = f"traffic on camera {int(key.split(':')[1]) + 1}" if key.startswith("traffic:") else key
+                    label = (f"traffic on camera {int(key.split(':')[1]) + 1}" if key.startswith("traffic:")
+                             else {"gnss": "GPS interference", "perimeters": "fire perimeters"}.get(key, key))
                     gaps[label] = str(exc)[:160] or type(exc).__name__
                     log_swallowed(_log, f"deep look: {key}")
         found["traffic"] = [found.pop(key) for key in list(found) if key.startswith("traffic:")]
@@ -150,6 +162,41 @@ class DeepLook:
             findings.append(finding(level, f"{'Growing' if fire['change'] == 'growing' else 'New' if fire['change'] == 'new' else 'Active'}"
                                     f" fire {distance} km away", detail, evidence, confidence,
                                     {"kind": "point", "latitude": fire["latitude"], "longitude": fire["longitude"], "zoom": 9}))
+
+        # Mapped fire perimeters (US): inside one is an alert; a nearby uncontained one is worth watching.
+        for fire in ((gathered.get("perimeters") or {}).get("fires") or [])[:3]:
+            open_fire = fire["kind"] != "prescribed burn" and (fire.get("contained_pct") or 0) < 100 and not fire["perimeter_stale"]
+            level = "alert" if fire["inside"] else "watch" if open_fire and fire["edge_km"] <= 30 else "info"
+            if level == "info" and not open_fire:
+                continue  # contained, prescribed or stale perimeters far away say little about now
+            findings.append(finding(level, f"Inside the {fire['name']} fire perimeter" if fire["inside"] else
+                                    f"{fire['name']} fire perimeter {fire['edge_km']} km {fire['direction'] or 'away'}",
+                                    ", ".join(part for part in (
+                                        f"{fire['acres']:,.0f} acres" if fire.get("acres") is not None else "",
+                                        f"{fire['contained_pct']:g}% contained" if fire.get("contained_pct") is not None else "containment not reported",
+                                        f"perimeter drawn {fire['perimeter_updated'][:10]}" if fire.get("perimeter_updated") else "") if part) + ".",
+                                    [f"NIFC WFIGS perimeter ({fire['kind']}, {fire['state']})"], "high"))
+
+        # Airspace (US): what applies to flying here, drones included.
+        airspace = gathered.get("airspace") or {}
+        for zone in airspace.get("inside") or []:
+            temporary = zone["kind"].startswith("Temporary")
+            findings.append(finding("watch" if temporary else "info", f"Inside {zone['kind'].lower()}: {zone['name'] or zone.get('notam')}",
+                                    (zone.get("description") or "")[:160] or " · ".join(part for part in (
+                                        f"{zone.get('floor')} to {zone.get('ceiling')}" if zone.get("floor") else "",
+                                        f"in use {zone['times'][:60]}" if zone.get("times") else "") if part) or zone["kind"],
+                                    ["FAA " + ("tfr.faa.gov NOTAM " + zone["notam"] if zone.get("notam") else "Special Use Airspace")], "high"))
+
+        # Navigation integrity overhead (unvalidated proxy; never stated as jamming).
+        gnss = gathered.get("gnss") or {}
+        here, area = gnss.get("here") or {}, gnss.get("area") or {}
+        if here.get("level") in ("medium", "high") or area.get("level") == "high":
+            reading = here if here.get("level") in ("medium", "high") else area
+            findings.append(finding("watch" if reading.get("level") == "high" else "info",
+                                    "Aircraft here report degraded satellite navigation",
+                                    f"{reading['degraded']} of {reading['aircraft']} aircraft ({reading['percent']:g}%) in the last 30 minutes. "
+                                    "GPS jamming or spoofing is one possible cause; faulty avionics report the same.",
+                                    ["ADS-B NIC/NACp reported by aircraft (adsb.lol)", "gpsjam.org cell formula"], "low"))
 
         # Weather in the next hours (a forecast model, not a measurement).
         rain = weather.get("precipitation_next_hour_mm")
@@ -245,7 +292,8 @@ class DeepLook:
     @staticmethod
     def situation(findings: list[dict[str, Any]]) -> str:
         levels = {item["level"] for item in findings}
-        return "alert" if "alert" in levels else "watch" if "watch" in levels else "calm"
+        return ("alert" if "alert" in levels else "watch" if "watch" in levels else
+                "unknown" if not levels or "gap" in levels else "calm")
 
     # ----------------------------------------------------------------- the tool
     def look(self, place: str = "here", radius_km: float = 25, traffic_cameras: int = 3, reason: bool = False,
@@ -261,7 +309,8 @@ class DeepLook:
                  "metrics": around.get("metrics") or {}, "interpretation": around.get("interpretation"),
                  "cameras": (around.get("cameras") or [])[:5], "traffic": counted,
                  "fires": ((gathered.get("fires") or {}).get("fires") or [])[:5],
-                 "sources_read": sorted(set(around.get("metrics") or {}) | {key for key in ("fires", "sky", "launches") if gathered.get(key)}),
+                 "sources_read": sorted(set(around.get("metrics") or {}) | {key for key in ("fires", "sky", "launches", "gnss", "airspace",
+                                                                                              "perimeters") if gathered.get(key)}),
                  "basis": "Every finding names its evidence. Rules, not guesses: fires are joined satellite detections, wind and "
                           "rain are model forecasts, traffic is a count on one still, 'unusual' compares with HAYAT's own earlier "
                           "observations. Blind spots are listed; nothing missing is assumed to be fine."}
@@ -277,20 +326,39 @@ class DeepLook:
         from app.agent.context import UNTRUSTED_DATA_NOTICE
         from app.models.base import Message
         from app.models.streaming import PublicTextFilter
-        evidence = {key: value[key] for key in ("place", "radius_km", "observed_at", "situation", "findings", "metrics", "traffic", "fires")}
+        # Keep a complete JSON document and preserve blind spots before optional
+        # detail. Slicing serialized JSON could remove gaps or cut a source mid-field.
+        evidence = {key: value.get(key) for key in ("radius_km", "observed_at", "situation")}
+        where = value.get('place') or {}
+        evidence['place'] = {key: str(where.get(key, ''))[:240] for key in ('name', 'latitude', 'longitude')}
+        evidence.update(findings=[], omitted_findings=0, scope="Source-reported findings; no independent verification.")
+        findings = value.get("findings") or []
+        ordered = sorted(findings, key=lambda item: {"gap": 0, "alert": 1, "watch": 2}.get(item.get("level"), 3))
+        for item in ordered:
+            bounded = {key: str(item.get(key, ""))[:limit] for key, limit in
+                       (("level", 20), ("title", 220), ("detail", 800), ("confidence", 30))}
+            bounded['evidence'] = [str(entry)[:300] for entry in (item.get('evidence') or [])[:4]]
+            evidence['findings'].append(bounded)
+            if len(json.dumps(evidence, ensure_ascii=False, default=str)) > 11500:
+                evidence['findings'].pop()
+                evidence['omitted_findings'] += 1
         messages = [Message("system", "You are HAYAT's analyst. Use only the JSON findings supplied. In at most 150 words: "
                             "what matters most here right now and why, how the findings connect (say 'possibly' for any link "
                             "that is not shown), and what to watch next. Mention the blind spots that limit the picture. "
                             "Never invent numbers, events, causes or sources. A 'severity' is HAYAT's label from the provider's fields, "
                             "not a measured intensity. " + UNTRUSTED_DATA_NOTICE),
-                    Message("user", "Findings (from public provider data):\n" + json.dumps(evidence, ensure_ascii=False, default=str)[:12000])]
+                    Message("user", "Findings (from public provider data):\n" + json.dumps(evidence, ensure_ascii=False, default=str))]
         try:
             reply = model.generate(messages, temperature=0.2, max_tokens=700)
         except Exception as exc:
             log_swallowed(_log, "the deep look model reading")
             return {"text": "", "note": f"The local model could not answer ({type(exc).__name__}); the findings stand on their own."}
         text = PublicTextFilter().feed(str(getattr(reply, "content", "") or ""), final=True).strip()
+        if getattr(reply, 'finish_reason', '') in ('length', 'max_tokens') or not text:
+            return {"text": "", "verified": False,
+                    "note": "The local model returned an incomplete or empty reading. Review the source findings and blind spots."}
         return {"text": text, "model": getattr(reply, "model", "") or getattr(model, "model", ""),
+                "verified": False,
                 "note": "Local model inference over the findings above, not independent verification."}
 
 
@@ -329,9 +397,11 @@ def deep_report(value: dict[str, Any]) -> str | None:
 def register_deep_tools(registry: Any, deep: DeepLook) -> None:
     registry.register(
         "intelligence_deep_look",
-        "A deep look at one place: reported events, closures, cameras and traffic counts, weather, air, fires (new or "
-        "growing, and whether the wind blows their way), the ISS and nearby launches, compared with HAYAT's earlier "
-        "observations. Returns findings with evidence and confidence, the blind spots, and optionally a model reading.",
+        "A deep look at one place on Earth (a city, region, landmark or coordinates; never a subject such as "
+        "'tech' or 'the market', which is research): reported events, closures, cameras and traffic counts, weather, air, fires (new or "
+        "growing, and whether the wind blows their way; US fire perimeters), GPS interference reported by aircraft, US "
+        "airspace restrictions, the ISS and nearby launches, compared with HAYAT's earlier observations. Returns findings "
+        "with evidence and confidence, the blind spots, and optionally a model reading.",
         {"type": "object", "properties": {"place": {"type": "string", "maxLength": 200},
                                           "radius_km": {"type": "number", "minimum": 2, "maximum": 200},
                                           "traffic_cameras": {"type": "integer", "minimum": 0, "maximum": 5},

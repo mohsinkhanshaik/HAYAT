@@ -1,0 +1,10 @@
+name: career_scenario_lab
+description: Compare hypothetical skills against saved jobs and plan evidence-based practice without changing the CV or submitting applications.
+inputs: [proposed_skills, weekly_hours]
+tools: [job_career_radar]
+steps:
+  - tool: job_career_radar
+    arguments: {proposed_skills: "{{proposed_skills}}", weekly_hours: "{{weekly_hours}}"}
+success_criteria:
+  - Preserve CV/profile state and report actual score changes, requirements and practice allocations.
+trusted: true

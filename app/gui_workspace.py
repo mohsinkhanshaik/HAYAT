@@ -5,6 +5,7 @@ import sqlite3
 import queue
 import time
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from contextlib import closing
@@ -138,28 +139,61 @@ class WorkspaceCommand:
 
 def matching_commands(commands: list[WorkspaceCommand], query: str) -> list[WorkspaceCommand]:
     terms = query.casefold().split()
-    return [command for command in commands
-            if all(term in f"{command.label} {command.keywords}".casefold() for term in terms)]
+    matched = [command for command in commands
+               if all(term in f"{command.label} {command.keywords}".casefold() for term in terms)]
+    phrase = ' '.join(terms)
+    if not phrase:
+        return matched
+    # Match all terms as before; prioritize titles over incidental keywords.
+    def rank(command):
+        label = command.label.casefold()
+        return (0 if label == phrase else 1 if label.startswith(phrase)
+                else 2 if all(term in label for term in terms) else 3)
+    return sorted(matched, key=rank)
 
 
 class CommandPalette(tk.Toplevel):
     """Search only declared callbacks; query text is never an executable command."""
 
-    def __init__(self, parent, commands: list[WorkspaceCommand]):
+    def __init__(self, parent, commands: list[WorkspaceCommand], palette=None):
         super().__init__(parent)
         self.withdraw()
         self.title("HAYAT commands")
+        from app.gui_theme import Palette
+        from app.gui_output import DisplayVar
+        self.palette = p = palette or Palette
+        self.configure(bg=p.BLACK)
         self.transient(parent)
         self.geometry("540x380")
         self.minsize(380, 240)
         self.commands = commands
         self.query = StringVar(self)
-        ttk.Label(self, text="Search commands").pack(anchor="w", padx=14, pady=(14, 4))
+        tk.Label(self, text="Command search", bg=p.BLACK, fg=p.WHITE,
+                 font=('Segoe UI Semibold', 17)).pack(anchor="w", padx=14, pady=(14, 4))
         self.entry = ttk.Entry(self, textvariable=self.query, takefocus=True)
         self.entry.pack(fill="x", padx=14)
-        self.results = tk.Listbox(self, exportselection=False, activestyle="dotbox", takefocus=True)
-        self.results.pack(fill="both", expand=True, padx=14, pady=10)
-        ttk.Label(self, text="Enter to run · Esc to close · existing permissions apply").pack(pady=(0, 12))
+        self.match_count = DisplayVar(self)
+        tk.Label(self, textvariable=self.match_count, bg=p.BLACK, fg=p.MUTED,
+                 anchor='w').pack(fill='x', padx=14, pady=(8, 0))
+        self.selection_detail = DisplayVar(self, 'Choose a command using the arrow keys.')
+        self.detail_label = tk.Label(self, textvariable=self.selection_detail, bg=p.BLACK, fg=p.MUTED,
+                                     anchor='w', justify='left', wraplength=480)
+        self.detail_label.pack(side='bottom', fill='x', padx=14, pady=(0, 5))
+        tk.Label(self, text="Enter to run · Esc to close · existing permissions apply", bg=p.BLACK,
+                 fg=p.MUTED, anchor='w').pack(side='bottom', fill='x', padx=14, pady=(0, 8))
+        listing = tk.Frame(self, bg=p.PANEL)
+        listing.pack(fill='both', expand=True, padx=14, pady=8)
+        self.results = tk.Listbox(listing, exportselection=False, activestyle="dotbox", takefocus=True,
+                                  bg=p.PANEL, fg=p.WHITE, selectbackground=p.ROYAL, selectforeground=p.WHITE,
+                                  relief='flat', borderwidth=0, highlightthickness=1, highlightbackground=p.LINE,
+                                  font=('Segoe UI', 11))
+        scrollbar = ttk.Scrollbar(listing, command=self.results.yview)
+        scrollbar.pack(side='right', fill='y')
+        self.results.configure(yscrollcommand=scrollbar.set)
+        self.results.pack(fill='both', expand=True)
+        self.results.bind('<<ListboxSelect>>', self.describe_selection)
+        self.bind('<Configure>', lambda event: self.detail_label.configure(wraplength=max(220, event.width - 28))
+                  if event.widget is self else None, add='+')
         self.query.trace_add("write", lambda *_: self.refresh())
         self.bind("<Escape>", lambda event: (self.destroy(), "break")[1])
         self.bind("<Return>", self.execute)
@@ -180,6 +214,17 @@ class CommandPalette(tk.Toplevel):
             self.results.insert("end", command.label)
         if self.visible:
             self.results.selection_set(0)
+        count = len(self.visible)
+        self.match_count.set(f'{count} command' + ('' if count == 1 else 's') + (' found' if self.query.get().strip() else ' available'))
+        self.describe_selection()
+
+    def describe_selection(self, _event=None):
+        selection = self.results.curselection()
+        if selection and selection[0] < len(self.visible):
+            command = self.visible[selection[0]]
+            self.selection_detail.set(command.label + (' · ' + command.keywords if command.keywords else ''))
+        else:
+            self.selection_detail.set('No matching command. Try fewer words or search for a workspace name.')
 
     def move(self, direction):
         selection = self.results.curselection()
@@ -188,6 +233,7 @@ class CommandPalette(tk.Toplevel):
             self.results.selection_clear(0, "end")
             self.results.selection_set(index)
             self.results.see(index)
+            self.describe_selection()
         return "break"
 
     def execute(self, event=None):
@@ -204,7 +250,7 @@ class StreamingPreview(tk.Frame):
 
     def __init__(self, parent, palette):
         super().__init__(parent, bg=palette.PANEL_2)
-        self.caption = StringVar(self)
+        self.caption = DisplayVar(self)
         tk.Label(self, textvariable=self.caption, bg=palette.PANEL_2, fg=palette.MUTED,
                  anchor="w").pack(fill="x")
         self.text = tk.Text(self, height=4, wrap="word", state="disabled",
@@ -219,9 +265,13 @@ class StreamingPreview(tk.Frame):
 
     def publish(self, kind, text=""):
         if kind == "start":
-            self._content, self._model = "", text
+            from app.gui_presentation import diagnostic_text
+            self._content, self._model = "", diagnostic_text(text, 80)
         elif kind == "delta":
-            self._content = (self._content + text)[-4000:]
+            # Provider chunks can divide credentials anywhere, including
+            # inside a URL or private key. Keep drafts off the visible surface
+            # until the completed answer passes the normal output boundary.
+            self._content = "Draft hidden until the answer is complete."
         elif kind == "clear":
             self._content, self._model = "", ""
         try:

@@ -1,6 +1,9 @@
 """Isolated libVLC player: admitted local files and registered public camera video."""
 from __future__ import annotations
 import json
+import base64
+import ctypes
+import io
 import importlib.util
 import os
 import queue
@@ -88,7 +91,7 @@ class FrameRate:
 
     def reset(self, media):
         self.media, self.at, self.shown, self.lost = media, 0.0, 0, 0
-        self.fps, self.lost_per_second, self.unchanged_since = 0.0, 0.0, None
+        self.fps, self.lost_per_second, self.total, self.unchanged_since = 0.0, 0.0, 0, None
 
     def update(self, moment, playing):
         if self.media is None or moment - self.at < 1:
@@ -115,6 +118,82 @@ class FrameRate:
 
 def emit(data):
     print(json.dumps(data), flush=True)
+
+
+class PictureBridge:
+    """Bounded software pictures for Tk; VLC callbacks and buffers stay in this process."""
+
+    def __init__(self, vlc, player):
+        self.lock = threading.Lock()
+        self.buffer = None
+        self.address = self.width = self.height = self.pitch = 0
+        self.sequence = self.sent_sequence = self.sent = 0
+        self.last_display = self.last_publish = None
+        self.fps = None
+        # c_char_p converts the mutable chroma pointer into Python bytes. Keep
+        # the real pointer here so the format callback can write its four bytes.
+        format_cb = ctypes.CFUNCTYPE(ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_char),
+                                    *([ctypes.POINTER(ctypes.c_uint)] * 4))
+
+        @format_cb
+        def setup(_opaque, chroma, width, height, pitches, lines):
+            if not width[0] or not height[0] or width[0] > 16384 or height[0] > 16384:
+                return 0
+            scale = min(1, 960 / width[0], 540 / height[0])
+            with self.lock:
+                self.width, self.height = max(1, round(width[0] * scale)), max(1, round(height[0] * scale))
+                self.pitch = (self.width * 4 + 31) & ~31
+                self.buffer = ctypes.create_string_buffer(self.pitch * ((self.height + 31) & ~31) + 31)
+                self.address = (ctypes.addressof(self.buffer) + 31) & ~31
+                ctypes.memmove(chroma, b'RV32', 4)
+                width[0], height[0], pitches[0], lines[0] = self.width, self.height, self.pitch, (self.height + 31) & ~31
+            return 1
+
+        @vlc.CallbackDecorators.VideoLockCb
+        def lock(_opaque, planes):
+            self.lock.acquire()
+            planes[0] = self.address
+            return None
+
+        @vlc.CallbackDecorators.VideoUnlockCb
+        def unlock(_opaque, _picture, _planes):
+            self.lock.release()
+
+        @vlc.CallbackDecorators.VideoDisplayCb
+        def display(_opaque, _picture):
+            self.sequence += 1
+            self.last_display = time.monotonic()
+
+        # The callbacks must outlive every native invocation.
+        self.callbacks = setup, lock, unlock, display
+        player.video_set_callbacks(lock, unlock, display, None)
+        player.video_set_format_callbacks(setup, None)
+
+    def reset(self):
+        # A previous connection's silence must not immediately condemn its
+        # replacement before the new stream has had time to decode anything.
+        self.last_display = self.last_publish = None
+        self.fps = None
+        self.sent = 0
+        self.sent_sequence = self.sequence
+
+    def publish(self):
+        """At most one latest picture per control-loop tick; never queue raw video."""
+        if self.sequence == self.sent_sequence or not self.address:
+            return
+        from PIL import Image
+        with self.lock:
+            picture = Image.frombytes('RGB', (self.width, self.height),
+                                      ctypes.string_at(self.address, self.pitch * self.height), 'raw', 'BGRX', self.pitch)
+            self.sent_sequence = self.sequence
+        encoded = io.BytesIO()
+        picture.save(encoded, format='JPEG', quality=82)
+        moment = time.monotonic()
+        if self.last_publish is not None:
+            self.fps = min(10, round(1 / max(.001, moment - self.last_publish), 1))
+        self.last_publish = moment
+        self.sent += 1
+        emit({'kind': 'picture', 'jpeg': base64.b64encode(encoded.getvalue()).decode('ascii')})
 
 
 def main():
@@ -150,6 +229,7 @@ def main():
         flags += ['--vout=direct3d9']
     instance = vlc.Instance(*flags)
     player = instance.media_player_new()
+    pictures = PictureBridge(vlc, player) if request.get('picture_frames') else None
     desired_volume, desired_muted, audio_configured = 60, True, False
     mute_requested = False
     # A live HLS camera never ends. When a publisher drops one segment download
@@ -181,6 +261,9 @@ def main():
     def open_media():
         nonlocal audio_configured
         media = instance.media_new_location(url) if remote else instance.media_new_path(str(path))
+        # Per media as well: some libVLC builds ignore the instance flag and printed the
+        # file's path across the top of the picture when a clip opened.
+        media.add_option(':no-video-title-show')
         if remote:
             # 1.5 s instead of 4 s: the picture is closer to live, and the same cameras stalled no more.
             media.add_option(':network-caching=1500')
@@ -194,10 +277,12 @@ def main():
         sound_stop()  # a reconnect may bring a new sound address
         player.set_media(media)
         frames.reset(media)
+        if pictures is not None:
+            pictures.reset()
         audio_configured = False
     if not broadcast:
         open_media()
-    if not request.get('headless'):
+    if not request.get('headless') and pictures is None:
         handle = int(request['window_id'])
         if sys.platform == 'win32':
             player.set_hwnd(handle)
@@ -278,12 +363,16 @@ def main():
                         player.set_rate(rate)
             state = player.get_state()
             moment = time.monotonic()
+            if pictures is not None:
+                pictures.publish()
             if state == vlc.State.Playing and not audio_configured and player.audio_get_track_count() > 1:
                 player.audio_set_volume(desired_volume)
                 player.audio_set_mute(desired_muted)
                 audio_configured = True
             frames.update(moment, state == vlc.State.Playing and not paused)
-            if live and frames.frozen(moment):
+            frozen = (pictures.last_display is not None and moment - pictures.last_display > FROZEN_SECONDS
+                      if pictures is not None else frames.frozen(moment))
+            if live and not paused and frozen:
                 # "Playing", but the picture has not changed: a publisher stream that froze.
                 frames.unchanged_since = None
                 stalled_since = moment - 31
@@ -354,8 +443,10 @@ def main():
                       'volume': desired_volume if audio_url else player.audio_get_volume(),
                       'muted': desired_muted if audio_url else bool(player.audio_get_mute()),
                       # "2" = a sound track and "off", as libVLC counts them, so the card offers Unmute.
-                      'audio_tracks': 2 if audio_url else player.audio_get_track_count(), 'fps': round(frames.fps, 1),
-                      'frames': frames.total, 'lost_per_second': round(frames.lost_per_second, 1)})
+                      'audio_tracks': 2 if audio_url else player.audio_get_track_count(),
+                      'fps': pictures.fps if pictures is not None else round(frames.fps, 1),
+                      'frames': pictures.sent if pictures is not None else frames.total,
+                      'lost_per_second': round(frames.lost_per_second, 1)})
             time.sleep(.1)
     finally:
         # The disposable process owns all VLC allocations. Some Windows

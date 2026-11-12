@@ -1,0 +1,44 @@
+[
+  {
+    "topic": "Finance investment risk",
+    "url": "https://www.investor.gov/introduction-investing",
+    "refresh_days": 30,
+    "facts": [
+      {"claim": "All investments involve risk.", "excerpt": "All investments involve risk"}
+    ]
+  },
+  {
+    "topic": "Wealth personal finance net worth assets liabilities",
+    "url": "https://www.investor.gov/introduction-investing/investing-basics/save-and-invest/figure-out-your-finances",
+    "refresh_days": 30,
+    "facts": [{"claim": "Subtract liabilities from assets.", "excerpt": "Subtract your liabilities from your assets."}]
+  },
+  {
+    "topic": "Energy electricity power watts kilowatt hours",
+    "url": "https://www.eia.gov/energyexplained/electricity/measuring-electricity.php",
+    "refresh_days": 30,
+    "facts": [
+      {"claim": "One kWh is one kilowatt generated for one hour.", "excerpt": "One kWh is one kilowatt generated for one hour."}
+    ]
+  },
+  {
+    "topic": "Economics disinflation inflation rate price level rises slower",
+    "url": "https://www.stlouisfed.org/publications/page-one-economics/2024/03/01/the-inflation-rate-is-falling-but-prices-are-not",
+    "refresh_days": 30,
+    "facts": [{"claim": "Disinflation: the price level is rising at a slower rate", "excerpt": "disinflation, meaning the price level is rising at a slower rate"}]
+  },
+  {
+    "topic": "World politics United Nations Security Council composition elected terms",
+    "url": "https://www.un.org/about-us/un-charter/chapter-5",
+    "refresh_days": 7,
+    "facts": [
+      {"claim": "The Security Council consists of fifteen Members of the United Nations.", "excerpt": "The Security Council shall consist of fifteen Members of the United Nations."}
+    ]
+  },
+  {
+    "topic": "NASA extraterrestrial life UAP evidence limits",
+    "url": "https://science.nasa.gov/uap/faqs/",
+    "refresh_days": 7,
+    "facts": [{"claim": "NASA reports no credible evidence of extraterrestrial life found by the agency.", "excerpt": "NASA has not found any credible evidence of extraterrestrial life"}]
+  }
+]

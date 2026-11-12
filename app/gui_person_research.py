@@ -11,6 +11,7 @@ import webbrowser
 from app.gui_empty import show_empty
 from app.gui_intelligence_parts import FlowRow
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.research.investigations import build_report, export_report, profile_seed, report_text
@@ -33,7 +34,7 @@ class PersonResearchStudio(tk.Toplevel):
         self._worker = None
         self._job_context = ''
         self._job_ticket = self._job_route = None
-        self.status = StringVar(self, 'Enter a name or an explicit GitHub handle / profile. Candidates remain separate.')
+        self.status = DisplayVar(self, 'Enter a name or an explicit GitHub handle / profile. Candidates remain separate.')
         top = tk.Frame(self, bg=p.BLACK, padx=12, pady=10)
         top.pack(fill='x')
         tk.Label(top, text='Professional research', bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16)).pack(side='left')
@@ -51,7 +52,7 @@ class PersonResearchStudio(tk.Toplevel):
                               ('Verify owner presence', self.verify)):
             self.report_menu.add_command(label=title, command=action)
             self.report_items[title] = self.report_menu.index('end')
-        self.query_hint = StringVar(self, 'Known name, explicit GitHub handle or professional profile')
+        self.query_hint = DisplayVar(self, 'Known name, explicit GitHub handle or professional profile')
         tk.Label(self, textvariable=self.query_hint, bg=p.BLACK, fg=p.MUTED, anchor='w').pack(fill='x', padx=12, pady=(0, 3))
         self.query = ttk.Entry(self)
         self.query.pack(fill='x', padx=12)

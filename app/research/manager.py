@@ -8,7 +8,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import fields
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -221,7 +221,24 @@ class ResearchManager:
         if local:
             return local
 
-        planned = _person.plan(budget) if _person else self.query_planner.plan(query, mode, budget, official_only)
+        # A word with several meanings is read from the words around it ("jaguar speed" is the animal), then from
+        # the conversation, then as most people mean it; only the searches carry the added meaning.
+        readings = []
+        if _person is None and not self.settings.get("onion_research"):
+            from app.research.senses import resolve, search_text
+
+            supplier = getattr(self, "conversation_context", None)
+            try:
+                context = supplier() if callable(supplier) else ""
+            except Exception:
+                log_swallowed(_log, "reading the conversation for word meanings")
+                context = ""
+            readings = resolve(query, context)
+            trace["meanings"] = [{"word": item.word, "meaning": item.meaning.name, "chosen_by": item.chosen_by}
+                                 for item in readings]
+        search_query = search_text(query, readings) if readings else query
+        planned = (_person.plan(budget) if _person
+                   else self.query_planner.plan(search_query, mode, budget, official_only))
         metrics.queries_generated = len(planned)
         trace["queries"] = [item.to_dict() for item in planned]
         found: list[SearchResult] = []
@@ -352,6 +369,14 @@ class ResearchManager:
         claims, confidence, validation = self.verifier.verify_claims(claims, documents)
         metrics.validation_ms = int(validation["validation_ms"])
         claims = self._deduplicate_claims(claims)
+        # Never for onion or Tor-web research: their pages must come through Tor, and a follow-up search would
+        # go to the ordinary web. They plan with their own planner, which has no notion of a subject either.
+        if (_person is None and self.settings.get("second_look", True) and not self.settings.get("onion_research")
+                and hasattr(self.query_planner, "_search_subject")):
+            # Read, notice what is still unknown, look again for exactly that (app/research/deepening.py).
+            documents, claims, confidence = self._second_look(
+                query, mode, budget, started, metrics, errors, trace, documents, claims, confidence,
+                official_only, [item.text for item in planned], poisoning_reports)
         stored_conflict_sources = self.knowledge.annotate_stored_conflicts(claims) if _person is None else []
         if stored_conflict_sources:
             documents.extend(self._stored_source(row) for row in stored_conflict_sources)
@@ -369,6 +394,9 @@ class ResearchManager:
             answer = person_answer(_person, documents, claims)
         else:
             answer = self._synthesize(query, documents, claims, confidence, metrics)
+        notes = [item.note for item in readings if item.note]
+        if notes and answer:
+            answer = " ".join(notes) + "\n\n" + answer
         metrics.synthesis_ms = int((time.perf_counter() - synthesis_started) * 1000)
         usable_claims = [claim for claim in claims if claim.status != ClaimStatus.UNVERIFIED]
         complete = bool(documents and usable_claims and answer)
@@ -878,6 +906,139 @@ class ResearchManager:
             score, reasons, "untrusted_external_data", source_type, None, primary,
         )
 
+    def _second_look(self, query: str, mode: str, budget: ResearchBudget, started: float, metrics: ResearchMetrics,
+                     errors: list[str], trace: dict[str, Any], documents: list[SourceDocument], claims: list[Claim],
+                     confidence: float, official_only: bool, used_queries: list[str],
+                     poisoning_reports: list[dict[str, Any]]) -> tuple[list[SourceDocument], list[Claim], float]:
+        """Search again for what the first pass left unknown, and fold what is found into the same checks."""
+        from app.research.deepening import FOLLOWUP_PAGES, plan_second_look, skipped
+        from app.research.subject import relevant_to_question
+
+        elapsed = time.perf_counter() - started
+        subject = self.query_planner._search_subject(self.query_planner._clean(query))
+        plan = plan_second_look(query, subject, claims, documents, min_sources=budget.min_sources,
+                                independent_sources=self.independence.independent_count(documents),
+                                used_queries=used_queries, mode=mode)
+        record: dict[str, Any] = {"ran": False, **plan.to_dict()}
+        trace["second_look"] = record
+        if not plan.queries:
+            return documents, claims, confidence
+        if budget.max_seconds - elapsed < 0.3 * budget.max_seconds:
+            record["skipped"] = "less than 30% of the time budget was left"
+            return documents, claims, confidence
+        record["ran"] = True
+        read = {canonicalize_url(item) for document in documents for item in (document.url, document.final_url)}
+        found: dict[str, SearchResult] = {}
+        for text in plan.queries:
+            if time.perf_counter() - started >= budget.max_seconds:
+                break
+            results, cache_hit = self._search_cached(text, budget, "second_look", wide=mode in {"DEEP", "ADVERSARIAL"})
+            metrics.searches += 0 if cache_hit else 1
+            metrics.cache_hits += int(cache_hit)
+            metrics.queries_generated += 1
+            for item in results:
+                canonical = canonicalize_url(item.url)
+                if canonical in read or canonical in found or skipped(item.url, plan):
+                    continue
+                if official_only and not is_probably_official(item.url, query, item.title):
+                    continue
+                score, _, _, _ = score_for_query(item.url, item.title, f"{query} {' '.join(plan.focus)}", item.published_at)
+                item.quality = round(max(0.0, score - min(0.20, self.knowledge.route_failure_count(item.url) * 0.03)), 3)
+                item.query_intent = "second_look"
+                found[canonical] = item
+        candidates = sorted(found.values(), key=lambda item: (-item.quality, item.rank))[:FOLLOWUP_PAGES.get(mode, 2)]
+        fresh = self._retrieve_bounded(candidates, query, budget, started, metrics, errors)
+        fresh = self._render_thin_documents(fresh, query, budget, started, metrics, errors)
+        accepted: list[SourceDocument] = []
+        for document in self._deduplicate_documents(fresh):
+            if canonicalize_url(document.final_url) in read:
+                continue
+            assessment = assess_prompt_injection(document.text)
+            document.metadata["knowledge_poisoning_defense"] = assessment
+            document.metadata["found_by"] = "second_look"
+            document.quality = round(document.quality * float(assessment["trust_multiplier"]), 4)
+            poisoning_reports.append({"url": document.final_url, **assessment})
+            if assessment["quarantine"]:
+                document.trust = "quarantined_manipulative_external_data"
+                errors.append(f"Quarantined manipulative source: {document.final_url}")
+            else:
+                accepted.append(document)
+        record["new_sources"] = [document.final_url for document in accepted]
+        if not accepted:
+            # Looking again found nothing new: the gap is still open, so it is kept for later.
+            self._keep_open_question(plan.covered, plan.uncovered, record)
+            return documents, claims, confidence
+        supported_before = sum(claim.status in {ClaimStatus.SUPPORTED, ClaimStatus.PARTIALLY_SUPPORTED} for claim in claims)
+        combined = self.independence.annotate(self._deduplicate_documents([*documents, *accepted]))
+        combined.sort(key=lambda source: source.quality, reverse=True)
+        focus = f"{query} {' '.join(plan.focus)}".strip()
+        new_urls = {canonicalize_url(document.final_url) for document in accepted}
+        extracted: list[Claim] = []
+        for source in combined:
+            # A page found for a gap is read for that gap; the first pass's pages are read as before.
+            lens = focus if canonicalize_url(source.final_url) in new_urls else query
+            extracted.extend(self.claim_extractor.extract(query, source, self._relevant_excerpt(source.text, lens)))
+        extracted = [claim for claim in extracted if relevant_to_question(query, claim.text)]
+        verified, new_confidence, validation = self.verifier.verify_claims(extracted, combined)
+        metrics.validation_ms += int(validation["validation_ms"])
+        verified = self._deduplicate_claims(verified)
+        from app.research.deepening import coverage
+
+        # A new page stays only if a usable claim rests on it; otherwise it was a wrong turn (a company that
+        # shares the subject's initials, a page about something else) and must not appear among the sources.
+        cited = {canonicalize_url(evidence.source_url) for claim in verified if claim.status != ClaimStatus.UNVERIFIED
+                 for evidence in claim.evidence}
+        useful = [document for document in accepted if canonicalize_url(document.final_url) in cited]
+        record["unused_new_sources"] = [document.final_url for document in accepted if document not in useful]
+        supported_after = sum(claim.status in {ClaimStatus.SUPPORTED, ClaimStatus.PARTIALLY_SUPPORTED} for claim in verified)
+        covered_after, uncovered_after = coverage(query, verified)
+        independent_before = self.independence.independent_count(documents)
+        kept = self.independence.annotate(self._deduplicate_documents([*documents, *useful]))
+        kept.sort(key=lambda source: source.quality, reverse=True)
+        independent_after = self.independence.independent_count(kept)
+        record.update({"supported_before": supported_before, "supported_after": supported_after,
+                       "uncovered_after": uncovered_after, "independent_before": independent_before,
+                       "independent_after": independent_after})
+        gained = (useful and (supported_after > supported_before or independent_after > independent_before
+                              or len(uncovered_after) < len(plan.uncovered)))
+        if not gained or supported_after < supported_before:
+            # Nothing was added (or a page displaced better claims): the first pass stands, unchanged.
+            record["kept_first_pass"] = True
+            self._keep_open_question(plan.covered, plan.uncovered, record)
+            return documents, claims, confidence
+        self._keep_open_question(covered_after, uncovered_after, record)
+        if len(useful) < len(accepted):
+            # Claims are checked again against only the pages that stay, so no citation points at a dropped page.
+            verified, new_confidence, validation = self.verifier.verify_claims(
+                [claim for claim in extracted], kept)
+            metrics.validation_ms += int(validation["validation_ms"])
+            verified = self._deduplicate_claims(verified)
+        record["new_sources"] = [document.final_url for document in useful]
+        metrics.independent_sources = independent_after
+        return kept, verified, new_confidence
+
+    def _keep_open_question(self, covered: list[str], uncovered: list[str], record: dict[str, Any]) -> None:
+        """What is still unknown after looking twice becomes a question to come back to while the owner is away.
+
+        ``open_question`` is set by the runtime to the background learner's queue. The learner's own research does
+        not add to it, so curiosity cannot feed on itself.
+        """
+        keep = getattr(self, "open_question", None)
+        if keep is None or not covered or not uncovered:
+            return
+        from app.execution import current_context
+        from app.safety.authority import Principal
+
+        principal = current_context().principal
+        if str(getattr(principal, "value", principal)) == Principal.BACKGROUND_LEARNER.value:
+            return
+        topic = f"{' '.join(covered[:3])} {' '.join(uncovered[:3])}"
+        try:
+            if keep(topic):
+                record["open_question"] = topic
+        except Exception:
+            log_swallowed(_log, "keeping an open research question for later")
+
     @staticmethod
     def _stored_source(row: dict[str, Any]) -> SourceDocument:
         return SourceDocument(
@@ -933,6 +1094,12 @@ class ResearchManager:
         if stale_reply:
             return stale_reply + "\n\nSources:\n" + markdown_sources(sources)
         premise_note = self._unsupported_premise(query, supported)
+        record_note = self._official_record(query)
+        if record_note:
+            premise_note = record_note + ("\n\n" + premise_note if premise_note else "")
+        future_note = self._future_value_note(query)
+        if future_note:
+            premise_note = future_note + ("\n\n" + premise_note if premise_note else "")
         wants_requirements = bool(re.search(
             r"(?i)\b(?:require(?:s|d|ment)?|must|shall|rule|conform|compliance|standard)\b",
             query,
@@ -976,7 +1143,7 @@ class ResearchManager:
             except Exception:
                 log_swallowed(_log, "model synthesis of validated claims")
         lines = [premise_note, ""] if premise_note else []
-        lines.append("Answer:")
+        lines.append("What the pages say (some only describe the claim):" if record_note else "Answer:")
         for claim in supported[:6]:
             cites = "".join(f" [{index}]" for index in self.citations.citations_for_claim(claim, sources))
             qualifier = "Evidence is disputed: " if claim.status == ClaimStatus.DISPUTED else ""
@@ -1013,6 +1180,71 @@ class ResearchManager:
         cited = {int(number) for number in re.findall(r"\[(\d+)\]", "\n".join(lines)) if 0 < int(number) <= len(sources)}
         lines.extend(["Sources:", markdown_sources(sources, cited or None)])
         return "\n".join(lines)
+
+    #: "What will Bitcoin's closing price be on 3 March 2027?" / "Who will win the 2034 World Cup?"
+    _FUTURE_QUESTION = re.compile(r"(?i)^(?:what|who|which|how much|how many|when)\b[^?]*\bwill\b|^will\b")
+
+    @classmethod
+    def _future_value_note(cls, query: str, today: date | None = None) -> str | None:
+        """For an exact value on a future date, say first that it cannot be known yet.
+
+        Research returned "it could trade in the range of $85,000 to $100,000" as the
+        answer to an exact closing price on a date next year; forecasts are worth
+        showing, but not as the answer.
+        """
+        value = str(query or "")
+        if not cls._FUTURE_QUESTION.search(value):
+            return None
+        today = today or date.today()
+        years = [int(year) for year in re.findall(r"\b(20\d\d)\b", value)]
+        if not any(year > today.year for year in years):
+            return None
+        return ("Note: this cannot yet be known; nobody can observe a future value. What follows are forecasts and "
+                "reports from today's sources, not the answer.")
+
+    #: Words a rumour question shares with any fact check; they say nothing about its subject.
+    _RUMOUR_WORDS = frozenset({"fake", "faked", "fakes", "hoax", "hoaxes", "conspiracy", "conspiracies", "myth", "myths",
+                               "real", "really", "true", "truth", "staged", "fact", "check", "debunked", "happen",
+                               "happened", "was", "were", "the", "did", "does", "cover", "inside", "job", "false"})
+
+    def _official_record(self, query: str) -> str | None:
+        """For a rumour question, the verified official-page facts on its subject, to lead the answer.
+
+        Pages that retell a conspiracy are "validated" in the sense that they
+        say what they say; "was the moon landing fake?" came back as six
+        sentences describing the hoax theory and no verdict, while NASA's own
+        record sat in the knowledge store. Only claims from reviewed official
+        pages count here, and only when they share a subject word with the
+        question (not just "fake" or "hoax").
+        """
+        from app.research.official_pack import _official_url
+        from app.research.query_planner import RUMOUR_QUERY
+
+        if not RUMOUR_QUERY.search(str(query or "")):
+            return None
+        subject = token_set(query, 4) - self._RUMOUR_WORDS
+        if not subject:
+            return None
+        try:
+            claims = self.knowledge.search_claims(query, limit=12, min_confidence=0.5)
+        except Exception:
+            log_swallowed(_log, "reading official records for a rumour question")
+            return None
+        lines = []
+        for item in claims:
+            evidence = [row for row in item.get("evidence", []) if _official_url(str(row.get("final_url") or ""))]
+            words = token_set(str(item.get("claim_text", "")) + " " + str(item.get("topic", "")), 4)
+            if (not evidence or item.get("stale") or item.get("status") == ClaimStatus.DISPUTED.value
+                    or len(subject & words) < min(2, len(subject))):
+                continue
+            source = evidence[0]
+            host = urlsplit(str(source["final_url"])).hostname or ""
+            lines.append(f"- {item['claim_text']} — {source.get('title') or host} ({source['final_url']})")
+            if len(lines) == 3:
+                break
+        if not lines:
+            return None
+        return ("What the official record says (verified against the publisher's own page):\n" + "\n".join(lines))
 
     _PRESUPPOSED = re.compile(r"(?i)\b(?P<verb>prove[sn]?|proving|cures?|cured|guarantees?)\b\s+(?:that\s+)?"
                               r"(?P<rest>[^.?!]{3,90})")

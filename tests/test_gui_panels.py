@@ -203,6 +203,29 @@ def test_the_right_column_scrolls_when_its_contents_do_not_fit(root):
     assert column.canvas.yview()[1] == pytest.approx(1.0)
 
 
+def test_a_filling_column_gives_its_spare_height_to_what_expands(root):
+    """The invention workbench's results sat above empty space: the body was only as tall as its widgets."""
+    window = tk.Toplevel(root)
+    window.geometry("500x600")
+    column = ScrollableColumn(window, Palette, width=400, fill_height=True)
+    column.pack(fill="both", expand=True)
+    tk.Label(column.body, text="controls", height=2).pack(fill="x")
+    grows = tk.Text(column.body, height=3)
+    grows.pack(fill="both", expand=True)
+    window.update()
+    assert column.body.winfo_height() >= column.canvas.winfo_height() - 2
+    assert grows.winfo_height() > 200  # far more than its three requested lines
+    for index in range(20):  # added later and taller than the view: it still scrolls, nothing is cut off
+        tk.Label(column.body, text=f"row {index}", height=3).pack(fill="x")
+    import time
+    deadline = time.monotonic() + 3
+    while column.canvas.yview()[1] - column.canvas.yview()[0] >= 1.0 and time.monotonic() < deadline:
+        window.update()
+        time.sleep(.05)
+    assert column.canvas.yview()[1] - column.canvas.yview()[0] < 1.0
+    window.destroy()
+
+
 # -------------------------------------------------------------- plain values
 
 

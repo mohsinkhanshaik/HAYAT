@@ -84,7 +84,17 @@ class FlowRow(tk.Frame):
     def add(self, widget, index=None):
         self.items.insert(len(self.items) if index is None else index, widget)
         widget.bind('<Configure>', lambda _event: self.arrange(), add='+')
+        widget.bind('<Map>', lambda _event: self._watch_children(widget), add='+')
         return widget
+
+    def _watch_children(self, widget):
+        # A frame held at its allocated width does not itself resize when a
+        # nested label's font grows. Observe those descendants as well.
+        for child in widget.winfo_children():
+            if not getattr(child, '_flow_resize_bound', False):
+                child._flow_resize_bound = True
+                child.bind('<Configure>', lambda _event: self.arrange(), add='+')
+            self._watch_children(child)
 
     def remove(self, widget):
         if widget in self.items:
@@ -99,11 +109,19 @@ class FlowRow(tk.Frame):
         for widget in self.items[len(shown):]:
             widget.place_forget()
         for widget in shown:
+            if isinstance(widget, (tk.Label, ttk.Label)):
+                if not hasattr(widget, '_flow_wrap'):
+                    widget._flow_wrap = widget.winfo_pixels(widget.cget('wraplength') or 0)
+                wrapping = max(1, min(widget._flow_wrap or width, width - self.gap))
+                if widget.winfo_pixels(widget.cget('wraplength') or 0) != wrapping:
+                    widget.configure(wraplength=wrapping)
             needed = widget.winfo_reqwidth() + self.gap
             if left + needed > width and left:
                 top, left, row_height = top + row_height + self.gap, 0, 0
-            widget.place(x=left, y=top)
-            left += needed
+            available = max(1, width - left - self.gap)
+            allocated = min(widget.winfo_reqwidth(), available)
+            widget.place(x=left, y=top, width=allocated)
+            left += allocated + self.gap
             row_height = max(row_height, widget.winfo_reqheight())
         height = top + row_height + 2
         if int(self.cget('height')) != height:

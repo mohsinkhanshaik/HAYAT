@@ -80,7 +80,7 @@ def inspect_image(path):
                 if ExifTags.TAGS.get(key) in allowed}
         return {'filename': path.name, 'bytes': len(data), 'format': picture.format,
                 'width': picture.width, 'height': picture.height, 'metadata': exif,
-                'sha256': hashlib.sha256(data).hexdigest(), 'sha1': hashlib.sha1(data).hexdigest(),
+                'sha256': hashlib.sha256(data).hexdigest(), 'sha1': hashlib.sha1(data, usedforsecurity=False).hexdigest(),
                 'authenticity': 'Unknown. Metadata and matching bytes cannot establish authenticity or detect all manipulation.',
                 'privacy': 'GPS and identifying EXIF fields omitted. No face descriptors are calculated.'}
 

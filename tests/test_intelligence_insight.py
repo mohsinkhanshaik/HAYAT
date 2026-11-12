@@ -78,7 +78,7 @@ def test_space_weather_bulletins_get_readable_headlines_scales_and_impacts():
 
 def test_filters_by_category_severity_and_recent_hours(manager):
     everything = manager.dashboard(limit=1000)
-    assert everything['aggregates']['counts_by_category']['cameras'] == 71 + len(LIVESTREAMS) + ADDED_CAMERAS
+    assert everything['aggregates']['counts_by_category']['cameras'] == 72 + len(LIVESTREAMS) + ADDED_CAMERAS
     assert {row['category'] for row in manager.dashboard(category='floods', limit=50)['events']} == {'floods'}
     medium = manager.dashboard(min_severity='medium', limit=50)['events']
     assert {row['id'] for row in medium} == {'cyber:CVE-2026-12345', 'disasters:FL-1',
@@ -137,7 +137,9 @@ def test_event_assessment_reports_corroboration_relevance_and_staleness(tmp_path
         record = manager.event_record('earthquakes:q1')
         judged = record['assessment']
         assert record['corroborating'][0]['id'] == 'disasters:EQ-1'
-        assert judged['confidence']['level'] == 'high' and 'corroborated by 1 other source: disasters' in judged['confidence']['basis']
+        assert judged['confidence']['level'] == 'high' and 'authoritative agency' in judged['confidence']['basis']
+        assert 'do not independently confirm' in judged['confidence']['basis']
+        assert not judged['confidence']['independent_confirmation'] and not record['corroboration_verified']
         assert judged['risk']['level'] == 'high' and 'Magnitude 6.1' in judged['risk']['basis']
         assert judged['relevance']['level'] == 'high' and 'Earthquakes M5+' in judged['relevance']['basis']
         assert 'magnitude 6.1 earthquake' in judged['summary'] and 'no PAGER impact alert' in judged['summary']

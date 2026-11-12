@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PORT = 11435
 #: The models HAYAT needs: its identity model, that model's foundation (which also does vision and DEEP-mode
 #: advice), and embeddings. Other installed models are optional.
-MODELS = ("hayat:latest", "qwen3.6-35b-a3b-uncensored:q4_k_m", "all-minilm:latest")
+MODELS = ("hayat:latest", "qwen3.6-35b-a3b-uncensored:q4_k_m", "nomic-embed-text:latest")
 #: Set to "0" to run against the machine's Ollama even when runtime/ exists.
 SWITCH = "HAYAT_PORTABLE"
 

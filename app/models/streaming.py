@@ -214,6 +214,10 @@ def stream_local(provider, payload, *, compatible=False, on_chunk, cancel=None):
     if tail:
         content.append(tail)
         on_chunk(tail)
+    if not compatible:
+        from app.models.local import _note_generation
+
+        _note_generation(final, payload["model"])  # the server's own token count and timing, for the Mind window
     return ModelResponse("".join(content), final.get("model", payload["model"]), provider.name,
         usage=final.get("usage", {}) if compatible else {
             "prompt_tokens": final.get("prompt_eval_count"), "completion_tokens": final.get("eval_count")},

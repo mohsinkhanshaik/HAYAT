@@ -417,6 +417,12 @@ learning:
       # session Mohsin was present for.
       min_idle_seconds: 60
       max_cpu_percent: 70
+      # 2026-11-09: RAM and GPU are limits too. Learning waits while less than
+      # this much RAM is free, or while the card can't give it 1 GB (free, or
+      # held by an idle model that would unload) -- an image or video render.
+      # Set min_obtainable_vram_gb to 0 to turn the GPU check off.
+      min_free_ram_gb: 2.0
+      min_obtainable_vram_gb: 1.0
       # It has work queued and the machine is free; waiting 15 seconds between
       # cycles was most of the idle time in an hour.
       idle_retry_seconds: 5

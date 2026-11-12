@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 
 from app.context_budget import ContextBudget
-from app.response_constraints import binary_only, word_constraint, word_count
+from app.response_constraints import binary_only, sentence_constraint, word_constraint, word_count
 
 
 def word_limit(text: str) -> int | None:
@@ -29,6 +29,10 @@ def brief_guidance(text: str) -> str:
                 "Keep the actual answer, including its defining name or value; do not replace it with a generic "
                 "restatement of the question. Contractions count as one word; use uncontracted wording. "
                 "No heading, emoji or sign-off. Give only the answer.")
+    sentences = sentence_constraint(text)
+    if sentences is not None and sentences != 1:
+        return (f'The user requested {sentences} sentence(s). Give exactly {sentences} complete sentences. '
+                'Answer all requested parts concisely; no heading, bullet list, follow-up offer or appended example.')
     if re.search(r"(?i)\byes or no\b|\byes/no\b", text):
         if binary_only(text):
             return 'Start the answer with Yes or No and return only that word when the answer is established; do not add an explanation.'
@@ -76,23 +80,25 @@ def exceeds_brief_request(answer: str, question: str) -> bool:
     """Check compact output constraints without cutting a finished answer."""
     from app.answers import brief_output_unit
     constraint = word_constraint(question)
+    sentences = sentence_constraint(question)
     if constraint is not None:
         count = word_count(answer)
         if count > constraint.maximum or constraint.exact and count != constraint.maximum:
             return True
-    elif len(answer.split()) > (25 if re.search(r'(?i)\byes or no\b|\byes/no\b', question) else 100):
+    elif sentences is None and len(answer.split()) > (25 if re.search(r'(?i)\byes or no\b|\byes/no\b', question) else 100):
         return True
     unit = brief_output_unit(question)
     if unit == 'word':
         return len(answer.split()) > 1
     if unit == 'line':
         return len([line for line in answer.splitlines() if line.strip()]) > 1
-    if unit == 'sentence':
+    if unit == 'sentence' or sentences is not None:
         # Ignore decimal points and common abbreviations when finding sentence endings.
         prose = re.sub(r'(?i)\b(?:e\.g\.|i\.e\.|Mr\.|Mrs\.|Ms\.|Dr\.|Prof\.|vs\.|etc\.)', 'abbr', answer)
         prose = re.sub(r'\b(?:[A-Z]\.){2,}', 'abbr', prose)
         prose = re.sub(r'(?<=\d)\.(?=\d)', '', prose)
-        return len([part for part in re.split(r'[.!?]+[\"\u201d\u2019\x27)]*\s+', prose.strip()) if re.search(r'\w', part)]) > 1
+        count = len([part for part in re.split(r'[.!?]+[\"\u201d\u2019\x27)]*\s+', prose.strip()) if re.search(r'\w', part)])
+        return count != sentences if sentences is not None else count > 1
     return False
 
 
@@ -115,6 +121,45 @@ def guidance(text: str, modes: set[str]) -> str:
         "and hypothetical examples explicitly. If current external evidence is missing, explain that gap; "
         "do not present an estimate as researched fact. "
     ]
+    parts.append(
+        "Check the subject and premise before affirming an ability: a fictional character, extraterrestrial contact "
+        "or an unknown service is not made reachable by having generic call, recall, account or connector tools. "
+        "Correct a mistaken name or premise gently when known; do not invent a real contact method. "
+        "An unrecognized target does not establish that no such service exists anywhere; say what is not verified. "
+        "If roleplay is requested, label it as fiction. "
+    )
+    if (re.search(r'(?i)\bja(?:a)?d(?:oo?|u)\b', text)
+            and re.search(r'(?i)\b(?:film|movie|krish|krrish|rohit sharma)\b', text)):
+        parts.append(
+            'Reference for the mistaken film premise: Jaadoo is the fictional alien associated with Koi... Mil Gaya, '
+            'which stars Hrithik Roshan. Correct the film/actor mix-up gently and answer the actual call request. '
+            'The official Zee Music Company Jaadoo Jaadoo release identifies that movie and cast '
+            '(https://www.youtube.com/watch?v=ID7oIDuXtf4). This supplied reference is not a search performed this turn. '
+        )
+    if re.search(r'(?i)\b(?:finance|wealth|net worth|asset|liabilit\w*|invest\w*|interest|inflation|econom\w*|return|profit|stock)\b', text):
+        parts.append(
+            "For finance/economics, separate wealth from income, price levels from rates of change, and nominal from "
+            "inflation-adjusted values. Match periods and compounding conventions; identify fees or inputs that are "
+            "missing rather than inventing them. Scenario returns and diversification do not guarantee gains. "
+        )
+    if re.search(r'(?i)\b(?:geometry|triangle|rectangle|circle|cube|sphere|energy|power|watts?|kwh|kw|joules?)\b', text):
+        parts.append(
+            "For geometry/physics, check dimensions and units, distinguish power from energy and linear, area and "
+            "volume scaling. Use only stated shape assumptions and physical models; do not assume a right angle "
+            "or create energy without an external or stored source. "
+        )
+    if re.search(r'(?i)\b(?:politic\w*|president|minister|election|news|headline|war|government)\b', text):
+        parts.append(
+            "For politics/news, separate dated observations, disputed claims and causal interpretations. Chronology "
+            "alone does not establish causation. Identify the place and date needed, avoid invented figures or "
+            "quotations, and do not report current events as checked without retrieved evidence. "
+        )
+    if re.search(r'(?i)\b(?:nobel|prize|award)\b', text):
+        parts.append(
+            'Distinguish an official award citation from speculation about committee motives. Correct the mistaken '
+            'premise directly; do not invent controversy or absence of experimental confirmation as the reason '
+            'a theory was not named in a prize citation. '
+        )
     from app.code_completion import code_task
     if code_task(text) and re.search(r"(?i)\b(?:one[- ]liner|single[- ]line|one[- ]line)\b", text):
         parts.append("Return one code expression or statement over the supplied input; do not replace that input with a sample value or add a print demonstration. ")

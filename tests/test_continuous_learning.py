@@ -41,6 +41,29 @@ def _learner(tmp_path, **kwargs) -> ContinuousLearner:
     return ContinuousLearner(root=tmp_path, **kwargs)
 
 
+def test_status_does_not_scan_storage_and_unknown_does_not_admit_a_cycle(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    learner = _learner(tmp_path)
+    checked = []
+    learner.runtime = SimpleNamespace(storage=SimpleNamespace(
+        quick_status=lambda: {"last_scanned_at": None},
+        category_capacity=lambda category: checked.append(category) or {"quota_bytes": 10, "remaining_bytes": 0}))
+    monkeypatch.setattr(learner, "machine_is_busy", lambda: False)
+    assert learner.status()["may_run"] is None
+    assert checked == []
+    assert learner.may_run() == (False, "the governed learning allocation is full")
+    assert checked == ["learning"]
+
+
+def test_readiness_preview_reports_measured_full_storage_without_rescanning(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    learner = _learner(tmp_path)
+    learner.runtime = SimpleNamespace(storage=SimpleNamespace(quick_status=lambda: {
+        "last_scanned_at": "2026-10-30", "learning_allocation_bytes": 10, "learning_used_bytes": 10}))
+    monkeypatch.setattr(learner, "machine_is_busy", lambda: False)
+    assert learner.preview_admission() == (False, "the governed learning allocation is full")
+
+
 # ------------------------------------------------- authority, not good intent
 
 

@@ -138,7 +138,7 @@ def camera_actions(row, cameras):
     if row['category'] == 'cameras' or not cameras:
         return []
     camera = cameras[0]
-    medium = 'snapshot' if camera.get('image_url') else 'live video' if camera.get('video_url') else 'publisher player'
+    medium = 'snapshot' if camera.get('image_url') else 'publisher video' if camera.get('video_url') else 'publisher player'
     return [{'text': f"View the nearest public camera ({medium}): {camera['title'][:90]} · {camera['distance_km']} km",
              'action': 'camera:' + camera['id']}]
 
@@ -155,7 +155,7 @@ def event_assessment(row, in_feed, source, matching_watches, watches, nearby, co
         summary = (f"A magnitude {magnitude:.1f} earthquake" if magnitude is not None else 'An earthquake') + f" was reported {row['title']}"
         summary += (f' at a depth of {depth:.0f} km' if depth is not None else '') + f'{when_text}, according to USGS.'
         alert = details.get('alert')
-        summary += f' USGS PAGER impact alert: {alert}.' if alert else ' USGS has issued no PAGER impact alert.'
+        summary += f' USGS PAGER impact alert: {alert}.' if alert else ' The retrieved record supplies no PAGER impact alert; impacts remain unestablished.'
         if details.get('tsunami_flag') == 1:
             summary += ' USGS flags it as a large oceanic event; this flag is not a tsunami warning.'
     elif key == 'cyber':
@@ -175,7 +175,8 @@ def event_assessment(row, in_feed, source, matching_watches, watches, nearby, co
     others = len(nearby)
     if others:
         summary += f" {others} other observation{'s lie' if others != 1 else ' lies'} within 300 km"
-        summary += f"; {len(corroborating)} from another source describe the same kind of event." if corroborating else '.'
+        summary += (f"; {len(corroborating)} in other feeds are possible same-category matches. "
+                    'Their event identity and source independence are not verified.' if corroborating else '.')
     summary += ' It is in the current feed.' if in_feed else ' It is retained but no longer in the current feed; that does not prove it has ended.'
     risk = {'level': row['severity'], 'label': SEVERITY_LABEL[row['severity']], 'basis': row['severity_basis']}
     related_watches = [watch for watch in watches if watch.get('enabled', True) and row['feed'] in watch.get('feeds', [])
@@ -190,13 +191,14 @@ def event_assessment(row, in_feed, source, matching_watches, watches, nearby, co
         confidence = {'level': 'low', 'label': 'Low', 'basis': 'The source feed is stale; this is the last retained observation.'}
     elif not in_feed:
         confidence = {'level': 'low', 'label': 'Low', 'basis': 'Retained historical item, absent from the current feed.'}
-    elif corroborating:
-        names = sorted({item['feed'] for item in corroborating})
-        confidence = {'level': 'high', 'label': 'High', 'basis': f"{row['provider']} report corroborated by {len(names)} other source{'s' if len(names) != 1 else ''}: {', '.join(names)}."}
     elif row['feed'] in PRIMARY_ISSUERS:
         confidence = {'level': 'high', 'label': 'High', 'basis': f"Issued directly by the authoritative agency ({row['provider']}) in a current fetch."}
     else:
         confidence = {'level': 'medium', 'label': 'Medium', 'basis': f"Single current source ({row['provider']}); not corroborated by another connected feed."}
+    confidence.update(independent_confirmation=False,
+                      scope='Confidence describes source reporting and freshness, not independently verified truth or personal safety.')
+    if corroborating:
+        confidence['basis'] += ' Nearby same-category matches do not independently confirm this event.'
     return {'summary': summary, 'risk': risk, 'relevance': relevance, 'confidence': confidence,
             'actions': camera_actions(row, cameras) + recommended_actions(row),
             'context': [f"Provider: {row['provider']} · layer {row['feed']} · category {row['category_title']}",
@@ -258,6 +260,7 @@ class IntelligenceManager(ExplorationServices):
         self.knowledge = knowledge
         self._map_server = None
         self._map_lock = threading.Lock()
+        self._named_views_lock = threading.RLock()
         self._camera_lock = threading.Lock()
         # Parsed, classified rows per feed, keyed by snapshot id; displays
         # re-filter often and must not re-read thousands of JSON rows each time.
@@ -312,8 +315,10 @@ class IntelligenceManager(ExplorationServices):
                         content_types = {'application/atom+xml', 'application/xml', 'text/xml'}
                     if feed.format == 'kml':
                         content_types = {'application/vnd.google-earth.kml+xml', 'application/xml', 'text/xml'}
+                    if feed.format == 'camera_html':
+                        content_types = {'text/html'}
                     # TripCheck publishes its camera inventory as a .js file holding plain JSON.
-                    if key == 'cameras_oregon':
+                    if key in ('cameras_oregon', 'cameras_houston'):  # Houston TranStar does the same
                         content_types.add('application/javascript')
                     # USGS AshCam labels its JSON as text/html; the JSON parse still rejects a real page.
                     if key == 'cameras_volcanoes':
@@ -415,6 +420,9 @@ class IntelligenceManager(ExplorationServices):
             if feed.format == 'rss':
                 from app.intelligence.reports import parse_rss
                 return resource, parse_rss(resource.content)
+            if feed.format == 'camera_html':
+                from app.intelligence.providers import trafficwatchni_cameras
+                return resource, trafficwatchni_cameras(resource.content)
             if feed.format == 'atom':
                 from app.intelligence.hazards import parse_atom
                 return resource, parse_atom(resource.content)
@@ -562,6 +570,11 @@ class IntelligenceManager(ExplorationServices):
                             'status': state.get('status', 'not_fetched')})
         return sources
 
+    def source_health(self):
+        """Read the current local fetch state; this never refreshes public feeds."""
+        return {'sources': self._sources(), 'checked_at': now().isoformat(), 'monitor': self.status(),
+                'basis': 'Local fetch history, not a new publisher request. Current feeds do not establish live media, independent truth or complete geographic coverage.'}
+
     @staticmethod
     def _aggregates(all_rows):
         magnitudes = [row['details']['magnitude'] for row in all_rows if row['feed'] == 'earthquakes' and row['details'].get('magnitude') is not None]
@@ -655,6 +668,13 @@ class IntelligenceManager(ExplorationServices):
         filters against today's cache and says what changed, so an old view
         never passes for current coverage.
         """
+        # Browser and native windows share this read/modify/write store.
+        # Serializing the whole operation prevents one saved view replacing
+        # another when their evidence checks complete at the same time.
+        with self._named_views_lock:
+            return self._named_views(action, name, data)
+
+    def _named_views(self, action, name, data):
         from app.intelligence.view import validate_view
         if action not in ('list', 'save', 'open', 'delete'):
             raise ValueError('Use list, save, open or delete for saved views.')
@@ -821,6 +841,7 @@ class IntelligenceManager(ExplorationServices):
                 'in_current_feed': current is not None, 'retained_revisions': revisions,
                 'matching_watches': matching_watches,
                 'nearby_events': nearby[:20], 'nearby_count': len(nearby), 'corroborating': corroborating[:10],
+                'corroboration_verified': False,
                 'nearest_cameras': cameras,
                 'assessment': event_assessment(row, current is not None, source, matching_watches, watches, nearby, corroborating, cameras),
                 'basis': 'Source-reported evidence. Nearby means within 300 km, not related or causally connected. An item absent from a rolling feed is not proven resolved.'}
@@ -906,7 +927,13 @@ class IntelligenceManager(ExplorationServices):
                 setattr(monitor_registry, name, getattr(self.registry, name, None))
             tool = self.registry.get('intelligence_refresh')
             monitor_registry.register(tool.name, tool.description, tool.input_schema, tool.risk, tool.permission, tool.handler)
+        from app.nervous_system import BODY
+
         while not self._stop.is_set():
+            # The owner's request goes first; feeds wait for it, never past the limit (app/nervous_system.py).
+            BODY.yield_to_owner('world feeds', self._stop)
+            if self._stop.is_set():
+                break
             try:
                 with execution_scope(principal=Principal.BACKGROUND_LEARNER.value, task_id='intelligence-' + uuid.uuid4().hex):
                     if monitor_registry:
@@ -918,6 +945,7 @@ class IntelligenceManager(ExplorationServices):
             except Exception as exc:
                 self.last_error = f'{type(exc).__name__}: {exc}'[:1000]
                 log_swallowed(_log, 'refreshing intelligence feeds')
+            BODY.ran('world feeds', ok=self.last_error is None, note=(self.last_error or '')[:120])
             self._stop.wait(self.interval)
 
     def stop(self, timeout=25):

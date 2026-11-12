@@ -19,6 +19,7 @@ from app.gui_theme import DarkScrolledText
 from app.gui_icons import apply_icons
 from app.gui_windows import MARGIN, place_over, work_area
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_intelligence_parts import FlowRow
 from app.gui_fonts import DISPLAY
 
@@ -73,10 +74,12 @@ class ResearchStudio(tk.Toplevel):
                                                 command=self.open_image_research)
         shortcuts.add(self.image_research_button)
 
-        tk.Label(self, text="Deep combines public indexes and follows evidence links. Choose Onion (Tor) for public onion research, "
-                           "or search professional sources and registry metadata.",
-                 bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9), anchor="w", justify="left", wraplength=700).pack(
-                     fill="x", padx=16, pady=(0, 8))
+        self.header = header
+        # Explanatory only: a compact window gives its two lines to the answer and evidence tabs instead.
+        self.intro = tk.Label(self, text="Deep combines public indexes and follows evidence links. Choose Onion (Tor) for public "
+                                         "onion research, or search professional sources and registry metadata.",
+                              bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9), anchor="w", justify="left", wraplength=700)
+        self.intro.pack(fill="x", padx=16, pady=(0, 8))
 
         mode_row = tk.Frame(self, bg=p.BLACK, padx=16)
         mode_row.pack(fill='x', pady=(0, 6))
@@ -89,12 +92,14 @@ class ResearchStudio(tk.Toplevel):
         self.person_details_toggle = ttk.Checkbutton(mode_row, text='Context / profile', variable=self.person_details_visible,
                                                      command=self._show_person_fields, state='disabled')
         self.person_details_toggle.pack(side='right')
-        self.query_hint = StringVar(self, 'Topic, question or public URL')
+        self.query_hint = DisplayVar(self, 'Topic, question or public URL')
         tk.Label(mode_row, textvariable=self.query_hint, bg=p.BLACK, fg=p.MUTED).pack(side='left', padx=8)
 
         ask = tk.Frame(self, bg=p.BLACK, padx=16)
         ask.pack(fill="x", pady=(0, 8))
         self.query = tk.Entry(ask, font=("Segoe UI", 11), bg=p.PANEL, fg=p.WHITE, insertbackground=p.GOLD, relief="flat")
+        from app.gui_theme import field_outline
+        field_outline(self.query, p)
         self.query.pack(side="left", fill="x", expand=True, ipady=5)
         self.query.bind("<Return>", lambda _e: self.search())
         self.depth = StringVar(self, "Deep")
@@ -130,6 +135,7 @@ class ResearchStudio(tk.Toplevel):
         self.tree.grid(row=0, column=0, sticky='ew')
         horizontal.grid(row=1, column=0, sticky='ew')
         self.tree.bind("<<TreeviewSelect>>", lambda _e: self.show_selected())
+        self.tree.bind('<Configure>', self._keep_selected_visible, add='+')
 
         buttons = tk.Frame(self, bg=p.BLACK, padx=16, pady=6)
         buttons.pack(fill="x")
@@ -142,17 +148,67 @@ class ResearchStudio(tk.Toplevel):
         ttk.Button(buttons, text="Add image…", style="Hayat.TButton", command=self.add_image).pack(side="left", padx=6)
         ttk.Button(buttons, text="Copy answer", style="Hayat.TButton", command=self.copy_answer).pack(side="right")
 
-        tk.Label(self, text="Images open in chat for visible content and text. A photo does not establish someone's identity.",
-                 bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9), anchor="w", justify="left", wraplength=700).pack(fill="x", padx=16)
-        self.detail_status = StringVar(self)
+        self.image_hint = tk.Label(self, text="Images open in chat for visible content and text. A photo does not establish "
+                                              "someone's identity.",
+                                   bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9), anchor="w", justify="left", wraplength=700)
+        self.image_hint.pack(fill="x", padx=16)
+        self.detail_status = DisplayVar(self)
         self.status_label = tk.Label(self, textvariable=self.detail_status, bg=p.BLACK, fg=p.GOLD_SOFT,
                                      font=("Segoe UI", 9), anchor="w", justify='left', wraplength=700)
         self.status_label.pack(fill="x", padx=16, pady=6)
         self.status_label.bind('<Configure>', lambda event: self.status_label.configure(wraplength=max(200, event.width - 8)))
 
-        self.result = DarkScrolledText(self, wrap="word", bg=p.PANEL, fg=p.WHITE, font=("Segoe UI", 10),
-                                                padx=12, pady=10, relief="flat", state="disabled")
-        self.result.pack(fill="both", expand=True, padx=16, pady=(0, 12))
+        self.details_tabs = ttk.Notebook(self)
+        self.details_tabs.pack(fill='both', expand=True, padx=16, pady=(0, 12))
+        answer_page = tk.Frame(self.details_tabs, bg=p.PANEL)
+        self.details_tabs.add(answer_page, text='Answer')
+        from app.gui_research_evidence import ResearchEvidenceMap
+        self.evidence_map = ResearchEvidenceMap(self.details_tabs, p)
+        self.details_tabs.add(self.evidence_map, text='Sources & claims')
+        # Beside the evidence it acts on, not in the header: a fourth header shortcut wrapped onto a second row in
+        # a compact window and took that height from the answer.
+        self.draft_button = ttk.Button(self.evidence_map.toolbar, text='Draft invention…', style='Compact.Hayat.TButton',
+                                       command=self.draft_invention, state='disabled')
+        self.draft_button.pack(side='right')
+        self.larger_button = ttk.Button(self.evidence_map.toolbar, text='Larger view ↗', style='Compact.Hayat.TButton',
+                                        command=self.open_evidence_window)
+        self.larger_button.pack(side='right', padx=(0, 6))
+        self.details_tabs.bind('<<NotebookTabChanged>>', lambda _event: self._fit_table(), add='+')
+        self.result = DarkScrolledText(answer_page, wrap="word", bg=p.PANEL, fg=p.WHITE, font=("Segoe UI", 10),
+                                       padx=12, pady=10, relief="flat", state="disabled")
+        self.result.pack(fill="both", expand=True)
+
+    def open_evidence_window(self):
+        """The same recorded evidence in a window of its own, for more than a few rows at a time."""
+        from app.gui_research_evidence import EvidenceWindow
+        window = getattr(self, '_evidence_window', None)
+        if window is None or not window.winfo_exists():
+            window = self._evidence_window = EvidenceWindow(self)
+        job = self._selected()
+        window.show(job)
+        window.deiconify()
+        window.lift()
+
+    def _show_evidence(self, job):
+        """Every open evidence view follows the selected search; an unfinished one shows nothing."""
+        self.evidence_map.set_result(job.result if job is not None and job.status == 'done' else None)
+        window = getattr(self, '_evidence_window', None)
+        if window is not None and window.winfo_exists():
+            window.show(job)
+
+    def draft_invention(self):
+        job = self._selected()
+        if job is None or job.status != 'done' or job.result is None:
+            self.detail_status.set('Select completed research with structured source evidence first.')
+            return
+        from app.gui_research_evidence import ResearchDraftDialog
+        window = getattr(self, '_draft_window', None)
+        if window is not None and window.winfo_exists():
+            if window.job.job_id == job.job_id or window._busy:
+                window.lift()
+                return
+            window.destroy()
+        self._draft_window = ResearchDraftDialog(self, job)
 
     def open_person_studio(self):
         from app.gui_person_research import PersonResearchStudio
@@ -178,16 +234,41 @@ class ResearchStudio(tk.Toplevel):
             self.person_fields.pack_forget()
         self._fit_table()
 
+    def _keep_selected_visible(self, _event=None):
+        """While the evidence is read only one or two search rows are left: keep the search being read among them.
+
+        Also runs when the list is actually resized, because the new height is laid out after `_fit_table` returns.
+        """
+        if getattr(self, '_reading', False) and self.tree.selection():
+            self.tree.see(self.tree.selection()[0])
+
     def _fit(self, event):
         if event.widget is self:
             self._fit_table()
 
     def _fit_table(self):
         compact = self.winfo_height() < 640
+        # Reading the evidence: its list and map need the height more than the search list does, so that shrinks
+        # (to the selected search alone in a compact window, where the image note also steps aside) until the
+        # Answer tab returns. At the default size five search rows left the evidence a sliver under its tabs.
+        evidence = self.details_tabs.select() == str(self.evidence_map)
+        reading = compact and evidence
         if compact:
-            height = 1 if self.person_fields.winfo_manager() else 2
+            height = 1 if reading or self.person_fields.winfo_manager() else 2
+        elif evidence:
+            height = 2
         else:
             height = 5 if self.search_kind.get() == 'Topic' else 3
+        if compact and self.intro.winfo_manager():
+            self.intro.pack_forget()
+        elif not compact and not self.intro.winfo_manager():
+            self.intro.pack(fill="x", padx=16, pady=(0, 8), after=self.header)
+        if reading and self.image_hint.winfo_manager():
+            self.image_hint.pack_forget()
+        elif not reading and not self.image_hint.winfo_manager():
+            self.image_hint.pack(fill="x", padx=16, before=self.status_label)
+        self._reading = evidence  # whichever size: the rows that remain should include the search being read
+        self._keep_selected_visible()
         if int(self.tree['height']) != height:
             self.tree.configure(height=height)
         # Measure with the font the headings are drawn in (bold Segoe UI), plus their 8-pixel padding on each
@@ -274,10 +355,14 @@ class ResearchStudio(tk.Toplevel):
         job = self._selected()
         self.cancel_button.configure(state="normal" if job is not None and job.status == "running" else "disabled")
         self.again_button.configure(state="normal" if job is not None else "disabled")
+        names = getattr(self.gui.runtime.registry, 'names', lambda: [])()
+        self.draft_button.configure(state='normal' if job is not None and job.status == 'done' and job.result is not None
+                                   and 'invention_from_research' in names else 'disabled')
         if job is None:
             self.detail_status.set("Select a search to read its answer. Results also arrive in chat.")
             if self._display_signature is not None:
                 self._set_result("")
+                self._show_evidence(None)
                 self._display_signature = None
             return
         self.detail_status.set(f"{job.level.title()} · {STATES.get(job.status, job.status)}"
@@ -286,7 +371,7 @@ class ResearchStudio(tk.Toplevel):
                                + (' · Public-work sources; identity unverified' if job.person else '')
                                + (' · Registry metadata; findings unverified' if job.public_data else '')
                                + (f" · {int(job.elapsed)} s elapsed" if job.status == "running" else ""))
-        signature = (job.job_id, job.status, job.answer, job.error)
+        signature = (job.job_id, job.status, job.answer, job.error, id(job.result))
         if signature == self._display_signature:
             return  # polling must not replace text, selection, or the reading position
         self._display_signature = signature
@@ -294,6 +379,7 @@ class ResearchStudio(tk.Toplevel):
                 "in the chat." if job.status == "running" else
                 f'Search cancelled: "{job.query}".' if job.status == "cancelled" else self.jobs.result_text(job))
         self._set_result(text)
+        self._show_evidence(job)
 
     def _set_result(self, text: str) -> None:
         self.result._smooth_scroller.cancel()

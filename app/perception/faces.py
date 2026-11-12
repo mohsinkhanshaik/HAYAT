@@ -113,6 +113,16 @@ def _cosine(a: list[float], b: list[float]) -> float:
     if len(a) != len(b):
         raise ValueError('Face signatures have different dimensions.')
     a, b = _signature(a), _signature(b)
+    return _unit_cosine(a, b)
+
+
+def _unit_cosine(a: list[float], b: list[float]) -> float:
+    """Dot product only for finite unit vectors admitted by _signature.
+
+    Gallery templates are normalized during _load and queries once during
+    assessment. Revalidating them for every pair multiplies that work by the
+    number of local templates, without adding an input boundary.
+    """
     return max(-1.0, min(1.0, math.fsum(x * y for x, y in zip(a, b, strict=True))))
 
 
@@ -168,7 +178,13 @@ class FaceEngine:
                         self._verified_files[name] = fingerprint
                 except (OSError, ValueError):
                     self._verified_files.pop(name, None)
-                    self._detector, self._detector_kind, self._recognizer = None, '', None
+                    # Invalid recognition models must never remain in use.
+                    # The packaged Haar detector is independent of those
+                    # optional files; keep it instead of re-parsing its XML
+                    # for every still image on a detection-only installation.
+                    if self._detector_kind != 'haar':
+                        self._detector, self._detector_kind = None, ''
+                    self._recognizer = None
                     self.model_error = 'Missing or unverified OpenCV model: ' + name
                     return False
             return True
@@ -179,12 +195,16 @@ class FaceEngine:
         except Exception as exc:
             return {"detection": False, "recognition": False, "reason": f"OpenCV is unavailable: {exc}"}
         reason = ""
-        if not self.recognition_available():
+        available = self.recognition_available()
+        if not available:
             reason = (self.model_error + '. ' + f"Recognising enrolled people needs two verified OpenCV Zoo models in {self.models_dir}: "
                       f"{YUNET} and {SFACE} (Apache-2.0). Detection works without them.")
+        detection = available or callable(getattr(cv2, 'CascadeClassifier', None))
+        if not detection:
+            reason += ' This OpenCV build does not include the legacy Haar detector, so detection also needs the verified models.'
         if reason:
             reason += " Say 'set up face recognition' to download them (about 37 MB)."
-        return {"detection": True, "recognition": self.recognition_available(),
+        return {"detection": detection, "recognition": available,
                 "models_dir": str(self.models_dir), "needs": [YUNET, SFACE], "reason": reason}
 
     def install(self, fetch: Callable[[str], bytes] | None = None) -> dict[str, Any]:
@@ -235,8 +255,11 @@ class FaceEngine:
             return "yunet"
         if self._detector_kind != "haar":
             import cv2.data
-
-            self._detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+            factory = getattr(cv2, 'CascadeClassifier', None)
+            if not callable(factory):
+                raise ValueError('This OpenCV build does not include the legacy face detector. '
+                                 'Set up the two verified OpenCV Zoo face models to enable local detection and comparison.')
+            self._detector = factory(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
             self._detector_kind = "haar"
         return "haar"
 
@@ -474,7 +497,7 @@ class FaceGallery:
         for name, record in self._people.items():
             compatible = [known for known in record['embeddings'] if len(known) == len(vector)]
             if compatible:
-                ranked.append((max(_cosine(vector, known) for known in compatible), name))
+                ranked.append((max(_unit_cosine(vector, known) for known in compatible), name))
         ranked.sort(reverse=True)
         result['compatible_people'] = len(ranked)
         if not ranked:

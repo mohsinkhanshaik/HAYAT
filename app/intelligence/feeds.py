@@ -70,6 +70,11 @@ CARS_STATES = (
 # Open camera networks published by transport and weather agencies without an
 # API key. Each was checked live, robots rules included, on 2026-10-05.
 OPEN_CAMERA_FEEDS = (
+    # DfI permits direct links to camera pages; its image CDN currently answers 403.
+    # Keep the publisher's own viewer, without embedding or claiming a direct stream.
+    Feed('cameras_northern_ireland', 'DfI TrafficWatchNI · Northern Ireland public traffic camera viewers',
+         'https://www.trafficwatchni.com/twni/cameras', 3600,
+         'https://www.trafficwatchni.com/twni/cameras', 'camera_html'),
     Feed('cameras_nsw', 'Transport for NSW · New South Wales public traffic camera catalog',
          'https://data.livetraffic.com/cameras/traffic-cam.json', 3600,
          'https://data.nsw.gov.au/data/en/dataset/2-live-traffic-cameras'),
@@ -106,8 +111,9 @@ OPEN_CAMERA_FEEDS = (
     Feed('cameras_austin', 'City of Austin · traffic cameras',
          'https://data.austintexas.gov/resource/b4k4-adkb.json?$limit=5000', 3600,
          'https://data.austintexas.gov/Transportation-and-Mobility/Traffic-Cameras/b4k4-adkb'),
+    # 30 s: the catalog answers in under a second, but timed out at 10 s during the 2026-11-06 audit.
     Feed('cameras_seattle', 'Seattle DOT and WSDOT · Seattle traffic cameras',
-         'https://web.seattle.gov/Travelers/api/Map/Data?zoomId=13&type=2', 3600, 'https://web.seattle.gov/Travelers/'),
+         'https://web.seattle.gov/Travelers/api/Map/Data?zoomId=13&type=2', 3600, 'https://web.seattle.gov/Travelers/', timeout=30),
     Feed('cameras_iowa', 'Iowa DOT · traffic, weather and rest-area cameras',
          'https://services.arcgis.com/8lRhdTsQyJpO52F1/arcgis/rest/services/Traffic_Cameras_View/FeatureServer/0/query?where=1%3D1&outFields=*&f=json',
          3600, 'https://www.511ia.org/'),
@@ -170,6 +176,23 @@ OPEN_CAMERA_FEEDS = (
     *(Feed(f'cameras_txdot_{code.lower()}', f'TxDOT · {name} district traffic cameras',
            f'https://its.txdot.gov/its/DistrictIts/GetCctvStatusListByDistrict?districtCode={code}', 3600,
            f'https://its.txdot.gov/its/District/{code}/cameras') for code, name in TXDOT_DISTRICTS),
+    # Added 2026-11-06 from the camera packs of github.com/bilawalsidhu/gods-eye-view (MIT); each checked live
+    # through HAYAT's fetcher, robots.txt included. FL511's terms allow individual personal use, which is how
+    # HAYAT, one owner's assistant, reads it. Catalonia's camera hosts still fail TLS (DH key too small): not added.
+    Feed('cameras_florida', 'FL511 (Florida DOT) · statewide traffic cameras',
+         'https://services.arcgis.com/3wFbqsFPLeKqOlIK/arcgis/rest/services/FL511_Traffic_Cameras/FeatureServer/0/query'
+         '?where=1%3D1&outFields=ID,DESCRIPT,COUNTY,HIGHWAY,DIRECTION,LATITUDE,LONGITUDE,IMAGE&outSR=4326&f=json', 3600,
+         'https://fl511.com/', pages=5),
+    # The county's layer also holds staff names (ModifiedBy): only these fields are asked for.
+    Feed('cameras_kingcounty', 'King County Road Services · county road cameras (Washington)',
+         'https://services.arcgis.com/Ej0PsM5Aw677QF1W/arcgis/rest/services/TRAFFICCAMERA_POINT_2029/FeatureServer/0/query'
+         '?where=1%3D1&outFields=AssetID,Location,ImageURL,CurrentStatus,CamRegion,Manufacturer,Model&outSR=4326&f=json', 3600,
+         'https://kingcounty.gov/en/dept/local-services/transportation/roads/traffic-cameras'),
+    Feed('cameras_houston', 'Houston TranStar · Greater Houston traffic cameras',
+         'https://traffic.houstontranstar.org/data/layers/cctvSnapshots_json.js', 3600, 'https://traffic.houstontranstar.org/'),
+    Feed('cameras_a22', 'Autostrada del Brennero (A22) · Brenner–Modena motorway webcams (Italy)',
+         'https://tourism.api.opendatahub.com/v1/WebcamInfo?source=a22&pagesize=200&removenullvalues=true', 3600,
+         'https://www.autobrennero.it/'),
 )
 # Traveler-information networks that need a free developer key from the owner.
 # Each turns on only when its .env variable is set; keys never leave the fetch URL.

@@ -6,6 +6,7 @@ import queue
 import threading
 import time
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -144,7 +145,7 @@ class WorkspaceExplorer(tk.Frame):
         self._results = queue.Queue(maxsize=1)
         self._last_refresh = 0.0
         self.query = StringVar(self)
-        self.status = StringVar(self, value="Loading…")
+        self.status = DisplayVar(self, value="Loading…")
         self.metric_vars = {}
         if kind == 'background':
             tk.Label(self, text='Background intelligence', bg=palette.BLACK, fg=palette.WHITE,

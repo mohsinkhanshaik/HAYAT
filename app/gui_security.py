@@ -10,7 +10,7 @@ from tkinter import ttk
 from typing import Any, Callable
 
 from app.gui_icons import apply_icons
-from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
@@ -65,7 +65,7 @@ class SecurityStudio(tk.Toplevel):
         tk.Label(header, text="Security", bg=p.BLACK, fg=p.WHITE,
                  font=(DISPLAY, 16)).pack(side="left")
         ttk.Button(header, text="Close", style="Hayat.TButton", command=self.destroy).pack(side="right")
-        self.overview = StringVar(self, "Reading local defenses…")
+        self.overview = DisplayVar(self, "Reading local defenses…")
         summary = tk.Label(self, textvariable=self.overview, bg=p.BLACK, fg=p.GOLD_SOFT,
                            font=("Segoe UI", 10), anchor="w", justify="left", padx=16)
         summary.pack(fill="x", pady=(0, 10))
@@ -95,7 +95,7 @@ class SecurityStudio(tk.Toplevel):
         horizontal.grid(row=1, column=0, sticky="ew")
         self.bans.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
         self.bans.bind("<<TreeviewSelect>>", self._select_ban)
-        self.ban_detail = StringVar(self, "Select a source to see the complete recorded reason.")
+        self.ban_detail = DisplayVar(self, "Select a source to see the complete recorded reason.")
         detail = tk.Label(blocked, textvariable=self.ban_detail, bg=p.PANEL, fg=p.MUTED,
                           anchor="w", justify="left", wraplength=560)
         detail.pack(fill="x")
@@ -104,7 +104,7 @@ class SecurityStudio(tk.Toplevel):
         self.unban_button = ttk.Button(row, text="Lift selected ban", style="Hayat.TButton", command=self.unban)
         self.unban_button.pack(side="left")
         ttk.Button(row, text="Refresh", style="Hayat.TButton", command=self.refresh_bans).pack(side="right")
-        self.ban_note = StringVar(self, "Loading saved or live bans…")
+        self.ban_note = DisplayVar(self, "Loading saved or live bans…")
         note = tk.Label(blocked, textvariable=self.ban_note, bg=p.PANEL, fg=p.GOLD_SOFT,
                         anchor="w", justify="left", wraplength=560)
         note.pack(fill="x", pady=6)
@@ -130,7 +130,7 @@ class SecurityStudio(tk.Toplevel):
 
         footer = tk.Frame(self, bg=p.BLACK, padx=16, pady=6)
         footer.pack(fill="x", side="bottom")
-        self.status_var = StringVar(self, "")
+        self.status_var = DisplayVar(self, "")
         tk.Label(footer, textvariable=self.status_var, bg=p.BLACK, fg=p.MUTED,
                  font=("Segoe UI", 9)).pack(side="left")
         self.progress = ttk.Progressbar(footer, mode="indeterminate", length=120,
@@ -221,6 +221,10 @@ class SecurityStudio(tk.Toplevel):
                 self.bans.yview_moveto(position[0])
             self._ban_rows = rows
             self._select_ban()
+        from app.gui_empty import show_empty
+        # In the table, where the eye goes; the empty grid alone read as "still loading".
+        show_empty(self.bans, "No sources are blocked right now. A source that probes or attacks remote access "
+                              "appears here with its reason and time left.", self.palette)
         self.ban_note.set(status.get("store_error") or ("No active bans in this snapshot. This is not an attack history."
                           if not rows else f"{len(rows)} active bans. Trusted owner networks are exempt from scoring."))
 

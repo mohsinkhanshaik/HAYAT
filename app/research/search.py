@@ -160,6 +160,51 @@ class BingRssSearch(WebSearchProvider):
         return results
 
 
+class SearxngSearch(WebSearchProvider):
+    """The owner's own SearXNG instance (open-source metasearch, AGPL-3.0), through its JSON API.
+
+    Used first when `searxng_url` (settings) or AI_SEARXNG_URL names one, e.g. http://127.0.0.1:8888.
+    Plain http is accepted only for this computer or the home network; anything farther must be https.
+    The instance must allow the JSON format (search.formats: [html, json] in its settings.yml).
+    """
+    name = "searxng"
+
+    def __init__(self, base_url: str, timeout: float = 20, user_agent: str = "AI-Research/1.0") -> None:
+        parts = urlsplit(base_url.strip())
+        if parts.scheme not in ("http", "https") or not parts.hostname or parts.username or parts.password:
+            raise ValueError("Give the SearXNG address as http(s)://host[:port].")
+        if parts.scheme == "http":
+            try:
+                local = ipaddress.ip_address(parts.hostname).is_private or ipaddress.ip_address(parts.hostname).is_loopback
+            except ValueError:
+                local = parts.hostname in ("localhost",)
+            if not local:
+                raise ValueError("Use https for a SearXNG instance outside this computer or home network.")
+        self.base_url = base_url.strip().rstrip("/")
+        self.timeout = timeout
+        self.user_agent = user_agent
+
+    def search(self, query: str, limit: int = 10, recency: str | None = None, domains: list[str] | None = None) -> list[SearchResult]:
+        params = {"q": _scoped_query(query, None, domains), "format": "json"}
+        if recency in ("day", "week", "month", "year"):
+            params["time_range"] = recency
+        response = httpx.get(self.base_url + "/search", params=params, timeout=self.timeout, trust_env=False,
+                             headers={"User-Agent": self.user_agent, "Accept": "application/json"})
+        response.raise_for_status()
+        results: list[SearchResult] = []
+        for item in response.json().get("results", []):
+            url = str(item.get("url") or "")
+            if urlsplit(url).scheme not in {"http", "https"}:
+                continue
+            title = str(item.get("title") or "")
+            quality, _ = score_source(url, title, query)
+            results.append(SearchResult(title, url, str(item.get("content") or ""), (urlsplit(url).hostname or "").lower(),
+                                        item.get("publishedDate"), len(results) + 1, self.name, quality))
+            if len(results) >= max(1, min(limit, 50)):
+                break
+        return results
+
+
 class SearchProviderChain(WebSearchProvider):
     name = "chain"
 
@@ -225,6 +270,23 @@ class SearchProviderChain(WebSearchProvider):
         return [replace(item, rank=index + 1) for index, item in enumerate((chosen + deferred)[:limit])]
 
     def search(self, query: str, limit: int = 10, recency: str | None = None, domains: list[str] | None = None) -> list[SearchResult]:
+        results = self._search(query, limit, recency, domains)
+        if isinstance(query, str) and query.strip():
+            try:
+                # The search words left this computer: say so in the reply's privacy line (app/outbound.py).
+                from app.transfers import transfers
+
+                transfers().search(query, [getattr(provider, "name", type(provider).__name__)
+                                           for provider in self.providers], len(results))
+            except Exception:  # bookkeeping never fails a search
+                import logging
+
+                from app.logging import log_swallowed
+
+                log_swallowed(logging.getLogger(__name__), "recording the search words for the privacy line")
+        return results
+
+    def _search(self, query: str, limit: int = 10, recency: str | None = None, domains: list[str] | None = None) -> list[SearchResult]:
         self._errors.set(())
         self._coverage.set(())
         if not isinstance(query, str) or not query.strip():
@@ -359,6 +421,17 @@ def build_search_provider(settings: dict) -> WebSearchProvider:
     user_agent = str(settings.get("user_agent", "AI-Research/1.0"))
     requested = os.getenv("AI_SEARCH_PROVIDER", str(settings.get("search_provider", "auto"))).lower()
     providers: list[WebSearchProvider] = []
+    # The owner's own open-source metasearch comes first when one is configured.
+    searxng = os.getenv("AI_SEARXNG_URL", str(settings.get("searxng_url") or "")).strip()
+    if searxng:
+        try:
+            providers.append(SearxngSearch(searxng, timeout, user_agent))
+        except ValueError:
+            import logging
+
+            logging.getLogger(__name__).warning("Ignoring the SearXNG address %r: it must be http(s) and local if plain http.", searxng)
+        if requested == 'searxng' and providers:
+            return SearchProviderChain(providers)
     # Credentials and stale research flags must never opt a paid provider in.
     if requested not in {'bing', 'bing_rss'}:
         providers.append(DuckDuckGoHtmlSearch(timeout, user_agent))

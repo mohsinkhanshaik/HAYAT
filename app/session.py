@@ -26,12 +26,22 @@ class SessionState:
     #: Substantive subject survives acknowledgements and correction-only turns.
     conversation_topic: str = ""
     research_audit: dict[str, Any] = field(default_factory=dict)
+    #: When a failure was last shown to the owner (app/dialogue_turn.py): "fix it" soon after means that failure.
+    failure_reported_at: Any = None
     #: "For the next two answers, reply with one word": {"rule": ..., "remaining": 2 or None}.
     standing_instruction: dict[str, Any] = field(default_factory=dict)
     #: Which path answered the last turn: "exact", "brain", or the router's classification source.
     last_answer_source: str = ""
+    #: What the last reply sent out of this computer (app/outbound.summary), for the details panel.
+    last_outbound: dict = field(default_factory=dict)
+    #: The words the last request had misspelt and how they were read (app/intent/spelling.py).
+    last_spelling: list = field(default_factory=list)
+    #: A message that stopped halfway ("find me the"), waiting for the rest of the sentence (app/unfinished.py).
+    pending_fragment: dict[str, Any] | None = None
     last_response: str = ""
     last_correction: str = ""
+    #: The self-review of the last reply (app/self_review.py): trigger, assumptions, influences, reliability, revision.
+    last_self_review: dict = field(default_factory=dict)
     pending_action: dict[str, Any] | None = None
     pending_learning: dict[str, Any] | None = None
     #: The language replies are written and spoken in: "en" unless Mohsin asks for "ar".

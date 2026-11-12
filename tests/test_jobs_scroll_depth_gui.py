@@ -17,10 +17,13 @@ def test_every_jobs_tab_scrolls_whole_page_without_global_wheel_binding(jobs_win
         window.tabs.select(index)
         window.update()
         assert page.canvas.cget("yscrollcommand") and page.canvas.cget("xscrollcommand")
-        assert page.body.winfo_width() >= 780
+        assert page.body.winfo_width() >= page.minimum_width
         page.canvas.xview_moveto(1)
         window.update()
-        assert page.canvas.xview()[0] > 0
+        if page.minimum_width:
+            assert page.canvas.xview()[0] > 0
+        else:
+            assert page.body.winfo_width() == page.canvas.winfo_width()
         # Saved matches load on a worker; when they land just after the jump the
         # page grows (a full run measured 0.981). Scroll again until the page
         # stops growing, then require the true bottom.

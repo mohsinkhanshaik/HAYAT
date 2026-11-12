@@ -15,14 +15,14 @@ def test_full_runtime_chat_uses_verified_feed_results_and_closes_monitor():
         assert 'earthquakes: ok' in updated.display_response
         answer = runtime.assistant.handle('Show Osiris status')
         assert 'Hayat intelligence' in answer.display_response
-        assert f'{82 + len(LIVESTREAMS) + ADDED_CAMERAS} matching source items' in answer.display_response
+        assert f'{83 + len(LIVESTREAMS) + ADDED_CAMERAS} matching source items' in answer.display_response
         assert 'Test space bulletin' in answer.display_response
         aliases = runtime.registry.execute('osiris_status', {})
         assert aliases.success and aliases.output['intelligence']
         assert 'events' in aliases.output and 'books' not in aliases.output
         assessment = runtime.assistant.handle('What is happening around the world?')
-        # Events and camera catalog entries are counted apart (same 82 + livestreams in all).
-        assert f'11 event reports and {71 + len(LIVESTREAMS) + ADDED_CAMERAS} public camera entries match World' in assessment.display_response
+        # Events and camera catalog entries are counted apart; NI contributes one unlocated viewer fixture.
+        assert f'11 event reports and {72 + len(LIVESTREAMS) + ADDED_CAMERAS} public camera entries match World' in assessment.display_response
         assert 'World coverage is partial' in assessment.display_response
         event = runtime.assistant.handle('Explain intelligence event earthquakes:q1')
         assert 'Magnitude: 4' in event.display_response

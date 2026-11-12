@@ -83,12 +83,20 @@ _DICTIONARY_WORDS = {
 # can still be a single number or three lines of working.
 _BRIEF_OUTPUT = re.compile(
     r"(?i)\b(?:briefly|keep (?:it|this|the answer) (?:short|brief)|"
-    r"(?:short|brief|concise) (?:answer|response|working|calculation|explanation)|"
+    r"(?:short|brief|concise) (?:answer|response|working|calculation|explanation)(?!\s+(?:question|type|format|section))|"
     r"(?:only|just) (?:the )?answer|in (?:one|a) (?:word|line|sentence)|tl;?dr|"
     r"(?:with|in|using) (?:exactly |just |only )?(?:one|a single) (?:word|line|sentence)|"
     r"answer (?:with )?(?:yes or no|yes/no)|"
     # "Answer in under 10 words" got 191 words.
-    r"(?:in|under|in under|less than|fewer than|at most|no more than|within|max(?:imum)?)\s+\d{1,3}\s+words?)\b")
+    r"(?:in|under|in under|less than|fewer than|at most|no more than|within|max(?:imum)?)\s+\d{1,3}\s+words?|"
+    # 2026-11-07: "In one short sentence: what is the capital of Japan?" was graded a deep question and sent back
+    # twice as "7 words for a deep answer"; a describing word or a small count must not hide the request.
+    r"(?:in|with|using)\s+(?:exactly\s+|just\s+|only\s+)?(?:one|a|two|three|a\s+few|a\s+couple\s+of|a\s+single)\s+"
+    r"(?:(?:short|brief|quick|simple|plain|clear|single)\s+)(?:word|line|sentence)s?|"
+    # The format asked for, not a subject ("how a one-line shell script works", "what is a short answer question").
+    r"(?:one|single)[-\s]line\s+(?:answer|reply|summary|response|explanation)|one[-\s]liner(?!\s+(?:script|command|program|code))|"
+    r"(?:give\s+(?:me\s+)?|want\s+|need\s+|just\s+|in\s+|as\s+|with\s+)(?:a\s+)?(?:quick|short|brief)\s+(?:answer|reply|summary)"
+    r"(?!\s+(?:question|type|format|section)))\b")
 
 # A separate sentence is a constraint too: "Who are you? One sentence."
 # Anchor it to a sentence boundary so prose about one sentence stays a topic.
@@ -100,7 +108,8 @@ _BRIEF_UNIT = re.compile(
 def brief_output_unit(text: str) -> str | None:
     value = " ".join(str(text or "").split())
     match = re.search(r"(?i)\b(?:in|with|using) (?:exactly |just |only )?"
-                      r"(?:a single|one|a) (word|line|sentence)\b", value) or _BRIEF_UNIT.search(value)
+                      r"(?:a single|one|a) (?:(?:short|brief|quick|simple|plain|clear) )?(word|line|sentence)\b", value) \
+        or _BRIEF_UNIT.search(value)
     return match.group(1).lower() if match else None
 
 #: Endings that mean the model stopped rather than finished. A reply ending in
@@ -189,9 +198,9 @@ def is_small_talk(text: str) -> bool:
 
 def brief_output_requested(text: str) -> bool:
     """Explicit output brevity, independent of the selected reasoning mode."""
-    from app.response_constraints import word_constraint
+    from app.response_constraints import sentence_constraint, word_constraint
     return bool(_BRIEF_OUTPUT.search(" ".join(str(text or "").split())) or brief_output_unit(text)
-                or word_constraint(text) is not None)
+                or word_constraint(text) is not None or sentence_constraint(text) is not None)
 
 
 #: An instruction to do something, not a request to explain: "book it for tomorrow", "set a reminder", "open notepad".
@@ -391,6 +400,12 @@ def required_topics(text: str) -> list[str]:
     # reply grew a second JSON object and "I could not properly cover".
     if _EXACT_FORMAT.search(str(text or "")):
         return []
+    from app.response_constraints import sentence_constraint
+    if sentence_constraint(text) is not None and not re.search(
+            r'(?i)\b(?:and|also|as well as)\s+(?:how|why|what|where|when|who|explain|describe)\b', text):
+        # Narrative premises are not extra deliverables. A fixed sentence
+        # contract is assessed as a complete answer, not keyword repetition.
+        return []
     # "If all bloops are razzies and all razzies are lazzies, are all bloops
     # lazzies?" -- the premises are not topics; there is one question.
     if re.match(r"(?i)^\s*(?:so\s+|and\s+)?(?:if|suppose|assuming|given that)\b", str(text or "")):
@@ -426,7 +441,8 @@ def required_topics(text: str) -> list[str]:
     # answer "cover" it, never can, and ends every reply with an awkward "I
     # could not properly cover: etc explain in detailed". A part earns its place
     # only if it names something past the filler.
-    real = [part for part in parts if _has_subject(part)]
+    real = [part for part in parts if _has_subject(part) and not re.fullmatch(
+        r'(?i)\s*in (?:a|the|this) (?:fictional|hypothetical|imaginary) [\w -]+', part.strip())]
     return real if len(real) > 1 else []
 
 

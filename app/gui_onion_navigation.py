@@ -11,6 +11,7 @@ from typing import Any
 from app.gui_empty import show_empty
 from app.gui_intelligence_parts import FlowRow
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.research.onion_navigation import navigation_controls
@@ -40,12 +41,12 @@ class OnionNavigationWindow(tk.Toplevel):
         self.url, self.query = StringVar(self), StringVar(self)
         self.follow = BooleanVar(self, False)
         self.pages, self.depth = StringVar(self, '3'), StringVar(self, '1')
-        self.status = StringVar(self, 'Choose a site in Find onion sites, or paste a v3 onion URL, then Read.')
+        self.status = DisplayVar(self, 'Choose a site in Find onion sites, or paste a v3 onion URL, then Read.')
         self.site_filter, self.site_category = StringVar(self, ''), StringVar(self, 'All categories')
-        self.check_text = StringVar(self, '')
+        self.check_text = DisplayVar(self, '')
         self._site_rows: dict[str, dict[str, Any]] = {}
         self._check_job = None
-        self.link_detail = StringVar(self, 'Select a link to inspect its destination. External links are reference-only.')
+        self.link_detail = DisplayVar(self, 'Select a link to inspect its destination. External links are reference-only.')
 
         head = tk.Frame(self, bg=p.BLACK, padx=14, pady=10)
         head.pack(fill='x')

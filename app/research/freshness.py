@@ -22,6 +22,9 @@ _DATES = (
 
 def classify_freshness(query: str) -> tuple[str, timedelta | None]:
     text = query.lower()
+    from app.intent.live_web import _CURRENT_METRIC, _INCUMBENT
+    if _CURRENT_METRIC.search(text) or _INCUMBENT.match(text):
+        return 'live', timedelta(hours=6)
     if _RELATIVE.search(text) or re.search(r"\b(?:who won|winner of|final score)\b", text):
         return "live", timedelta(hours=6)
     if re.search(r"\b(?:today|now|current price|breaking|live|weather|scores?)\b", text):
@@ -99,4 +102,12 @@ def source_date(value: str | None) -> date | None:
 def is_stale(valid_until: str | None, now: datetime | None = None) -> bool:
     if not valid_until:
         return False
-    return datetime.fromisoformat(valid_until).astimezone(UTC) <= (now or datetime.now(UTC))
+    try:
+        deadline = datetime.fromisoformat(valid_until.replace("Z", "+00:00"))
+    except (ValueError, TypeError, AttributeError):
+        # A damaged deadline cannot establish freshness or break all recall.
+        return True
+    current = now or datetime.now(UTC)
+    deadline = deadline.replace(tzinfo=UTC) if deadline.tzinfo is None else deadline.astimezone(UTC)
+    current = current.replace(tzinfo=UTC) if current.tzinfo is None else current.astimezone(UTC)
+    return deadline <= current

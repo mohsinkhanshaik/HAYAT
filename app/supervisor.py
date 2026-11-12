@@ -288,6 +288,17 @@ class OllamaService:
         """Whether this process was launched to use the Ollama in runtime/."""
         return os.getenv("HAYAT_PORTABLE", "").strip() == "1"
 
+    def private_port(self) -> bool:
+        """Whether this endpoint is HAYAT's own Ollama port (portable run), which no other program uses."""
+        if not self._portable():
+            return False
+        from urllib.parse import urlsplit
+        from app import portable
+        try:
+            return urlsplit(self.base_url).port == int(portable.PORT)
+        except (ValueError, TypeError):
+            return False
+
     # ---------------------------------------------------------------- health
 
     def probe(self, *, verify_generation: bool = False) -> HealthResult:
@@ -609,6 +620,12 @@ class RuntimeSupervisor:
             self._publish("SERVICE_HEALTHY", reason="service was already reachable")
             return True, "the service was already reachable"
 
+        if record.ownership is ProcessOwnership.EXTERNAL and self.service.private_port() and _connection_refused(health):
+            # HAYAT's private service (its own port, its own models, started by HAYAT's launcher) is gone and the port
+            # refuses connections. It was never anyone else's, so it is brought back like one this runtime started.
+            # Before this, HAYAT gave up here and answered every question with "main model unavailable" (2026-11-07).
+            # An Ollama on any other port, such as the machine's own on 11434, stays external and untouched.
+            record.ownership = ProcessOwnership.UNKNOWN
         if record.ownership is ProcessOwnership.EXTERNAL:
             # Someone else's Ollama stopped answering. We may report it and we
             # may start our own if the port is now free, but we never assume
@@ -671,6 +688,17 @@ class RuntimeSupervisor:
             return "left the AI-owned Ollama running by configuration"
         stopped, detail = self.service.stop()
         return detail if stopped else f"could not stop the owned Ollama: {detail}"
+
+
+def _connection_refused(health: HealthResult) -> bool:
+    """The probe found nothing listening on the port (refused), as opposed to a service that is there but slow."""
+    error, seen = health.error, 0
+    while error is not None and seen < 6:
+        if isinstance(error, ConnectionRefusedError) or type(error).__name__ == "ConnectError":
+            return True
+        error, seen = error.__cause__ or error.__context__, seen + 1
+    detail = health.detail.lower()
+    return "refused" in detail or "10061" in detail
 
 
 def retry_is_safe(failure_class: Any, *, side_effecting: bool) -> bool:

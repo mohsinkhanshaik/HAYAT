@@ -1,23 +1,23 @@
 {
   "embedding": {
     "provider": "ollama",
-    "model": "all-minilm:latest",
-    "dimension": 384,
-    "max_input": 512,
+    "model": "nomic-embed-text:latest",
+    "dimension": 768,
+    "max_input": 2048,
     "locality": "local",
-    "latency_ms": 137.882,
+    "latency_ms": 19.732,
     "ram_bytes": 0,
-    "vram_bytes": 26738687,
-    "benchmark_quality": 0.9375,
+    "vram_bytes": 323150151,
+    "benchmark_quality": 0.9436666666666667,
     "available": true,
-    "version": "2026-08-13T11:09:17.5988893-04:00",
+    "version": "2026-10-27T01:55:04.5303017-04:00",
     "privacy": "local_only",
     "fallback": "hashed semantic + lexical + entity + recency"
   },
   "reindex": {
     "available": true,
-    "provider": "ollama/all-minilm:latest",
-    "dimension": 384,
+    "provider": "ollama/nomic-embed-text:latest",
+    "dimension": 768,
     "indexed": 25,
     "skipped": 0,
     "total": 25,
@@ -32,8 +32,8 @@
       "mrr": 0.8358333333333333,
       "ndcg_at_5": 0.865255526152167,
       "false_memory_retrieval_rate": 0.26,
-      "mean_latency_ms": 18.82,
-      "p95_latency_ms": 19.455,
+      "mean_latency_ms": 24.618,
+      "p95_latency_ms": 26.338,
       "rows": [
         {
           "query": "NCCL",
@@ -41,7 +41,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 20.744
+          "latency_ms": 24.596
         },
         {
           "query": "Which component handles communication collectives between graphics processors?",
@@ -49,7 +49,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 7,
-          "latency_ms": 18.665
+          "latency_ms": 22.61
         },
         {
           "query": "Retrieve the verified NCCL procedure or learning note, not a merely similar concept.",
@@ -57,7 +57,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 19.772
+          "latency_ms": 23.168
         },
         {
           "query": "Current correct fact about NCCL; ignore older contradictory or similar-but-wrong memory.",
@@ -65,7 +65,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 18.893
+          "latency_ms": 23.142
         },
         {
           "query": "CUDA streams",
@@ -73,7 +73,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 18.628
+          "latency_ms": 23.988
         },
         {
           "query": "How can kernel work and memory copies overlap asynchronously on an accelerator?",
@@ -81,7 +81,7 @@
           "category": "semantic_paraphrase",
           "rank": 3,
           "top_id": 13,
-          "latency_ms": 18.782
+          "latency_ms": 22.472
         },
         {
           "query": "Retrieve the verified CUDA streams procedure or learning note, not a merely similar concept.",
@@ -89,7 +89,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 18.735
+          "latency_ms": 23.478
         },
         {
           "query": "Current correct fact about CUDA streams; ignore older contradictory or similar-but-wrong memory.",
@@ -97,7 +97,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 18.857
+          "latency_ms": 23.317
         },
         {
           "query": "Docker",
@@ -105,7 +105,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 18.318
+          "latency_ms": 22.978
         },
         {
           "query": "What bundles a program with dependencies in namespace-isolated runtime units?",
@@ -113,7 +113,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 25,
-          "latency_ms": 18.447
+          "latency_ms": 23.454
         },
         {
           "query": "Retrieve the verified Docker procedure or learning note, not a merely similar concept.",
@@ -121,7 +121,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 19.429
+          "latency_ms": 23.638
         },
         {
           "query": "Current correct fact about Docker; ignore older contradictory or similar-but-wrong memory.",
@@ -129,7 +129,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 18.875
+          "latency_ms": 23.708
         },
         {
           "query": "Kubernetes GPU",
@@ -137,7 +137,7 @@
           "category": "exact_keyword",
           "rank": 2,
           "top_id": 24,
-          "latency_ms": 19.089
+          "latency_ms": 23.438
         },
         {
           "query": "How does a cluster expose accelerator resources so pods may request them?",
@@ -145,7 +145,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 23,
-          "latency_ms": 19.152
+          "latency_ms": 23.792
         },
         {
           "query": "Retrieve the verified Kubernetes GPU procedure or learning note, not a merely similar concept.",
@@ -153,7 +153,7 @@
           "category": "project_specific",
           "rank": 2,
           "top_id": 24,
-          "latency_ms": 19.02
+          "latency_ms": 23.619
         },
         {
           "query": "Current correct fact about Kubernetes GPU; ignore older contradictory or similar-but-wrong memory.",
@@ -161,7 +161,7 @@
           "category": "reference",
           "rank": 3,
           "top_id": 12,
-          "latency_ms": 19.455
+          "latency_ms": 23.971
         },
         {
           "query": "FSDP",
@@ -169,7 +169,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 5,
-          "latency_ms": 18.715
+          "latency_ms": 23.69
         },
         {
           "query": "Which training method partitions weights gradients and optimizer state among ranks?",
@@ -177,7 +177,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 20,
-          "latency_ms": 18.951
+          "latency_ms": 24.561
         },
         {
           "query": "Retrieve the verified FSDP procedure or learning note, not a merely similar concept.",
@@ -185,7 +185,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 5,
-          "latency_ms": 20.35
+          "latency_ms": 27.959
         },
         {
           "query": "Current correct fact about FSDP; ignore older contradictory or similar-but-wrong memory.",
@@ -193,7 +193,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 5,
-          "latency_ms": 19.183
+          "latency_ms": 23.463
         },
         {
           "query": "DDP",
@@ -201,7 +201,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 6,
-          "latency_ms": 18.771
+          "latency_ms": 23.505
         },
         {
           "query": "Which replicated training method combines gradients after backward passes?",
@@ -209,7 +209,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 20,
-          "latency_ms": 18.822
+          "latency_ms": 23.169
         },
         {
           "query": "Retrieve the verified DDP procedure or learning note, not a merely similar concept.",
@@ -217,7 +217,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 6,
-          "latency_ms": 19.114
+          "latency_ms": 23.312
         },
         {
           "query": "Current correct fact about DDP; ignore older contradictory or similar-but-wrong memory.",
@@ -225,7 +225,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 6,
-          "latency_ms": 19.412
+          "latency_ms": 23.34
         },
         {
           "query": "RDMA",
@@ -233,7 +233,7 @@
           "category": "exact_keyword",
           "rank": 2,
           "top_id": 25,
-          "latency_ms": 18.906
+          "latency_ms": 23.13
         },
         {
           "query": "What network technique transfers host memory without heavy processor involvement?",
@@ -241,7 +241,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 7,
-          "latency_ms": 18.958
+          "latency_ms": 23.206
         },
         {
           "query": "Retrieve the verified RDMA procedure or learning note, not a merely similar concept.",
@@ -249,7 +249,7 @@
           "category": "research_claim",
           "rank": 2,
           "top_id": 25,
-          "latency_ms": 19.404
+          "latency_ms": 23.529
         },
         {
           "query": "Current correct fact about RDMA; ignore older contradictory or similar-but-wrong memory.",
@@ -257,7 +257,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 7,
-          "latency_ms": 19.283
+          "latency_ms": 26.338
         },
         {
           "query": "DNS",
@@ -265,7 +265,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 18.795
+          "latency_ms": 25.866
         },
         {
           "query": "What service turns a hostname into an IP address?",
@@ -273,7 +273,7 @@
           "category": "semantic_paraphrase",
           "rank": 3,
           "top_id": 21,
-          "latency_ms": 19.339
+          "latency_ms": 29.338
         },
         {
           "query": "Retrieve the verified DNS procedure or learning note, not a merely similar concept.",
@@ -281,7 +281,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 19.774
+          "latency_ms": 25.417
         },
         {
           "query": "Current correct fact about DNS; ignore older contradictory or similar-but-wrong memory.",
@@ -289,7 +289,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 19.185
+          "latency_ms": 25.211
         },
         {
           "query": "KV cache",
@@ -297,7 +297,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 18.829
+          "latency_ms": 24.896
         },
         {
           "query": "What avoids recomputing attention state for earlier generated tokens?",
@@ -305,7 +305,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 18.631
+          "latency_ms": 25.161
         },
         {
           "query": "Retrieve the verified KV cache procedure or learning note, not a merely similar concept.",
@@ -313,7 +313,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 18.685
+          "latency_ms": 24.832
         },
         {
           "query": "Current correct fact about KV cache; ignore older contradictory or similar-but-wrong memory.",
@@ -321,7 +321,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 18.65
+          "latency_ms": 25.102
         },
         {
           "query": "Tensor parallelism",
@@ -329,7 +329,7 @@
           "category": "exact_keyword",
           "rank": 2,
           "top_id": 11,
-          "latency_ms": 18.55
+          "latency_ms": 24.332
         },
         {
           "query": "How can one matrix operation be divided over several GPUs?",
@@ -337,7 +337,7 @@
           "category": "semantic_paraphrase",
           "rank": 0,
           "top_id": 13,
-          "latency_ms": 18.64
+          "latency_ms": 24.459
         },
         {
           "query": "Retrieve the verified Tensor parallelism procedure or learning note, not a merely similar concept.",
@@ -345,7 +345,7 @@
           "category": "learning_state",
           "rank": 2,
           "top_id": 11,
-          "latency_ms": 18.462
+          "latency_ms": 23.991
         },
         {
           "query": "Current correct fact about Tensor parallelism; ignore older contradictory or similar-but-wrong memory.",
@@ -353,7 +353,7 @@
           "category": "contradictory",
           "rank": 2,
           "top_id": 11,
-          "latency_ms": 18.542
+          "latency_ms": 24.446
         },
         {
           "query": "Pipeline parallelism",
@@ -361,7 +361,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 18.323
+          "latency_ms": 23.571
         },
         {
           "query": "What assigns consecutive neural network stages to separate devices?",
@@ -369,7 +369,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 18.6
+          "latency_ms": 24.837
         },
         {
           "query": "Retrieve the verified Pipeline parallelism procedure or learning note, not a merely similar concept.",
@@ -377,7 +377,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 18.517
+          "latency_ms": 28.712
         },
         {
           "query": "Current correct fact about Pipeline parallelism; ignore older contradictory or similar-but-wrong memory.",
@@ -385,7 +385,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 18.582
+          "latency_ms": 24.341
         },
         {
           "query": "VRAM",
@@ -393,7 +393,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 18.383
+          "latency_ms": 24.26
         },
         {
           "query": "Where are accelerator weights activations and inference cache kept?",
@@ -401,7 +401,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 18.55
+          "latency_ms": 24.627
         },
         {
           "query": "Retrieve the verified VRAM procedure or learning note, not a merely similar concept.",
@@ -409,7 +409,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 18.682
+          "latency_ms": 24.427
         },
         {
           "query": "Current correct fact about VRAM; ignore older contradictory or similar-but-wrong memory.",
@@ -417,7 +417,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 18.62
+          "latency_ms": 24.483
         },
         {
           "query": "PCIe",
@@ -425,7 +425,7 @@
           "category": "exact_keyword",
           "rank": 2,
           "top_id": 14,
-          "latency_ms": 18.401
+          "latency_ms": 23.766
         },
         {
           "query": "Which host bus may limit accelerator transfer bandwidth?",
@@ -433,7 +433,7 @@
           "category": "semantic_paraphrase",
           "rank": 3,
           "top_id": 22,
-          "latency_ms": 18.735
+          "latency_ms": 24.329
         },
         {
           "query": "Retrieve the verified PCIe procedure or learning note, not a merely similar concept.",
@@ -441,7 +441,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 18.774
+          "latency_ms": 24.715
         },
         {
           "query": "Current correct fact about PCIe; ignore older contradictory or similar-but-wrong memory.",
@@ -449,7 +449,7 @@
           "category": "old_vs_current",
           "rank": 2,
           "top_id": 14,
-          "latency_ms": 18.666
+          "latency_ms": 24.308
         },
         {
           "query": "NVLink",
@@ -457,7 +457,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 18.91
+          "latency_ms": 24.935
         },
         {
           "query": "What direct interconnect offers GPUs more bandwidth than a common host bus?",
@@ -465,7 +465,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 18.825
+          "latency_ms": 24.406
         },
         {
           "query": "Retrieve the verified NVLink procedure or learning note, not a merely similar concept.",
@@ -473,7 +473,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 21.801
+          "latency_ms": 25.348
         },
         {
           "query": "Current correct fact about NVLink; ignore older contradictory or similar-but-wrong memory.",
@@ -481,7 +481,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 19.012
+          "latency_ms": 25.19
         },
         {
           "query": "Prometheus",
@@ -489,7 +489,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 18.524
+          "latency_ms": 24.941
         },
         {
           "query": "Which system scrapes metrics and runs alert rules?",
@@ -497,7 +497,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 18.632
+          "latency_ms": 25.627
         },
         {
           "query": "Retrieve the verified Prometheus procedure or learning note, not a merely similar concept.",
@@ -505,7 +505,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 18.606
+          "latency_ms": 26.091
         },
         {
           "query": "Current correct fact about Prometheus; ignore older contradictory or similar-but-wrong memory.",
@@ -513,7 +513,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 18.873
+          "latency_ms": 25.678
         },
         {
           "query": "OpenTelemetry",
@@ -521,7 +521,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 18.822
+          "latency_ms": 24.044
         },
         {
           "query": "What vendor-neutral standard collects telemetry signals?",
@@ -529,7 +529,7 @@
           "category": "semantic_paraphrase",
           "rank": 0,
           "top_id": null,
-          "latency_ms": 18.572
+          "latency_ms": 25.136
         },
         {
           "query": "Retrieve the verified OpenTelemetry procedure or learning note, not a merely similar concept.",
@@ -537,7 +537,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 18.866
+          "latency_ms": 25.389
         },
         {
           "query": "Current correct fact about OpenTelemetry; ignore older contradictory or similar-but-wrong memory.",
@@ -545,7 +545,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 18.651
+          "latency_ms": 25.137
         },
         {
           "query": "Terraform",
@@ -553,7 +553,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 18.295
+          "latency_ms": 25.258
         },
         {
           "query": "What tool reconciles declarative infrastructure via providers?",
@@ -561,7 +561,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 18.435
+          "latency_ms": 28.915
         },
         {
           "query": "Retrieve the verified Terraform procedure or learning note, not a merely similar concept.",
@@ -569,7 +569,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 18.649
+          "latency_ms": 25.015
         },
         {
           "query": "Current correct fact about Terraform; ignore older contradictory or similar-but-wrong memory.",
@@ -577,7 +577,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 18.602
+          "latency_ms": 25.107
         },
         {
           "query": "vLLM",
@@ -585,7 +585,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 18.561
+          "latency_ms": 24.482
         },
         {
           "query": "Which serving engine uses paged attention and continuous request batching?",
@@ -593,7 +593,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 18.806
+          "latency_ms": 24.722
         },
         {
           "query": "Retrieve the verified vLLM procedure or learning note, not a merely similar concept.",
@@ -601,7 +601,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 18.689
+          "latency_ms": 24.549
         },
         {
           "query": "Current correct fact about vLLM; ignore older contradictory or similar-but-wrong memory.",
@@ -609,7 +609,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 19.121
+          "latency_ms": 25.081
         },
         {
           "query": "Triton",
@@ -617,7 +617,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 18.228
+          "latency_ms": 24.53
         },
         {
           "query": "Which NVIDIA server exposes standardized endpoints for hosted models?",
@@ -625,7 +625,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 18.775
+          "latency_ms": 25.297
         },
         {
           "query": "Retrieve the verified Triton procedure or learning note, not a merely similar concept.",
@@ -633,7 +633,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 18.538
+          "latency_ms": 24.377
         },
         {
           "query": "Current correct fact about Triton; ignore older contradictory or similar-but-wrong memory.",
@@ -641,7 +641,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 18.633
+          "latency_ms": 24.661
         },
         {
           "query": "Checkpointing",
@@ -649,7 +649,7 @@
           "category": "exact_keyword",
           "rank": 0,
           "top_id": null,
-          "latency_ms": 18.537
+          "latency_ms": 24.236
         },
         {
           "query": "What lets interrupted training resume with optimizer progress?",
@@ -657,7 +657,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 20,
-          "latency_ms": 18.824
+          "latency_ms": 24.72
         },
         {
           "query": "Retrieve the verified Checkpointing procedure or learning note, not a merely similar concept.",
@@ -665,7 +665,7 @@
           "category": "project_specific",
           "rank": 0,
           "top_id": 24,
-          "latency_ms": 18.688
+          "latency_ms": 24.681
         },
         {
           "query": "Current correct fact about Checkpointing; ignore older contradictory or similar-but-wrong memory.",
@@ -673,7 +673,7 @@
           "category": "reference",
           "rank": 0,
           "top_id": 12,
-          "latency_ms": 19.281
+          "latency_ms": 24.693
         },
         {
           "query": "Load balancing",
@@ -681,7 +681,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 18.429
+          "latency_ms": 24.604
         },
         {
           "query": "What distributes traffic among healthy replicas?",
@@ -689,7 +689,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 18.623
+          "latency_ms": 24.462
         },
         {
           "query": "Retrieve the verified Load balancing procedure or learning note, not a merely similar concept.",
@@ -697,7 +697,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 18.614
+          "latency_ms": 24.719
         },
         {
           "query": "Current correct fact about Load balancing; ignore older contradictory or similar-but-wrong memory.",
@@ -705,7 +705,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 18.687
+          "latency_ms": 24.938
         },
         {
           "query": "Linux cgroups",
@@ -713,7 +713,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 18.516
+          "latency_ms": 24.307
         },
         {
           "query": "What Linux mechanism limits CPU and memory for process groups?",
@@ -721,7 +721,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 18.713
+          "latency_ms": 24.578
         },
         {
           "query": "Retrieve the verified Linux cgroups procedure or learning note, not a merely similar concept.",
@@ -729,7 +729,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 18.583
+          "latency_ms": 24.618
         },
         {
           "query": "Current correct fact about Linux cgroups; ignore older contradictory or similar-but-wrong memory.",
@@ -737,7 +737,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 18.701
+          "latency_ms": 24.93
         },
         {
           "query": "Kubernetes scheduling",
@@ -745,7 +745,7 @@
           "category": "exact_keyword",
           "rank": 2,
           "top_id": 24,
-          "latency_ms": 18.3
+          "latency_ms": 24.697
         },
         {
           "query": "What component chooses a suitable node for a pending pod?",
@@ -753,7 +753,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 18.381
+          "latency_ms": 28.691
         },
         {
           "query": "Retrieve the verified Kubernetes scheduling procedure or learning note, not a merely similar concept.",
@@ -761,7 +761,7 @@
           "category": "research_claim",
           "rank": 2,
           "top_id": 24,
-          "latency_ms": 18.56
+          "latency_ms": 24.011
         },
         {
           "query": "Current correct fact about Kubernetes scheduling; ignore older contradictory or similar-but-wrong memory.",
@@ -769,7 +769,7 @@
           "category": "similar_but_wrong",
           "rank": 4,
           "top_id": 12,
-          "latency_ms": 18.5
+          "latency_ms": 24.43
         },
         {
           "query": "GPU Operator",
@@ -777,7 +777,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 19.277
+          "latency_ms": 24.511
         },
         {
           "query": "What manages accelerator drivers and device plugins across Kubernetes?",
@@ -785,7 +785,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 18.53
+          "latency_ms": 25.116
         },
         {
           "query": "Retrieve the verified GPU Operator procedure or learning note, not a merely similar concept.",
@@ -793,7 +793,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 18.662
+          "latency_ms": 25.023
         },
         {
           "query": "Current correct fact about GPU Operator; ignore older contradictory or similar-but-wrong memory.",
@@ -801,7 +801,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 18.663
+          "latency_ms": 24.913
         },
         {
           "query": "InfiniBand",
@@ -809,7 +809,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 18.337
+          "latency_ms": 24.517
         },
         {
           "query": "Which cluster fabric is associated with low latency and remote memory access?",
@@ -817,7 +817,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 18.622
+          "latency_ms": 24.797
         },
         {
           "query": "Retrieve the verified InfiniBand procedure or learning note, not a merely similar concept.",
@@ -825,7 +825,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 18.544
+          "latency_ms": 23.581
         },
         {
           "query": "Current correct fact about InfiniBand; ignore older contradictory or similar-but-wrong memory.",
@@ -833,20 +833,20 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 18.37
+          "latency_ms": 24.092
         }
       ]
     },
     "semantic_only": {
       "cases": 100,
       "precision_at_1": 0.82,
-      "precision_at_3": 0.3133333333333333,
+      "precision_at_3": 0.31666666666666665,
       "recall_at_5": 0.95,
-      "mrr": 0.8758333333333332,
-      "ndcg_at_5": 0.8947811458664505,
+      "mrr": 0.8816666666666667,
+      "ndcg_at_5": 0.8994022728928602,
       "false_memory_retrieval_rate": 0.18,
-      "mean_latency_ms": 301.641,
-      "p95_latency_ms": 315.488,
+      "mean_latency_ms": 54.541,
+      "p95_latency_ms": 59.619,
       "rows": [
         {
           "query": "NCCL",
@@ -854,7 +854,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 285.169
+          "latency_ms": 66.575
         },
         {
           "query": "Which component handles communication collectives between graphics processors?",
@@ -862,7 +862,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 304.376
+          "latency_ms": 67.584
         },
         {
           "query": "Retrieve the verified NCCL procedure or learning note, not a merely similar concept.",
@@ -870,7 +870,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 300.603
+          "latency_ms": 67.092
         },
         {
           "query": "Current correct fact about NCCL; ignore older contradictory or similar-but-wrong memory.",
@@ -878,7 +878,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 276.324
+          "latency_ms": 55.434
         },
         {
           "query": "CUDA streams",
@@ -886,15 +886,15 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 302.312
+          "latency_ms": 45.911
         },
         {
           "query": "How can kernel work and memory copies overlap asynchronously on an accelerator?",
           "expected": "CUDA streams",
           "category": "semantic_paraphrase",
-          "rank": 2,
-          "top_id": 10,
-          "latency_ms": 294.341
+          "rank": 1,
+          "top_id": 2,
+          "latency_ms": 46.281
         },
         {
           "query": "Retrieve the verified CUDA streams procedure or learning note, not a merely similar concept.",
@@ -902,7 +902,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 313.959
+          "latency_ms": 45.096
         },
         {
           "query": "Current correct fact about CUDA streams; ignore older contradictory or similar-but-wrong memory.",
@@ -910,7 +910,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 294.508
+          "latency_ms": 64.273
         },
         {
           "query": "Docker",
@@ -918,7 +918,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 304.589
+          "latency_ms": 57.44
         },
         {
           "query": "What bundles a program with dependencies in namespace-isolated runtime units?",
@@ -926,7 +926,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 285.128
+          "latency_ms": 57.113
         },
         {
           "query": "Retrieve the verified Docker procedure or learning note, not a merely similar concept.",
@@ -934,7 +934,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 310.452
+          "latency_ms": 57.679
         },
         {
           "query": "Current correct fact about Docker; ignore older contradictory or similar-but-wrong memory.",
@@ -942,7 +942,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 301.137
+          "latency_ms": 57.524
         },
         {
           "query": "Kubernetes GPU",
@@ -950,15 +950,15 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 4,
-          "latency_ms": 313.527
+          "latency_ms": 55.817
         },
         {
           "query": "How does a cluster expose accelerator resources so pods may request them?",
           "expected": "Kubernetes GPU",
           "category": "semantic_paraphrase",
-          "rank": 2,
-          "top_id": 23,
-          "latency_ms": 312.552
+          "rank": 3,
+          "top_id": 13,
+          "latency_ms": 59.619
         },
         {
           "query": "Retrieve the verified Kubernetes GPU procedure or learning note, not a merely similar concept.",
@@ -966,7 +966,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 4,
-          "latency_ms": 297.936
+          "latency_ms": 58.916
         },
         {
           "query": "Current correct fact about Kubernetes GPU; ignore older contradictory or similar-but-wrong memory.",
@@ -974,23 +974,23 @@
           "category": "reference",
           "rank": 1,
           "top_id": 4,
-          "latency_ms": 286.742
+          "latency_ms": 56.835
         },
         {
           "query": "FSDP",
           "expected": "FSDP",
           "category": "exact_keyword",
           "rank": 3,
-          "top_id": 8,
-          "latency_ms": 311.838
+          "top_id": 25,
+          "latency_ms": 56.832
         },
         {
           "query": "Which training method partitions weights gradients and optimizer state among ranks?",
           "expected": "FSDP",
           "category": "semantic_paraphrase",
-          "rank": 3,
+          "rank": 2,
           "top_id": 20,
-          "latency_ms": 297.332
+          "latency_ms": 56.457
         },
         {
           "query": "Retrieve the verified FSDP procedure or learning note, not a merely similar concept.",
@@ -998,23 +998,23 @@
           "category": "procedure",
           "rank": 0,
           "top_id": 20,
-          "latency_ms": 301.524
+          "latency_ms": 54.725
         },
         {
           "query": "Current correct fact about FSDP; ignore older contradictory or similar-but-wrong memory.",
           "expected": "FSDP",
           "category": "old_vs_current",
           "rank": 0,
-          "top_id": 7,
-          "latency_ms": 310.778
+          "top_id": 20,
+          "latency_ms": 54.748
         },
         {
           "query": "DDP",
           "expected": "DDP",
           "category": "exact_keyword",
-          "rank": 1,
-          "top_id": 6,
-          "latency_ms": 314.157
+          "rank": 0,
+          "top_id": 7,
+          "latency_ms": 51.93
         },
         {
           "query": "Which replicated training method combines gradients after backward passes?",
@@ -1022,7 +1022,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 20,
-          "latency_ms": 295.105
+          "latency_ms": 51.388
         },
         {
           "query": "Retrieve the verified DDP procedure or learning note, not a merely similar concept.",
@@ -1030,23 +1030,23 @@
           "category": "learning_state",
           "rank": 0,
           "top_id": 20,
-          "latency_ms": 302.938
+          "latency_ms": 55.67
         },
         {
           "query": "Current correct fact about DDP; ignore older contradictory or similar-but-wrong memory.",
           "expected": "DDP",
           "category": "contradictory",
           "rank": 0,
-          "top_id": 7,
-          "latency_ms": 298.984
+          "top_id": 20,
+          "latency_ms": 54.85
         },
         {
           "query": "RDMA",
           "expected": "RDMA",
           "category": "exact_keyword",
-          "rank": 3,
+          "rank": 2,
           "top_id": 25,
-          "latency_ms": 310.225
+          "latency_ms": 52.049
         },
         {
           "query": "What network technique transfers host memory without heavy processor involvement?",
@@ -1054,23 +1054,23 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 7,
-          "latency_ms": 298.028
+          "latency_ms": 52.082
         },
         {
           "query": "Retrieve the verified RDMA procedure or learning note, not a merely similar concept.",
           "expected": "RDMA",
           "category": "research_claim",
-          "rank": 0,
-          "top_id": 20,
-          "latency_ms": 310.313
+          "rank": 2,
+          "top_id": 25,
+          "latency_ms": 50.844
         },
         {
           "query": "Current correct fact about RDMA; ignore older contradictory or similar-but-wrong memory.",
           "expected": "RDMA",
           "category": "similar_but_wrong",
-          "rank": 1,
-          "top_id": 7,
-          "latency_ms": 296.757
+          "rank": 2,
+          "top_id": 25,
+          "latency_ms": 54.339
         },
         {
           "query": "DNS",
@@ -1078,7 +1078,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 301.104
+          "latency_ms": 51.978
         },
         {
           "query": "What service turns a hostname into an IP address?",
@@ -1086,7 +1086,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 283.466
+          "latency_ms": 57.269
         },
         {
           "query": "Retrieve the verified DNS procedure or learning note, not a merely similar concept.",
@@ -1094,7 +1094,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 312.441
+          "latency_ms": 51.363
         },
         {
           "query": "Current correct fact about DNS; ignore older contradictory or similar-but-wrong memory.",
@@ -1102,7 +1102,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 299.03
+          "latency_ms": 52.68
         },
         {
           "query": "KV cache",
@@ -1110,7 +1110,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 301.151
+          "latency_ms": 50.987
         },
         {
           "query": "What avoids recomputing attention state for earlier generated tokens?",
@@ -1118,7 +1118,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 297.506
+          "latency_ms": 55.991
         },
         {
           "query": "Retrieve the verified KV cache procedure or learning note, not a merely similar concept.",
@@ -1126,7 +1126,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 310.411
+          "latency_ms": 53.394
         },
         {
           "query": "Current correct fact about KV cache; ignore older contradictory or similar-but-wrong memory.",
@@ -1134,7 +1134,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 299.725
+          "latency_ms": 56.999
         },
         {
           "query": "Tensor parallelism",
@@ -1142,15 +1142,15 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 10,
-          "latency_ms": 298.24
+          "latency_ms": 59.668
         },
         {
           "query": "How can one matrix operation be divided over several GPUs?",
           "expected": "Tensor parallelism",
           "category": "semantic_paraphrase",
-          "rank": 2,
-          "top_id": 2,
-          "latency_ms": 302.329
+          "rank": 1,
+          "top_id": 10,
+          "latency_ms": 58.492
         },
         {
           "query": "Retrieve the verified Tensor parallelism procedure or learning note, not a merely similar concept.",
@@ -1158,7 +1158,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 10,
-          "latency_ms": 275.978
+          "latency_ms": 52.856
         },
         {
           "query": "Current correct fact about Tensor parallelism; ignore older contradictory or similar-but-wrong memory.",
@@ -1166,7 +1166,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 10,
-          "latency_ms": 289.18
+          "latency_ms": 51.791
         },
         {
           "query": "Pipeline parallelism",
@@ -1174,7 +1174,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 312.038
+          "latency_ms": 56.092
         },
         {
           "query": "What assigns consecutive neural network stages to separate devices?",
@@ -1182,7 +1182,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 299.062
+          "latency_ms": 50.704
         },
         {
           "query": "Retrieve the verified Pipeline parallelism procedure or learning note, not a merely similar concept.",
@@ -1190,7 +1190,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 315.488
+          "latency_ms": 52.579
         },
         {
           "query": "Current correct fact about Pipeline parallelism; ignore older contradictory or similar-but-wrong memory.",
@@ -1198,23 +1198,23 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 300.518
+          "latency_ms": 52.989
         },
         {
           "query": "VRAM",
           "expected": "VRAM",
           "category": "exact_keyword",
-          "rank": 1,
-          "top_id": 12,
-          "latency_ms": 352.17
+          "rank": 2,
+          "top_id": 14,
+          "latency_ms": 55.616
         },
         {
           "query": "Where are accelerator weights activations and inference cache kept?",
           "expected": "VRAM",
           "category": "semantic_paraphrase",
-          "rank": 1,
-          "top_id": 12,
-          "latency_ms": 305.609
+          "rank": 2,
+          "top_id": 9,
+          "latency_ms": 53.279
         },
         {
           "query": "Retrieve the verified VRAM procedure or learning note, not a merely similar concept.",
@@ -1222,7 +1222,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 301.307
+          "latency_ms": 53.1
         },
         {
           "query": "Current correct fact about VRAM; ignore older contradictory or similar-but-wrong memory.",
@@ -1230,7 +1230,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 277.558
+          "latency_ms": 55.427
         },
         {
           "query": "PCIe",
@@ -1238,7 +1238,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 290.761
+          "latency_ms": 52.503
         },
         {
           "query": "Which host bus may limit accelerator transfer bandwidth?",
@@ -1246,15 +1246,15 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 291.851
+          "latency_ms": 53.483
         },
         {
           "query": "Retrieve the verified PCIe procedure or learning note, not a merely similar concept.",
           "expected": "PCIe",
           "category": "procedure",
-          "rank": 2,
-          "top_id": 19,
-          "latency_ms": 286.586
+          "rank": 1,
+          "top_id": 13,
+          "latency_ms": 55.5
         },
         {
           "query": "Current correct fact about PCIe; ignore older contradictory or similar-but-wrong memory.",
@@ -1262,7 +1262,7 @@
           "category": "old_vs_current",
           "rank": 2,
           "top_id": 12,
-          "latency_ms": 299.051
+          "latency_ms": 56.53
         },
         {
           "query": "NVLink",
@@ -1270,7 +1270,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 315.069
+          "latency_ms": 52.463
         },
         {
           "query": "What direct interconnect offers GPUs more bandwidth than a common host bus?",
@@ -1278,7 +1278,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 314.851
+          "latency_ms": 56.529
         },
         {
           "query": "Retrieve the verified NVLink procedure or learning note, not a merely similar concept.",
@@ -1286,7 +1286,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 303.979
+          "latency_ms": 57.5
         },
         {
           "query": "Current correct fact about NVLink; ignore older contradictory or similar-but-wrong memory.",
@@ -1294,7 +1294,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 313.381
+          "latency_ms": 55.596
         },
         {
           "query": "Prometheus",
@@ -1302,7 +1302,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 278.201
+          "latency_ms": 55.965
         },
         {
           "query": "Which system scrapes metrics and runs alert rules?",
@@ -1310,7 +1310,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 284.304
+          "latency_ms": 53.262
         },
         {
           "query": "Retrieve the verified Prometheus procedure or learning note, not a merely similar concept.",
@@ -1318,7 +1318,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 298.156
+          "latency_ms": 59.417
         },
         {
           "query": "Current correct fact about Prometheus; ignore older contradictory or similar-but-wrong memory.",
@@ -1326,7 +1326,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 310.387
+          "latency_ms": 58.07
         },
         {
           "query": "OpenTelemetry",
@@ -1334,7 +1334,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 295.463
+          "latency_ms": 51.519
         },
         {
           "query": "What vendor-neutral standard collects telemetry signals?",
@@ -1342,7 +1342,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 298.96
+          "latency_ms": 54.759
         },
         {
           "query": "Retrieve the verified OpenTelemetry procedure or learning note, not a merely similar concept.",
@@ -1350,7 +1350,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 297.273
+          "latency_ms": 58.489
         },
         {
           "query": "Current correct fact about OpenTelemetry; ignore older contradictory or similar-but-wrong memory.",
@@ -1358,7 +1358,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 307.722
+          "latency_ms": 52.036
         },
         {
           "query": "Terraform",
@@ -1366,7 +1366,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 297.429
+          "latency_ms": 51.797
         },
         {
           "query": "What tool reconciles declarative infrastructure via providers?",
@@ -1374,7 +1374,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 294.24
+          "latency_ms": 53.117
         },
         {
           "query": "Retrieve the verified Terraform procedure or learning note, not a merely similar concept.",
@@ -1382,7 +1382,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 300.582
+          "latency_ms": 55.605
         },
         {
           "query": "Current correct fact about Terraform; ignore older contradictory or similar-but-wrong memory.",
@@ -1390,7 +1390,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 324.8
+          "latency_ms": 59.211
         },
         {
           "query": "vLLM",
@@ -1398,15 +1398,15 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 298.784
+          "latency_ms": 51.172
         },
         {
           "query": "Which serving engine uses paged attention and continuous request batching?",
           "expected": "vLLM",
           "category": "semantic_paraphrase",
-          "rank": 1,
-          "top_id": 18,
-          "latency_ms": 312.851
+          "rank": 2,
+          "top_id": 21,
+          "latency_ms": 51.481
         },
         {
           "query": "Retrieve the verified vLLM procedure or learning note, not a merely similar concept.",
@@ -1414,7 +1414,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 283.515
+          "latency_ms": 52.771
         },
         {
           "query": "Current correct fact about vLLM; ignore older contradictory or similar-but-wrong memory.",
@@ -1422,7 +1422,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 309.909
+          "latency_ms": 52.188
         },
         {
           "query": "Triton",
@@ -1430,7 +1430,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 295.038
+          "latency_ms": 51.528
         },
         {
           "query": "Which NVIDIA server exposes standardized endpoints for hosted models?",
@@ -1438,7 +1438,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 300.031
+          "latency_ms": 51.495
         },
         {
           "query": "Retrieve the verified Triton procedure or learning note, not a merely similar concept.",
@@ -1446,15 +1446,15 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 322.671
+          "latency_ms": 54.246
         },
         {
           "query": "Current correct fact about Triton; ignore older contradictory or similar-but-wrong memory.",
           "expected": "Triton",
           "category": "similar_but_wrong",
-          "rank": 2,
-          "top_id": 9,
-          "latency_ms": 283.992
+          "rank": 1,
+          "top_id": 19,
+          "latency_ms": 59.492
         },
         {
           "query": "Checkpointing",
@@ -1462,7 +1462,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 20,
-          "latency_ms": 309.893
+          "latency_ms": 52.11
         },
         {
           "query": "What lets interrupted training resume with optimizer progress?",
@@ -1470,7 +1470,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 20,
-          "latency_ms": 293.76
+          "latency_ms": 53.232
         },
         {
           "query": "Retrieve the verified Checkpointing procedure or learning note, not a merely similar concept.",
@@ -1478,7 +1478,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 20,
-          "latency_ms": 301.342
+          "latency_ms": 54.278
         },
         {
           "query": "Current correct fact about Checkpointing; ignore older contradictory or similar-but-wrong memory.",
@@ -1486,7 +1486,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 20,
-          "latency_ms": 312.484
+          "latency_ms": 53.428
         },
         {
           "query": "Load balancing",
@@ -1494,7 +1494,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 300.123
+          "latency_ms": 57.178
         },
         {
           "query": "What distributes traffic among healthy replicas?",
@@ -1502,7 +1502,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 296.586
+          "latency_ms": 51.09
         },
         {
           "query": "Retrieve the verified Load balancing procedure or learning note, not a merely similar concept.",
@@ -1510,7 +1510,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 296.065
+          "latency_ms": 53.413
         },
         {
           "query": "Current correct fact about Load balancing; ignore older contradictory or similar-but-wrong memory.",
@@ -1518,7 +1518,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 297.661
+          "latency_ms": 51.725
         },
         {
           "query": "Linux cgroups",
@@ -1526,7 +1526,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 311.836
+          "latency_ms": 52.516
         },
         {
           "query": "What Linux mechanism limits CPU and memory for process groups?",
@@ -1534,7 +1534,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 312.451
+          "latency_ms": 52.236
         },
         {
           "query": "Retrieve the verified Linux cgroups procedure or learning note, not a merely similar concept.",
@@ -1542,7 +1542,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 296.978
+          "latency_ms": 57.425
         },
         {
           "query": "Current correct fact about Linux cgroups; ignore older contradictory or similar-but-wrong memory.",
@@ -1550,7 +1550,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 302.206
+          "latency_ms": 54.024
         },
         {
           "query": "Kubernetes scheduling",
@@ -1558,7 +1558,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 314.681
+          "latency_ms": 52.705
         },
         {
           "query": "What component chooses a suitable node for a pending pod?",
@@ -1566,7 +1566,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 297.507
+          "latency_ms": 55.525
         },
         {
           "query": "Retrieve the verified Kubernetes scheduling procedure or learning note, not a merely similar concept.",
@@ -1574,15 +1574,15 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 292.738
+          "latency_ms": 52.439
         },
         {
           "query": "Current correct fact about Kubernetes scheduling; ignore older contradictory or similar-but-wrong memory.",
           "expected": "Kubernetes scheduling",
           "category": "similar_but_wrong",
-          "rank": 1,
-          "top_id": 23,
-          "latency_ms": 329.788
+          "rank": 2,
+          "top_id": 4,
+          "latency_ms": 54.243
         },
         {
           "query": "GPU Operator",
@@ -1590,7 +1590,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 311.938
+          "latency_ms": 50.064
         },
         {
           "query": "What manages accelerator drivers and device plugins across Kubernetes?",
@@ -1598,23 +1598,23 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 324.752
+          "latency_ms": 54.36
         },
         {
           "query": "Retrieve the verified GPU Operator procedure or learning note, not a merely similar concept.",
           "expected": "GPU Operator",
           "category": "project_specific",
-          "rank": 2,
-          "top_id": 12,
-          "latency_ms": 286.603
+          "rank": 1,
+          "top_id": 24,
+          "latency_ms": 53.715
         },
         {
           "query": "Current correct fact about GPU Operator; ignore older contradictory or similar-but-wrong memory.",
           "expected": "GPU Operator",
           "category": "reference",
-          "rank": 4,
-          "top_id": 2,
-          "latency_ms": 311.447
+          "rank": 2,
+          "top_id": 12,
+          "latency_ms": 55.777
         },
         {
           "query": "InfiniBand",
@@ -1622,7 +1622,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 276.517
+          "latency_ms": 51.515
         },
         {
           "query": "Which cluster fabric is associated with low latency and remote memory access?",
@@ -1630,15 +1630,15 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 303.652
+          "latency_ms": 51.063
         },
         {
           "query": "Retrieve the verified InfiniBand procedure or learning note, not a merely similar concept.",
           "expected": "InfiniBand",
           "category": "procedure",
-          "rank": 3,
-          "top_id": 20,
-          "latency_ms": 310.761
+          "rank": 1,
+          "top_id": 25,
+          "latency_ms": 52.313
         },
         {
           "query": "Current correct fact about InfiniBand; ignore older contradictory or similar-but-wrong memory.",
@@ -1646,20 +1646,20 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 296.587
+          "latency_ms": 51.639
         }
       ]
     },
     "hybrid_default": {
       "cases": 100,
-      "precision_at_1": 0.89,
-      "precision_at_3": 0.33333333333333326,
+      "precision_at_1": 0.91,
+      "precision_at_3": 0.33,
       "recall_at_5": 1.0,
-      "mrr": 0.94,
-      "ndcg_at_5": 0.9554743802857166,
-      "false_memory_retrieval_rate": 0.11,
-      "mean_latency_ms": 22.073,
-      "p95_latency_ms": 22.74,
+      "mrr": 0.9503333333333334,
+      "ndcg_at_5": 0.9630336108223474,
+      "false_memory_retrieval_rate": 0.09,
+      "mean_latency_ms": 28.392,
+      "p95_latency_ms": 32.509,
       "rows": [
         {
           "query": "NCCL",
@@ -1667,7 +1667,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 23.243
+          "latency_ms": 29.575
         },
         {
           "query": "Which component handles communication collectives between graphics processors?",
@@ -1675,7 +1675,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 21.763
+          "latency_ms": 27.94
         },
         {
           "query": "Retrieve the verified NCCL procedure or learning note, not a merely similar concept.",
@@ -1683,7 +1683,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 22.172
+          "latency_ms": 27.756
         },
         {
           "query": "Current correct fact about NCCL; ignore older contradictory or similar-but-wrong memory.",
@@ -1691,7 +1691,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 21.94
+          "latency_ms": 30.91
         },
         {
           "query": "CUDA streams",
@@ -1699,7 +1699,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 21.678
+          "latency_ms": 28.058
         },
         {
           "query": "How can kernel work and memory copies overlap asynchronously on an accelerator?",
@@ -1707,7 +1707,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 21.866
+          "latency_ms": 28.405
         },
         {
           "query": "Retrieve the verified CUDA streams procedure or learning note, not a merely similar concept.",
@@ -1715,7 +1715,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 22.004
+          "latency_ms": 28.135
         },
         {
           "query": "Current correct fact about CUDA streams; ignore older contradictory or similar-but-wrong memory.",
@@ -1723,7 +1723,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 21.84
+          "latency_ms": 28.037
         },
         {
           "query": "Docker",
@@ -1731,7 +1731,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 21.646
+          "latency_ms": 28.012
         },
         {
           "query": "What bundles a program with dependencies in namespace-isolated runtime units?",
@@ -1739,7 +1739,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 21.88
+          "latency_ms": 27.73
         },
         {
           "query": "Retrieve the verified Docker procedure or learning note, not a merely similar concept.",
@@ -1747,7 +1747,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 21.917
+          "latency_ms": 33.128
         },
         {
           "query": "Current correct fact about Docker; ignore older contradictory or similar-but-wrong memory.",
@@ -1755,31 +1755,31 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 21.961
+          "latency_ms": 28.041
         },
         {
           "query": "Kubernetes GPU",
           "expected": "Kubernetes GPU",
           "category": "exact_keyword",
-          "rank": 1,
-          "top_id": 4,
-          "latency_ms": 22.74
+          "rank": 2,
+          "top_id": 24,
+          "latency_ms": 27.314
         },
         {
           "query": "How does a cluster expose accelerator resources so pods may request them?",
           "expected": "Kubernetes GPU",
           "category": "semantic_paraphrase",
-          "rank": 2,
-          "top_id": 23,
-          "latency_ms": 21.911
+          "rank": 1,
+          "top_id": 4,
+          "latency_ms": 26.825
         },
         {
           "query": "Retrieve the verified Kubernetes GPU procedure or learning note, not a merely similar concept.",
           "expected": "Kubernetes GPU",
           "category": "project_specific",
-          "rank": 2,
-          "top_id": 24,
-          "latency_ms": 22.252
+          "rank": 1,
+          "top_id": 4,
+          "latency_ms": 27.359
         },
         {
           "query": "Current correct fact about Kubernetes GPU; ignore older contradictory or similar-but-wrong memory.",
@@ -1787,7 +1787,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 4,
-          "latency_ms": 22.049
+          "latency_ms": 27.471
         },
         {
           "query": "FSDP",
@@ -1795,7 +1795,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 5,
-          "latency_ms": 22.129
+          "latency_ms": 26.962
         },
         {
           "query": "Which training method partitions weights gradients and optimizer state among ranks?",
@@ -1803,7 +1803,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 20,
-          "latency_ms": 22.664
+          "latency_ms": 27.417
         },
         {
           "query": "Retrieve the verified FSDP procedure or learning note, not a merely similar concept.",
@@ -1811,15 +1811,15 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 5,
-          "latency_ms": 21.849
+          "latency_ms": 27.328
         },
         {
           "query": "Current correct fact about FSDP; ignore older contradictory or similar-but-wrong memory.",
           "expected": "FSDP",
           "category": "old_vs_current",
-          "rank": 2,
-          "top_id": 7,
-          "latency_ms": 22.37
+          "rank": 1,
+          "top_id": 5,
+          "latency_ms": 27.866
         },
         {
           "query": "DDP",
@@ -1827,7 +1827,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 6,
-          "latency_ms": 22.237
+          "latency_ms": 26.908
         },
         {
           "query": "Which replicated training method combines gradients after backward passes?",
@@ -1835,7 +1835,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 20,
-          "latency_ms": 21.811
+          "latency_ms": 27.353
         },
         {
           "query": "Retrieve the verified DDP procedure or learning note, not a merely similar concept.",
@@ -1843,15 +1843,15 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 6,
-          "latency_ms": 21.864
+          "latency_ms": 29.598
         },
         {
           "query": "Current correct fact about DDP; ignore older contradictory or similar-but-wrong memory.",
           "expected": "DDP",
           "category": "contradictory",
-          "rank": 3,
-          "top_id": 7,
-          "latency_ms": 22.041
+          "rank": 1,
+          "top_id": 6,
+          "latency_ms": 28.002
         },
         {
           "query": "RDMA",
@@ -1859,7 +1859,7 @@
           "category": "exact_keyword",
           "rank": 2,
           "top_id": 25,
-          "latency_ms": 22.953
+          "latency_ms": 27.685
         },
         {
           "query": "What network technique transfers host memory without heavy processor involvement?",
@@ -1867,7 +1867,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 7,
-          "latency_ms": 21.934
+          "latency_ms": 27.538
         },
         {
           "query": "Retrieve the verified RDMA procedure or learning note, not a merely similar concept.",
@@ -1875,7 +1875,7 @@
           "category": "research_claim",
           "rank": 2,
           "top_id": 25,
-          "latency_ms": 21.856
+          "latency_ms": 28.453
         },
         {
           "query": "Current correct fact about RDMA; ignore older contradictory or similar-but-wrong memory.",
@@ -1883,7 +1883,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 7,
-          "latency_ms": 21.904
+          "latency_ms": 27.62
         },
         {
           "query": "DNS",
@@ -1891,7 +1891,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 21.681
+          "latency_ms": 27.293
         },
         {
           "query": "What service turns a hostname into an IP address?",
@@ -1899,7 +1899,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 21.702
+          "latency_ms": 27.474
         },
         {
           "query": "Retrieve the verified DNS procedure or learning note, not a merely similar concept.",
@@ -1907,7 +1907,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 22.122
+          "latency_ms": 28.685
         },
         {
           "query": "Current correct fact about DNS; ignore older contradictory or similar-but-wrong memory.",
@@ -1915,7 +1915,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 22.056
+          "latency_ms": 29.451
         },
         {
           "query": "KV cache",
@@ -1923,7 +1923,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 21.871
+          "latency_ms": 32.509
         },
         {
           "query": "What avoids recomputing attention state for earlier generated tokens?",
@@ -1931,7 +1931,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 21.914
+          "latency_ms": 28.786
         },
         {
           "query": "Retrieve the verified KV cache procedure or learning note, not a merely similar concept.",
@@ -1939,7 +1939,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 21.897
+          "latency_ms": 31.107
         },
         {
           "query": "Current correct fact about KV cache; ignore older contradictory or similar-but-wrong memory.",
@@ -1947,7 +1947,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 21.847
+          "latency_ms": 27.179
         },
         {
           "query": "Tensor parallelism",
@@ -1955,15 +1955,15 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 10,
-          "latency_ms": 21.718
+          "latency_ms": 26.98
         },
         {
           "query": "How can one matrix operation be divided over several GPUs?",
           "expected": "Tensor parallelism",
           "category": "semantic_paraphrase",
-          "rank": 3,
+          "rank": 2,
           "top_id": 13,
-          "latency_ms": 22.878
+          "latency_ms": 27.203
         },
         {
           "query": "Retrieve the verified Tensor parallelism procedure or learning note, not a merely similar concept.",
@@ -1971,7 +1971,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 10,
-          "latency_ms": 22.118
+          "latency_ms": 27.424
         },
         {
           "query": "Current correct fact about Tensor parallelism; ignore older contradictory or similar-but-wrong memory.",
@@ -1979,7 +1979,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 10,
-          "latency_ms": 21.763
+          "latency_ms": 27.431
         },
         {
           "query": "Pipeline parallelism",
@@ -1987,7 +1987,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 21.722
+          "latency_ms": 26.846
         },
         {
           "query": "What assigns consecutive neural network stages to separate devices?",
@@ -1995,7 +1995,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 22.347
+          "latency_ms": 27.633
         },
         {
           "query": "Retrieve the verified Pipeline parallelism procedure or learning note, not a merely similar concept.",
@@ -2003,7 +2003,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 21.988
+          "latency_ms": 28.273
         },
         {
           "query": "Current correct fact about Pipeline parallelism; ignore older contradictory or similar-but-wrong memory.",
@@ -2011,7 +2011,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 21.834
+          "latency_ms": 27.526
         },
         {
           "query": "VRAM",
@@ -2019,7 +2019,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 21.824
+          "latency_ms": 27.841
         },
         {
           "query": "Where are accelerator weights activations and inference cache kept?",
@@ -2027,7 +2027,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 22.009
+          "latency_ms": 27.296
         },
         {
           "query": "Retrieve the verified VRAM procedure or learning note, not a merely similar concept.",
@@ -2035,7 +2035,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 22.042
+          "latency_ms": 27.768
         },
         {
           "query": "Current correct fact about VRAM; ignore older contradictory or similar-but-wrong memory.",
@@ -2043,7 +2043,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 22.073
+          "latency_ms": 27.292
         },
         {
           "query": "PCIe",
@@ -2051,7 +2051,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 21.742
+          "latency_ms": 27.118
         },
         {
           "query": "Which host bus may limit accelerator transfer bandwidth?",
@@ -2059,7 +2059,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 21.662
+          "latency_ms": 27.422
         },
         {
           "query": "Retrieve the verified PCIe procedure or learning note, not a merely similar concept.",
@@ -2067,7 +2067,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 21.951
+          "latency_ms": 27.359
         },
         {
           "query": "Current correct fact about PCIe; ignore older contradictory or similar-but-wrong memory.",
@@ -2075,7 +2075,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 22.055
+          "latency_ms": 27.565
         },
         {
           "query": "NVLink",
@@ -2083,7 +2083,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 21.861
+          "latency_ms": 27.647
         },
         {
           "query": "What direct interconnect offers GPUs more bandwidth than a common host bus?",
@@ -2091,7 +2091,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 22.059
+          "latency_ms": 27.422
         },
         {
           "query": "Retrieve the verified NVLink procedure or learning note, not a merely similar concept.",
@@ -2099,7 +2099,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 21.903
+          "latency_ms": 29.108
         },
         {
           "query": "Current correct fact about NVLink; ignore older contradictory or similar-but-wrong memory.",
@@ -2107,7 +2107,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 21.884
+          "latency_ms": 31.206
         },
         {
           "query": "Prometheus",
@@ -2115,7 +2115,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 21.732
+          "latency_ms": 28.624
         },
         {
           "query": "Which system scrapes metrics and runs alert rules?",
@@ -2123,7 +2123,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 22.131
+          "latency_ms": 28.654
         },
         {
           "query": "Retrieve the verified Prometheus procedure or learning note, not a merely similar concept.",
@@ -2131,7 +2131,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 25.875
+          "latency_ms": 35.304
         },
         {
           "query": "Current correct fact about Prometheus; ignore older contradictory or similar-but-wrong memory.",
@@ -2139,7 +2139,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 22.485
+          "latency_ms": 30.884
         },
         {
           "query": "OpenTelemetry",
@@ -2147,7 +2147,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 21.849
+          "latency_ms": 32.527
         },
         {
           "query": "What vendor-neutral standard collects telemetry signals?",
@@ -2155,7 +2155,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 21.979
+          "latency_ms": 28.334
         },
         {
           "query": "Retrieve the verified OpenTelemetry procedure or learning note, not a merely similar concept.",
@@ -2163,7 +2163,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 21.921
+          "latency_ms": 29.547
         },
         {
           "query": "Current correct fact about OpenTelemetry; ignore older contradictory or similar-but-wrong memory.",
@@ -2171,7 +2171,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 22.362
+          "latency_ms": 27.984
         },
         {
           "query": "Terraform",
@@ -2179,7 +2179,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 21.716
+          "latency_ms": 28.373
         },
         {
           "query": "What tool reconciles declarative infrastructure via providers?",
@@ -2187,7 +2187,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 22.458
+          "latency_ms": 27.872
         },
         {
           "query": "Retrieve the verified Terraform procedure or learning note, not a merely similar concept.",
@@ -2195,7 +2195,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 22.315
+          "latency_ms": 27.049
         },
         {
           "query": "Current correct fact about Terraform; ignore older contradictory or similar-but-wrong memory.",
@@ -2203,7 +2203,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 22.053
+          "latency_ms": 26.929
         },
         {
           "query": "vLLM",
@@ -2211,7 +2211,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 22.527
+          "latency_ms": 27.861
         },
         {
           "query": "Which serving engine uses paged attention and continuous request batching?",
@@ -2219,7 +2219,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 22.098
+          "latency_ms": 27.567
         },
         {
           "query": "Retrieve the verified vLLM procedure or learning note, not a merely similar concept.",
@@ -2227,7 +2227,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 22.197
+          "latency_ms": 28.134
         },
         {
           "query": "Current correct fact about vLLM; ignore older contradictory or similar-but-wrong memory.",
@@ -2235,7 +2235,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 22.561
+          "latency_ms": 27.553
         },
         {
           "query": "Triton",
@@ -2243,7 +2243,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 22.359
+          "latency_ms": 26.672
         },
         {
           "query": "Which NVIDIA server exposes standardized endpoints for hosted models?",
@@ -2251,7 +2251,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 22.222
+          "latency_ms": 27.138
         },
         {
           "query": "Retrieve the verified Triton procedure or learning note, not a merely similar concept.",
@@ -2259,7 +2259,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 21.89
+          "latency_ms": 27.695
         },
         {
           "query": "Current correct fact about Triton; ignore older contradictory or similar-but-wrong memory.",
@@ -2267,7 +2267,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 22.404
+          "latency_ms": 27.193
         },
         {
           "query": "Checkpointing",
@@ -2275,7 +2275,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 20,
-          "latency_ms": 22.026
+          "latency_ms": 27.047
         },
         {
           "query": "What lets interrupted training resume with optimizer progress?",
@@ -2283,23 +2283,23 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 20,
-          "latency_ms": 21.76
+          "latency_ms": 27.823
         },
         {
           "query": "Retrieve the verified Checkpointing procedure or learning note, not a merely similar concept.",
           "expected": "Checkpointing",
           "category": "project_specific",
-          "rank": 1,
-          "top_id": 20,
-          "latency_ms": 22.134
+          "rank": 5,
+          "top_id": 12,
+          "latency_ms": 28.085
         },
         {
           "query": "Current correct fact about Checkpointing; ignore older contradictory or similar-but-wrong memory.",
           "expected": "Checkpointing",
           "category": "reference",
           "rank": 3,
-          "top_id": 7,
-          "latency_ms": 21.713
+          "top_id": 12,
+          "latency_ms": 28.619
         },
         {
           "query": "Load balancing",
@@ -2307,7 +2307,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 21.964
+          "latency_ms": 27.87
         },
         {
           "query": "What distributes traffic among healthy replicas?",
@@ -2315,7 +2315,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 21.981
+          "latency_ms": 27.502
         },
         {
           "query": "Retrieve the verified Load balancing procedure or learning note, not a merely similar concept.",
@@ -2323,7 +2323,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 21.871
+          "latency_ms": 33.935
         },
         {
           "query": "Current correct fact about Load balancing; ignore older contradictory or similar-but-wrong memory.",
@@ -2331,7 +2331,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 21.934
+          "latency_ms": 31.425
         },
         {
           "query": "Linux cgroups",
@@ -2339,7 +2339,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 21.747
+          "latency_ms": 32.551
         },
         {
           "query": "What Linux mechanism limits CPU and memory for process groups?",
@@ -2347,7 +2347,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 21.938
+          "latency_ms": 30.722
         },
         {
           "query": "Retrieve the verified Linux cgroups procedure or learning note, not a merely similar concept.",
@@ -2355,7 +2355,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 21.998
+          "latency_ms": 29.519
         },
         {
           "query": "Current correct fact about Linux cgroups; ignore older contradictory or similar-but-wrong memory.",
@@ -2363,7 +2363,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 21.824
+          "latency_ms": 29.066
         },
         {
           "query": "Kubernetes scheduling",
@@ -2371,7 +2371,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 21.754
+          "latency_ms": 28.573
         },
         {
           "query": "What component chooses a suitable node for a pending pod?",
@@ -2379,15 +2379,15 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 21.86
+          "latency_ms": 31.489
         },
         {
           "query": "Retrieve the verified Kubernetes scheduling procedure or learning note, not a merely similar concept.",
           "expected": "Kubernetes scheduling",
           "category": "research_claim",
-          "rank": 1,
-          "top_id": 23,
-          "latency_ms": 22.014
+          "rank": 2,
+          "top_id": 4,
+          "latency_ms": 27.575
         },
         {
           "query": "Current correct fact about Kubernetes scheduling; ignore older contradictory or similar-but-wrong memory.",
@@ -2395,7 +2395,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 21.899
+          "latency_ms": 27.654
         },
         {
           "query": "GPU Operator",
@@ -2403,7 +2403,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 21.996
+          "latency_ms": 27.767
         },
         {
           "query": "What manages accelerator drivers and device plugins across Kubernetes?",
@@ -2411,7 +2411,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 21.977
+          "latency_ms": 27.619
         },
         {
           "query": "Retrieve the verified GPU Operator procedure or learning note, not a merely similar concept.",
@@ -2419,15 +2419,15 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 21.92
+          "latency_ms": 28.342
         },
         {
           "query": "Current correct fact about GPU Operator; ignore older contradictory or similar-but-wrong memory.",
           "expected": "GPU Operator",
           "category": "reference",
-          "rank": 2,
-          "top_id": 12,
-          "latency_ms": 22.196
+          "rank": 1,
+          "top_id": 24,
+          "latency_ms": 28.421
         },
         {
           "query": "InfiniBand",
@@ -2435,7 +2435,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 21.911
+          "latency_ms": 27.645
         },
         {
           "query": "Which cluster fabric is associated with low latency and remote memory access?",
@@ -2443,7 +2443,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 22.017
+          "latency_ms": 29.429
         },
         {
           "query": "Retrieve the verified InfiniBand procedure or learning note, not a merely similar concept.",
@@ -2451,7 +2451,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 21.875
+          "latency_ms": 27.242
         },
         {
           "query": "Current correct fact about InfiniBand; ignore older contradictory or similar-but-wrong memory.",
@@ -2459,20 +2459,20 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 22.882
+          "latency_ms": 27.161
         }
       ]
     },
     "hybrid_semantic_heavy": {
       "cases": 100,
-      "precision_at_1": 0.89,
-      "precision_at_3": 0.33333333333333326,
+      "precision_at_1": 0.91,
+      "precision_at_3": 0.33,
       "recall_at_5": 1.0,
-      "mrr": 0.94,
-      "ndcg_at_5": 0.9554743802857166,
-      "false_memory_retrieval_rate": 0.11,
-      "mean_latency_ms": 22.064,
-      "p95_latency_ms": 22.549,
+      "mrr": 0.9503333333333334,
+      "ndcg_at_5": 0.9630336108223474,
+      "false_memory_retrieval_rate": 0.09,
+      "mean_latency_ms": 27.703,
+      "p95_latency_ms": 29.085,
       "rows": [
         {
           "query": "NCCL",
@@ -2480,7 +2480,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 21.934
+          "latency_ms": 26.899
         },
         {
           "query": "Which component handles communication collectives between graphics processors?",
@@ -2488,7 +2488,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 22.014
+          "latency_ms": 27.056
         },
         {
           "query": "Retrieve the verified NCCL procedure or learning note, not a merely similar concept.",
@@ -2496,7 +2496,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 22.026
+          "latency_ms": 27.489
         },
         {
           "query": "Current correct fact about NCCL; ignore older contradictory or similar-but-wrong memory.",
@@ -2504,7 +2504,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 1,
-          "latency_ms": 21.992
+          "latency_ms": 27.776
         },
         {
           "query": "CUDA streams",
@@ -2512,7 +2512,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 21.833
+          "latency_ms": 28.9
         },
         {
           "query": "How can kernel work and memory copies overlap asynchronously on an accelerator?",
@@ -2520,7 +2520,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 21.892
+          "latency_ms": 27.496
         },
         {
           "query": "Retrieve the verified CUDA streams procedure or learning note, not a merely similar concept.",
@@ -2528,7 +2528,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 21.99
+          "latency_ms": 32.467
         },
         {
           "query": "Current correct fact about CUDA streams; ignore older contradictory or similar-but-wrong memory.",
@@ -2536,7 +2536,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 2,
-          "latency_ms": 22.023
+          "latency_ms": 27.603
         },
         {
           "query": "Docker",
@@ -2544,7 +2544,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 21.69
+          "latency_ms": 27.13
         },
         {
           "query": "What bundles a program with dependencies in namespace-isolated runtime units?",
@@ -2552,7 +2552,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 22.212
+          "latency_ms": 27.224
         },
         {
           "query": "Retrieve the verified Docker procedure or learning note, not a merely similar concept.",
@@ -2560,7 +2560,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 22.178
+          "latency_ms": 27.101
         },
         {
           "query": "Current correct fact about Docker; ignore older contradictory or similar-but-wrong memory.",
@@ -2568,31 +2568,31 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 3,
-          "latency_ms": 21.905
+          "latency_ms": 29.536
         },
         {
           "query": "Kubernetes GPU",
           "expected": "Kubernetes GPU",
           "category": "exact_keyword",
-          "rank": 1,
-          "top_id": 4,
-          "latency_ms": 22.286
+          "rank": 2,
+          "top_id": 24,
+          "latency_ms": 26.916
         },
         {
           "query": "How does a cluster expose accelerator resources so pods may request them?",
           "expected": "Kubernetes GPU",
           "category": "semantic_paraphrase",
-          "rank": 2,
-          "top_id": 23,
-          "latency_ms": 22.089
+          "rank": 1,
+          "top_id": 4,
+          "latency_ms": 27.232
         },
         {
           "query": "Retrieve the verified Kubernetes GPU procedure or learning note, not a merely similar concept.",
           "expected": "Kubernetes GPU",
           "category": "project_specific",
-          "rank": 2,
-          "top_id": 24,
-          "latency_ms": 22.129
+          "rank": 1,
+          "top_id": 4,
+          "latency_ms": 27.64
         },
         {
           "query": "Current correct fact about Kubernetes GPU; ignore older contradictory or similar-but-wrong memory.",
@@ -2600,7 +2600,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 4,
-          "latency_ms": 22.382
+          "latency_ms": 28.259
         },
         {
           "query": "FSDP",
@@ -2608,7 +2608,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 5,
-          "latency_ms": 23.284
+          "latency_ms": 27.476
         },
         {
           "query": "Which training method partitions weights gradients and optimizer state among ranks?",
@@ -2616,7 +2616,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 20,
-          "latency_ms": 21.987
+          "latency_ms": 27.395
         },
         {
           "query": "Retrieve the verified FSDP procedure or learning note, not a merely similar concept.",
@@ -2624,15 +2624,15 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 5,
-          "latency_ms": 22.187
+          "latency_ms": 27.44
         },
         {
           "query": "Current correct fact about FSDP; ignore older contradictory or similar-but-wrong memory.",
           "expected": "FSDP",
           "category": "old_vs_current",
-          "rank": 2,
-          "top_id": 7,
-          "latency_ms": 22.03
+          "rank": 1,
+          "top_id": 5,
+          "latency_ms": 28.217
         },
         {
           "query": "DDP",
@@ -2640,7 +2640,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 6,
-          "latency_ms": 22.129
+          "latency_ms": 27.361
         },
         {
           "query": "Which replicated training method combines gradients after backward passes?",
@@ -2648,7 +2648,7 @@
           "category": "semantic_paraphrase",
           "rank": 2,
           "top_id": 20,
-          "latency_ms": 22.595
+          "latency_ms": 26.551
         },
         {
           "query": "Retrieve the verified DDP procedure or learning note, not a merely similar concept.",
@@ -2656,15 +2656,15 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 6,
-          "latency_ms": 22.349
+          "latency_ms": 27.598
         },
         {
           "query": "Current correct fact about DDP; ignore older contradictory or similar-but-wrong memory.",
           "expected": "DDP",
           "category": "contradictory",
-          "rank": 3,
-          "top_id": 7,
-          "latency_ms": 21.84
+          "rank": 1,
+          "top_id": 6,
+          "latency_ms": 29.005
         },
         {
           "query": "RDMA",
@@ -2672,7 +2672,7 @@
           "category": "exact_keyword",
           "rank": 2,
           "top_id": 25,
-          "latency_ms": 21.917
+          "latency_ms": 26.879
         },
         {
           "query": "What network technique transfers host memory without heavy processor involvement?",
@@ -2680,7 +2680,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 7,
-          "latency_ms": 21.947
+          "latency_ms": 27.431
         },
         {
           "query": "Retrieve the verified RDMA procedure or learning note, not a merely similar concept.",
@@ -2688,7 +2688,7 @@
           "category": "research_claim",
           "rank": 2,
           "top_id": 25,
-          "latency_ms": 21.976
+          "latency_ms": 26.866
         },
         {
           "query": "Current correct fact about RDMA; ignore older contradictory or similar-but-wrong memory.",
@@ -2696,7 +2696,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 7,
-          "latency_ms": 26.889
+          "latency_ms": 27.345
         },
         {
           "query": "DNS",
@@ -2704,7 +2704,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 21.948
+          "latency_ms": 28.443
         },
         {
           "query": "What service turns a hostname into an IP address?",
@@ -2712,7 +2712,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 21.838
+          "latency_ms": 27.649
         },
         {
           "query": "Retrieve the verified DNS procedure or learning note, not a merely similar concept.",
@@ -2720,7 +2720,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 21.921
+          "latency_ms": 31.588
         },
         {
           "query": "Current correct fact about DNS; ignore older contradictory or similar-but-wrong memory.",
@@ -2728,7 +2728,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 8,
-          "latency_ms": 22.066
+          "latency_ms": 27.398
         },
         {
           "query": "KV cache",
@@ -2736,7 +2736,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 21.637
+          "latency_ms": 27.588
         },
         {
           "query": "What avoids recomputing attention state for earlier generated tokens?",
@@ -2744,7 +2744,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 22.264
+          "latency_ms": 27.43
         },
         {
           "query": "Retrieve the verified KV cache procedure or learning note, not a merely similar concept.",
@@ -2752,7 +2752,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 22.328
+          "latency_ms": 27.332
         },
         {
           "query": "Current correct fact about KV cache; ignore older contradictory or similar-but-wrong memory.",
@@ -2760,7 +2760,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 9,
-          "latency_ms": 21.898
+          "latency_ms": 26.862
         },
         {
           "query": "Tensor parallelism",
@@ -2768,15 +2768,15 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 10,
-          "latency_ms": 22.059
+          "latency_ms": 26.89
         },
         {
           "query": "How can one matrix operation be divided over several GPUs?",
           "expected": "Tensor parallelism",
           "category": "semantic_paraphrase",
-          "rank": 3,
+          "rank": 2,
           "top_id": 13,
-          "latency_ms": 22.296
+          "latency_ms": 28.238
         },
         {
           "query": "Retrieve the verified Tensor parallelism procedure or learning note, not a merely similar concept.",
@@ -2784,7 +2784,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 10,
-          "latency_ms": 21.876
+          "latency_ms": 29.072
         },
         {
           "query": "Current correct fact about Tensor parallelism; ignore older contradictory or similar-but-wrong memory.",
@@ -2792,7 +2792,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 10,
-          "latency_ms": 21.859
+          "latency_ms": 28.127
         },
         {
           "query": "Pipeline parallelism",
@@ -2800,7 +2800,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 21.604
+          "latency_ms": 28.872
         },
         {
           "query": "What assigns consecutive neural network stages to separate devices?",
@@ -2808,7 +2808,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 21.756
+          "latency_ms": 26.726
         },
         {
           "query": "Retrieve the verified Pipeline parallelism procedure or learning note, not a merely similar concept.",
@@ -2816,7 +2816,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 21.842
+          "latency_ms": 27.064
         },
         {
           "query": "Current correct fact about Pipeline parallelism; ignore older contradictory or similar-but-wrong memory.",
@@ -2824,7 +2824,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 11,
-          "latency_ms": 21.779
+          "latency_ms": 27.009
         },
         {
           "query": "VRAM",
@@ -2832,7 +2832,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 21.872
+          "latency_ms": 27.285
         },
         {
           "query": "Where are accelerator weights activations and inference cache kept?",
@@ -2840,7 +2840,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 21.92
+          "latency_ms": 27.496
         },
         {
           "query": "Retrieve the verified VRAM procedure or learning note, not a merely similar concept.",
@@ -2848,7 +2848,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 22.804
+          "latency_ms": 27.346
         },
         {
           "query": "Current correct fact about VRAM; ignore older contradictory or similar-but-wrong memory.",
@@ -2856,7 +2856,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 12,
-          "latency_ms": 22.019
+          "latency_ms": 27.263
         },
         {
           "query": "PCIe",
@@ -2864,7 +2864,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 22.028
+          "latency_ms": 27.793
         },
         {
           "query": "Which host bus may limit accelerator transfer bandwidth?",
@@ -2872,7 +2872,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 21.668
+          "latency_ms": 27.094
         },
         {
           "query": "Retrieve the verified PCIe procedure or learning note, not a merely similar concept.",
@@ -2880,7 +2880,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 22.227
+          "latency_ms": 27.253
         },
         {
           "query": "Current correct fact about PCIe; ignore older contradictory or similar-but-wrong memory.",
@@ -2888,7 +2888,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 13,
-          "latency_ms": 22.115
+          "latency_ms": 27.422
         },
         {
           "query": "NVLink",
@@ -2896,7 +2896,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 21.767
+          "latency_ms": 27.424
         },
         {
           "query": "What direct interconnect offers GPUs more bandwidth than a common host bus?",
@@ -2904,7 +2904,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 21.814
+          "latency_ms": 28.443
         },
         {
           "query": "Retrieve the verified NVLink procedure or learning note, not a merely similar concept.",
@@ -2912,7 +2912,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 22.021
+          "latency_ms": 31.528
         },
         {
           "query": "Current correct fact about NVLink; ignore older contradictory or similar-but-wrong memory.",
@@ -2920,7 +2920,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 14,
-          "latency_ms": 22.225
+          "latency_ms": 28.017
         },
         {
           "query": "Prometheus",
@@ -2928,7 +2928,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 21.981
+          "latency_ms": 26.681
         },
         {
           "query": "Which system scrapes metrics and runs alert rules?",
@@ -2936,7 +2936,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 22.348
+          "latency_ms": 27.673
         },
         {
           "query": "Retrieve the verified Prometheus procedure or learning note, not a merely similar concept.",
@@ -2944,7 +2944,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 22.336
+          "latency_ms": 28.683
         },
         {
           "query": "Current correct fact about Prometheus; ignore older contradictory or similar-but-wrong memory.",
@@ -2952,7 +2952,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 15,
-          "latency_ms": 21.769
+          "latency_ms": 27.904
         },
         {
           "query": "OpenTelemetry",
@@ -2960,7 +2960,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 21.702
+          "latency_ms": 27.788
         },
         {
           "query": "What vendor-neutral standard collects telemetry signals?",
@@ -2968,7 +2968,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 21.885
+          "latency_ms": 27.009
         },
         {
           "query": "Retrieve the verified OpenTelemetry procedure or learning note, not a merely similar concept.",
@@ -2976,7 +2976,7 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 21.929
+          "latency_ms": 27.182
         },
         {
           "query": "Current correct fact about OpenTelemetry; ignore older contradictory or similar-but-wrong memory.",
@@ -2984,7 +2984,7 @@
           "category": "reference",
           "rank": 1,
           "top_id": 16,
-          "latency_ms": 21.972
+          "latency_ms": 27.077
         },
         {
           "query": "Terraform",
@@ -2992,7 +2992,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 21.655
+          "latency_ms": 27.084
         },
         {
           "query": "What tool reconciles declarative infrastructure via providers?",
@@ -3000,7 +3000,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 21.876
+          "latency_ms": 27.018
         },
         {
           "query": "Retrieve the verified Terraform procedure or learning note, not a merely similar concept.",
@@ -3008,7 +3008,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 22.075
+          "latency_ms": 28.796
         },
         {
           "query": "Current correct fact about Terraform; ignore older contradictory or similar-but-wrong memory.",
@@ -3016,7 +3016,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 17,
-          "latency_ms": 22.053
+          "latency_ms": 26.57
         },
         {
           "query": "vLLM",
@@ -3024,7 +3024,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 21.945
+          "latency_ms": 26.776
         },
         {
           "query": "Which serving engine uses paged attention and continuous request batching?",
@@ -3032,7 +3032,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 23.442
+          "latency_ms": 29.085
         },
         {
           "query": "Retrieve the verified vLLM procedure or learning note, not a merely similar concept.",
@@ -3040,7 +3040,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 22.514
+          "latency_ms": 27.258
         },
         {
           "query": "Current correct fact about vLLM; ignore older contradictory or similar-but-wrong memory.",
@@ -3048,7 +3048,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 18,
-          "latency_ms": 22.183
+          "latency_ms": 27.8
         },
         {
           "query": "Triton",
@@ -3056,7 +3056,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 22.017
+          "latency_ms": 27.258
         },
         {
           "query": "Which NVIDIA server exposes standardized endpoints for hosted models?",
@@ -3064,7 +3064,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 22.16
+          "latency_ms": 27.337
         },
         {
           "query": "Retrieve the verified Triton procedure or learning note, not a merely similar concept.",
@@ -3072,7 +3072,7 @@
           "category": "research_claim",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 22.207
+          "latency_ms": 27.693
         },
         {
           "query": "Current correct fact about Triton; ignore older contradictory or similar-but-wrong memory.",
@@ -3080,7 +3080,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 19,
-          "latency_ms": 22.026
+          "latency_ms": 28.549
         },
         {
           "query": "Checkpointing",
@@ -3088,7 +3088,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 20,
-          "latency_ms": 21.651
+          "latency_ms": 28.661
         },
         {
           "query": "What lets interrupted training resume with optimizer progress?",
@@ -3096,23 +3096,23 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 20,
-          "latency_ms": 21.997
+          "latency_ms": 28.077
         },
         {
           "query": "Retrieve the verified Checkpointing procedure or learning note, not a merely similar concept.",
           "expected": "Checkpointing",
           "category": "project_specific",
-          "rank": 1,
-          "top_id": 20,
-          "latency_ms": 22.294
+          "rank": 5,
+          "top_id": 12,
+          "latency_ms": 32.345
         },
         {
           "query": "Current correct fact about Checkpointing; ignore older contradictory or similar-but-wrong memory.",
           "expected": "Checkpointing",
           "category": "reference",
           "rank": 3,
-          "top_id": 7,
-          "latency_ms": 22.001
+          "top_id": 12,
+          "latency_ms": 28.697
         },
         {
           "query": "Load balancing",
@@ -3120,7 +3120,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 22.001
+          "latency_ms": 27.406
         },
         {
           "query": "What distributes traffic among healthy replicas?",
@@ -3128,7 +3128,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 21.681
+          "latency_ms": 26.4
         },
         {
           "query": "Retrieve the verified Load balancing procedure or learning note, not a merely similar concept.",
@@ -3136,7 +3136,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 22.549
+          "latency_ms": 27.14
         },
         {
           "query": "Current correct fact about Load balancing; ignore older contradictory or similar-but-wrong memory.",
@@ -3144,7 +3144,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 21,
-          "latency_ms": 21.778
+          "latency_ms": 27.55
         },
         {
           "query": "Linux cgroups",
@@ -3152,7 +3152,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 21.713
+          "latency_ms": 27.782
         },
         {
           "query": "What Linux mechanism limits CPU and memory for process groups?",
@@ -3160,7 +3160,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 21.916
+          "latency_ms": 27.547
         },
         {
           "query": "Retrieve the verified Linux cgroups procedure or learning note, not a merely similar concept.",
@@ -3168,7 +3168,7 @@
           "category": "learning_state",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 21.848
+          "latency_ms": 27.934
         },
         {
           "query": "Current correct fact about Linux cgroups; ignore older contradictory or similar-but-wrong memory.",
@@ -3176,7 +3176,7 @@
           "category": "contradictory",
           "rank": 1,
           "top_id": 22,
-          "latency_ms": 21.734
+          "latency_ms": 28.847
         },
         {
           "query": "Kubernetes scheduling",
@@ -3184,7 +3184,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 21.608
+          "latency_ms": 26.144
         },
         {
           "query": "What component chooses a suitable node for a pending pod?",
@@ -3192,15 +3192,15 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 21.789
+          "latency_ms": 26.604
         },
         {
           "query": "Retrieve the verified Kubernetes scheduling procedure or learning note, not a merely similar concept.",
           "expected": "Kubernetes scheduling",
           "category": "research_claim",
-          "rank": 1,
-          "top_id": 23,
-          "latency_ms": 22.129
+          "rank": 2,
+          "top_id": 4,
+          "latency_ms": 26.573
         },
         {
           "query": "Current correct fact about Kubernetes scheduling; ignore older contradictory or similar-but-wrong memory.",
@@ -3208,7 +3208,7 @@
           "category": "similar_but_wrong",
           "rank": 1,
           "top_id": 23,
-          "latency_ms": 21.565
+          "latency_ms": 27.102
         },
         {
           "query": "GPU Operator",
@@ -3216,7 +3216,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 21.742
+          "latency_ms": 27.211
         },
         {
           "query": "What manages accelerator drivers and device plugins across Kubernetes?",
@@ -3224,7 +3224,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 21.793
+          "latency_ms": 27.719
         },
         {
           "query": "Retrieve the verified GPU Operator procedure or learning note, not a merely similar concept.",
@@ -3232,15 +3232,15 @@
           "category": "project_specific",
           "rank": 1,
           "top_id": 24,
-          "latency_ms": 22.052
+          "latency_ms": 26.638
         },
         {
           "query": "Current correct fact about GPU Operator; ignore older contradictory or similar-but-wrong memory.",
           "expected": "GPU Operator",
           "category": "reference",
-          "rank": 2,
-          "top_id": 12,
-          "latency_ms": 22.01
+          "rank": 1,
+          "top_id": 24,
+          "latency_ms": 27.28
         },
         {
           "query": "InfiniBand",
@@ -3248,7 +3248,7 @@
           "category": "exact_keyword",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 21.579
+          "latency_ms": 26.667
         },
         {
           "query": "Which cluster fabric is associated with low latency and remote memory access?",
@@ -3256,7 +3256,7 @@
           "category": "semantic_paraphrase",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 21.981
+          "latency_ms": 27.291
         },
         {
           "query": "Retrieve the verified InfiniBand procedure or learning note, not a merely similar concept.",
@@ -3264,7 +3264,7 @@
           "category": "procedure",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 21.808
+          "latency_ms": 27.425
         },
         {
           "query": "Current correct fact about InfiniBand; ignore older contradictory or similar-but-wrong memory.",
@@ -3272,7 +3272,7 @@
           "category": "old_vs_current",
           "rank": 1,
           "top_id": 25,
-          "latency_ms": 21.941
+          "latency_ms": 27.115
         }
       ]
     }

@@ -17,6 +17,7 @@ from __future__ import annotations
 import queue
 import threading
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -88,7 +89,7 @@ class LanguagesStudio(tk.Toplevel):
                                       values=sorted(self._names))
         self.reply_box.pack(side="left")
         ttk.Button(row, text="Use this language", style="HayatAccent.TButton", command=self.set_reply_language).pack(side="left", padx=8)
-        self.reply_note = StringVar(self, "")
+        self.reply_note = DisplayVar(self, "")
         tk.Label(reply, textvariable=self.reply_note, bg=p.PANEL, fg=p.GOLD_SOFT, font=("Segoe UI", 9), anchor="w",
                  justify="left", wraplength=780).pack(fill="x", pady=(6, 0))
 
@@ -117,6 +118,8 @@ class LanguagesStudio(tk.Toplevel):
         find = tk.Frame(software, bg=p.PANEL)
         find.pack(fill="x")
         self.software_entry = tk.Entry(find, font=("Segoe UI", 11), bg=p.BLACK, fg=p.WHITE, insertbackground=p.GOLD, relief="flat")
+        from app.gui_theme import field_outline
+        field_outline(self.software_entry, p)
         self.software_entry.pack(side="left", fill="x", expand=True, ipady=4)
         self.software_entry.bind("<Return>", lambda _e: self.plan_software())
         ttk.Button(find, text="Find", style="Hayat.TButton", command=self.plan_software).pack(side="left", padx=(8, 0))
@@ -127,7 +130,7 @@ class LanguagesStudio(tk.Toplevel):
         self.plan_text.pack(fill="both", expand=True, padx=16, pady=(0, 6))
         footer = tk.Frame(self, bg=p.BLACK, padx=16, pady=6)
         footer.pack(fill="x", side="bottom")
-        self.status_var = StringVar(self, "")
+        self.status_var = DisplayVar(self, "")
         tk.Label(footer, textvariable=self.status_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9), anchor="w").pack(side="left")
         self.progress = ttk.Progressbar(footer, mode="indeterminate", length=140, style="Hayat.Horizontal.TProgressbar")
 

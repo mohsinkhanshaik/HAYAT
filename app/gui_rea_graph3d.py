@@ -17,6 +17,7 @@ from typing import Any, Callable
 
 from app.gui_space3d import OrbitScene
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 
 def normalise_graph(procedures: list[Any], edges: list[Any], limit: int = 120) -> dict[str, Any]:
@@ -342,7 +343,7 @@ class ReaGraph3DWindow(tk.Toplevel):
         self.configure(bg=gui.BLACK)
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.bind("<Escape>", lambda _event: self.close())
-        self.status = StringVar(self, "Loading the call graph…")
+        self.status = DisplayVar(self, "Loading the call graph…")
         self._graph: dict[str, Any] = {"nodes": [], "edges": []}
         caption = tk.Label(self, textvariable=self.status, bg=gui.BLACK, fg=gui.GOLD, anchor="w", justify="left")
         caption.pack(fill="x", padx=12, pady=(10, 4))
@@ -352,8 +353,13 @@ class ReaGraph3DWindow(tk.Toplevel):
         controls.pack(fill="x", padx=12, pady=(0, 4))
         tk.Label(controls, text="Filter", bg=gui.BLACK, fg=gui.WHITE).pack(side="left")
         self.filter = StringVar(self, "")
-        entry = tk.Entry(controls, textvariable=self.filter, width=28)
-        entry.pack(side="left", padx=(6, 12))
+        # Themed like every other field: unstyled, it was the one white box in this dark window.
+        entry = tk.Entry(controls, textvariable=self.filter, width=28, bg=getattr(gui, "PANEL", "#1b1f24"), fg=gui.WHITE,
+                         insertbackground=getattr(gui, "GOLD", gui.WHITE), relief="flat")
+        if hasattr(gui, "GOLD") and hasattr(gui, "LINE"):
+            from app.gui_theme import field_outline
+            field_outline(entry, gui)
+        entry.pack(side="left", padx=(6, 12), ipady=3)
         entry.bind("<KeyRelease>", lambda _event: self._render())
         self.colour_by = StringVar(self, "module")
         tk.Checkbutton(controls, text="Colour by module", bg=gui.BLACK, fg=gui.WHITE, selectcolor=gui.BLACK,
@@ -378,6 +384,8 @@ class ReaGraph3DWindow(tk.Toplevel):
                                anchor="e", justify="right")
         self.legend.pack(side="right")
         self.scene = OrbitScene(self, gui, on_select=self._selected, on_open=self._open)
+        from app.gui_3d_controls import camera_menu
+        camera_menu(controls, self.scene).pack(side="right", padx=(6, 0))
         self.scene.pack(fill="both", expand=True, padx=12, pady=(0, 12))
         from app.gui_windows import place_over
         place_over(self, gui.root, (1040, 760))

@@ -35,7 +35,7 @@ def main() -> int:
     parser.add_argument("--cli-only", action="store_true", help="Run the typed terminal interface without opening a GUI")
     parser.add_argument("--web", action="store_true", help="Run the local web server for this PC and same-Wi-Fi devices")
     parser.add_argument("--web-host", default=None, help="Bind address for --web (use 'lan' for same-Wi-Fi access or 127.0.0.1 for this PC only; wildcard/public bindings are rejected)")
-    parser.add_argument("--web-port", type=int, default=None, help="Port for --web (default 8765)")
+    parser.add_argument("--web-port", type=int, default=None, help="Port for --web (default: web.port in config/settings.yaml, 8770; 8765 is the browser bridge)")
     parser.add_argument("--browser-bridge-token", action="store_true", help="Print the local browser-extension pairing token")
     parser.add_argument("--secret-set", metavar="NAME", help="Store a connector/MCP secret using hidden terminal input")
     parser.add_argument("--secret-scope", action="append", default=[], metavar="SCOPE", help="Allowed scope for --secret-set; repeat as needed")
@@ -57,10 +57,10 @@ def main() -> int:
     # and COM agree on STA.
     if args.gui:
         try:
-            from app.gui import reserve_window
+            from app.gui_boot import run_desktop
         except ImportError as exc:
             parser.error(f"The GUI is unavailable on {platform.system()}: {exc}. Use --cli-only.")
-        reserve_window()
+        return run_desktop(use_model=not args.no_model, safe_mode=args.safe_mode)
 
     from app.cli import run_cli
     from app.runtime import build_runtime
@@ -110,14 +110,6 @@ def main() -> int:
             return 0
         finally:
             runtime.close()
-    if args.gui:
-        runtime = build_runtime(interactive_approvals=False, use_model=not args.no_model)
-        try:
-            from app.gui import run_gui
-            return run_gui(runtime)
-        finally:
-            if getattr(runtime, "learner", None) is not None:
-                runtime.close()
     if args.web:
         from app.config import load_settings
 

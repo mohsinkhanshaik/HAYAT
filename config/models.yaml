@@ -13,7 +13,7 @@
 # Other installed models, including the uncensored Qwen3.8 27B and Qwythos,
 # stay installed and may rank only as measured advisors; they never replace
 # HAYAT as the answer writer. qwen3.5:latest stays installed as the base of the
-# rollback copy. all-minilm embeds, and classification stays on the fast
+# rollback copy. nomic-embed-text embeds, and classification stays on the fast
 # deterministic path rather than paying a large model on every turn.
 default_model:
   provider: ollama
@@ -37,9 +37,13 @@ coding_model:
 research_synthesis_model:
   provider: ollama
   model: hayat:latest
+# nomic-embed-text since 2026-10-27, measured on HAYAT's own benchmarks: tool matching put the right tool in the
+# top 8 for 34 of 42 requests (all-minilm: 29), memory recall first-hit 91% (89%), about the same speed. all-minilm
+# stays the fallback when nomic-embed-text is not installed. Memories are re-embedded in the background once.
 embedding_model:
   provider: ollama
-  model: all-minilm:latest
+  model: nomic-embed-text:latest
+  fallback: all-minilm:latest
   allow_cloud: false
 vision_model:
   provider: ollama

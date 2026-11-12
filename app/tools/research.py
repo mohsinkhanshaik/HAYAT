@@ -26,6 +26,23 @@ def register_research_tools(registry: ToolRegistry, research: ResearchManager,
                            'open_browser': {'type': 'boolean'}, 'tor_only': {'type': 'boolean'}}, ['query']), 'low', 'application_launch',
                       lambda query, onion=False, open_browser=False, tor_only=False:
                       browser_handoff(research, query, onion, open_browser, tor_only=tor_only))
+    from app.research.tax_sources import sources_answer
+    registry.register('tax_authorities',
+                      'Name the official tax agency for a place: every US state and DC (from the IRS state list), the IRS, '
+                      "India's Income Tax Department, GST portal and CBIC, and 12 Indian states/UTs whose tax department "
+                      "pages were verified (Telangana, Odisha, Uttar Pradesh...). Returns agency names, sites and the list's "
+                      'source; it holds no rates, which must be read from the agency page.',
+                      obj({'place': {'type': 'string', 'minLength': 1, 'maxLength': 300}}, ['place']),
+                      'low', 'system_read', lambda place: sources_answer(place))
+    from app.research.state_agencies import sources_answer as state_sources
+    registry.register('state_agencies',
+                      "Name a US state's official agencies by topic (business registration and licensing, unemployment "
+                      'insurance and payroll tax, new-hire reporting, labor and wages, state contracts, statutes, the state '
+                      'portal) for all 50 states and DC, from each state\'s IRS page, checked 2026-10-31. "my state" is the '
+                      "owner's home state. Holds no rules or fees; read the agency page.",
+                      obj({'place': {'type': 'string', 'minLength': 1, 'maxLength': 300},
+                           'topic': {'type': 'string', 'maxLength': 60}}, ['place']),
+                      'low', 'system_read', lambda place, topic='': state_sources(place, topic))
     from app.research.public_data import PublicData, catalog
     registry.register('public_data_sources',
                       'List registered DataCite, Crossref, Europe PMC and World Bank public API capabilities and official documentation. '

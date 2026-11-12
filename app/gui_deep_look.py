@@ -11,8 +11,11 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable
 
+from app.gui_a11y import activatable
+
 LEVELS = {"alert": ("ALERT", "#F05D5E"), "watch": ("WATCH", "#E8B04B"), "info": ("INFO", "#6CB6FF"), "gap": ("BLIND SPOT", "#7D8A96")}
-SITUATION = {"calm": ("CALM", "#57C785", 0.17), "watch": ("WATCH", "#E8B04B", 0.5), "alert": ("ALERT", "#F05D5E", 0.83)}
+SITUATION = {"calm": ("NO ALERT IN READ SOURCES", "#57C785", 0.17), "watch": ("WATCH", "#E8B04B", 0.5),
+             "alert": ("ALERT", "#F05D5E", 0.83), "unknown": ("LIMITED COVERAGE", "#9AA4AE", None)}
 FILTERS = (("all", "All"), ("alert", "Alerts"), ("watch", "Watch"), ("info", "Information"), ("gap", "Blind spots"))
 CHIP_ICONS = {"all": "grid", "alert": "alert", "watch": "eye", "info": "book", "gap": "search"}
 #: Below this width the side column becomes a strip above the cards (gauge and counts only).
@@ -89,7 +92,7 @@ class DeepLookView(tk.Frame):
         place = value.get("place") or {}
         self.place_label.configure(text=place.get("name", "?"))
         self.time_label.configure(text=f"within {value.get('radius_km', 0):g} km · {str(value.get('observed_at', ''))[11:16]} UTC")
-        self._draw_gauge(value.get("situation", "calm"))
+        self._draw_gauge(value.get("situation", "unknown"))
         self._draw_counts()
         self._draw_metrics(value.get("metrics") or {})
         self.render()
@@ -134,7 +137,7 @@ class DeepLookView(tk.Frame):
             self.side_buttons.pack(side="bottom", fill="x")
         self.main.pack(side="left", fill="both", expand=True)
         if self.value is not None:
-            self._draw_gauge(self.value.get("situation", "calm"))
+            self._draw_gauge(self.value.get("situation", "unknown"))
 
     def _draw_gauge(self, situation: str) -> None:
         canvas, p = self.gauge, self.p
@@ -145,15 +148,16 @@ class DeepLookView(tk.Frame):
             colour = SITUATION[key][1]
             canvas.create_arc(cx - radius, cy - radius, cx + radius, cy + radius, start=180 - index * 60, extent=-58,
                               style="arc", width=max(8, int(14 * scale)), outline=colour if key == situation else p.LINE)
-        label, colour, share = SITUATION.get(situation, SITUATION["calm"])
-        angle = math.pi * (1 - share)
-        canvas.create_line(cx, cy, cx + (radius - 22 * scale) * math.cos(angle), cy - (radius - 22 * scale) * math.sin(angle),
-                           width=4, fill=colour, capstyle="round")
+        label, colour, share = SITUATION.get(situation, SITUATION["unknown"])
+        if share is not None:
+            angle = math.pi * (1 - share)
+            canvas.create_line(cx, cy, cx + (radius - 22 * scale) * math.cos(angle), cy - (radius - 22 * scale) * math.sin(angle),
+                               width=4, fill=colour, capstyle="round")
         canvas.create_oval(cx - 7, cy - 7, cx + 7, cy + 7, fill=colour, outline="")
         if self.compact:
-            canvas.create_text(cx, cy + 13, text=label, fill=colour, font=("Segoe UI Semibold", 9))
+            canvas.create_text(cx, cy + 13, text=label, fill=colour, font=("Segoe UI Semibold", 9), width=240)
         else:
-            canvas.create_text(cx, cy + 22, text=label, fill=colour, font=("Segoe UI Semibold", 14))
+            canvas.create_text(cx, cy + 22, text=label, fill=colour, font=("Segoe UI Semibold", 11), width=250)
 
     def _draw_counts(self) -> None:
         for child in self.counts.winfo_children():
@@ -235,7 +239,7 @@ class DeepLookView(tk.Frame):
             toggle = tk.Label(row, text=("▾ " if opened else "▸ ") + f"Evidence ({len(item['evidence'])})", bg=p.PANEL,
                               fg=p.ROYAL_SOFT, cursor="hand2", font=("Segoe UI", 9))
             toggle.pack(side="left")
-            toggle.bind("<Button-1>", lambda _event, index=index: self.toggle(index))
+            activatable(toggle, lambda index=index: self.toggle(index), p)
             evidence = tk.Frame(body, bg=p.PANEL)
             for entry in item["evidence"]:
                 tk.Label(evidence, text="• " + entry, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI", 9), anchor="w", justify="left",

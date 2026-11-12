@@ -89,6 +89,20 @@ def test_bad_critic_result_retains_draft_and_reports_review_failure(output):
     assert result.report['verified'] is False
 
 
+@pytest.mark.parametrize('payload', [
+    {'verdict': 'revise', 'issues': []},
+    {'verdict': 'revise', 'issues': [' ']},
+    {'verdict': 'accept', 'issues': [], 'verified': True},
+    [],
+])
+def test_incoherent_or_extra_review_fields_are_not_accepted(payload):
+    model = ScriptedModel(json.dumps(payload))
+    draft = ModelResponse('Original answer.', 'fixture', 'test')
+    result = DualBrain(ExecutiveCortex()).review('A question', draft, model)
+    assert result.response is draft and result.report['state'] == 'unavailable'
+    assert len(model.calls) == 1 and not result.report['verified']
+
+
 def test_model_agreement_cannot_override_failed_frozen_tests(tmp_path):
     workbench = bench(tmp_path, ScriptedModel(candidate('x + 1'), accepted(), candidate(), accepted()))
     project = workbench.create('Design a doubling formula', tests=[{'inputs': {'x': 2}, 'expected': 4},

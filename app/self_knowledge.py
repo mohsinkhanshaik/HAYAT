@@ -243,9 +243,26 @@ EXPLAIN_TOOL_QUESTION = re.compile(
     r"(?:\s+tool)?(?:\s+do)?[\s?.!]*$")
 
 
+FEEDBACK_QUESTION = re.compile(
+    r"(?i)^\s*(?:(?:what|which)\s+(?:have\s+you\s+|did\s+you\s+)?(?:got|get|gotten|answered)\s+wrong|"
+    r"what\s+(?:have\s+i|did\s+i)\s+(?:corrected|correct)(?:\s+you\s+on)?|"
+    r"(?:show|list|tell)\s+(?:me\s+)?(?:my|your|the\s+owner'?s?)\s+(?:feedback|corrections|mistakes)|"
+    r"what\s+(?:are|were)\s+your\s+mistakes|where\s+(?:have\s+you\s+been|were\s+you)\s+wrong|"
+    r"(?:my|owner)\s+feedback(?:\s+report)?|what\s+did\s+you\s+get\s+right\s+and\s+(?:what\s+)?wrong)"
+    r"[\s?.!]*$")
+
+
+def feedback_answer(runtime: Any) -> str:
+    from app.owner_feedback import OwnerFeedback
+
+    return OwnerFeedback.beside(runtime.memory).report()
+
+
 def recognise(text: str) -> tuple[str, dict[str, str]] | None:
     """Which self-knowledge question this is, if any: (control, entities)."""
     value = " ".join((text or "").split())
+    if FEEDBACK_QUESTION.match(value):
+        return "SELF_FEEDBACK", {}
     if re.fullmatch(r"(?i)(?:show (?:me )?your (?:self[- ]view|self[- ]awareness|operational awareness)|"
                     r"what do you know about yourself|how do you know what you (?:did|have done)|"
                     r"what have you actually verified)[?.!]*", value):
@@ -290,6 +307,8 @@ def answer(control: str, entities: dict[str, str], runtime: Any) -> str | None:
         return tool_for_answer(runtime, entities.get("task", ""))
     if control == "SELF_EXPLAIN_TOOL":
         return explain_tool_answer(runtime, entities.get("tool", ""))
+    if control == "SELF_FEEDBACK":
+        return feedback_answer(runtime)
     return None
 
 
@@ -312,6 +331,8 @@ def register_self_knowledge_tools(registry: Any, runtime_supplier: Any) -> None:
         elif topic == 'awareness':
             from app.self_view import describe_self
             text = describe_self(runtime.state.snapshot())
+        elif topic == 'feedback':
+            text = feedback_answer(runtime)
         else:
             text = limits_answer(runtime)
         return {"topic": topic, "text": text, "needs_attention": [], "source": "registry, catalog and authority rules"}
@@ -321,8 +342,9 @@ def register_self_knowledge_tools(registry: Any, runtime_supplier: Any) -> None:
         "Read facts about this assistant instead of guessing: topic 'limits' (what it refuses or always asks about, "
         "and why), 'how' (the steps a request goes through), 'tools' (every tool grouped by area), 'reliability' "
         "(recorded tool outcomes), 'tool_for' with task (which tool fits a task), or 'tool' with tool (one tool "
-        "explained, including whether it asks first), or 'awareness' (observed state and task verification).",
+        "explained, including whether it asks first), 'awareness' (observed state and task verification), or "
+        "'feedback' (which replies the owner marked right or wrong, with his corrections).",
         {"type": "object", "properties": {
-            "topic": {"enum": ["limits", "how", "tools", "reliability", "tool_for", "tool", "awareness"]},
+            "topic": {"enum": ["limits", "how", "tools", "reliability", "tool_for", "tool", "awareness", "feedback"]},
             "task": {"type": "string"}, "tool": {"type": "string"}}, "required": [], "additionalProperties": False},
         "low", "system_read", about_hayat)

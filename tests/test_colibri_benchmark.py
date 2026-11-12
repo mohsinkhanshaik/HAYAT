@@ -41,10 +41,13 @@ def test_preflight_checks_available_memory_and_does_not_treat_timeouts_as_absenc
         raise httpx.ConnectError('No local server')
     monkeypatch.setattr('scripts.benchmark_colibri.httpx.get', absent)
     monkeypatch.setattr('scripts.benchmark_colibri.psutil.virtual_memory',
-                        lambda: SimpleNamespace(available=20 * 1024**3))
+                        lambda: SimpleNamespace(available=17 * 1024**3))
     check_resources('colibri', False)
-    with pytest.raises(RuntimeError, match='23 GiB'):
+    check_resources('colibri', 'cuda')
+    with pytest.raises(RuntimeError, match='18 GiB'):
         check_resources('colibri', True)
+    with pytest.raises(RuntimeError, match='18 GiB'):
+        check_resources('colibri', 'vulkan')
     def timeout(*args, **kwargs):
         raise httpx.ReadTimeout('Busy server')
     monkeypatch.setattr('scripts.benchmark_colibri.httpx.get', timeout)

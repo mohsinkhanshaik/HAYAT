@@ -5,7 +5,7 @@ import datetime as dt
 import queue
 import sys
 import threading
-from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -40,8 +40,8 @@ class StartupDialog(tk.Toplevel):
         self._busy = False
         self._poll_handle = None
         self._result: queue.SimpleQueue[str | None] = queue.SimpleQueue()
-        self._message = StringVar(self)
-        self._detail = StringVar(self)
+        self._message = DisplayVar(self)
+        self._detail = DisplayVar(self)
 
         content = tk.Frame(self, bg=palette.BLACK, padx=24, pady=20)
         content.pack(fill="both", expand=True)

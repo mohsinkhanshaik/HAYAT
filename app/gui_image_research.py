@@ -12,7 +12,7 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, ttk
 
-from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
@@ -69,20 +69,20 @@ class ImageResearchStudio(tk.Toplevel):
         self.preview.pack(side='left', padx=(0, 12))
         info = tk.Frame(image_row, bg=p.PANEL)
         info.pack(side='left', fill='both', expand=True)
-        self.filename = StringVar(self, 'Choose a photo, screenshot or diagram')
+        self.filename = DisplayVar(self, 'Choose a photo, screenshot or diagram')
         self.file_label = tk.Label(info, textvariable=self.filename, bg=p.PANEL, fg=p.WHITE,
                                   anchor='w', justify='left', wraplength=330)
         self.file_label.pack(fill='x', pady=(0, 8))
         self.choose_button = ttk.Button(info, text='Choose image…', command=self.choose,
                                         style='Hayat.TButton')
         self.choose_button.pack(anchor='w')
-        self.status = StringVar(self, 'Image reading uses your configured OCR and vision. No web search starts automatically.')
+        self.status = DisplayVar(self, 'Image reading uses your configured OCR and vision. No web search starts automatically.')
         self.status_label = tk.Label(self, textvariable=self.status, bg=p.BLACK, fg=p.MUTED,
                                     anchor='w', justify='left', wraplength=600)
         self.status_label.pack(fill='x', padx=16, pady=6)
 
         # Bottom controls reserve their space before the evidence expands.
-        bottom = tk.Frame(self, bg=p.BLACK, padx=16, pady=8)
+        bottom = self.bottom = tk.Frame(self, bg=p.BLACK, padx=16, pady=8)
         bottom.pack(side='bottom', fill='x')
         self.scope_label = tk.Label(bottom, text='Research visible objects, places and text. For people, use a known name and public work; '
                                    'no face identification or private details.',
@@ -120,14 +120,26 @@ class ImageResearchStudio(tk.Toplevel):
                                         font=('Segoe UI', 10), padx=12, pady=10, relief='flat', state='disabled')
         self.evidence.pack(fill='both', expand=True, padx=16, pady=(0, 4))
         self.bind('<Configure>', self._fit)
+        self.image_row.bind('<Configure>', self._fit, add='+')
+        self.status_label.bind('<Configure>', self._fit, add='+')
         place_over(self, self.gui.root, (720, 680))
         self.deiconify()
         self.lift()
         self._poll()
 
     def _fit(self, event):
-        if event.widget is self:
-            compact = event.height < 560
+        if event.widget in (self, self.image_row, self.status_label):
+            width, height = self.winfo_width(), self.winfo_height()
+            scale = max(1.0, float(getattr(self, '_hayat_text_scale', 1.0)))
+            signature = (width, height, scale)
+            if signature == getattr(self, '_fit_signature', None):
+                return
+            self._fit_signature = signature
+            compact = height / scale < 560
+            self.bottom.configure(pady=4 if compact else 8)
+            self.status_label.pack_configure(pady=3 if compact else 6)
+            self.source_hint.configure(text='Public source page URL · your file stays local.' if compact else
+                                       'Paste a public page URL to check its published images. Your file stays local.')
             if compact and self.guidance.winfo_manager():
                 self.guidance.pack_forget()
                 self.scope_label.pack_forget()
@@ -137,8 +149,8 @@ class ImageResearchStudio(tk.Toplevel):
                 self.scope_label.pack(fill='x', pady=(0, 8), before=self.topic_label)
                 self.image_row.configure(pady=10)
             for label in (self.guidance, self.status_label, self.scope_label, self.source_hint):
-                label.configure(wraplength=max(200, event.width - 40))
-            self.file_label.configure(wraplength=max(160, event.width - 260))
+                label.configure(wraplength=max(200, width - 40))
+            self.file_label.configure(wraplength=max(160, width - 260))
 
     def choose(self):
         path = filedialog.askopenfilename(parent=self, title='Read an image for research',

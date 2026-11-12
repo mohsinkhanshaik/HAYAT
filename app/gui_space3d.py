@@ -175,6 +175,27 @@ class OrbitScene(tk.Canvas):
         self.pan = (0.0, 0.0)
         self._aim(*self.HOME)
 
+    def camera_view(self, name: str) -> None:
+        """The same named views offered by the brain and voice scenes."""
+        poses = {"Front": (0.0, 0.0), "Left": (-math.pi / 2, 0.0),
+                 "Right": (math.pi / 2, 0.0), "Above": (0.0, 1.5)}
+        if name == "Home":
+            self.reset()
+        elif name in poses:
+            self._aim(*poses[name], None)
+        else:
+            raise ValueError("Unknown 3D camera view.")
+
+    def remember_camera(self) -> None:
+        """Bookmark the visible pose, including its pointer-relative pan."""
+        self._target, self._velocity = None, (0.0, 0.0)
+        self._camera_bookmark = (self.yaw, self.pitch, self.zoom, self.pan)
+
+    def restore_camera(self) -> None:
+        if hasattr(self, "_camera_bookmark"):
+            yaw, pitch, zoom, self.pan = self._camera_bookmark
+            self._aim(yaw, pitch, zoom)
+
     def turn(self, yaw: float, pitch: float) -> str:
         self._velocity, self._target = (0.0, 0.0), None
         self.yaw += yaw

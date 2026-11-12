@@ -156,6 +156,11 @@ topology, health evidence and running-work pulses intact.
 
 ## Current completion boundary
 
+**2026-11-11:** Colibri v2.1.0 reads GGUF files in place, so the "equivalent container of HAYAT's modified
+foundation" below is no longer pending: HAYAT's own brain GGUF is served by Colibri without conversion, and the
+same-weights engine comparison has been run (CPU/Vulkan/CUDA vs Ollama). Ollama stays the default; see
+Colibri 2.1 on HAYAT's own weights.
+
 The later full-size model trial
 supersedes the fixture-only status below: a pinned 23 GB original-Qwen container
 is now installed and verified, and real CPU/Vulkan comparisons completed.

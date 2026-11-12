@@ -165,6 +165,141 @@ class ToolIndex:
 #: Scores within 2 % of the last place on the shortlist count as tied with it.
 TIE = 0.98
 
+
+class SemanticTools:
+    """Meaning, not shared words: "will it be windy in Chicago tomorrow" is about weather, "put Firefox on this
+    computer" is installing software, though neither shares a word with the tool that does it.
+
+    Each tool's name and description is embedded once with HAYAT's local embedding model (nomic-embed-text through
+    Ollama) and kept in a cache file keyed by the model and the text, so only new or changed tools are embedded
+    again. A request is one more embedding (about 20 ms); the tools closest to it join the word-based shortlist.
+    Without an embedding model nothing changes: the word-based index works alone.
+    """
+
+    MINIMUM = 0.25  # cosine similarity below which a tool is not close enough to suggest
+    BATCH = 64
+    # Two views per tool, the closer one counts: its name alone ("intelligence weather") and its name with the full
+    # description. Measured on the 42 tuning requests, the right tool reached the top 8 for 29 with both against 25
+    # with the description alone (all-minilm), and 34 with both on nomic-embed-text; held-out checked once after.
+
+    def __init__(self, provider: Any, cache: Any = None) -> None:
+        self.provider, self.cache = provider, cache
+        self._vectors: dict[str, list[list[float]]] = {}
+        self._signature: tuple[str, ...] = ()
+        self._lock = threading.Lock()
+
+    @staticmethod
+    def _texts(tool: dict[str, Any]) -> tuple[str, str]:
+        name = tool["name"].replace("_", " ")
+        return name, (name + ": " + " ".join(str(tool.get("description") or "").split()))[:500]
+
+    def _key(self, text: str) -> str:
+        import hashlib
+
+        identity = (getattr(self.provider, "name", ""), getattr(self.provider, "base_url", ""),
+                    getattr(self.provider, "model", ""), getattr(self.provider, "version", "1"))
+        return hashlib.sha256(f"{identity}\0{text}".encode()).hexdigest()[:24]
+
+    @staticmethod
+    def _valid_vector(vector: Any, dimension: int | None = None) -> bool:
+        return (isinstance(vector, list) and bool(vector) and (dimension is None or len(vector) == dimension)
+                and all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                        and math.isfinite(value) for value in vector)
+                and any(value != 0 for value in vector))
+
+    def prepare(self, tools: Iterable[dict[str, Any]], *, blocking: bool = True) -> int:
+        """Embed every tool not yet embedded (from the cache first); returns how many were embedded now."""
+        import json
+
+        tools = list(tools)
+        signature = (self._key(""), *sorted(text for tool in tools for text in self._texts(tool)))
+        if not self._lock.acquire(blocking=blocking):
+            return 0  # background warmup owns it; lexical selection stays available
+        try:
+            if signature == self._signature and self._vectors:
+                return 0
+            stored: dict[str, list[float]] = {}
+            if self.cache is not None:
+                try:
+                    stored = json.loads(self.cache.read_text(encoding="utf-8")) if self.cache.exists() else {}
+                except (OSError, ValueError):
+                    stored = {}
+            if not isinstance(stored, dict):
+                stored = {}
+            dimension = getattr(self.provider, "dimension", None)
+            stored = {key: vector for key, vector in stored.items() if self._valid_vector(vector, dimension)}
+            texts = {text for tool in tools for text in self._texts(tool)}
+            missing = sorted(text for text in texts if self._key(text) not in stored)
+            for start in range(0, len(missing), self.BATCH):
+                batch = missing[start:start + self.BATCH]
+                vectors = self.provider.embed(batch)
+                if not isinstance(vectors, list) or len(vectors) != len(batch):
+                    raise ValueError("Tool embedding response has the wrong batch size")
+                for text, vector in zip(batch, vectors, strict=True):
+                    if not self._valid_vector(vector, dimension):
+                        raise ValueError("Tool embedding response contains an invalid vector")
+                    dimension = len(vector)
+                    stored[self._key(text)] = [round(value, 5) for value in vector]
+            self._vectors = {tool["name"]: [stored[self._key(text)] for text in self._texts(tool) if self._key(text) in stored]
+                             for tool in tools}
+            keys = {text: self._key(text) for text in texts}
+            self._signature = signature
+            if missing and self.cache is not None:
+                try:
+                    self.cache.parent.mkdir(parents=True, exist_ok=True)
+                    live = set(keys.values())
+                    self.cache.write_text(json.dumps({key: value for key, value in stored.items() if key in live}),
+                                          encoding="utf-8")
+                except OSError:
+                    pass  # the vectors are in memory; the cache only saves the next start some seconds
+            return len(missing)
+        finally:
+            self._lock.release()
+
+    def nearest(self, request: str, limit: int = 5) -> list[str]:
+        if not self._vectors or not str(request or "").strip():
+            return []
+        vectors = self._vectors  # prepare replaces the complete immutable snapshot
+        response = self.provider.embed([str(request)[:500]])
+        if not isinstance(response, list) or len(response) != 1 or not self._valid_vector(response[0]):
+            raise ValueError("Tool query embedding is invalid")
+        query = response[0]
+        norm = math.sqrt(sum(value * value for value in query)) or 1.0
+        scored = []
+        for name, views in vectors.items():
+            if any(len(vector) != len(query) for vector in views):
+                raise ValueError("Tool query and stored embedding dimensions differ")
+            similarity = max((sum(a * b for a, b in zip(query, vector, strict=True)) / (norm * (math.sqrt(sum(v * v for v in vector)) or 1.0))
+                              for vector in views), default=0.0)
+            if similarity >= self.MINIMUM:
+                scored.append((similarity, name))
+        return [name for _similarity, name in sorted(scored, key=lambda item: (-item[0], item[1]))[:limit]]
+
+
+_semantic: dict[str, Any] = {"tools": None}
+
+
+def use_embeddings(provider: Any, cache: Any = None) -> SemanticTools | None:
+    """Give the shortlist meaning-based matching with this embedding provider (None turns it off)."""
+    _semantic["tools"] = SemanticTools(provider, cache) if provider is not None and getattr(provider, "available", True) else None
+    return _semantic["tools"]
+
+
+def semantic_matches(registry: Any, request: str, limit: int = 6) -> list[str]:
+    """The tools closest in meaning to the request, or [] without an embedding model (or when it fails)."""
+    tools = _semantic["tools"]
+    if tools is None:
+        return []
+    try:
+        tools.prepare(registry.describe(), blocking=False)
+        return [name for name in tools.nearest(request, limit) if name in set(registry.names())]
+    except Exception:  # the embedding model stopped: words alone, as before
+        from app.logging import log_swallowed
+        import logging
+
+        log_swallowed(logging.getLogger(__name__), "matching tools by meaning")
+        return []
+
 _cache: dict[int, tuple[tuple[str, ...], ToolIndex]] = {}
 _lock = threading.Lock()
 

@@ -13,7 +13,7 @@ import tkinter as tk
 from tkinter import filedialog, ttk
 from typing import Any
 
-from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
 
@@ -114,7 +114,7 @@ class LocationPrivacyWindow(tk.Toplevel):
             widget.tag_configure("ok", foreground="#4ADE80")
             widget.tag_configure("label", foreground=p.MUTED, font=("Segoe UI Semibold", 9), spacing1=10)
             widget.configure(state="disabled")
-        self.status = StringVar(self, "Checking Windows, your browsers, your internet address and your photos…")
+        self.status = DisplayVar(self, "Checking Windows, your browsers, your internet address and your photos…")
         tk.Label(self, textvariable=self.status, bg=p.PANEL_2, fg=p.GOLD_SOFT, anchor="w", justify="left", padx=12, pady=6,
                  wraplength=1000).pack(fill="x", side="bottom")
         self._write(self.findings, [("Checking Windows, your browsers, your internet address and your photos…", "fix")])
@@ -149,7 +149,7 @@ class LocationPrivacyWindow(tk.Toplevel):
             buttons = tk.Frame(card, bg=p.PANEL)
             buttons.pack(fill="x", pady=(6, 0))
             self.mask_cards[key] = {"card": card, "light": light, "state": state, "buttons": buttons, "title": title}
-        self.seen = StringVar(self, "")
+        self.seen = DisplayVar(self, "")
         tk.Label(frame, textvariable=self.seen, bg=p.BLACK, fg=p.GOLD_SOFT, font=("Segoe UI", 9), anchor="w",
                  justify="left", wraplength=1000).pack(fill="x", pady=(6, 0))
 

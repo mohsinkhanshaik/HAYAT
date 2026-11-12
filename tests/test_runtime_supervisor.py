@@ -492,3 +492,30 @@ def test_executable_discovery_reports_absence_rather_than_guessing():
         from pathlib import Path
 
         assert Path(found).is_file(), "discovery must not return a path that does not exist"
+
+
+# 2026-11-07: HAYAT's own service (portable, port 11435, started by its launcher) died; the runtime called it external,
+# refused to bring it back, and every question answered "main model unavailable".
+def test_hayats_own_private_service_is_brought_back_when_its_port_refuses(monkeypatch):
+    monkeypatch.setenv("HAYAT_PORTABLE", "1")
+    http = FakeHttp(up=False)
+    service = OllamaService("http://127.0.0.1:11435", "qwen3.5:latest", executable="C:/fake/ollama.exe", http_client=http,
+                            extra_env={})
+    service.record.ownership = ProcessOwnership.EXTERNAL  # how the launcher's service looks to the runtime
+
+    def come_back():
+        http.up = True
+        service.record.ownership = ProcessOwnership.STARTED_BY_AI
+        return True, "started"
+
+    service.start = come_back
+    recovered, detail = RuntimeSupervisor(service).recover()
+    assert recovered and "restarted" in detail and service.record.restart_count == 1
+
+
+def test_the_machines_own_ollama_on_another_port_is_still_not_managed(monkeypatch):
+    monkeypatch.setenv("HAYAT_PORTABLE", "1")
+    service = _service(FakeHttp(up=False))  # port 11434: the machine's Ollama, not HAYAT's
+    service.record.ownership = ProcessOwnership.EXTERNAL
+    recovered, detail = RuntimeSupervisor(service).recover()
+    assert not recovered and "will not manage" in detail and service.record.restart_count == 0

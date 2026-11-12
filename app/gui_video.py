@@ -17,6 +17,7 @@ from types import SimpleNamespace
 from app.gui_intelligence_parts import FlowRow
 from app.gui_panels import ScrollableColumn
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.video import timestamp
 from app.config import PROJECT_ROOT
 
@@ -43,7 +44,7 @@ class VideoPreview(tk.Frame):
                  font=('Segoe UI Semibold', 10), anchor='w').pack(fill='x')
         self.screen = tk.Label(self, text='Preparing video preview…', bg=gui.BLACK, fg=gui.MUTED)
         self.screen.pack(pady=6)
-        self.detail = StringVar(self, value='Silent preview · Open with audio for sound')
+        self.detail = DisplayVar(self, value='Silent preview · Open with audio for sound')
         tk.Label(self, textvariable=self.detail, bg=gui.PANEL_2, fg=gui.MUTED).pack(fill='x')
         controls = tk.Frame(self, bg=gui.PANEL_2)
         controls.pack(fill='x', pady=(5, 0))
@@ -263,7 +264,7 @@ class VideoStudio(tk.Frame):
         self.aspect = StringVar(self, value='vertical')
         self.count = StringVar(self, value='3')
         self.length = StringVar(self, value='40')
-        self.status = StringVar(self, value='Enter a title such as Baby Shark, paste a link, or choose a local video.')
+        self.status = DisplayVar(self, value='Enter a title such as Baby Shark, paste a link, or choose a local video.')
         ttk.Label(body, text='Video title, public link or local path').pack(anchor='w')
         ttk.Entry(body, textvariable=self.source).pack(fill='x', pady=5)
         actions = ttk.Frame(body)
@@ -315,8 +316,8 @@ class VideoStudio(tk.Frame):
         self.video_resolution = StringVar(self, value='512')
         self.video_frames = StringVar(self, value='16')
         self.video_steps = StringVar(self, value='10')
-        self.model_status = StringVar(self, value='Open this tab or press Refresh models to check installed local models.')
-        self.generation_status = StringVar(self, value='Describe a short scene, choose settings, then Generate. No generation or download starts automatically.')
+        self.model_status = DisplayVar(self, value='Open this tab or press Refresh models to check installed local models.')
+        self.generation_status = DisplayVar(self, value='Describe a short scene, choose settings, then Generate. No generation or download starts automatically.')
 
         self.generation_actions = FlowRow(self.generation_tab, self.gui.PANEL, gap=6)
         self.generation_actions.pack(side='bottom', fill='x', padx=8, pady=(2, 8))
@@ -592,7 +593,7 @@ class VideoLinkCard(VideoStudio):
         self.gui = gui
         self.source = StringVar(self, value=url)
         self.quality = StringVar(self, value='auto')
-        self.status = StringVar(self, value='Inspect qualities, play with audio, download, or make clips.')
+        self.status = DisplayVar(self, value='Inspect qualities, play with audio, download, or make clips.')
         tk.Label(self, text='Video link', anchor='w', bg=gui.PANEL_2, fg=gui.WHITE,
                  font=('Segoe UI Semibold', 11)).pack(fill='x')
         tk.Label(self, text=url[:115], anchor='w', wraplength=530,
@@ -633,7 +634,7 @@ class VideoEditorCard(VideoStudio):
         self.enhance = tk.BooleanVar(self, value=False)
         self.normalize = tk.BooleanVar(self, value=False)
         self.captions = tk.BooleanVar(self, value=True)
-        self.status = StringVar(self, value='Export a new video. Source stays unchanged. Maximum three minutes per export.')
+        self.status = DisplayVar(self, value='Export a new video. Source stays unchanged. Maximum three minutes per export.')
         self.result_path = str(path)
         tk.Label(self, text='Edit video · exact trim & export', bg=gui.PANEL_2, fg=gui.WHITE,
                  font=('Segoe UI Semibold', 12), anchor='w').pack(fill='x')

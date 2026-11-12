@@ -167,6 +167,35 @@ def _numeric_answer(value: str) -> str | None:
     return f'{description} = {formatted}.\nCalculated locally from your numbers.'
 
 
+_LEAD_ASK = r"(?i)^(?:what(?:'s|’s|\s+is)\s+|whats\s+|how\s+much\s+is\s+|calculate\s+|compute\s+|work\s+out\s+)?(?:the\s+)?"
+_PERCENT_OF = re.compile(_LEAD_ASK + r"(" + _NUMBER + r")\s*(?:%|percent)\s+of\s+([$£€₹]?)(" + _NUMBER + r")[?.!]*$")
+_ROOT = re.compile(_LEAD_ASK + r"(square|cube)\s+root\s+of\s+(" + _NUMBER + r")[?.!]*$")
+
+
+def _percent_or_root(value: str) -> str | None:
+    """"15% of 240" and "the square root of 144": exact, said with the working."""
+    match = _PERCENT_OF.match(value)
+    if match:
+        rate, symbol, amount = Fraction(Decimal(match[1])), match[2], Fraction(Decimal(match[3]))
+        if max(rate, amount) > 10**12:
+            return None
+        result = amount * rate / 100
+        return (f"{_format(rate)}% of {symbol}{_format(amount)} = {symbol}{_format(result)} "
+                f"({_format(amount)} × {_format(rate)} / 100).\nCalculated locally from your numbers.")
+    match = _ROOT.match(value)
+    if match:
+        number = Decimal(match[2])
+        if number < 0 or number > Decimal("1e30"):
+            return None
+        power = 2 if match[1].lower() == "square" else 3
+        root = Decimal(number) ** (Decimal(1) / Decimal(power))
+        exact = root.to_integral_value()
+        shown = (format(exact, "f") if exact ** power == number
+                 else format(root.quantize(Decimal("0.000001")), "f").rstrip("0").rstrip("."))
+        return f"The {match[1].lower()} root of {match[2]} is {shown}.\nCalculated locally from your numbers."
+    return None
+
+
 def calculation_answer(text: str) -> str | None:
     """Answer a complete, supported numeric request or an unambiguous price chain.
 
@@ -176,16 +205,27 @@ def calculation_answer(text: str) -> str | None:
     value = ' '.join(str(text or '').split())
     if not value or len(value) > 500:
         return None
+    from app.quantitative import quantitative_answer
+    domain_answer = quantitative_answer(value)
+    if domain_answer is not None:
+        return domain_answer
+    from app.geometry import geometry_answer
+    shape_answer = geometry_answer(value)
+    if shape_answer is not None:
+        return shape_answer
     numeric = _numeric_answer(value)
     if numeric is not None:
         return numeric
-    expression = re.sub(r'(?i)^(?:what is|calculate|compute|evaluate)\s+', '', value)
+    special = _percent_or_root(value)
+    if special is not None:
+        return special
+    expression = re.sub(r"(?i)^(?:what(?:'s|’s|\s+is)|whats|how\s+much\s+is|calculate|compute|evaluate|work\s+out|solve)\s+", '', value)
     # "17 squared minus 4 squared" is 17**2 - 4**2.
     expression = re.sub(r'(?i)\s+squared\b', '**2', re.sub(r'(?i)\s+cubed\b', '**3', expression))
     for words, operator in [('to the power of', '**'), ('multiplied by', '*'),
                             ('divided by', '/'), ('times', '*'), ('plus', '+'), ('minus', '-')]:
         expression = re.sub(r'(?i)\b' + words + r'\b', operator, expression)
-    expression = _TAIL.sub('', expression).strip().replace('×', '*').replace('÷', '/').replace('−', '-')
+    expression = _TAIL.sub('', expression).strip().replace('×', '*').replace('÷', '/').replace('−', '-').replace('^', '**')
     if len(expression) <= 240 and re.fullmatch(r'[\d\s.+*/()\-]+', expression) and re.search(r'[+*/\-]', expression):
         try:
             result = _evaluate(expression)

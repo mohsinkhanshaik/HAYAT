@@ -27,9 +27,20 @@ from typing import Any, Callable
 
 from app.gui_resources import BooleanVar, StringVar
 from app.gui_fonts import DISPLAY
+from app.gui_output import SafeTreeview
+from app.gui_presentation import diagnostic_text, safe_text
 
 VERDICT_COLOURS = {"strong": "#4ADE80", "good": "#A3E635", "stretch": "#E8C46A", "weak": "#9AA4AE", "not eligible": "#F05D5E"}
-TABS = ("Matches", "Applications", "Profile", "CV review", "Learn", "Sources")
+TABS = ("Matches", "Applications", "Profile", "CV review", "Learn", "Sources", "Career radar")
+TAB_GUIDANCE = {
+    'Matches': 'Find a role, then select a posting to read its requirements, fit, and source before preparing an application.',
+    'Applications': 'Track what you prepared and actually submitted. Select an application to update its status or plan a follow-up.',
+    'Profile': 'Start with your CV. Review the skills and experience HAYAT found, then set the roles, locations, and pay you want.',
+    'CV review': 'Compare your CV with saved roles and use specific examples to improve how you present your experience.',
+    'Learn': 'Use gaps from your saved job matches to choose useful skills to practice next.',
+    'Sources': 'Choose public job boards or follow employer career pages. Read source errors and retry times when a search is incomplete.',
+    'Career radar': 'Explore how proposed skills could change your saved matches. Scenarios do not change your CV or guarantee an interview.',
+}
 
 
 
@@ -58,6 +69,7 @@ class JobsWindow(tk.Toplevel):
         self.configure(bg=p.BLACK)
         self.minsize(680, 480)
         self.bind("<Escape>", lambda _event: self.close())
+        self.bind('<F1>', lambda _event: (self.open_guide(), 'break')[1])
         self.protocol("WM_DELETE_WINDOW", self.close)
         self._jobs: queue.Queue = queue.Queue()
         self._results: queue.Queue = queue.Queue()
@@ -67,7 +79,7 @@ class JobsWindow(tk.Toplevel):
         self._match_filter = None
         self.pages = []
         self._request_ids: dict[str, int] = {}
-        self._coalesced = {"matches", "detail", "insight", "sponsorship", "sources", "review", "learn", "onboarding", "source_access"}
+        self._coalesced = {"matches", "detail", "insight", "sponsorship", "sources", "review", "learn", "onboarding", "source_access", "radar"}
         self._busy_actions: set[str] = set()
         self._profile_loaded: dict[str, Any] = {}
         self.match_rows: dict[str, dict[str, Any]] = {}
@@ -77,8 +89,9 @@ class JobsWindow(tk.Toplevel):
         tk.Label(head, text="Jobs", bg=p.BLACK, fg=p.WHITE, font=(DISPLAY, 16), anchor="w").pack(side="left")
         self.status = tk.Label(head, text="", bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9))
         self.status.pack(side="right")
-        introduction = tk.Label(self, text="HAYAT searches public job boards, reads each posting and your CV, scores the fit with every part shown, and "
-                            "prepares applications. Sending an application always waits for your confirmation.",
+        self.guide_button = ttk.Button(head, text='How to use Jobs', command=self.open_guide)
+        self.guide_button.pack(side='right', padx=10)
+        introduction = self.introduction = tk.Label(self, text=TAB_GUIDANCE['Matches'],
                  bg=p.BLACK, fg=p.MUTED, wraplength=940, justify="left", anchor="w")
         introduction.pack(fill="x", padx=16)
         introduction.bind("<Configure>", lambda event: introduction.configure(wraplength=max(300, event.width - 4)))
@@ -97,6 +110,8 @@ class JobsWindow(tk.Toplevel):
                 child.pack_configure(side="right")
         self.setup_note.pack(side="left", fill="x", expand=True)
         self.tabs = ttk.Notebook(self)
+        ttk.Style(self).configure("Jobs.TNotebook.Tab", padding=(9, 7), font=("Segoe UI", 9))
+        self.tabs.configure(style="Jobs.TNotebook")
         self.tabs.pack(fill="both", expand=True, padx=16, pady=10)
         self.tabs.add(self._build_matches(), text="Matches")
         self.tabs.add(self._build_applications(), text="Applications")
@@ -104,6 +119,7 @@ class JobsWindow(tk.Toplevel):
         self.tabs.add(self._build_review(), text="CV review")
         self.tabs.add(self._build_learn(), text="Learn")
         self.tabs.add(self._build_sources(), text="Sources")
+        self.tabs.add(self._build_radar(), text="Career radar")
         self.tabs.bind("<<NotebookTabChanged>>", lambda _event: self.refresh_tab())
         threading.Thread(target=self._work, name="hayat-jobs-window", daemon=True).start()
         from app.gui_icons import apply_icons
@@ -116,6 +132,10 @@ class JobsWindow(tk.Toplevel):
         self._poll_id = self.after(150, self._tick)
 
     # ------------------------------------------------------------------ work off the UI thread
+    def open_guide(self):
+        from app.gui_guidance import open_page_guide
+        return open_page_guide(self, self.p, 'jobs')
+
     def run(self, kind: str, call: Callable[[], Any], busy: str = "") -> None:
         if self._closed:
             return
@@ -177,6 +197,7 @@ class JobsWindow(tk.Toplevel):
             if kind in self._coalesced and request != self._request_ids.get(kind):
                 continue
             if error:
+                error = diagnostic_text(error, 700)
                 self.status.configure(text=error[:160], fg="#F05D5E")
                 if kind == "search":
                     self.search_note.configure(text="Search could not finish: " + error[:700] + "\nYour saved jobs are still available. Check Sources or try again.",
@@ -192,6 +213,8 @@ class JobsWindow(tk.Toplevel):
                     self.say(self.sponsorship_text, error)
                 if kind in ("discovery", "sponsor_import"):
                     self.say(self.discovery_text, error)
+                if kind == "radar":
+                    self.radar.fail(error)
                 continue
             self.status.configure(text="", fg=self.p.MUTED)
             getattr(self, "show_" + kind)(value)
@@ -200,6 +223,7 @@ class JobsWindow(tk.Toplevel):
     def close(self) -> None:
         self._closed = True
         self._search_stop.set()
+        self.radar._cancel.set()
         self.search_progress.stop()
         if getattr(self, "_poll_id", None):
             self.after_cancel(self._poll_id)
@@ -207,6 +231,7 @@ class JobsWindow(tk.Toplevel):
 
     @staticmethod
     def say(box: tk.Text, text: str) -> None:
+        text = safe_text(text)
         # A refresh often returns identical content while the reader is scrolling.
         if box.get("1.0", "end-1c") == text:
             return
@@ -235,6 +260,7 @@ class JobsWindow(tk.Toplevel):
 
     def refresh_tab(self) -> None:
         tab = TABS[self.tabs.index("current")]
+        self.introduction.configure(text=TAB_GUIDANCE[tab])
         center = self.center
         if tab == "Matches":
             show_blocked = self.show_blocked.get()
@@ -257,6 +283,8 @@ class JobsWindow(tk.Toplevel):
             self.run("review", center.cv_review, "Reading your CV against your best matches…")
         elif tab == "Learn":
             self.run("learn", center.learning_plan, "Working out what to learn from your matches…")
+        elif tab == "Career radar":
+            self.radar.refresh()
         else:
             self.run("sources", self._sources)
 
@@ -295,7 +323,8 @@ class JobsWindow(tk.Toplevel):
         where.bind("<Return>", lambda _event: self.search())
         self.remote = BooleanVar(self, False)
         ttk.Checkbutton(bar, text="Remote only", variable=self.remote, command=self.refresh_tab).grid(row=0, column=4, padx=(0, 8))
-        self.search_button = ttk.Button(bar, text="Search now", style="Compact.Hayat.TButton", command=self.search)
+        # The one gold action on Matches: the page is for finding postings.
+        self.search_button = ttk.Button(bar, text="Search now", style="HayatAccent.TButton", command=self.search)
         self.search_button._hayat_icon = "search"
         self.search_button.grid(row=0, column=5)
         options = tk.Frame(frame, bg=p.BLACK)
@@ -321,7 +350,7 @@ class JobsWindow(tk.Toplevel):
         verification = tk.Frame(frame, bg=p.BLACK)
         verification.pack(fill="x", pady=(0, 5))
         tk.Label(verification, text="Web engine", bg=p.BLACK, fg=p.MUTED).pack(side="left")
-        self.browser_engine = StringVar(self, "DuckDuckGo")
+        self.browser_engine = StringVar(self, "Auto")
         ttk.Combobox(verification, textvariable=self.browser_engine, values=("Auto", "Google", "Bing", "DuckDuckGo"), state="readonly", width=12).pack(side="left", padx=6)
         self.continue_browser_button = self._button(verification, "Continue after verification", self.continue_browser)
         self.continue_browser_button.configure(state="disabled")
@@ -366,7 +395,7 @@ class JobsWindow(tk.Toplevel):
         body.pack(fill="both", expand=True)
         left = tk.Frame(body, bg=p.BLACK)
         columns = ("score", "verdict", "title", "company", "where", "source", "posted", "pay")
-        self.match_tree = ttk.Treeview(left, columns=columns, show="headings", selectmode="browse", style="Markets.Treeview")
+        self.match_tree = SafeTreeview(left, columns=columns, show="headings", selectmode="browse", style="Markets.Treeview")
         for key, label, width in (("score", "Score", 64), ("verdict", "Verdict", 124), ("title", "Title", 220), ("company", "Company", 130),
                                   ("where", "Where", 120), ("source", "Source", 90), ("posted", "Posted", 76), ("pay", "Pay", 190)):
             self.match_tree.heading(key, text=label)
@@ -508,7 +537,7 @@ class JobsWindow(tk.Toplevel):
         query, location = self.query.get().strip(), self.location.get().strip()
         platform, scan = self.browser_platform.get(), self.browser_scan.get()
         engine = self.browser_engine.get()
-        if engine == "Auto":
+        if engine == "Auto" and platform in {"Web", "Employer boards"}:
             if "browser_search" in self._busy_actions or "search" in self._busy_actions:
                 self.status.configure(text="Stop or finish the running search before starting Auto.")
                 return
@@ -518,6 +547,8 @@ class JobsWindow(tk.Toplevel):
             self.run("browser_search", lambda: self.center.browser_search(platform, query, location, True, engine=engine,
                      check=lambda: not self._closed and not self._search_stop.is_set()), "Trying public search providers...")
             return
+        if engine == "Auto":
+            engine = "DuckDuckGo"  # platform-specific URLs do not use a web-engine fallback
         self.run("browser_search", lambda: self.center.browser_search(platform, query, location, scan, engine=engine), "Opening job search in the browser...")
 
     def continue_browser(self) -> None:
@@ -749,7 +780,7 @@ class JobsWindow(tk.Toplevel):
         table = tk.Frame(frame, bg=p.BLACK)
         table.pack(fill="both", expand=True, pady=(6, 6))
         columns = ("title", "company", "status", "updated", "applied", "follow")
-        self.app_tree = ttk.Treeview(table, columns=columns, show="headings", selectmode="browse", style="Markets.Treeview", height=14)
+        self.app_tree = SafeTreeview(table, columns=columns, show="headings", selectmode="browse", style="Markets.Treeview", height=14)
         for key, label, width in (("title", "Title", 260), ("company", "Company", 160), ("status", "Status", 90), ("updated", "Updated", 90),
                                   ("applied", "Applied", 90), ("follow", "Follow up", 90)):
             self.app_tree.heading(key, text=label)
@@ -957,6 +988,7 @@ class JobsWindow(tk.Toplevel):
         page = JobsPage(self.tabs, p)
         self.pages.append(page)
         frame = page.body
+        self._button(frame, "Open Career radar and simulate skills", lambda: self.tabs.select(TABS.index("Career radar")))
         tk.Label(frame, text="What to learn next, from your current matches: skills ranked by the jobs they unlock and the pay "
                  "they open, with where to learn each. Patterns from collected jobs, never a promise of an offer.",
                  bg=p.BLACK, fg=p.MUTED, anchor="w", justify="left", wraplength=1080).pack(fill="x", pady=(6, 4))
@@ -968,6 +1000,19 @@ class JobsWindow(tk.Toplevel):
     def show_learn(self, value: dict[str, Any]) -> None:
         from app.jobs.tools import report_lines
         self.say(self.learn_text, "\n".join(report_lines(value)))
+
+    def _build_radar(self) -> tk.Frame:
+        from app.gui_jobs_page import JobsPage
+        from app.gui_jobs_radar import CareerRadar
+        page = JobsPage(self.tabs, self.p, minimum_width=0)
+        self.pages.append(page)
+        self.radar = CareerRadar(page.body, self)
+        self.radar.pack(fill="both", expand=True)
+        page.adopt(page.body)
+        return page
+
+    def show_radar(self, value: dict[str, Any]) -> None:
+        self.radar.show(value)
 
     # ------------------------------------------------------------------ sources
     def _build_sources(self) -> tk.Frame:
@@ -989,7 +1034,7 @@ class JobsWindow(tk.Toplevel):
         self.say(self.discovery_text, "Discover a company's public careers board by name, then follow it to include its roles in searches. "
                  "Sponsor research shows official references and leads from an imported employer-history CSV. Historical decisions do not prove current sponsorship.")
         table = tk.Frame(frame, bg=p.BLACK)
-        self.source_tree = ttk.Treeview(table, columns=("about", "state", "read", "kept", "error"), show="tree headings", height=10,
+        self.source_tree = SafeTreeview(table, columns=("about", "state", "read", "kept", "error"), show="tree headings", height=10,
                                         style="Markets.Treeview")
         for key, label, width in (("#0", "Source", 140), ("about", "Covers", 300), ("state", "Last read (UTC)", 130), ("read", "Read", 60),
                                   ("kept", "Kept", 60), ("error", "Problem", 220)):

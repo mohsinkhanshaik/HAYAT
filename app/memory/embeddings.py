@@ -207,7 +207,12 @@ class EmbeddingRegistry:
         model = str(config.get("model") or "")
         ollama = provider_configs.get("ollama", {})
         compatible = provider_configs.get("embedding_compatible", {})
-        providers: list[EmbeddingProvider] = [OllamaEmbeddingProvider(str(ollama.get("base_url", "http://localhost:11434")), model if provider_name in {"auto", "ollama"} else "")]
+        base = str(ollama.get("base_url", "http://localhost:11434"))
+        providers: list[EmbeddingProvider] = [OllamaEmbeddingProvider(base, model if provider_name in {"auto", "ollama"} else "")]
+        fallback = str(config.get("fallback") or "")
+        if fallback and fallback != model and provider_name in {"auto", "ollama"} and not providers[0].available:
+            # The preferred model is not installed here: the smaller one keeps neural recall working.
+            providers.append(OllamaEmbeddingProvider(base, fallback))
         if compatible.get("base_url"):
             providers.append(OpenAICompatibleEmbeddingProvider(str(compatible["base_url"]), str(compatible.get("model") or model), str(compatible.get("api_key") or os.getenv("EMBEDDING_API_KEY", "")), allow_cloud=bool(config.get("allow_cloud", False))))
         registry = cls(providers, model)

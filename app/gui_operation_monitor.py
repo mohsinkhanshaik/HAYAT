@@ -5,7 +5,8 @@ import tkinter as tk
 from tkinter import ttk
 
 from app.gui_empty import show_empty
-from app.gui_resources import BooleanVar, StringVar
+from app.gui_resources import BooleanVar
+from app.gui_output import DisplayVar
 from app.operation_monitor import OperationMonitor, action_label, desktop_operation
 
 
@@ -111,7 +112,7 @@ class OperationPreviewWindow(tk.Toplevel):
         controls.add(ttk.Button(controls, text='Observe once', command=self.observe))
         controls.add(ttk.Checkbutton(controls, text='Pause view', variable=self.paused, command=self.pause))
         controls.add(ttk.Checkbutton(controls, text='Auto-open', variable=self.auto, command=self.set_auto))
-        self.status = StringVar(self, 'Waiting for a desktop or browser operation.')
+        self.status = DisplayVar(self, 'Waiting for a desktop or browser operation.')
         self.status_label = tk.Label(self, textvariable=self.status, bg=gui.BLACK, fg=gui.GOLD_SOFT,
                                      anchor='w', justify='left', wraplength=340, padx=8)
         self.status_label.pack(fill='x')
@@ -141,7 +142,7 @@ class OperationPreviewWindow(tk.Toplevel):
         actions = self.actions = FlowRow(self.footer, gui.BLACK, gap=4, height=34)
         actions.pack(fill='x', padx=8, pady=6)
         actions.add(ttk.Button(actions, text='Stop & correct', command=gui._stop_and_correct))
-        actions.add(ttk.Button(actions, text='Emergency stop', command=gui._emergency_stop))
+        actions.add(ttk.Button(actions, text='Emergency stop', style='HayatDanger.TButton', command=gui._emergency_stop))
         self.scope = tk.Label(self.footer, text='Latest primary-desktop sample only; local, memory-only. A returned tool is not proof '
                               'the task succeeded. Browser engines can run headlessly.', bg=gui.BLACK, fg=gui.MUTED,
                               justify='left', anchor='w', wraplength=340, padx=8, pady=4)

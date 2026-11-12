@@ -23,6 +23,7 @@ from typing import Any
 
 from app.gui_intelligence_parts import blend
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.gui_windows import place_over
 from app.gui_fonts import DISPLAY
 
@@ -88,7 +89,7 @@ class Web3Center(tk.Toplevel):
         self.query = StringVar(self, '')
         self.chain = StringVar(self, 'auto')
         self.site = StringVar(self, '')
-        self.status = StringVar(self, 'Reading the networks…')
+        self.status = DisplayVar(self, 'Reading the networks…')
         self.title('HAYAT · Web3 & agentic web')
         self.configure(bg=p.BLACK)
         self.minsize(980, 640)

@@ -1,0 +1,559 @@
+{
+  "version": "bounce-v2",
+  "grader_version": "bounce-grader-v2",
+  "grader_changes": [
+    "2026-10-31: the contradiction check accepts 'no single laptop can' and 'simultaneously': the first live run named the contradiction in those words ('no single laptop can simultaneously cost under $500 and at least $800') and was marked wrong."
+  ],
+  "model": "hayat:latest",
+  "checked_at": "2026-11-01T04:17:15.430393+00:00",
+  "seconds": 5309.4,
+  "cases": [
+    {
+      "id": "budget-kept",
+      "family": "constraint_tracking",
+      "turns": [
+        "Plan a 3-day trip to Chicago for a budget of $600. Keep it short.",
+        "Actually make it 2 days instead.",
+        "Keep the original budget. Show the final plan."
+      ],
+      "replies": [
+        "Here is a tight 3-day Chicago plan for $600: Day 1 covers Millennium Park and the Riverwalk with cheap eats; Day 2 features Lincoln Park Zoo and the Art Institute ($30); Day 3 hits Lakefront Trail bike rental ($15) and Navy Pier. Budget splits as ~$180 lodging, $150 food, $30 transit, $40 activities, leaving a $200 buffer for safety or upgrades.",
+        "Here is a tight 2-day Chicago plan for $600: Day 1 covers Millennium Park, the Riverwalk, and deep-dish pizza; Day 2 features Lincoln Park Zoo (free), the Art Institute ($30 suggested admission), and Lakefront Trail bike rental. Budget splits as ~$300 lodging, $80 food, $20 transit, $45 activities, leaving a $155 buffer for tips or rides.",
+        "Here is your confirmed 2-day Chicago plan for $600:\n\nDay 1: The Icons\n- Morning: Millennium Park & Cloud Gate (Free)\n- Lunch: Deep-dish pizza at a local spot (~$25)\n- Afternoon: Riverwalk walk + free architecture cruise on weekends or self-guided tour ($0–15 tip)\n- Dinner: Portillo’s or neighborhood tavern (~$30)\n\nDay 2: Culture & Coast\n- Morning: Lincoln Park Zoo & Conservatory (Free)\n- Lunch: Food hall or halal cart (~$15)\n- Afternoon: The Art Institute of Chicago ($30 suggested admission for non-residents)\n- Evening: Divvy bike rental along Lakefront Trail (~$15) + Navy Pier views (Free)\n\nBudget Breakdown\n- Lodging (1 night, budget hotel): $280\n- Food & drinks: $90\n- Transit (CTA day pass + occasional rideshare): $35\n- Activities/tickets: $45\n- Buffer/misc: $150\n\nTotal: $600. You have a healthy buffer for tips or spontaneous detours."
+      ],
+      "checks": [
+        {
+          "turn": 2,
+          "constraint": "keeps the $600 budget",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 2,
+          "constraint": "uses 2 days, not 3",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 246.3
+    },
+    {
+      "id": "long-reference",
+      "family": "long_distance_reference",
+      "turns": [
+        "For a project: my budget is $1,200 and my deadline is March 3. Just acknowledge.",
+        "What is 15% of 80?",
+        "Name one primary colour.",
+        "What was my deadline?"
+      ],
+      "replies": [
+        "Noted. Budget is $1,200 and the deadline is March 3. I’ll keep those locked in for your project. 📅💰 It’s a simple contract: $1,200 buys the scope we define before March 3 arrives. The budget caps our resources—time, tools, and effort—while the deadline forces prioritization. We have to decide what is essential for launch versus what can wait. If we try to do everything at once, we’ll blow past either the money or the date. So we pick one core outcome that fits both constraints.\n\nFor example, if your project is a simple website, $1,200 might cover a domain, hosting, and a basic template customization using my coding tools. We’d skip custom animations or complex databases to stay within budget. March 3 means we start building immediately so testing happens before the deadline hits. If you wanted something bigger, like an app with user accounts, we’d need to cut features—maybe remove social login—to keep it affordable and on time. The key is locking in that \"must-have\" list now so nothing slips through later.\n\nIt is a tight fit but entirely workable if we are disciplined about scope. The budget of $1,200 covers the cost of building and launching something tangible—like a specialized web application or a digital product suite—but it leaves little room for expensive third-party services or heavy marketing spend before launch. We have to treat that money as our runway: every dollar spent on infrastructure is a dollar not available for unexpected fixes later in February. The deadline of March 3 gives us roughly five weeks from today, which is enough time to design, build, and test if we avoid \"feature creep.\" That means saying no to nice-to-haves early so the essential features get polished.\n\nHere is how it looks in practice: let’s say you want a custom booking platform for your services. We can use my coding tools to write the core application logic locally at zero cost, saving us thousands in development fees. The $1,200 would then go toward domain registration and cloud hosting—perhaps a modest VPS or serverless setup that scales with usage—and maybe one month of premium assets like stock photos or specialized fonts. We spend weeks 1–2 building the database and user interface, week 3 connecting payments, and weeks 4–5 testing on different devices to catch bugs before March 3 arrives. If we stick to this plan, you get a fully functional tool without needing to hire an external agency that might charge $5,000 for similar work. The trade-off is that the design will be clean but simple rather than flashy, which often performs better anyway because it loads faster and works reliably on March 3 when your users first try it out.",
+        "15% of 80 = 12 (80 × 15 / 100).\nCalculated locally from your numbers.",
+        "Red 🎨",
+        "March 3 📅"
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "answers 12",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 3,
+          "constraint": "recalls March 3",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 69.5
+    },
+    {
+      "id": "name-correction",
+      "family": "user_correction",
+      "turns": [
+        "My sister's name is Aisha.",
+        "Sorry, I meant her name is Amina, not Aisha.",
+        "What is my sister's name? One word."
+      ],
+      "replies": [
+        "Got it, Mohsin. I've noted that your sister's name is Aisha 📝.\n\nI'll keep this in mind for future conversations (like drafting emails to her or remembering family details). Is there anything specific you'd like me to do with this information right now?",
+        "My mistake, Mohsin. It’s Amina then 📝.\n\nI’ve updated the record. Is there anything specific you’d like to do with that right now?",
+        "Amina"
+      ],
+      "checks": [
+        {
+          "turn": 2,
+          "constraint": "uses the corrected name",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 47.9
+    },
+    {
+      "id": "original-number",
+      "family": "referent_tracking",
+      "turns": [
+        "Remember the number 47 for this conversation.",
+        "Add 5 to it.",
+        "Now double the original number, not the new one. Just the result."
+      ],
+      "replies": [
+        "Understood. I’ll remember that.",
+        "That makes 52. 🧮",
+        "94 94\n\nI could not properly cover: Now double the original number, not the new one. Just the result."
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "47 + 5 = 52",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 2,
+          "constraint": "doubles 47, not 52",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 38.3
+    },
+    {
+      "id": "unit-followup",
+      "family": "units",
+      "turns": [
+        "A rectangle is 3 m by 4 m. What is its area?",
+        "Give that in square feet."
+      ],
+      "replies": [
+        "12 m² 📐",
+        "129.17 ft² 📐 To get from square meters to square feet, we use the conversion factor for length and apply it twice because area is two-dimensional. One meter equals approximately 3.28084 feet. Since a rectangle’s area is width times height, we multiply those converted dimensions together: $1 \\text{ m}^2 = (3.28084 \\text{ ft}) \\times (3.28084 \\text{ ft})$, which gives us roughly 10.7639 square feet per square meter.\n\nFor your specific rectangle, the area is $3 \\text{ m} \\times 4 \\text{ m}$, or 12 square meters total. When we convert that to imperial units, it’s simply $12 \\times 10.7639$, which lands us at approximately 129.17 square feet 📐 The reason we multiply by roughly 10.76 is that area scales with the square of length, so a small change in linear units becomes much larger when squared. Think about it this way: if one meter were exactly three feet (a nice round number for illustration), then an area of one square meter would be $3 \\text{ ft} \\times 3 \\text{ ft}$, which equals nine square feet. In reality, a single meter is actually closer to 3.28084 feet long. When you multiply that length by itself—$3.28084 \\times 3.28084$—you get approximately $10.7639$. This means every square meter on your floor plan covers about ten and three-quarters of a square foot in the imperial system 📐\n\nTo see how this works for any shape, just take its area in meters squared and multiply it by that conversion factor we discussed earlier. For example, if you had a small rug measuring 2 m², you would simply calculate $2 \\times 10.7639$, which gives you about 21.5 square feet 📐 It is always much easier to convert the total area at once rather than converting each side individually and then multiplying them out again, though both methods will lead you to the same final number for your rectangle!"
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "12 square metres",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 1,
+          "constraint": "about 129 square feet",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 88.7
+    },
+    {
+      "id": "change-one-item",
+      "family": "partial_edit",
+      "turns": [
+        "Write a numbered packing list of exactly 3 items for a rainy day. Items only.",
+        "Change only the second item to something else and keep the other two exactly the same. Show the list."
+      ],
+      "replies": [
+        "1. Waterproof raincoat or poncho\n2. Compact umbrella\n3. Rubber boots or waterproof shoes 🌧️",
+        "1. Waterproof raincoat or poncho\n2. Packable rain hat 🧢\n3. Rubber boots or waterproof shoes 🌧️"
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "items 1 and 3 unchanged, item 2 changed",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 67.3
+    },
+    {
+      "id": "reverse-list",
+      "family": "reversal",
+      "turns": [
+        "List exactly three fruits as a numbered list, nothing else.",
+        "Reverse the order of that list. Numbered, nothing else."
+      ],
+      "replies": [
+        "1. Apple\n2. Banana\n3. Orange 🍎🍌🍊",
+        "1. Orange\n2. Banana\n3. Apple 🍊🍌🍎"
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "same three items in reverse order",
+          "passed": false,
+          "missing": [
+            "reversed: before=['apple', 'banana', 'orange 🍎🍌🍊'] after=['orange', 'banana', 'apple 🍊🍌🍎']"
+          ],
+          "violated": []
+        }
+      ],
+      "passed": false,
+      "error": "",
+      "seconds": 55.1
+    },
+    {
+      "id": "pronoun-which",
+      "family": "pronoun_resolution",
+      "turns": [
+        "Paris and Rome are both capital cities. Which of them is in Italy? One word."
+      ],
+      "replies": [
+        "Rome Rome is the one in Italy 🇮🇹. Paris is in France 🇫🇷.\n\nI could not properly cover: Rome are both capital cities. Which of them is in Italy? One word."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "Rome",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 20.0
+    },
+    {
+      "id": "contradiction",
+      "family": "contradictory_constraints",
+      "turns": [
+        "I need a laptop that costs under $500 but it must cost at least $800. Which one should I buy?"
+      ],
+      "replies": [
+        "You can’t have both: no single laptop is simultaneously under $500 and over $800 🤷‍♂️\n\nI think you meant $500 to $800. That’s a very workable range. It buys solid mid-range machines or great refurbished options.\n\nDo you want me to look for specific specs (like RAM, storage) in that price band?"
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "names the contradiction",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 43.7
+    },
+    {
+      "id": "impossible-prime",
+      "family": "impossible_constraint",
+      "turns": [
+        "Give me a prime number strictly between 24 and 28."
+      ],
+      "replies": [
+        "There isn't one. The whole numbers strictly between 24 and 28 are 25, 26, and 27 — none of them are prime 🚫.\n\nTo see why there’s nothing in that gap, let’s look at each number between 24 and 28 one by one. A prime is a whole number greater than 1 that has exactly two factors: 1 and itself.\n\nFirst up is 25. It looks like it might be prime because it ends in 5 (and we often think of numbers ending in odd digits as potentially prime), but if you try dividing it by anything, you’ll find $5 \\times 5 = 25$. Since it has a factor other than itself and one, it’s composite.\n\nNext is 26. This is an even number greater than 2, so we know right away it can be divided by 2 ($13 \\times 2$). That immediately knocks it out of the prime club because primes (except for 2) must be odd to avoid being divisible by two.\n\nFinally, there’s 27. It feels like a \"prime-ish\" number because it doesn’t end in an even digit or five, but if you add its digits ($2 + 7 = 9$), that tells us it’s divisible by 3. And indeed, $3 \\times 9 = 27$.\n\nSo we have three numbers: one is a square of a prime (5²), one is even (divisible by 2), and one is a multiple of 3 ($3^3$). They are all composite. The next prime after 24 isn’t until you reach 29, which sits just outside your requested range 🛑."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "says there is none",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 43.2
+    },
+    {
+      "id": "party-long",
+      "family": "long_conversation",
+      "turns": [
+        "I'm planning a party: 12 guests, vegetarian food only, budget $300, on Saturday 14 November. Just acknowledge.",
+        "What is 7 times 8?",
+        "Name one fruit that is red.",
+        "How do you say hello in Spanish?",
+        "What is the capital of Japan?",
+        "Give me a synonym for happy.",
+        "Suggest a short menu for the party.",
+        "How many guests and what budget did I give?"
+      ],
+      "replies": [
+        "Noted. I have recorded your party details: 12 guests, vegetarian food only, on Saturday, November 14th, with a budget of $300. Regarding your question about the budget, it is currently unclear whether this amount includes drinks and decorations; please let me know if you would like to specify that or adjust the allocation accordingly.",
+        "7 * 8 = 56.\nCalculated locally from your numbers.",
+        "Apple 🍎",
+        "Hola (OH-lah). 🎉 Hola (OH-lah) is the standard way to say hello in Spanish 🎉. It’s used across all Spanish-speaking countries and fits almost any situation, from casual meetups with friends to professional settings where a friendly tone is appropriate. The word itself comes from Latin hola, which was originally an interjection meaning “hello” or “hi.” Over time, it evolved into the universal greeting we know today.\n\nFor example, if you’re meeting someone at a party in Madrid, saying “Hola” with a smile will instantly break the ice and set a warm tone for conversation. It’s simple but effective—no need to overthink it!\n\nHola is the universal key for Spanish greetings because it’s short, soft on the lips, and carries zero baggage—it doesn’t imply formality like Buenos días does at 7 AM, nor familiarity like ¿Qué tal? might in some circles. It just works 🗝️. You can use it with your boss, a stranger on the street, or your grandma without blinking.\n\nHere is how you say hello: Hola (OH-lah). The 'H' is silent because Spanish dropped that sound centuries ago, so it sounds exactly like \"ola\" but spelled with an H to keep its Latin roots visible 📖. It’s pronounced with a crisp, open vowel at the end—no glottal stop or trailing sigh.\n\nImagine you walk into a small café in Seville on Saturday morning ☕. You step up to the counter where a barista is wiping down the espresso machine. Instead of waiting for him to notice you, you catch his eye and say \"Hola\" with a slight nod. He looks up, smiles back immediately, and says \"¡Buenos días!\" or just \"¿Qué hay?\". That simple exchange establishes that you are present, polite, and ready to interact without demanding anything specific yet. It’s the social equivalent of knocking on a door before entering 🚪.",
+        "Tokyo 🇯🇵",
+        "Joyful 😊 Joyful is a strong choice because it shifts the focus from an internal state to something that feels more active and visible 🌟. While \"happy\" can be quiet, like sitting alone with a good book, joyful implies energy—it’s often shared or expressed outwardly through laughter or movement. It carries a sense of lightness and celebration without being overly formal.\n\nThink about the difference between saying you are happy to see someone versus feeling joyful in their presence 🤗. The first is polite; it acknowledges pleasure at an event. The second suggests that seeing them actually lifts your spirits, perhaps making you smile broadly or feel a sudden rush of warmth. It’s less about satisfaction and more about being energized by the moment.\n\nFor example, if Mohsin just finished building his AI layer on D:\\AI 💻, he might say he is happy it works because there are no errors. But if he runs it successfully for the first time without a hitch, feeling that spark of excitement as everything clicks into place? That is joy 🚀. It’s deeper and more resonant than simple satisfaction.\n\nJoyful is the word I’d pick because it carries a specific kind of energy that \"happy\" often lacks 🌟. While happiness can be quiet and internal—like the satisfaction of finishing a good meal or finding money in an old coat pocket—joyful implies something more active, visible, and shared. It’s less about contentment and more about being lifted up by what you’re experiencing. Think of it as the difference between smiling because things are going well (happy) versus laughing out loud because life feels suddenly bright and full of possibility (joyful).\n\nIt works best when describing moments that spark a reaction in others or change your mood instantly. For example, imagine Mohsin just finished setting up his AI layer on D:\\AI 💻. He might feel happy that the code runs without errors—that’s relief and satisfaction. But if he watches it successfully process a complex task for the first time, seeing how smoothly everything clicks into place? That spark of excitement as the system comes alive is joy 🚀. It’s deeper because it connects to purpose and capability, not just comfort.\n\nJoyful also tends to feel more generous. You can be happy alone in your room, but you often become joyful when sharing something good with someone else—like planning a party for twelve guests where everyone knows they’ll get great vegetarian food 🥗. The anticipation of seeing friends enjoy themselves adds that extra layer of warmth. It’s not just about the food or the budget; it’s about the connection happening around them. That shift from personal satisfaction to shared experience is what makes \"joyful\" such a powerful word for moments worth remembering ✨.",
+        "Here’s a simple, budget-friendly vegetarian menu for 12 guests: 🥗\n\n- Starters: Hummus with warm pita bread and fresh vegetable sticks (carrots, cucumbers) 🥕\n- Main Course: Vegetable curry served over basmati rice or with naan bread 🍛\n- Sides: Herb-roasted root vegetables like carrots and potatoes 🥔\n- Dessert: Berry crumble made ahead of time to save effort on the day ✨\n\nThis menu stays comfortably under your $300 budget if you shop at a standard grocery store. Would you like me to pull together a shopping list for these items?",
+        "You mentioned 12 guests with a $300 budget 🎉💰. These details were provided when I suggested the vegetarian menu for your party. Would you like me to adjust any items based on these constraints?"
+      ],
+      "checks": [
+        {
+          "turn": 6,
+          "constraint": "keeps the menu vegetarian",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 7,
+          "constraint": "recalls 12 guests",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 7,
+          "constraint": "recalls the $300 budget",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 1323.5
+    },
+    {
+      "id": "first-version",
+      "family": "earlier_version",
+      "turns": [
+        "Write a one-line slogan for a bakery. Only the slogan.",
+        "Make it funnier. Only the slogan.",
+        "Actually, go back to the first version, exactly as it was. Only the slogan."
+      ],
+      "replies": [
+        "Baked with love, served with joy 🥐",
+        "Flour power, sugar shock 🍩",
+        "Baked with love, served with joy 🥐"
+      ],
+      "checks": [
+        {
+          "turn": 2,
+          "constraint": "returns the first slogan unchanged",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 899.2
+    },
+    {
+      "id": "count-keeps-limit",
+      "family": "constraint_tracking",
+      "turns": [
+        "Give me 3 tips for better sleep as a numbered list, each under 10 words.",
+        "Now give 5 tips instead, keeping the same length limit. Numbered list."
+      ],
+      "replies": [
+        "1. Keep your bedroom dark and cool at night.\n2. Avoid screens one hour before bed tonight.\n3. Stop drinking caffeine after two in the afternoon.",
+        "1. Stick to a consistent sleep schedule every day.\n2. Reserve your bed only for sleep and sex.\n3. Get at least thirty minutes of morning sunlight.\n4. Keep your room quiet with white noise if needed.\n5. Avoid heavy meals within three hours before bedtime."
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "constraint": "5 items, each under 10 words",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 1045.9
+    },
+    {
+      "id": "language-carry",
+      "family": "standing_instruction",
+      "turns": [
+        "Answer in Spanish from now on. What is the capital of France?",
+        "And of Italy?"
+      ],
+      "replies": [
+        "La capital de Francia es París 🇫🇷.\n\nParís es la capital política y administrativa de Francia 🇫🇷. Es el corazón del país, donde se encuentran los principales órganos del gobierno como el Palacio del Elíseo (la residencia del presidente) y las torres de Bercy y Matignon (los ministerios). Más allá de su función gubernamental, París es un nodo económico vital; la región Île-de-France genera una parte desproporcionada del PIB francés y alberga la mayoría de las sedes centrales de grandes empresas.\n\nUn ejemplo claro de esta centralización se ve en el transporte: casi todas las principales líneas ferroviarias (como el TGV) convergen hacia París, lo que facilita los desplazamientos desde cualquier punto del país hasta su centro administrativo. Esta estructura histórica y moderna asegura que la ciudad no solo sea un símbolo cultural, sino también el motor operativo de la nación.",
+        "La capital de Italia es Roma 🇮🇹.\n\nRoma es el centro político y administrativo del país. Allí se ubican instituciones clave como el Palacio Quirinal, la residencia oficial del presidente, y Palazzo Chigi, sede del gobierno. También actúa como un motor económico; su área metropolitana concentra gran parte del comercio, los servicios y el turismo nacional.\n\nRoma es mucho más que un nombre en el mapa; es la columna vertebral de la administración italiana 🇮🇹. Aquí se toman las decisiones que afectan a toda la nación, desde los presupuestos hasta las leyes internacionales. El poder está concentrado en distritos muy específicos: el Vaticano al oeste marca una influencia histórica y diplomática única, mientras que el centro histórico alberga el corazón del gobierno civil.\n\nUn ejemplo claro de cómo funciona esta centralización es el transporte ferroviario. Roma actúa como un nodo crítico; casi todas las líneas de alta velocidad (Trenitalia e Italo) convergen hacia la estación Termini o Tiburtina. Si viajas desde Milán, Nápoles o Florencia, tu ruta final suele pasar por aquí para conectar con el resto del país o con destinos internacionales. Esto no es casualidad: Roma concentra los principales centros logísticos y de distribución nacional, lo que hace que mover mercancías desde la capital sea más eficiente que hacerlo desde otras ciudades italianas.\n\nAdemás, su economía se sostiene en un equilibrio entre servicios avanzados y turismo masivo. Mientras el sector financiero y tecnológico crece en áreas como EUR (un distrito moderno planificado), el centro histórico depende del flujo constante de visitantes. Esta dualidad define la vida romana: una ciudad que vive constantemente entre su pasado imperial y sus funciones modernas, manteniendo su estatus como un imán político y cultural ineludible 🇮🇹."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "answers Paris",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        },
+        {
+          "turn": 1,
+          "constraint": "answers Rome, still in Spanish",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 1027.5
+    },
+    {
+      "id": "typo-percent",
+      "family": "typos",
+      "turns": [
+        "wat is 25 percnt of 240"
+      ],
+      "replies": [
+        "25% of 240 = 60 (240 × 25 / 100).\nCalculated locally from your numbers."
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "60",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 0.1
+    },
+    {
+      "id": "hinglish-sum",
+      "family": "code_switching",
+      "turns": [
+        "Mujhe batao 12 aur 15 ka sum kya hai?"
+      ],
+      "replies": [
+        "12 + 15 = 27 🧮"
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "27",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 25.6
+    },
+    {
+      "id": "urdu-mixed-days",
+      "family": "code_switching",
+      "turns": [
+        "Ek hafte mein kitne din hote hain? Number batao."
+      ],
+      "replies": [
+        "7 📅 Ek hafte mein 7 din hote hain 📅 Yeh number kisi specific calendar ya time zone par depend nahi karta, balki yeh ek universal definition hai jo humare daily life aur work cycles ke liye standard maani jaati hai. Iska matlab hai ki chahe aap Monday se Sunday tak count kar rahe hon ya Saturday se Friday tak, total din hamesha 7 hi rahenge.\n\nYeh system isliye stable rehta kyunki yeh nature aur history dono par based hai – roughly ek lunar cycle ke around 4 weeks ka hota tha, jisse ye pattern natural lagne laga. Aajkal hum ise exactly define karke use karte hain taaki schedules clear rahein.\n\nSocha jaye toh agar aapko pata ho ki kal Sunday tha aur aapse poocha jaaye ki agle hafte ka pehla din kab hai, toh seedha 7 days add kar dijiye – Monday wahi se start hoga. Simple logic ke saath yeh calculation har baar same result deti hai 🧠✨"
+      ],
+      "checks": [
+        {
+          "turn": 0,
+          "constraint": "7",
+          "passed": true,
+          "missing": [],
+          "violated": []
+        }
+      ],
+      "passed": true,
+      "error": "",
+      "seconds": 37.4
+    }
+  ],
+  "metamorphic": [
+    {
+      "id": "percent",
+      "variants": [
+        "What is 17% of 340?",
+        "340 multiplied by 0.17 equals what?",
+        "Compute seventeen percent of three hundred forty.",
+        "whats 17 percnt of 340"
+      ],
+      "answers": [
+        "17% of 340 = 57.8 (340 × 17 / 100).\nCalculated locally from your numbers.",
+        "57.8 🧮",
+        "57.8 🧮",
+        "17% of 340 = 57.8 (340 × 17 / 100).\nCalculated locally from your numbers."
+      ],
+      "correct": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "id": "speed",
+      "variants": [
+        "A car travels 240 km in 3 hours. What is its average speed in km/h?",
+        "In 3 hours a car covers 240 kilometres. Average speed in km per hour?",
+        "Average speed in km/h if you drive 240 km over 3 hours, with a coffee stop that doesn't change the totals?"
+      ],
+      "answers": [
+        "Average speed = Total Distance ÷ Total Time\n= 240 km ÷ 3 h\n= 80 km/h 🚗💨",
+        "The average speed is 80 km/h.\n\nYou divide the total distance by the total time:\n$$240 \\text{ km} / 3 \\text{ h} = 80 \\text{ km/h}$$ 🚗",
+        "80 km/h 🚗☕️"
+      ],
+      "correct": [
+        true,
+        true,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "id": "capital",
+      "variants": [
+        "What is the capital of Australia?",
+        "Australia's capital city is which city?",
+        "capital of australia??",
+        "Australia ki capital kya hai?"
+      ],
+      "answers": [
+        "The capital of Australia is Canberra 🇦🇺.",
+        "Canberra 🇦🇺 Canberra is the capital because Sydney and Melbourne were deadlocked over who would get the honor 🏛️. The compromise was to build a brand-new city in New South Wales, but far enough from Sydney that it wouldn’t overshadow its bigger neighbor. It’s about 100 miles inland from Sydney, which also helps protect against coastal attacks—a practical detail for when the capital was planned before modern warfare.\n\nThe design itself is a concrete example of this balance. Walter Burley Griffin won an international competition to lay out the city in 1912, and his plan literally placed Parliament House between Mount Ainslie (representing Sydney) and Capital Hill (representing Melbourne). This geometry forces you to see both sides equally when you’re making laws. It’s a physical manifestation of federalism: neither state dominates the other because they share their own neutral ground.\n\nSo while it might feel like just another city today, its entire existence is tied to that specific political need for neutrality. If Sydney and Melbourne had agreed on one or the other, Canberra likely wouldn’t be there at all.\n\nThe reason Canberra exists at all is that the two biggest cities, Sydney and Melbourne, refused to share power with each other 🏛️. When Australia federated in 1901, both states wanted their own city to be the national capital. The compromise was a new city built inside New South Wales, but far enough away from Sydney—over one hundred miles—to ensure it didn’t become just another suburb of that larger metropolis. This distance created a neutral ground where neither state could claim dominance over the federal government.\n\nThe design itself is a perfect example of this balance in action 🧭. Walter Burley Griffin won an international competition to lay out the city, and his plan literally placed Parliament House between Mount Ainslie (representing Sydney) and Capital Hill (representing Melbourne). This geometry forces you to see both sides equally when you’re making laws. It’s a physical manifestation of federalism: neither state dominates the other because they share their own neutral ground.",
+        "Canberra 🇦🇺 Canberra is the capital of Australia 🇦🇺. It often surprises people because Sydney and Melbourne are much larger, more famous cities with bigger economies. The reason Canberra holds this title comes down to a political compromise in 1901 when the Australian colonies federated into one nation. There was an intense rivalry between those two major cities over which should be the national capital. To resolve it, they agreed on something unusual: build a brand-new city from scratch in New South Wales territory, but make sure it is far enough away from Sydney so that no single existing power base could dominate the government.\n\nThe site was chosen because of its high elevation and central location within NSW, which made it defensible and accessible. Construction started around 1913, and by then both cities had already grown significantly in population and prestige. Canberra officially became the seat of government in 1927 when Parliament House opened there. Today, while Sydney remains the financial hub and Melbourne is often cited as the cultural capital, Canberra functions specifically as the administrative heart where all three branches of government—the executive, parliament, and high court—reside together on Capital Hill.\n\nThe way Canberra actually functions is quite distinct from how Sydney or Melbourne operate because its entire layout was designed around governance rather than commerce. The city follows the Griffin Plan, which uses a massive geometric grid centered on Capital Hill and divided by an artificial lake called Lake Burley Griffin. This isn't just for aesthetics; it dictates how traffic flows and where buildings sit. For example, if you stand at Old Parliament House looking north toward King George V Park, you are standing directly in line with the new Parliament House. The streets connecting them—King Edward Terrace and Commonwealth Avenue—are wide enough to handle ceremonial processions but also serve as critical commuter arteries during rush hour.\n\nA concrete way to see this \"capital-first\" design is by comparing a typical workday for an Australian politician versus one for a Sydney banker. A Member of Parliament in Canberra often spends their morning at the parliamentary library, which sits right next to Old Parliament House, then walks across the parklands to have lunch with constituents or lobbyists from nearby government departments like Treasury or Defence. Their commute might be ten minutes on foot because everything is clustered within a few kilometers for security and efficiency. In contrast, a banker in Sydney starts their day near Circular Quay or Martin Place, where skyscrapers tower over narrow streets packed with retail shops and tourists. The rhythm of Canberra slows down significantly at 5:30 PM when the parliament rises; the city center quiets almost instantly because its primary purpose—legislation—is done for the day. Sydney’s financial district stays buzzing until late night because global markets never truly sleep there, but Canberra has a distinct \"on and off\" switch that reflects its political heartbeat rather than an economic one.\n\nThis separation also affects how people live in these cities. In Canberra, housing is generally more affordable relative to income because the land supply was planned decades ago with strict zoning laws preventing high-density sprawl from choking out green spaces. You often find families living in suburbs like Yarralumla or Braddon that are just a short drive from their workplace at Parliament House. The trade-off is that Canberra lacks the dense, walkable urban core of Sydney; you almost always need a car to get anywhere meaningful outside the immediate civic center. This reliance on vehicles reinforces its identity as a planned administrative hub rather than an organic metropolis where people happen to live near work.",
+        "Canberra 🇦🇺 Canberra is the capital because Sydney and Melbourne were deadlocked over who should get that honor 🏛️. The compromise was to build a brand-new city in between them, which became Canberra. It’s about 280 kilometers from Sydney if you drive there today.\n\nThe reason this works is because it prevents either major coastal power from dominating national politics. For example, when Parliament first moved into its temporary wooden buildings in the late 1920s, they were literally called \"Provisional\" and \"Old\" Parliament Houses precisely to show that a permanent home was still being designed 🏗️. That design competition led to Walter Burley Griffin’s geometric plan, where major axes physically connect key landmarks like Mount Ainslie (the seat of government) with Capital Hill and the lake in between—a layout you can actually see from space today 👁️‍🗨️."
+      ],
+      "correct": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "passed": true
+    }
+  ],
+  "summary": {
+    "conversations": 17,
+    "conversations_passed": 16,
+    "constraints": 24,
+    "constraints_held": 23,
+    "metamorphic_groups": 3,
+    "metamorphic_consistent": 3,
+    "metamorphic_variants": 11,
+    "metamorphic_variants_correct": 11
+  },
+  "scope": "Code-graded multi-turn and paraphrase probes. Inspect the replies: regex checks can miss a correct answer phrased unusually, and passing these does not prove general reliability."
+}

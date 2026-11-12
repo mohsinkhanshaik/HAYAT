@@ -1,0 +1,350 @@
+{
+  "files": {
+    "app/anpr/store.py": "44bd7e1e467e78e4f6fe89fe9da8922dd7b1625a40660f902f3ad94549d4bcfb",
+    "app/automation/jobs.py": "7e433c3de82d2f5e6b9eaa29ed849e81c0381c6958d38bb85fffad65953a6738",
+    "app/brain_history.py": "f6ad0f7f4af92aff067b755a5e619be2d8c784e19695527d6862c8961acdbaec",
+    "app/csi.py": "c9637c57eddf242c1334e0fb05cf1f9b0850c0573ac5c2977b3bcf48db3d3e0d",
+    "app/failures.py": "d1b3b890ba116906730df2e84a3df1a3f7e3c5d099a8a9a66cbe41d4cc9635be",
+    "app/graph_network.py": "3ff4206807320e17f09f36831f4234c2462629b7ee2b691909126b0ac8ee9498",
+    "app/intelligence/discovery.py": "47a4d55a1905cc50a87369328d6ac2b68e6ab2d199ccbeb9369c82c209deb54e",
+    "app/intelligence/store.py": "c3e55b0a174cb168733d6c1bcd8aa86a703dfc5475e87a8da2ef69e51a3e43df",
+    "app/invention_sim.py": "4a638b4d8aeb31c03af724dda6a13732eeb0e48723fea021d5c5d9ee3a2f1e66",
+    "app/jobs/store.py": "56140b59e42ce6065e15c4f9a40636a8c88ad621eaca12bac64c3298af918872",
+    "app/launcher.py": "13fd71551a03fdece268f7f76bdc867c8950fcf2c3c0f65dc5f08ca8f7970443",
+    "app/learning/continuous.py": "9325f1add3caf6508509283532efacdb968d80c877ba34037c1de46dc57767b6",
+    "app/market_intelligence.py": "f320244188f7ec93063aff27c55e31dcec9c57952ea6d2daaeb86865eee3dde9",
+    "app/memory/database.py": "0481e5485b125ccf3cf5f6d6c7a2f0db9a4a9fb0d52c77131685ec3e1c77db01",
+    "app/memory/plasticity.py": "9f301520fa78a328dca7c076ec6b245341e483d75c4b6ee12211299f2dbbc4e6",
+    "app/memory/retention.py": "9dde8eb52eac35509c90a0cdf4b9209d330889c74b670a81471dae8cb3e16eb2",
+    "app/models/hayat_open.py": "002b5f093bc04704c5d8806c2a83165e5c0c613fb5c06becc2d4ebc6e4c39404",
+    "app/models/local.py": "941c9d634fcebc199f623928acea2a0309c06000c590804368ac2abed1a3202c",
+    "app/money_desk.py": "f958bb81f07974399f416da0b736f3332167c2bd877babdd64e4c697377895d7",
+    "app/network.py": "67ed032a0f8cb119d0cdba64274094c482f70ec66c614e7328aef069e2706ef3",
+    "app/outbound.py": "18f563b4159b10a3b5c7d16171fe3c4695c6d32af69d5b6d6552be93b4d28d64",
+    "app/recovery.py": "013ea986c0cec581ef8a46729710ed9696898ba70ec90f9d33e534fbb41aee0d",
+    "app/research/knowledge.py": "49e00a1b8a305e91d7da67dd4f01c47124ebd4b1cba5b7b83305ed4d55a71229",
+    "app/runtime.py": "e698f837353e8f7d4f66b46ac8e2f9ca4f47611c020bd386ace959a6e921f244",
+    "app/safety/container_sandbox.py": "af24a9dd1ddabfadaf25bd193a953dae1bac061b326972cfe0c24d46f21d6761",
+    "app/tools/terminal.py": "f20996918d38349f11419df67da1f6471e6562c0876d18b6f5e67b81d36fcc00",
+    "app/topics.py": "ba0c0ddfad7f781a96c873ea4f6e62946152d8887f91b5ffec7b7653b8b8ab03",
+    "app/training/pipeline.py": "1dede24cd34c495a49716d2619e4349952fe67308390f5edd8d956ef891c57ec",
+    "app/web/server.py": "591a2f4cde2be60f61392674c7c546a2a3b4f9bffde54448ab61cec2a8317267",
+    "scripts/evaluate_hayat_open.py": "4b6eb5f4254c35c060fde7f5731e6e3dac87631cb5278d4954d0a78dd3e66335",
+    "scripts/export_hayat_open_ollama.py": "6a21ffa3b763fe3fed45ac668611c924080bd6ac915315c44f1eee2cc13f065d",
+    "scripts/prepare_hayat_open_corpus.py": "2490cbf57ce1e1fa6a96606ca411e2ccbdeeea68c02be1488d5f833d06368aa1",
+    "scripts/probe_hayat_open_offload.py": "35b4ecf93a84e0135f85cc1ba10d5c987f88f22d12bd738b1e02b0a168ee5ac7",
+    "scripts/train_hayat_adapter.py": "d4af549491104e20f78a4ef097b0c64d2eeab3d10904c4b226606f2fb0c9c9c9"
+  },
+  "findings": {
+    "003a64f89b416aa090b7c6682b22383c7b4094a4c2e0f5ff92b9afa3014facd0": {
+      "path": "app/intelligence/discovery.py",
+      "rule": "B608"
+    },
+    "0173feabdbc0f66fb2038b752273adc090dd1ef9d3edb467b979f824f5755f38": {
+      "path": "app/money_desk.py",
+      "rule": "B608"
+    },
+    "02d34b8a620dff6b2fdeb3694b60063306d0caf6b6eedb18de01028520da904b": {
+      "path": "app/market_intelligence.py",
+      "rule": "B608"
+    },
+    "030498e5e51a29e6cace042fee15916d2b0cbbc5423deb87c10469b803484d9e": {
+      "path": "app/models/hayat_open.py",
+      "rule": "B615"
+    },
+    "0533c3073c245ae73f80d280ebb3e3345800f6dc69021d807bc80c98947fab6b": {
+      "path": "scripts/export_hayat_open_ollama.py",
+      "rule": "B615"
+    },
+    "05b3c07ecc36926adcde9c6f6dab50da4a6a5f0b10d22dcebe90cb319e1af713": {
+      "path": "app/invention_sim.py",
+      "rule": "B307"
+    },
+    "0ba865a7594657830bafe982c242c8a7aa160da01cc41294df6e4e42e6340682": {
+      "path": "app/anpr/store.py",
+      "rule": "B608"
+    },
+    "0c9dc08ddaaa11202e79e14f8f678e5821a77aba38b30078de739c7505d17ee4": {
+      "path": "app/training/pipeline.py",
+      "rule": "B608"
+    },
+    "17318a6db952abf2a25af5ff030925646c1a4c29d4ba5e85ec39ec7a4b6544ee": {
+      "path": "app/anpr/store.py",
+      "rule": "B608"
+    },
+    "1da64452aeaafa8ab2699b3ee0346ea3a97a8eb1298c669e5e7569492a251132": {
+      "path": "app/csi.py",
+      "rule": "B104"
+    },
+    "1e5a3615758f18172b5f1067247a0e4f355b897766d5fbcb92344b68aafbae9d": {
+      "path": "app/memory/database.py",
+      "rule": "B608"
+    },
+    "1e9ea47c95c924b7c9d7817c937d223cb90d9744e5f865f33dde8a44bf30eb00": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "248b53f0bc529b519d65c876af2c6c9a009aba638bb5c4c146afc7237f30f965": {
+      "path": "app/web/server.py",
+      "rule": "B104"
+    },
+    "26dbab8bae70aadcac28915c7480a44bfa262b578aab2f2586e05aed7c6637e8": {
+      "path": "scripts/export_hayat_open_ollama.py",
+      "rule": "B615"
+    },
+    "272a066e50ed2d03c1ffa87ef6314e778b3e0ef5c0b1b927f7ab752773481efa": {
+      "path": "app/topics.py",
+      "rule": "B608"
+    },
+    "2873c044c071de43f04330f2959b3a8167d5b48073f871f9d16a2b0fb8228b23": {
+      "path": "app/intelligence/discovery.py",
+      "rule": "B608"
+    },
+    "29d325238975e2aadb3b4da5e97e8ed81a631ae141fc57e576bebbfa5147debf": {
+      "path": "app/models/hayat_open.py",
+      "rule": "B615"
+    },
+    "2c191353fcbc9f7883fa68c7b1df6dc33cd37ce5190cc4bc4ad329ee470fee25": {
+      "path": "app/market_intelligence.py",
+      "rule": "B608"
+    },
+    "2fc81f1a4b22234d51dd6602fa216c822b41c77d14dc4439b1e1f31ecaa77896": {
+      "path": "app/memory/retention.py",
+      "rule": "B608"
+    },
+    "30e881818c8c6cab769ce958bce3344ff2c20c750bebbc48eaec1e432416bf8d": {
+      "path": "app/learning/continuous.py",
+      "rule": "B608"
+    },
+    "31793fb45795c8c731cc2e699796f0890174037926ecb890b7d3ce476d7bb90a": {
+      "path": "app/failures.py",
+      "rule": "B104"
+    },
+    "336bf42f2ea7f445026200c0ecefa9587b3d4ea3904928c344b4957103e79849": {
+      "path": "app/memory/plasticity.py",
+      "rule": "B608"
+    },
+    "3fa234eb2c4e7981caffc63b8d90c0efc212a8bf091987ab663b68c14b065b58": {
+      "path": "app/topics.py",
+      "rule": "B608"
+    },
+    "47f41a61982463753917f972b3832cfb4d478d4032898d13b2457ba390ddcfc8": {
+      "path": "app/memory/database.py",
+      "rule": "B608"
+    },
+    "500195216c181f4ff9b63dc51a97e1d7b1a45e4aaf81457c06bdc61a90451a71": {
+      "path": "scripts/train_hayat_adapter.py",
+      "rule": "B615"
+    },
+    "57ac9620e58d9f403ef225a911de8ed00b420027f6bfae0001c1e795777cd283": {
+      "path": "app/memory/database.py",
+      "rule": "B608"
+    },
+    "5dc311be31bd7c9b368edda49e4385f9a766c28321833c9944730c2e28b92a06": {
+      "path": "app/network.py",
+      "rule": "B310"
+    },
+    "62f4374a12714d4502b36ecc7fb54eb81ee76917b3cc32b2ebc1424cee4f0846": {
+      "path": "app/anpr/store.py",
+      "rule": "B608"
+    },
+    "6657e6422c4426088095b0431c109b3009293655d1c2f48efa27939e396a41e4": {
+      "path": "app/anpr/store.py",
+      "rule": "B608"
+    },
+    "6dd202030baa729a0ab1e4d6ab054bb3aff3ee340e83f804a869596d60346c0d": {
+      "path": "app/jobs/store.py",
+      "rule": "B608"
+    },
+    "7112a9683b0a8ca4775894f9def721e619cce53aef204d69c2dfe8c6af6ae975": {
+      "path": "app/training/pipeline.py",
+      "rule": "B608"
+    },
+    "7beb19ba584ffa513f672cca3bbec729d5849bd2e9a9e6a32d1374a93ee161ac": {
+      "path": "app/csi.py",
+      "rule": "B104"
+    },
+    "7f86ddd1aa6e4bfa256521f6f09241fd79897839846d695b4482cb63963a88e4": {
+      "path": "scripts/evaluate_hayat_open.py",
+      "rule": "B615"
+    },
+    "829117d104889d764528ede77acc55b4f4c54b6793f1eb7a9acd9ad12a4314d7": {
+      "path": "scripts/train_hayat_adapter.py",
+      "rule": "B615"
+    },
+    "869905208686d420674ca700ba3161b7872b8bc707909142f822dc636ec1c90c": {
+      "path": "scripts/train_hayat_adapter.py",
+      "rule": "B615"
+    },
+    "8bf77fd87c4918dd6db4b30629c1825d3e931cc40b4e66d984c53e803c39049e": {
+      "path": "app/anpr/store.py",
+      "rule": "B608"
+    },
+    "8e03309f39634be928a2617eaf1e6eebe7c0761a19eb7ffbeb0a7bd021551005": {
+      "path": "app/anpr/store.py",
+      "rule": "B608"
+    },
+    "8f0302487e8e774b04262d1bf944e6f114409bc79f7802d4ba4f7a8db4fd04f8": {
+      "path": "scripts/evaluate_hayat_open.py",
+      "rule": "B615"
+    },
+    "9817409562e8113ad2fd933d82eb8d1ee3a76e358cd138d517997b8d02971975": {
+      "path": "app/memory/plasticity.py",
+      "rule": "B608"
+    },
+    "981e64ff90c40b3e9afab2772d5de570b0093d6ba5403d4f4ac321ebda91027d": {
+      "path": "app/recovery.py",
+      "rule": "B608"
+    },
+    "9895230d9677c49a525ef1f8af4b87a265a050d81481c96bb33d42294a137cb9": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "a34abb82c92df44a859b33494fefe9abd9f28f90a3340df337e1134293cd8a28": {
+      "path": "app/intelligence/store.py",
+      "rule": "B608"
+    },
+    "a7ff8279dd40597e88d0a97465ff2915300cf9574ddc2316ec670319fb310062": {
+      "path": "app/safety/container_sandbox.py",
+      "rule": "B108"
+    },
+    "aab263683695a0b7fddbae8e2f6da8fab136e1939283ebf5bc69a348d9e31d09": {
+      "path": "app/launcher.py",
+      "rule": "B310"
+    },
+    "ac0b22e6d70b551b871c29374a8db9ea286c7df08e3d1b3082abb3eaf17e0930": {
+      "path": "app/memory/database.py",
+      "rule": "B608"
+    },
+    "adf46cabba26e0f0c08628b14f1d78e8c1436c99cbe7d388ac7a6306337403e5": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "adfe05392e0b2c4ec6dbeac056d62b785280b7cbcab6fa25131aae6d51b54e67": {
+      "path": "scripts/prepare_hayat_open_corpus.py",
+      "rule": "B615"
+    },
+    "b35b1fbd0d6cf55914b9baa72db4ce3d63da9ccb2332421712af0979c12bf025": {
+      "path": "app/outbound.py",
+      "rule": "B104"
+    },
+    "b5ab581384b338c29ac43597c2a96e5cd9eae52d39aa49f8a4d80c6e9bccf3e5": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "b9d91e9a15c8e2e4afb8436bde02231e34c68422b2bd8b3b539ad7ce68411fc2": {
+      "path": "app/memory/database.py",
+      "rule": "B608"
+    },
+    "c0227d3c3e6838de5827a93d29f135247c1490ad3b1d6f2ca074aa3e5d657b11": {
+      "path": "app/invention_sim.py",
+      "rule": "B307"
+    },
+    "c17f84c25553061e72e18af241511e00ad9fe509fea759f657fdc03caab2bb83": {
+      "path": "app/models/local.py",
+      "rule": "B104"
+    },
+    "c25ba622471b0e1a6d2b0f278a5d3c49442c60d2b2926cd96da15dba0b533003": {
+      "path": "app/money_desk.py",
+      "rule": "B608"
+    },
+    "c3af345633e23292972080b6abc15f4418c31398f5458e92de7cf6604556b9ec": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "c9d85331d32ae616c7aed0ba12f417e406f92a0be33ff7e63318aaf361ebc0ec": {
+      "path": "app/memory/database.py",
+      "rule": "B608"
+    },
+    "ca67578b7e5b595a96520c35d497ef3cf1935837580762472f3562696b492aa6": {
+      "path": "app/topics.py",
+      "rule": "B608"
+    },
+    "cfee281194c9d020754e52aeb1b7cffe0f700c54c2acd8a4d0b2ef19c57aae32": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "d0b957f1074043a398f235ecb130dc45e2c7811136b4e2211b5163160118208e": {
+      "path": "app/topics.py",
+      "rule": "B608"
+    },
+    "d36acbc53cca6d684615dd1dc2e79cc22d06d6bf16192bc4899882b937d7c331": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "dc978f3bfb8d0808cfdcb8720a97b48a128f7c9a17638aa4e155bbc35cccd0b0": {
+      "path": "app/network.py",
+      "rule": "B310"
+    },
+    "df8ba92e72e936369f6b99323204e9e3c88304a292800d1fd889626afa465f37": {
+      "path": "app/topics.py",
+      "rule": "B608"
+    },
+    "dfdf308865f481d256cea7079954805422e10ba75a38ebf55f97f4ccf7649d02": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "e4ab654cf1d9b1a03653e750356c849076b412f1442da139faebdd2f2366b43f": {
+      "path": "app/runtime.py",
+      "rule": "B608"
+    },
+    "e53bb3a9923a6c6137ba815bcbff9c49b9e1a3f1a3b8c35dab57713359377c78": {
+      "path": "app/csi.py",
+      "rule": "B104"
+    },
+    "e60d54febb171ca81455b466f9c2df9ad25b1c87e8bf60ad51e1a7292c2b52cd": {
+      "path": "app/brain_history.py",
+      "rule": "B608"
+    },
+    "e7424b285d0c76a9c48b8104fbf466a737a852cb09ead38125f591a67653a997": {
+      "path": "app/memory/retention.py",
+      "rule": "B608"
+    },
+    "e7632784215a7364e06a792dfdc63a4dd37c0520a021223c8946990800795544": {
+      "path": "app/automation/jobs.py",
+      "rule": "B608"
+    },
+    "e7d61e8ab6f8f287c58dafd9684b0d7f230f32b5d7dd6b980aede5224f5eb7a6": {
+      "path": "app/anpr/store.py",
+      "rule": "B608"
+    },
+    "e976b4312d242554c65464d2967162c1504bb0d04771961defc818d4a8cb7903": {
+      "path": "scripts/probe_hayat_open_offload.py",
+      "rule": "B615"
+    },
+    "eb403d65643aba1c6ffe627c8b15a94d8d24f44c768507f0ae7f1afcd090756c": {
+      "path": "app/brain_history.py",
+      "rule": "B608"
+    },
+    "eb43ff5d0f39e35aa1ed03f94b1da1febe37c366b103192a238d02851ff6e913": {
+      "path": "app/training/pipeline.py",
+      "rule": "B608"
+    },
+    "ed264ae53f778989345c97d6b5a5a258fafe396df7b1873cfe30f88a3d1cd7eb": {
+      "path": "app/topics.py",
+      "rule": "B608"
+    },
+    "f2f2d9be16d7ff2fc3b4058511020c4e408b52110d2e7f528cd01f8725a4f71c": {
+      "path": "app/graph_network.py",
+      "rule": "B608"
+    },
+    "f3c5e9767d5b8c21bd61ff5f53059a355e5e18261e3ab932932cebe8a9c3e0aa": {
+      "path": "scripts/probe_hayat_open_offload.py",
+      "rule": "B615"
+    },
+    "fa128c42b2a9c2173f013de1c5e360751b2cece27d24b9836ea18160ff8e5592": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "fb3db3f63f4ca04af99ffe6e8361ff7e29bcb934dfeffc16c04a61f82f255b27": {
+      "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "fe44b646dd8c785c6ce64a574bb0683e67fb6f4f1c0a8fac38f1d5fbf31ecaf6": {
+      "path": "app/tools/terminal.py",
+      "rule": "B604"
+    }
+  },
+  "scope": "Applicability snapshot of the existing November 10 recorded reviews. Not a new review or proof of security.",
+  "version": 1
+}

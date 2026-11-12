@@ -98,6 +98,50 @@ TASKS: list[dict[str, Any]] = [
 ]
 
 
+#: Tier 2 (2026-11-07): shapes tier 1 does not exercise — rational forms, offsets on powers, phase-shifted sines,
+#: saturation, Arrhenius, annuities, square roots of sums — and 5 % noise. Run with --tier 2 (or --tier all).
+HARD_TASKS: list[dict[str, Any]] = [
+    {"name": "thin lens image distance", "law": lambda u, f: u * f / (u - f),
+     "train": _grid(u=[30, 40, 60, 80, 100, 150, 200], f=[10, 15, 20, 25, 12, 18, 22]), "test": [{"u": 120, "f": 30}],
+     "tolerance": 0.001},
+    {"name": "parallel resistors", "law": lambda R1, R2: R1 * R2 / (R1 + R2),
+     "train": _grid(R1=[10, 22, 47, 100, 220, 470, 1000], R2=[100, 33, 68, 10, 470, 1000, 220]), "test": [{"R1": 330, "R2": 150}],
+     "tolerance": 0.001},
+    {"name": "Pythagorean distance", "law": lambda x, y: math.sqrt(x ** 2 + y ** 2),
+     "train": _grid(x=[3, 5, 8, 1, 12, 7, 20], y=[4, 12, 15, 1, 5, 24, 21]), "test": [{"x": 9, "y": 40}], "tolerance": 0.001},
+    {"name": "Michaelis-Menten", "law": lambda S: 12 * S / (3 + S),
+     "train": [{"S": v} for v in (0.5, 1, 2, 4, 8, 16, 32)], "test": [{"S": 6}, {"S": 100}], "tolerance": 0.001},
+    {"name": "Arrhenius rate", "law": lambda T: 1e7 * math.exp(-5000 / T),
+     "train": [{"T": v} for v in (280, 300, 320, 350, 400, 450, 500)], "test": [{"T": 600}], "tolerance": 0.002},
+    {"name": "sine with phase and offset", "law": lambda t: 3 + 2 * math.sin(1.5 * t + 0.4),
+     "train": [{"t": v} for v in (0, 0.4, 0.8, 1.2, 1.6, 2, 2.6, 3.2, 4, 5)], "test": [{"t": 4.5}, {"t": 7}], "tolerance": 0.005},
+    {"name": "power law with offset", "law": lambda x: 5 + 2.5 * x ** 1.7,
+     "train": [{"x": v} for v in (0.5, 1, 2, 3, 5, 8, 12)], "test": [{"x": 20}], "tolerance": 0.002},
+    {"name": "tanh saturation", "law": lambda x: 10 * math.tanh(0.5 * x),
+     "train": [{"x": v} for v in (0, 0.5, 1, 2, 3, 4, 6, 8)], "test": [{"x": 2.5}, {"x": 12}], "tolerance": 0.002},
+    {"name": "relativistic gamma", "law": lambda b: 1 / math.sqrt(1 - b ** 2),
+     "train": [{"b": v} for v in (0, 0.1, 0.3, 0.5, 0.7, 0.8, 0.9)], "test": [{"b": 0.95}, {"b": 0.6}], "tolerance": 0.002},
+    {"name": "Stefan-Boltzmann (tiny constant)", "law": lambda A, T: 5.67e-8 * A * T ** 4,
+     "train": _grid(A=[0.5, 1, 2, 0.1, 3, 1.5, 0.8], T=[300, 400, 500, 1000, 250, 600, 5800]), "test": [{"A": 1.2, "T": 750}],
+     "tolerance": 0.001},
+    {"name": "annuity payment (3 inputs)", "law": lambda P, r, n: P * r / (1 - (1 + r) ** -n),
+     "train": _grid(P=[1000, 5000, 20000, 200000, 15000, 300000, 8000, 50000],
+                    r=[0.01, 0.005, 0.004, 0.003, 0.0075, 0.0035, 0.02, 0.006], n=[12, 36, 60, 360, 48, 240, 24, 120]),
+     "test": [{"P": 250000, "r": 0.004, "n": 300}], "tolerance": 0.001},
+    {"name": "Doppler (moving source)", "law": lambda f, v: f * 343 / (343 - v),
+     "train": _grid(f=[440, 1000, 300, 2000, 500, 800, 1200], v=[10, 20, 30, 5, 40, 15, 25]), "test": [{"f": 600, "v": 50}],
+     "tolerance": 0.001},
+    {"name": "inverse square plus background", "law": lambda d: 800 / d ** 2 + 15,
+     "train": [{"d": v} for v in (1, 1.5, 2, 3, 4, 6, 8, 10)], "test": [{"d": 5}, {"d": 20}], "tolerance": 0.002},
+    {"name": "noisy drag (5 % noise)", "law": lambda v: 0.3 * v ** 2,
+     "train": [{"v": v} for v in (2, 4, 6, 8, 10, 14, 18, 25)], "test": [{"v": 30}], "tolerance": 0.08, "noise": 0.05},
+    {"name": "mixed powers of two inputs", "law": lambda x, y: x ** 2 + 3 * y,
+     "train": _grid(x=[1, 2, 3, 4, 5, 6, 8], y=[10, 1, 7, 3, 2, 9, 4]), "test": [{"x": 10, "y": 6}], "tolerance": 0.001},
+    {"name": "RC charging", "law": lambda t: 9 * (1 - math.exp(-t / 2.2)),
+     "train": [{"t": v} for v in (0.2, 0.5, 1, 2, 3, 5, 8)], "test": [{"t": 4}, {"t": 15}], "tolerance": 0.002},
+]
+
+
 def run_task(task: dict[str, Any]) -> dict[str, Any]:
     train = _cases(task["law"], task["train"], task.get("noise", 0.0))
     test = _cases(task["law"], task["test"])
@@ -121,8 +165,9 @@ def run_task(task: dict[str, Any]) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--tier", choices=("1", "2", "all"), default="all", help="1: the original 16, 2: the harder 16")
     args = parser.parse_args()
-    rows = [run_task(task) for task in TASKS]
+    rows = [run_task(task) for task in {"1": TASKS, "2": HARD_TASKS, "all": TASKS + HARD_TASKS}[args.tier]]
     for row in rows:
         mark = "SOLVED" if row["solved"] else "missed"
         print(f"{mark:7} {row['task']:34} {row.get('train', ''):6} held-out {row.get('held_out', ''):5} "

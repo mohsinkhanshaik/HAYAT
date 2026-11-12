@@ -12,6 +12,7 @@ from tkinter import filedialog, ttk
 from jsonschema import ValidationError, validate
 
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.gui_rea_inputs import GuidedInputs
@@ -64,7 +65,7 @@ class ReverseEngineeringStudio(tk.Toplevel):
         ttk.Button(head, text='Save report…', command=self.save_result).pack(side='right', padx=6)
         ttk.Button(head, text='3D call graph', command=self.open_graph_3d).pack(side='right', padx=6)
         self.progress = ttk.Progressbar(self, mode='indeterminate')
-        self.status = StringVar(self, 'Loading local REA operations…')
+        self.status = DisplayVar(self, 'Loading local REA operations…')
         tk.Label(self, textvariable=self.status, bg=p.BLACK, fg=p.GOLD, anchor='w',
                  wraplength=900).pack(fill='x', padx=14, pady=(0, 8))
         target = ttk.Frame(self, padding=(14, 0, 14, 8))
@@ -128,7 +129,7 @@ class ReverseEngineeringStudio(tk.Toplevel):
         self._replace(self.engine_output, 'Check the local Node, REA, Ghidra and JDK installation. '
                       'This does not open a target or change your current analysis.\n\n'
                       'Setup commands (run from HAYAT’s folder):\n' + SETUP_COMMANDS)
-        self.selected = StringVar(self, 'Select an operation')
+        self.selected = DisplayVar(self, 'Select an operation')
         heading = ttk.Frame(run)
         heading.pack(fill='x', pady=(6, 4))
         self.inputs_visible = BooleanVar(self, True)
@@ -143,7 +144,7 @@ class ReverseEngineeringStudio(tk.Toplevel):
         self.input_tabs.add(self.guided, text='Inputs')
         self.input_tabs.add(raw, text='JSON arguments')
         self.input_tabs.bind('<<NotebookTabChanged>>', self._input_tab_changed)
-        self.arguments = DarkScrolledText(raw, height=6, wrap='word', font=('Cascadia Mono', 10), **colors)
+        self.arguments = DarkScrolledText(raw, protect_output=False, height=6, wrap='word', font=('Cascadia Mono', 10), **colors)
         self.arguments.pack(fill='both', expand=True)
         bar = self._input_bar = ttk.Frame(run)
         bar.pack(fill='x')

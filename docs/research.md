@@ -120,6 +120,15 @@ or search again at Deep level. Refreshes preserve your selected row, text
 selection and reading position. Completed searches also report back to chat,
 including searches that finish immediately.
 
+The **Sources & claims** tab beside the answer lists the documents a finished
+search retrieved and the claims it recorded. Select one to see its links and
+click a neighbour to follow one; a line is drawn only where an excerpt from a
+retrieved document was recorded. **Larger view ↗** opens the same evidence in
+its own window. **Draft invention…** saves an unrun invention draft from the
+research after you review it: the goal and limits are the ones you type, and
+research text never becomes an acceptance case
+(details).
+
 In chat, requests such as **research solar panels in depth** or **search all
 about the James Webb telescope** select the deep research budget. A subject
 such as **deep learning papers** does not change the research level by itself.

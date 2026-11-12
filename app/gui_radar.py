@@ -24,6 +24,7 @@ from typing import Any
 
 from app.gui_empty import show_empty
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_windows import place_over
 from app.logging import log_swallowed
 from app.gui_fonts import DISPLAY
@@ -251,10 +252,10 @@ class RadarWindow(tk.Toplevel):
         self.scope.pack(side="left", anchor="n")
         right = tk.Frame(body, bg=p.BLACK)
         right.pack(side="left", fill="both", expand=True, padx=(16, 0))
-        self.summary = StringVar(self, "Reading…")
+        self.summary = DisplayVar(self, "Reading…")
         tk.Label(right, textvariable=self.summary, bg=p.BLACK, fg=p.WHITE, font=("Segoe UI", 10), anchor="w", justify="left",
                  wraplength=520).pack(fill="x")
-        self.counts = StringVar(self, "")
+        self.counts = DisplayVar(self, "")
         tk.Label(right, textvariable=self.counts, bg=p.BLACK, fg=p.GOLD_SOFT, font=("Segoe UI", 9), anchor="w", justify="left",
                  wraplength=520).pack(fill="x", pady=(4, 6))
         self.table = ttk.Treeview(right, columns=("severity", "distance", "what"), show="headings", height=16)
@@ -267,7 +268,7 @@ class RadarWindow(tk.Toplevel):
         show_empty(self.table, "Reading the hazards HAYAT holds near you…", p)
         # The rings carry their distances from the start, not only once the first reading arrives.
         self.scope.show({"radius_km": 500, "hazards": []})
-        self.note = StringVar(self, "")
+        self.note = DisplayVar(self, "")
         tk.Label(right, textvariable=self.note, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 8), anchor="w", justify="left",
                  wraplength=520).pack(fill="x", pady=(6, 0))
 

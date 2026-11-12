@@ -10,6 +10,7 @@ from app.business_model import DEFAULTS, evaluate
 from app.gui_panels import ScrollableColumn
 from app.gui_intelligence_parts import FlowRow
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 LABELS = {
     "customer": "Who pays?", "problem": "Problem worth solving", "offer": "Offer and promised outcome",
@@ -50,7 +51,7 @@ class BusinessModelTab:
                 style="HayatAccent.TButton" if title == "Save plan" else "Hayat.TButton", command=action))
         self.model_buttons['Check paid pilot'] = controls.add(ttk.Button(
             controls, text='Check paid pilot', style='Hayat.TButton', command=self.pilot_form))
-        self.notice = StringVar(studio, "Planning assumptions · separate from recorded revenue and expenses")
+        self.notice = DisplayVar(studio, "Planning assumptions · separate from recorded revenue and expenses")
         tk.Label(self.frame, textvariable=self.notice, bg=p.BLACK, fg=p.GOLD_SOFT,
                  anchor="w", wraplength=780, justify="left", font=("Segoe UI", 9)).pack(fill="x", pady=(0, 6))
         scroll = ScrollableColumn(self.frame, p, width=700)
@@ -132,12 +133,12 @@ class BusinessModelTab:
         horizontal.pack(side='bottom', fill='x')
         bar.pack(side='right', fill='y')
         self.sensitivity.pack(fill='x', expand=True)
-        self.thresholds = StringVar(studio, '')
+        self.thresholds = DisplayVar(studio, '')
         threshold_label = tk.Label(body, textvariable=self.thresholds, bg=p.BLACK, fg=p.MUTED, justify='left', anchor='w',
                                    wraplength=760, font=('Segoe UI', 9))
         threshold_label.pack(fill='x', pady=8)
         threshold_label.bind('<Configure>', lambda e: threshold_label.configure(wraplength=max(200, e.width - 12)))
-        self.pilot_detail = StringVar(studio, 'No pilot observations saved. Check a paid pilot to compare real observations with your plan.')
+        self.pilot_detail = DisplayVar(studio, 'No pilot observations saved. Check a paid pilot to compare real observations with your plan.')
         pilot_label = tk.Label(body, textvariable=self.pilot_detail, bg=p.BLACK, fg=p.WHITE, justify='left', anchor='w',
                                wraplength=760, font=('Segoe UI', 9))
         pilot_label.pack(fill='x', pady=8)

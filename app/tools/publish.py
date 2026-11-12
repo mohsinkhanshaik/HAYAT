@@ -88,7 +88,7 @@ class NetlifyPublisher:
             if not site_id:
                 slug = re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")[:40] or "my-business"
                 for attempt in range(3):
-                    candidate = slug if attempt == 0 else f"{slug}-{hashlib.sha1(f'{slug}{time.time()}'.encode()).hexdigest()[:5]}"
+                    candidate = slug if attempt == 0 else f"{slug}-{hashlib.sha1(f'{slug}{time.time()}'.encode(), usedforsecurity=False).hexdigest()[:5]}"
                     response = http.post(f"{API}/sites", headers=headers, json={"name": candidate})
                     if response.status_code == 422:
                         continue  # the name is taken; try a suffixed one

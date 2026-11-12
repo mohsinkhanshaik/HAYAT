@@ -317,18 +317,23 @@ class ProductStore:
             rows = db.execute('''SELECT p.title, p.currency, COUNT(*) AS entries,
                 SUM(s.gross_cents-s.fee_cents-s.refund_cents) AS cents
                 FROM sales s JOIN products p ON p.id=s.product_id
-                WHERE s.recorded>=? AND s.recorded<? GROUP BY p.id''', (start, end))
+                WHERE date(s.recorded,'localtime')>=? AND date(s.recorded,'localtime')<? GROUP BY p.id''', (start, end))
             return [dict(row) for row in rows]
         finally:
             db.close()
 
     def net_by_currency(self, start: str, end: str) -> dict[str, int]:
-        """Net receipts in cents per currency for sales recorded in [start, end)."""
+        """Net receipts in cents per currency for sales recorded in [start, end).
+
+        Sales are stamped in UTC; report periods are the owner's local dates. Comparing the stamp as
+        text put a sale made after 8 pm (Michigan) on the last day of a month into the next month,
+        so each stamp is compared by its local calendar date.
+        """
         db = self._db()
         try:
             rows = db.execute('''SELECT p.currency, SUM(s.gross_cents-s.fee_cents-s.refund_cents) AS net
                 FROM sales s JOIN products p ON p.id=s.product_id
-                WHERE s.recorded>=? AND s.recorded<? GROUP BY p.currency''', (start, end))
+                WHERE date(s.recorded,'localtime')>=? AND date(s.recorded,'localtime')<? GROUP BY p.currency''', (start, end))
             return {row['currency']: int(row['net'] or 0) for row in rows}
         finally:
             db.close()

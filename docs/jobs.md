@@ -6,6 +6,11 @@ an application always waits for your confirmation**, because it acts as you towa
 
 Open it from **Studios → Jobs**, or ask in chat.
 
+**October 30 upgrade:** **Career radar** adds real skill scenarios, requirement
+evidence, practice budgets, event-aware application history and conditional
+interview forecasts. Public-provider Auto recovery is now the Web discovery
+default. See Career radar: use, model and verification.
+
 ## Location filter
 
 Type a place the way you would say it; HAYAT matches it the way job boards write it (`app/jobs/places.py`):
@@ -50,7 +55,7 @@ All six Jobs tabs have page-level vertical and horizontal scrolling. Tables, job
 
 For sources without a configured free API, choose **Employer boards**, **LinkedIn**, **Indeed** or **Web**, then **Browse platform**. This opens a real role/location query. Employer boards searches public Greenhouse, Lever, Ashby, Workday and SmartRecruiters results. Optionally select **Read page and scroll** to use the visible HAYAT browser, read its DOM and scroll up to 8 times. Page text is an unverified lead, not an imported/scored posting. Use **Sources → Discover** and follow a supported employer board to include its roles in later searches. Login, CAPTCHA and country selection remain manual; this control does not apply or submit. No paid service is required.
 
-**Human verification:** choose Google, Bing or DuckDuckGo using **Web engine** (the GUI starts with DuckDuckGo). If the chosen site requests verification, HAYAT pauses and keeps the visible tab/session open. Complete the check there, then click **Continue after verification** in Matches. Continuation reads the same tab without reloading the search, retaining its cookies. It refuses a closed/replaced session, changed privacy route, different query or unrelated page. If the check remains, it stays paused. No paid solver, identity disguise, proxy rotation or automated challenge solving is configured. See verified public routes and continuation checks.
+**Human verification:** choose Auto, Google, Bing or DuckDuckGo using **Web engine** (the GUI starts with Auto, which tries DuckDuckGo first). If a site requests verification, HAYAT keeps its visible tab/session open. Auto can try another public provider. To continue the blocked provider manually, complete the check there, then click **Continue after verification** in Matches. Continuation reads the same tab without reloading the search, retaining its cookies. It refuses a closed/replaced session, changed privacy route, different query or unrelated page. If the check remains, it stays paused. No paid solver, identity disguise, proxy rotation or automated challenge solving is configured. See verified public routes and continuation checks.
 
 **Automatic fallback:** select **Auto** in Web engine for Web or Employer boards, then Browse platform. This enables visible browser reading and tries DuckDuckGo, Bing and Google, stopping at the first accessible page. Each provider is attempted at most once per run; blocked/unavailable engines receive a session-local five-minute cooldown. Each later provider opens in another tab, preserving blocked tabs. If every route is blocked, the last usable challenge tab is restored for manual completion. The GUI/chat show the attempt trace; errors and cooldown times remain visible. **Stop search** prevents another provider starting after the current operation finishes. Auto has a 180-second between-operation budget (an in-flight operation may finish later). It cannot silently use a direct browser while a privacy proxy is active; use route-aware APIs in that mode.
 
@@ -96,18 +101,43 @@ and you always apply through the posting's own page or address, as each source a
 
 | Source | Covers | How HAYAT asks |
 |---|---|---|
-| Remote OK | remote jobs worldwide, tech-heavy | by tag, per search term |
+| Remote OK | remote jobs worldwide, tech-heavy | the whole current list, filtered by HAYAT (its tag search returns no jobs since 2026-11) |
 | Jobicy | remote jobs | by tag, per search term |
 | Himalayas | remote jobs with location limits | its search endpoint, per term |
 | Working Nomads | remote jobs worldwide | the latest list |
-| The Muse | US-led, many fields | bounded numbered pages |
+| Hacker News: Who is hiring? | this month's posts by hiring companies themselves, worldwide, on-site and remote | the public HN Algolia search, per term, within that month's thread |
+| Company career boards | employers' own Greenhouse, Lever, Ashby and Workable boards | found for your terms (below), then each board's public JSON |
 | Arbeitnow | Europe, mostly Germany, many in German | numbered pages in deep/maximum mode |
-| Greenhouse, Lever, Ashby | one company's own careers board | when you follow it: "follow stripe on greenhouse" |
+| Arbetsförmedlingen JobTech (off by default) | Sweden's public employment service, open data | its search API, per term |
+| The Muse (off by default) | US-led, many fields | refused HAYAT (403) since 2026-11 |
+| Greenhouse, Lever, Ashby, Workable | one company's own careers board | when you follow it: "follow stripe on greenhouse" |
+
+### Where jobs come from (2026-11-08)
+
+A live check found 171 of the 176 saved jobs had come from Himalayas: Remote OK's tag search had
+stopped returning jobs, The Muse refused requests, and the other feeds return their newest postings
+whatever the search. Job search now reaches beyond any one board:
+
+- **Employers' own boards, found two ways.** HAYAT's search chain (the same one research uses; your
+  own SearXNG first if you set `searxng_url`) looks for postings on the Greenhouse, Lever, Ashby and
+  Workable board hosts that mention your terms. And when a feed shows a company hiring for your terms
+  (say ICEYE on Hacker News), HAYAT checks once a month whether that company has its own public board.
+  Every board found is read through its public JSON, so each job comes from the employer's current
+  listing, and is remembered in `data/jobs/boards.json` with the terms that found it: later searches
+  for similar roles read the known boards again even when the search engine finds nothing (Bing's
+  feed ignores `site:` limits and DuckDuckGo throttles bursts). Boards that give nothing relevant
+  three times running rest for a week. A board found from a company name is a guess; the board's own
+  company name is on every job it gives.
+- **Hacker News "Who is hiring?"**: the hiring companies' own posts, many on-site in the US and Europe
+  and many mentioning visas; the posting's address is the HN post.
+- Measured live on 2026-11-08 for "python developer": Himalayas 18, Hacker News 6, Jobicy 1, plus
+  Docplanner's Ashby board and Hugging Face's Workable board found from companies seen hiring.
 
 **Not used:**
 - **Remotive:** its robots.txt disallows `/api/`.
-- **Adzuna and other keyed APIs:** they put the key in the web address, where HAYAT's web log
-  would record it.
+- **SmartRecruiters:** its API's robots.txt allows only LinkedIn's crawler.
+- **Adzuna, Jooble and other keyed APIs:** they put the key in the web address, where HAYAT's web log
+  would record it. USAJOBS needs a key registered by you; HAYAT never registers keys for you.
 
 Background rounds reuse each source for an hour; explicit queries, GUI searches and deeper searches refresh it. Cross-board duplicates require strong shared evidence; distinct requisitions remain separate.
 

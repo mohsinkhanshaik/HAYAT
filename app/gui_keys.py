@@ -14,6 +14,7 @@ from typing import Any
 from app import keys
 from app.gui_resources import StringVar
 from app.gui_fonts import DISPLAY
+from app.gui_output import DisplayVar
 
 INTRO = ("Each key is a free sign-up you do yourself with the provider (HAYAT cannot register for you). Press Get a free key, "
          "copy the key they give you, paste it here and press Save & test. Keys stay in this computer's .env file and are never "
@@ -68,7 +69,7 @@ class KeysWindow(tk.Toplevel):
         top = tk.Frame(frame, bg=p.PANEL)
         top.pack(fill="x")
         tk.Label(top, text=item["title"], bg=p.PANEL, fg=p.WHITE, font=("Segoe UI Semibold", 10), anchor="w").pack(side="left")
-        state = StringVar(self, item["state"])
+        state = DisplayVar(self, item["state"])
         tk.Label(top, textvariable=state, bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 9)).pack(side="right")
         tk.Label(frame, text=item["unlocks"], bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 9), anchor="w", justify="left").pack(fill="x")
         controls = tk.Frame(frame, bg=p.PANEL)

@@ -1,0 +1,2889 @@
+{
+ "source": "Each state's page on the IRS list of state government websites (https://www.irs.gov/businesses/small-businesses-self-employed/state-government-websites), read 2026-10-31. Each link was opened then: \"opened\" means it answered; \"blocks automated reading\" means the site exists but refused this client (403, timeout or certificate chain); \"robots.txt disallows automated reading\" means its robots file asks crawlers to stay out, which HAYAT respects when fetching. Links that were gone (404, no DNS) were dropped. statutes.laws.com (an unofficial publisher) was removed; a bot-check redirect was replaced by the state link it guarded.",
+ "topics": {
+  "business": "Business registration, licensing and the Secretary of State",
+  "unemployment": "Unemployment insurance and employer (payroll) tax accounts",
+  "new_hire": "New-hire reporting for employers",
+  "labor": "Labor, wages and workers' compensation",
+  "procurement": "Selling to the state: contracts, bids and vendor registration",
+  "statutes": "State laws, statutes and administrative code",
+  "portal": "The state's main website"
+ },
+ "states": [
+  {
+   "region": "Alabama",
+   "code": "AL",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Alabama state website",
+     "url": "https://www.alabama.gov/",
+     "site": "alabama.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Office of the Secretary of State",
+     "url": "https://www.sos.alabama.gov/",
+     "site": "sos.alabama.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business entities - Office of the Secretary of State",
+     "url": "https://www.sos.alabama.gov/business-entities",
+     "site": "sos.alabama.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business licensing",
+     "url": "https://www.revenue.alabama.gov/help-center-tabs/business-licenses-state-county/",
+     "site": "revenue.alabama.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "State of Alabama Department of Labor",
+     "url": "https://adol.alabama.gov/",
+     "site": "adol.alabama.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "The Alabama Legislature - Legislative Resources",
+     "url": "https://alison.legislature.state.al.us/",
+     "site": "alison.legislature.state.al.us",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Procurement information",
+     "url": "https://procurement.alabama.gov/",
+     "site": "procurement.alabama.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Alaska",
+   "code": "AK",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Alaska state website",
+     "url": "https://www.alaska.gov/",
+     "site": "alaska.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Alaska Corporations, Business, and Professional Licensing",
+     "url": "https://www.commerce.alaska.gov/web/cbpl/",
+     "site": "commerce.alaska.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Labor and Workforce Development",
+     "url": "https://labor.alaska.gov/",
+     "site": "labor.alaska.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Employment Security Tax",
+     "url": "https://labor.alaska.gov/estax/home.htm",
+     "site": "labor.alaska.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Alaska Legislature - Alaska statutes",
+     "url": "https://www.akleg.gov/basis/Home/BillsandLaws",
+     "site": "akleg.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Office of Procurement and Property Management",
+     "url": "http://doa.alaska.gov/dgs/purchasing/",
+     "site": "doa.alaska.gov",
+     "status": "blocks automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Arizona",
+   "code": "AZ",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Arizona state website",
+     "url": "https://az.gov/",
+     "site": "az.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Licensing guide",
+     "url": "https://azdor.gov/business/transaction-privilege-tax/tpt-license",
+     "site": "azdor.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State",
+     "url": "https://azsos.gov/",
+     "site": "azsos.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Arizona Corporation Commission",
+     "url": "https://www.azcc.gov/",
+     "site": "azcc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire reporting center",
+     "url": "https://newhire-reporting.com/AZ-Newhire/default.aspx",
+     "site": "newhire-reporting.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Arizona revised statutes",
+     "url": "https://www.azleg.gov/arstitle/",
+     "site": "azleg.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Arizona State Procurement",
+     "url": "https://spo.az.gov/",
+     "site": "spo.az.gov",
+     "status": "blocks automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Arkansas",
+   "code": "AR",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Arkansas state website",
+     "url": "https://portal.arkansas.gov/",
+     "site": "portal.arkansas.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State",
+     "url": "https://www.sos.arkansas.gov/",
+     "site": "sos.arkansas.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business services FAQs",
+     "url": "https://www.sos.arkansas.gov/business-commercial-services-bcs/frequently-asked-questions-faqs/business-services-faq",
+     "site": "sos.arkansas.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Business and Commercial Services",
+     "url": "https://www.sos.arkansas.gov/business-commercial-services-bcs",
+     "site": "sos.arkansas.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Arkansas Department of Labor",
+     "url": "https://labor.arkansas.gov/",
+     "site": "labor.arkansas.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Department of Workforce Services",
+     "url": "https://www.dws.arkansas.gov/",
+     "site": "dws.arkansas.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Reporting Center",
+     "url": "https://portal.arkansas.gov/service/report-new-hire-or-re-hire/",
+     "site": "portal.arkansas.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "statutes",
+     "label": "Arkansas Code",
+     "url": "https://advance.lexis.com/container",
+     "site": "advance.lexis.com",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Office of State Procurement",
+     "url": "https://www.transform.ar.gov/procurement/",
+     "site": "transform.ar.gov",
+     "status": "blocks automated reading"
+    }
+   ]
+  },
+  {
+   "region": "California",
+   "code": "CA",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "California state website",
+     "url": "https://www.ca.gov/",
+     "site": "ca.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Permits and licenses",
+     "url": "https://www.calgold.ca.gov/",
+     "site": "calgold.ca.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State",
+     "url": "https://www.sos.ca.gov//",
+     "site": "sos.ca.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://edd.ca.gov/en/Payroll_Taxes/New_Hire_Reporting",
+     "site": "edd.ca.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "California Code of Regulations",
+     "url": "https://govt.westlaw.com/calregs/Index",
+     "site": "govt.westlaw.com",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "procurement",
+     "label": "Department of General Services - Procurement Division",
+     "url": "https://www.dgs.ca.gov/PD",
+     "site": "dgs.ca.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Colorado",
+   "code": "CO",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Colorado state website",
+     "url": "https://www.colorado.gov/",
+     "site": "colorado.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Department of Regulatory Agencies - Business License",
+     "url": "https://dpo.colorado.gov",
+     "site": "dpo.colorado.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Office of the Secretary of State",
+     "url": "https://www.sos.state.co.us/",
+     "site": "sos.state.co.us",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "labor",
+     "label": "Colorado Department of Labor and Employment - Businesses and Employers",
+     "url": "https://cdle.colorado.gov/businesses-employers",
+     "site": "cdle.colorado.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://cdle.colorado.gov/unemployment",
+     "site": "cdle.colorado.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://newhire.state.co.us/",
+     "site": "newhire.state.co.us",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Connecticut",
+   "code": "CT",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Connecticut state website",
+     "url": "https://portal.ct.gov/",
+     "site": "portal.ct.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Occupational Professional Licensing Division",
+     "url": "https://portal.ct.gov/DCP/Agency-Administration/Division-Home-Pages/Occupational--Professional-Licensing-Division",
+     "site": "portal.ct.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Connecticut Department of Labor",
+     "url": "https://portal.ct.gov/dol/",
+     "site": "portal.ct.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Connecticut Unemployment Insurance Tax Information",
+     "url": "https://portal.ct.gov/dol/divisions/unemployment-insurance-tax",
+     "site": "portal.ct.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Delaware",
+   "code": "DE",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Delaware state website",
+     "url": "https://delaware.gov/",
+     "site": "delaware.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Delaware Division of Corporations",
+     "url": "https://corp.delaware.gov/",
+     "site": "corp.delaware.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://labor.delaware.gov//",
+     "site": "labor.delaware.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Division of Unemployment Insurance",
+     "url": "https://labor.delaware.gov/divisions/unemployment-insurance//",
+     "site": "labor.delaware.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "The Delaware Code online",
+     "url": "https://delcode.delaware.gov/",
+     "site": "delcode.delaware.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "District of Columbia",
+   "code": "DC",
+   "agencies": [
+    {
+     "topic": "business",
+     "label": "Permits, Licenses, and Certifications",
+     "url": "https://dc.gov/page/permits-licenses-and-certifications",
+     "site": "dc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Employer Tax Information (Unemployment Insurance)",
+     "url": "https://does.dc.gov/service/employer-tax-information-unemployment-insurance",
+     "site": "does.dc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://dc-newhire.com/faqs",
+     "site": "dc-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Office of Contracting and Procurement",
+     "url": "https://ocp.dc.gov/",
+     "site": "ocp.dc.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Florida",
+   "code": "FL",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Florida state website",
+     "url": "https://www.myflorida.gov/",
+     "site": "myflorida.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Florida Department of State - Division of Corporations",
+     "url": "https://dos.fl.gov/sunbiz/",
+     "site": "dos.fl.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business license",
+     "url": "https://www2.myfloridalicense.com/",
+     "site": "www2.myfloridalicense.com",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Reemployment Tax - formerly Unemployment Tax",
+     "url": "https://floridarevenue.com/taxes/taxesfees/Pages/reemployment.aspx",
+     "site": "floridarevenue.com",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire reporting center",
+     "url": "https://servicesforemployers.floridarevenue.com/Pages/home.aspx",
+     "site": "servicesforemployers.floridarevenue.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Florida Administrative Code",
+     "url": "https://flrules.org/",
+     "site": "flrules.org",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Florida statutes",
+     "url": "https://www.leg.state.fl.us/statutes/",
+     "site": "leg.state.fl.us",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Georgia",
+   "code": "GA",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Georgia state website",
+     "url": "https://georgia.gov/",
+     "site": "georgia.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Corporations Division",
+     "url": "https://sos.ga.gov/index.php/corporations",
+     "site": "sos.ga.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://dol.georgia.gov/",
+     "site": "dol.georgia.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire reporting program",
+     "url": "https://newhire-reporting.com/GA-Newhire/Default.aspx",
+     "site": "newhire-reporting.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Georgia Code",
+     "url": "https://advance.lexis.com/container",
+     "site": "advance.lexis.com",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Hawaii",
+   "code": "HI",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Hawaii state website",
+     "url": "https://portal.ehawaii.gov/",
+     "site": "portal.ehawaii.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Professional Licensing",
+     "url": "https://portal.ehawaii.gov/business/professional-licensing/",
+     "site": "portal.ehawaii.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business Registration Division",
+     "url": "http://cca.hawaii.gov/breg/",
+     "site": "cca.hawaii.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Industrial Relations",
+     "url": "https://labor.hawaii.gov/",
+     "site": "labor.hawaii.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire information",
+     "url": "https://ag.hawaii.gov/csea/employer-information/",
+     "site": "ag.hawaii.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "State Procurement Office",
+     "url": "https://spo.hawaii.gov/",
+     "site": "spo.hawaii.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Hawaii State Legislature",
+     "url": "https://www.capitol.hawaii.gov/",
+     "site": "capitol.hawaii.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Hawaii Business Express",
+     "url": "https://hbe.ehawaii.gov/BizEx/home.eb",
+     "site": "hbe.ehawaii.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Idaho",
+   "code": "ID",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Idaho state website",
+     "url": "https://idaho.gov/",
+     "site": "idaho.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Professional Licensing",
+     "url": "https://dopl.idaho.gov/",
+     "site": "dopl.idaho.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Office of the Secretary of State",
+     "url": "https://sos.idaho.gov/",
+     "site": "sos.idaho.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://www.labor.idaho.gov/",
+     "site": "labor.idaho.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment insurance tax information",
+     "url": "https://www.labor.idaho.gov/Businesses/Help-with-Unemployment-Tax/",
+     "site": "labor.idaho.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://www.labor.idaho.gov/Businesses/Report-New-Hires/",
+     "site": "labor.idaho.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Administrative code",
+     "url": "https://adminrules.idaho.gov/",
+     "site": "adminrules.idaho.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Idaho statutes",
+     "url": "https://legislature.idaho.gov/statutesrules/idstat/",
+     "site": "legislature.idaho.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Illinois",
+   "code": "IL",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Illinois state website",
+     "url": "https://www.illinois.gov/",
+     "site": "illinois.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Registration, Licenses, and Permits",
+     "url": "https://www.illinois.gov/business/registration-licenses-permits.html",
+     "site": "illinois.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Department of Employment Security",
+     "url": "https://ides.illinois.gov/",
+     "site": "ides.illinois.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://newhire.hfs.illinois.gov/NewHireWeb/newhire.htm",
+     "site": "newhire.hfs.illinois.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Illinois Compiled Statutes",
+     "url": "https://www.ilga.gov/legislation/ilcs/ilcs.asp",
+     "site": "ilga.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State",
+     "url": "https://www.ilsos.gov/",
+     "site": "ilsos.gov",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Indiana",
+   "code": "IN",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Indiana state website",
+     "url": "https://www.in.gov/core/",
+     "site": "in.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Indiana Economic Development Corporation",
+     "url": "https://www.iedc.in.gov/",
+     "site": "iedc.in.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment information",
+     "url": "https://www.in.gov/dwd/indiana-unemployment/employers/",
+     "site": "in.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Department of Workforce Development",
+     "url": "https://www.in.gov/dwd/",
+     "site": "in.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://in-newhire.com/default",
+     "site": "in-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Department of Administration - Procurement Division",
+     "url": "https://www.in.gov/idoa/procurement/",
+     "site": "in.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Iowa",
+   "code": "IA",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Iowa state website",
+     "url": "https://www.iowa.gov/",
+     "site": "iowa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Iowa Professional Licensing Bureau",
+     "url": "https://dial.iowa.gov/licenses/other-professional-licensure",
+     "site": "dial.iowa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Iowa Secretary of State",
+     "url": "https://sos.iowa.gov/",
+     "site": "sos.iowa.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "labor",
+     "label": "Iowa Department of Labor",
+     "url": "https://dial.iowa.gov/",
+     "site": "dial.iowa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Iowa Workforce Development",
+     "url": "https://workforce.iowa.gov/",
+     "site": "workforce.iowa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance - Employers and Agents",
+     "url": "https://workforce.iowa.gov/employers/unemployment-insurance",
+     "site": "workforce.iowa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Reporting",
+     "url": "https://secureapp.dhs.state.ia.us/epay/",
+     "site": "secureapp.dhs.state.ia.us",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Iowa Workforce Development - Unemployment Insurance Tax System",
+     "url": "https://www.myiowaui.org/UITIPTaxWeb/uilogin.do",
+     "site": "myiowaui.org",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Kansas",
+   "code": "KS",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Kansas state website",
+     "url": "https://portal.kansas.gov/",
+     "site": "portal.kansas.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Kansas Business Center",
+     "url": "https://sos.ks.gov/businesses/businesses.html",
+     "site": "sos.ks.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Kansas Secretary of State",
+     "url": "https://sos.ks.gov/",
+     "site": "sos.ks.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Kansas Corporation Commission",
+     "url": "https://www.kcc.ks.gov/",
+     "site": "kcc.ks.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://www.dol.ks.gov/",
+     "site": "dol.ks.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://www.dol.ks.gov/employers/employer-services",
+     "site": "dol.ks.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www.dol.ks.gov/employers/employer-services/new-hire-reporting",
+     "site": "dol.ks.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Kansas Legislature",
+     "url": "https://www.kslegislature.gov/b2025_26/",
+     "site": "kslegislature.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Procurement and Contracts",
+     "url": "https://admin.ks.gov/offices/procurement-contracts",
+     "site": "admin.ks.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Kentucky",
+   "code": "KY",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Kentucky state website",
+     "url": "https://www.kentucky.gov/Pages/home.aspx",
+     "site": "kentucky.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Federal Licenses and Permits",
+     "url": "https://onestop.ky.gov/start/Pages/federallicense.aspx",
+     "site": "onestop.ky.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Kentucky Secretary of State",
+     "url": "https://www.sos.ky.gov/Pages/default.aspx",
+     "site": "sos.ky.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://kewes.ky.gov/ ",
+     "site": "kewes.ky.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry PDF",
+     "url": "https://revenue.ky.gov/Software-Developer/Software%20Development%20Documents/Kentucky_New_Hire_Reporting_Form.pdf",
+     "site": "revenue.ky.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Kentucky Revised Statutes",
+     "url": "https://legislature.ky.gov/Law/Statutes/Pages/default.aspx",
+     "site": "legislature.ky.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Kentucky Purchasing and eProcurement",
+     "url": "https://finance.ky.gov/eProcurement/Pages/default.aspx",
+     "site": "finance.ky.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Louisiana",
+   "code": "LA",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Louisiana state website",
+     "url": "https://www.louisiana.gov/",
+     "site": "louisiana.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Licenses",
+     "url": "http://www.wlf.louisiana.gov/licenses-and-permits",
+     "site": "wlf.louisiana.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www.dcfs.louisiana.gov/page/164",
+     "site": "dcfs.louisiana.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "statutes",
+     "label": "Louisiana Legislature",
+     "url": "https://legis.la.gov/legis/home.aspx",
+     "site": "legis.la.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State",
+     "url": "https://www.sos.la.gov/Pages/default.aspx",
+     "site": "sos.la.gov",
+     "status": "robots.txt disallows automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Louisiana Workforce Commission",
+     "url": "https://www.laworks.net/",
+     "site": "laworks.net",
+     "status": "robots.txt disallows automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "FAQs - Unemployment Insurance",
+     "url": "https://www.laworks.net/FAQs/FAQ_MainMenu.asp",
+     "site": "laworks.net",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Maine",
+   "code": "ME",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Maine state website",
+     "url": "https://www.maine.gov/portal/index.html",
+     "site": "maine.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Business licensing",
+     "url": "https://www.maine.gov/portal/business/licensing.html",
+     "site": "maine.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Corporations",
+     "url": "https://www.maine.gov/sos/corporations-commissions/corporations-business-services",
+     "site": "maine.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://www.maine.gov/labor/index.shtml",
+     "site": "maine.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment insurance",
+     "url": "https://www.maine.gov/portal/employment/unemployment.html",
+     "site": "maine.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://me-newhire.com/",
+     "site": "me-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Revised statutes",
+     "url": "https://legislature.maine.gov/statutes/",
+     "site": "legislature.maine.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Procurement and vendor information",
+     "url": "https://www.maine.gov/portal/business/vendors.html",
+     "site": "maine.gov",
+     "status": "blocks automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Maryland",
+   "code": "MD",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Maryland state website",
+     "url": "https://www.maryland.gov/",
+     "site": "maryland.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Occupational & Professional Licensing",
+     "url": "https://www.dllr.state.md.us/license/",
+     "site": "dllr.state.md.us",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Maryland Business Express – Registrations and Filings",
+     "url": "https://egov.maryland.gov/businessexpress",
+     "site": "egov.maryland.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State",
+     "url": "https://sos.maryland.gov/Pages/default.aspx",
+     "site": "sos.maryland.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Maryland Department of Labor",
+     "url": "https://www.dllr.state.md.us/",
+     "site": "dllr.state.md.us",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://labor.maryland.gov/unemployment-insurance/",
+     "site": "labor.maryland.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://mdnewhire.com/",
+     "site": "mdnewhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Maryland Code",
+     "url": "https://www.mdcourts.gov/lawlib/research/research-guides/md-code-research",
+     "site": "mdcourts.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Massachusetts",
+   "code": "MA",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Massachusetts state website",
+     "url": "https://www.mass.gov/",
+     "site": "mass.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Professional Licenses & Permits",
+     "url": "https://www.mass.gov/topics/professional-licenses-permits",
+     "site": "mass.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "The Executive Office of Labor and Workforce Development",
+     "url": "https://www.mass.gov/orgs/executive-office-of-labor-and-workforce-development",
+     "site": "mass.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://www.mass.gov/orgs/department-of-unemployment-assistance",
+     "site": "mass.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www.mass.gov/info-details/learn-about-the-new-hire-reporting-program",
+     "site": "mass.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Code of Massachusetts Regulations",
+     "url": "https://www.mass.gov/code-of-massachusetts-regulations-cmr",
+     "site": "mass.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Massachusetts Corporations Division",
+     "url": "http://www.sec.state.ma.us/cor/coridx.htm",
+     "site": "sec.state.ma.us",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Michigan",
+   "code": "MI",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Michigan state website",
+     "url": "https://www.michigan.gov/som",
+     "site": "michigan.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Licensing and Permits",
+     "url": "https://www.michigan.gov/som/government/state-license-search",
+     "site": "michigan.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State",
+     "url": "https://www.michigan.gov/sos",
+     "site": "michigan.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance Agency",
+     "url": "https://www.michigan.gov/en/leo/bureaus-agencies/uia",
+     "site": "michigan.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www.mi-newhire.com/",
+     "site": "mi-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Contract Connect - Website for Procurement",
+     "url": "https://www.michigan.gov/en/dtmb/procurement/contractconnect",
+     "site": "michigan.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Michigan Administrative Code",
+     "url": "https://ars.apps.lara.state.mi.us/AdminCode/AdminCode",
+     "site": "ars.apps.lara.state.mi.us",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Minnesota",
+   "code": "MN",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Minnesota state website",
+     "url": "https://mn.gov/portal/",
+     "site": "mn.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Licenses and Permits",
+     "url": "https://www.sos.state.mn.us/business-liens/",
+     "site": "sos.state.mn.us",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Business Services",
+     "url": "https://www.sos.state.mn.us/business-liens/",
+     "site": "sos.state.mn.us",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Industry",
+     "url": "http://www.dli.mn.gov/",
+     "site": "dli.mn.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://www.uimn.org/",
+     "site": "uimn.org",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Reporting",
+     "url": "https://mn-newhire.com/",
+     "site": "mn-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Minnesota Statutes, Session Laws, and Rules",
+     "url": "https://www.revisor.mn.gov/pubs/",
+     "site": "revisor.mn.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Mississippi",
+   "code": "MS",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Mississippi state website",
+     "url": "https://www.mississippi.gov/",
+     "site": "mississippi.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Licensing",
+     "url": "https://www.mid.ms.gov/mississippi-insurance-department/licensing/",
+     "site": "mid.ms.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Business Services",
+     "url": "https://www.sos.ms.gov/",
+     "site": "sos.ms.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Mississippi Department of Employment Security",
+     "url": "https://www.mdes.ms.gov/",
+     "site": "mdes.ms.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://ms-newhire.com/default",
+     "site": "ms-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Vendor Information",
+     "url": "https://www.dfa.ms.gov/mississippi-suppliersvendors",
+     "site": "dfa.ms.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Mississippi State Code",
+     "url": "https://advance.lexis.com/container",
+     "site": "advance.lexis.com",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Missouri",
+   "code": "MO",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Missouri state website",
+     "url": "https://mo.gov/",
+     "site": "mo.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Online Business Registration",
+     "url": "https://dor.mo.gov/register-business/",
+     "site": "dor.mo.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Businesses",
+     "url": "https://www.sos.mo.gov/business",
+     "site": "sos.mo.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Industrial Relations",
+     "url": "https://labor.mo.gov/",
+     "site": "labor.mo.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance Tax",
+     "url": "https://labor.mo.gov/des/employers",
+     "site": "labor.mo.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Reporting",
+     "url": "https://www.missouriemployer.dss.mo.gov/NewHireInfo.aspx",
+     "site": "missouriemployer.dss.mo.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Division of Purchasing - Office of Administration",
+     "url": "https://purch.oa.mo.gov/",
+     "site": "purch.oa.mo.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Montana",
+   "code": "MT",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Montana state website",
+     "url": "https://mt.gov/",
+     "site": "mt.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business licensing",
+     "url": "https://boards.bsd.dli.mt.gov/",
+     "site": "boards.bsd.dli.mt.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Business Services",
+     "url": "https://sosmt.gov/business/",
+     "site": "sosmt.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Industry",
+     "url": "https://dli.mt.gov/",
+     "site": "dli.mt.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance Division",
+     "url": "https://uid.dli.mt.gov/",
+     "site": "uid.dli.mt.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://dphhs.mt.gov/cssd/employerinfo/newhirereporting",
+     "site": "dphhs.mt.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "State Procurement Bureau",
+     "url": "https://doa.mt.gov/spsd/",
+     "site": "doa.mt.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Montana Code",
+     "url": "https://mca.legmt.gov/bills/mca/index.html",
+     "site": "mca.legmt.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Nebraska",
+   "code": "NE",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Nebraska state website",
+     "url": "https://www.nebraska.gov/",
+     "site": "nebraska.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Corporate and Business",
+     "url": "https://sos.nebraska.gov/business-services/corporate-and-business",
+     "site": "sos.nebraska.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business licensing",
+     "url": "https://www.nebraska.gov/business/business-licensing/",
+     "site": "nebraska.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://dol.nebraska.gov/",
+     "site": "dol.nebraska.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment insurance",
+     "url": "https://dol.nebraska.gov/UITax",
+     "site": "dol.nebraska.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://ne-newhire.com/",
+     "site": "ne-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Nebraska Legislature",
+     "url": "https://nebraskalegislature.gov/",
+     "site": "nebraskalegislature.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "State purchasing",
+     "url": "https://das.nebraska.gov/materiel/sites/purchasing.html",
+     "site": "das.nebraska.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Nevada",
+   "code": "NV",
+   "agencies": [
+    {
+     "topic": "business",
+     "label": "Nevada's Business Portal",
+     "url": "https://orion.nv.gov/portal/public/",
+     "site": "orion.nv.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Nevada Secretary of State",
+     "url": "https://www.nvsos.gov/",
+     "site": "nvsos.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://nui.nv.gov/_/",
+     "site": "nui.nv.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://detr.nv.gov/Page/New_Hire_Online_Reporting",
+     "site": "detr.nv.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Nevada State Purchasing Division",
+     "url": "https://www.purchasing.nv.gov/",
+     "site": "purchasing.nv.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Nevada Code and Statutes",
+     "url": "https://www.leg.state.nv.us/",
+     "site": "leg.state.nv.us",
+     "status": "opened"
+    },
+    {
+     "topic": "portal",
+     "label": "Nevada state website",
+     "url": "http://nv.gov/",
+     "site": "nv.gov",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "New Hampshire",
+   "code": "NH",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "New Hampshire state website",
+     "url": "https://www.nh.gov/",
+     "site": "nh.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "New Business Tax Licenses and Permits",
+     "url": "https://www.revenue.nh.gov/faq/how-do-i-register-my-new-business",
+     "site": "revenue.nh.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://www.dol.nh.gov/",
+     "site": "dol.nh.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Employment Security - Unemployment Information",
+     "url": "https://www.nhes.nh.gov/employers/employer-claims-taxes",
+     "site": "nhes.nh.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www2.nhes.nh.gov/webtax/index.jsp",
+     "site": "www2.nhes.nh.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "New Hampshire Revised State Statutes",
+     "url": "https://gc.nh.gov/rsa/html/indexes/default.html",
+     "site": "gc.nh.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Procurement and Support Service and Purchase and Property",
+     "url": "https://das.nh.gov/purchasing/purchasing.asp",
+     "site": "das.nh.gov",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "New Jersey",
+   "code": "NJ",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "New Jersey state website",
+     "url": "https://www.nj.gov/",
+     "site": "nj.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business portal",
+     "url": "https://www.business.nj.gov/",
+     "site": "business.nj.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Licenses & permits",
+     "url": "https://www.business.nj.gov/licensing-and-certification-guide",
+     "site": "business.nj.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Department of Labor and Workforce Development",
+     "url": "https://nj.gov/labor/",
+     "site": "nj.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment insurance",
+     "url": "https://www.nj.gov/labor/myunemployment/",
+     "site": "nj.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://www.njcsesp.com/",
+     "site": "njcsesp.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "New Jersey Legislature",
+     "url": "https://www.njleg.state.nj.us/",
+     "site": "njleg.state.nj.us",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "New Mexico",
+   "code": "NM",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "New Mexico state website",
+     "url": "https://www.nm.gov/",
+     "site": "nm.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Regulation and Licensing Department",
+     "url": "https://www.rld.nm.gov/",
+     "site": "rld.nm.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State – Business Services",
+     "url": "https://www.sos.nm.gov/business-services/",
+     "site": "sos.nm.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Department of Workforce Solutions",
+     "url": "https://www.dws.state.nm.us/en-us/",
+     "site": "dws.state.nm.us",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance Tax Bureau",
+     "url": "https://www.dws.state.nm.us/UI-Tax-Information",
+     "site": "dws.state.nm.us",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Directory",
+     "url": "https://nm-newhire.com/",
+     "site": "nm-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "State Purchasing Division",
+     "url": "https://generalservices.state.nm.us/state-purchasing/",
+     "site": "generalservices.state.nm.us",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "New Mexico Administrative Code",
+     "url": "https://www.tax.newmexico.gov/all-nm-taxes/statutes-department-directives-overview/",
+     "site": "tax.newmexico.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "New York",
+   "code": "NY",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "New York state website",
+     "url": "https://www.ny.gov/",
+     "site": "ny.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business Services",
+     "url": "https://www.ny.gov/business-assistance",
+     "site": "ny.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business Licenses and Permits",
+     "url": "https://www.ny.gov/licenses-and-permits",
+     "site": "ny.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Existing Corporations and Businesses",
+     "url": "https://dos.ny.gov/existing-corporations-and-businesses",
+     "site": "dos.ny.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://dol.ny.gov/",
+     "site": "dol.ny.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://dol.ny.gov/unemployment/unemployment-insurance-information-employers",
+     "site": "dol.ny.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www.tax.ny.gov/bus/wt/newhire.htm",
+     "site": "tax.ny.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "New York State Procurement",
+     "url": "https://ogs.ny.gov/procurement",
+     "site": "ogs.ny.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Laws of New York",
+     "url": "http://public.leginfo.state.ny.us/lawssrch.cgi",
+     "site": "public.leginfo.state.ny.us",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "North Carolina",
+   "code": "NC",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "North Carolina state website",
+     "url": "https://www.nc.gov/",
+     "site": "nc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business Services and Information",
+     "url": "https://edpnc.com/start-or-grow-a-business/grow-a-business/resources/",
+     "site": "edpnc.com",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Business Licenses and Permits",
+     "url": "https://edpnc.com/resources/publications/business-licenses-and-permits/",
+     "site": "edpnc.com",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Department of the Secretary of State",
+     "url": "https://www.sosnc.gov/",
+     "site": "sosnc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://www.labor.nc.gov/",
+     "site": "labor.nc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Division of Employment Security",
+     "url": "https://www.des.nc.gov/",
+     "site": "des.nc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://www.des.nc.gov/employers",
+     "site": "des.nc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://ncnewhires.ncdhhs.gov/",
+     "site": "ncnewhires.ncdhhs.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Department of Administration - Purchase and Contract Division",
+     "url": "https://www.doa.nc.gov/divisions/purchase-contract",
+     "site": "doa.nc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "North Carolina Administrative Code",
+     "url": "http://reports.oah.state.nc.us/ncac.asp",
+     "site": "reports.oah.state.nc.us",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "North Dakota",
+   "code": "ND",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "North Dakota state website",
+     "url": "https://www.nd.gov/",
+     "site": "nd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Licensing information",
+     "url": "https://www.sos.nd.gov/business/licensing-registration",
+     "site": "sos.nd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Business services",
+     "url": "https://www.sos.nd.gov/business/business-services",
+     "site": "sos.nd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Human Rights",
+     "url": "https://www.nd.gov/labor/",
+     "site": "nd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment insurance",
+     "url": "https://www.jobsnd.com/unemployment-business-tax/resources",
+     "site": "jobsnd.com",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://www.hhs.nd.gov/childsupport",
+     "site": "hhs.nd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "State Procurement Office",
+     "url": "https://www.omb.nd.gov/doing-business-state/procurement",
+     "site": "omb.nd.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Ohio",
+   "code": "OH",
+   "agencies": [
+    {
+     "topic": "business",
+     "label": "Secretary of State",
+     "url": "https://www.ohiosos.gov/",
+     "site": "ohiosos.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Reporting Center",
+     "url": "https://oh-newhire.com/",
+     "site": "oh-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Ohio Laws and Administrative Rules",
+     "url": "https://codes.ohio.gov/ohio-revised-code",
+     "site": "codes.ohio.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Oklahoma",
+   "code": "OK",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Oklahoma state website",
+     "url": "https://oklahoma.gov/",
+     "site": "oklahoma.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business Licensing and Operating Requirements",
+     "url": "https://oklahoma.gov/business/operate/licenses-and-permits.html",
+     "site": "oklahoma.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Employment Security Commission",
+     "url": "https://oklahoma.gov/oesc.html",
+     "site": "oklahoma.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://unemployment.state.ok.us/",
+     "site": "unemployment.state.ok.us",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www.ok.gov/oesc/newhire/app/index.php",
+     "site": "ok.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Office of Management & Enterprise Services - Purchasing",
+     "url": "https://oklahoma.gov/omes/divisions/central-purchasing.html",
+     "site": "oklahoma.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Oklahoma Legislature",
+     "url": "http://www.oklegislature.gov/",
+     "site": "oklegislature.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Business Services",
+     "url": "https://www.sos.ok.gov/business/default.aspx",
+     "site": "sos.ok.gov",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Oregon",
+   "code": "OR",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Oregon state website",
+     "url": "https://www.oregon.gov/pages/index.aspx",
+     "site": "oregon.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Department of Consumer and Business Services",
+     "url": "https://www.oregon.gov/DCBS/pages/index.aspx",
+     "site": "oregon.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Licenses, Permits, and Registrations",
+     "url": "https://apps.oregon.gov/sos/licensedirectory",
+     "site": "apps.oregon.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Business",
+     "url": "https://sos.oregon.gov/business/Pages/default.aspx",
+     "site": "sos.oregon.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Bureau of Labor and Industries",
+     "url": "https://www.oregon.gov/BOLI/pages/index.aspx",
+     "site": "oregon.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://unemployment.oregon.gov/",
+     "site": "unemployment.oregon.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www.doj.state.or.us/child-support/for-employers/report-new-hires/",
+     "site": "doj.state.or.us",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "State Procurement Office",
+     "url": "https://www.oregon.gov/DAS/Procurement/pages/index.aspx",
+     "site": "oregon.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "State Legislature - Oregon Revised Statutes",
+     "url": "https://www.oregonlegislature.gov/bills_laws/Pages/ORS.aspx",
+     "site": "oregonlegislature.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Pennsylvania",
+   "code": "PA",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Pennsylvania state website",
+     "url": "https://www.pa.gov/",
+     "site": "pa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "PA Business One Stop Shop",
+     "url": "https://business.pa.gov/",
+     "site": "business.pa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Professional Licensing",
+     "url": "https://www.pa.gov/agencies/dos/resources/professional-licensing-resources",
+     "site": "pa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Department of State - Corporations Bureau",
+     "url": "https://www.pa.gov/agencies/dos/programs/business",
+     "site": "pa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Industry",
+     "url": "https://www.pa.gov/agencies/dli",
+     "site": "pa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Pennsylvania Code Regulations",
+     "url": "https://www.pa.gov/agencies/education/resources/policies-acts-and-laws",
+     "site": "pa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www.pacareerlink.pa.gov/jponline//Common/LandingPage/ReportNewHires ",
+     "site": "pacareerlink.pa.gov",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Rhode Island",
+   "code": "RI",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Rhode Island state website",
+     "url": "https://www.ri.gov/",
+     "site": "ri.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Professional Licensing",
+     "url": "https://www.ri.gov/Licensing/",
+     "site": "ri.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Office of the Secretary of State",
+     "url": "https://www.sos.ri.gov/",
+     "site": "sos.ri.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business Services",
+     "url": "https://www.sos.ri.gov/divisions/business-services",
+     "site": "sos.ri.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Training",
+     "url": "https://dlt.ri.gov/",
+     "site": "dlt.ri.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "http://www.dlt.ri.gov/ui/",
+     "site": "dlt.ri.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Reporting Directory",
+     "url": "https://ocss.ri.gov/employer-info/new-hire-reporting",
+     "site": "ocss.ri.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "statutes",
+     "label": "State of Rhode Island General Laws",
+     "url": "https://webserver.rilegislature.gov/statutes/Statutes.html",
+     "site": "webserver.rilegislature.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "South Carolina",
+   "code": "SC",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "South Carolina state website",
+     "url": "https://sc.gov/",
+     "site": "sc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Licenses, Permits, & Registration",
+     "url": "https://sc.gov/residents/living-sc/licenses-permits-and-regulations",
+     "site": "sc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "South Carolina Secretary of State",
+     "url": "https://sos.sc.gov/",
+     "site": "sos.sc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Department of Labor, Licensing and Regulation",
+     "url": "https://www.llr.sc.gov/",
+     "site": "llr.sc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Department of Employment and Workforce",
+     "url": "https://dew.sc.gov/",
+     "site": "dew.sc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment information",
+     "url": "https://www.dew.sc.gov/employers/unemployment-tax-information",
+     "site": "dew.sc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://newhire.sc.gov/",
+     "site": "newhire.sc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Procurement services",
+     "url": "https://procurement.sc.gov/",
+     "site": "procurement.sc.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "South Carolina legislature",
+     "url": "https://www.scstatehouse.gov/",
+     "site": "scstatehouse.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "South Dakota",
+   "code": "SD",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "South Dakota state website",
+     "url": "https://www.sd.gov/cs/",
+     "site": "sd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Office of the Secretary of State - Corporations",
+     "url": "https://sdsos.gov/business-services/corporations/default.aspx",
+     "site": "sdsos.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Regulation",
+     "url": "https://dlr.sd.gov/",
+     "site": "dlr.sd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Reemployment assistance",
+     "url": "https://dlr.sd.gov/ra/default.aspx",
+     "site": "dlr.sd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire reporting",
+     "url": "https://apps.sd.gov/LD00General/default.aspx",
+     "site": "apps.sd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Office of Procurement Management",
+     "url": "https://www.sd.gov/bhra",
+     "site": "sd.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "South Dakota legislature",
+     "url": "https://sdlegislature.gov/",
+     "site": "sdlegislature.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Tennessee",
+   "code": "TN",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Tennessee state website",
+     "url": "https://www.tn.gov/",
+     "site": "tn.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Division of Business Services",
+     "url": "https://sos.tn.gov/business-services",
+     "site": "sos.tn.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Department of Labor and Workforce Development",
+     "url": "https://www.tn.gov/workforce.html",
+     "site": "tn.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://www.tn.gov/workforce/employers/tax-and-insurance-redirect/unemployment-insurance-tax.html",
+     "site": "tn.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://www.tnnewhire.com/",
+     "site": "tnnewhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Department of General Services - Central Procurement Office",
+     "url": "https://www.tn.gov/generalservices/procurement.html",
+     "site": "tn.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "statutes",
+     "label": "Tennessee Code",
+     "url": "https://advance.lexis.com/container",
+     "site": "advance.lexis.com",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Texas",
+   "code": "TX",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Texas state website",
+     "url": "https://www.texas.gov/",
+     "site": "texas.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Corporations",
+     "url": "https://www.sos.state.tx.us/corp/index.shtml",
+     "site": "sos.state.tx.us",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Department of Licensing and Regulation",
+     "url": "https://www.tdlr.texas.gov/",
+     "site": "tdlr.texas.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Texas workforce",
+     "url": "https://www.twc.texas.gov/",
+     "site": "twc.texas.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment claim management and appeals",
+     "url": "https://www.twc.texas.gov/employer-resources/ebs",
+     "site": "twc.texas.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://employer.oag.texas.gov/employerportal/s/new-hire-general-information",
+     "site": "employer.oag.texas.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "statutes",
+     "label": "Administrative code",
+     "url": "https://www.sos.state.tx.us/tac/index.shtml",
+     "site": "sos.state.tx.us",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "City codes",
+     "url": "http://www.franklinlegal.net/search-codes",
+     "site": "franklinlegal.net",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "statutes",
+     "label": "Statutes",
+     "url": "https://guides.sll.texas.gov/texas-law/statutes",
+     "site": "guides.sll.texas.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "TxSmartBuy - State and local bid opportunities",
+     "url": "http://www.txsmartbuy.com/",
+     "site": "txsmartbuy.com",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Utah",
+   "code": "UT",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Utah state website",
+     "url": "https://www.utah.gov/index.html",
+     "site": "utah.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business Services",
+     "url": "https://www.utah.gov/business/",
+     "site": "utah.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Division of Professional Licensing",
+     "url": "https://dopl.utah.gov/",
+     "site": "dopl.utah.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Division of Corporations and Commercial Code",
+     "url": "https://corporations.utah.gov/",
+     "site": "corporations.utah.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Department of Workforce Services",
+     "url": "https://jobs.utah.gov/",
+     "site": "jobs.utah.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance and New Hire Reporting",
+     "url": "https://jobs.utah.gov/ui/employer/employerhome.aspx",
+     "site": "jobs.utah.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Utah Code and Constitution",
+     "url": "https://le.utah.gov/Documents/code_const.htm",
+     "site": "le.utah.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Utah Public Procurement Place",
+     "url": "https://bids.sciquest.com/apps/Router/PublicEvent",
+     "site": "bids.sciquest.com",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Vermont",
+   "code": "VT",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Vermont state website",
+     "url": "https://www.vermont.gov/",
+     "site": "vermont.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Licenses and Permits",
+     "url": "https://www.vermont.gov/work/licenses-and-permits",
+     "site": "vermont.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Vermont - Business Services Division",
+     "url": "https://bizfilings.vermont.gov/login",
+     "site": "bizfilings.vermont.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor",
+     "url": "https://labor.vermont.gov/",
+     "site": "labor.vermont.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://labor.vermont.gov/unemployment-insurance",
+     "site": "labor.vermont.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://labor.vermont.gov/unemployment-insurance/new-hire-reporting",
+     "site": "labor.vermont.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Office of Purchasing and Contracting",
+     "url": "https://bgs.vermont.gov/purchasing",
+     "site": "bgs.vermont.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Vermont Statutes",
+     "url": "https://legislature.vermont.gov/statutes/",
+     "site": "legislature.vermont.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Virginia",
+   "code": "VA",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Virginia state website",
+     "url": "https://www.virginia.gov/",
+     "site": "virginia.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Department of Small Business and Supplier Diversity",
+     "url": "https://sbsd.virginia.gov/",
+     "site": "sbsd.virginia.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Industry",
+     "url": "https://doli.virginia.gov/",
+     "site": "doli.virginia.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance Information",
+     "url": "https://www.vec.virginia.gov/unemployment-insurance-information-employers",
+     "site": "vec.virginia.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://va-newhire.com/",
+     "site": "va-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Code of Virginia",
+     "url": "https://law.lis.virginia.gov/vacode/",
+     "site": "law.lis.virginia.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "State Corporation Commission",
+     "url": "http://www.scc.virginia.gov/",
+     "site": "scc.virginia.gov",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Washington",
+   "code": "WA",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Washington state website",
+     "url": "https://access.wa.gov/",
+     "site": "access.wa.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Department of Licensing",
+     "url": "https://www.dol.wa.gov/business/",
+     "site": "dol.wa.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "business",
+     "label": "Secretary of State - Corporations Division",
+     "url": "https://www.sos.wa.gov/corporations-charities",
+     "site": "sos.wa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Department of Commerce - Small Business Services",
+     "url": "https://www.commerce.wa.gov/growing-the-economy/business-services/",
+     "site": "commerce.wa.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "labor",
+     "label": "Department of Labor and Industries",
+     "url": "https://www.lni.wa.gov/",
+     "site": "lni.wa.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://esd.wa.gov/unemployment",
+     "site": "esd.wa.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Reporting Program",
+     "url": "https://www.dshs.wa.gov/esa/division-child-support/new-hire-reporting",
+     "site": "dshs.wa.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "statutes",
+     "label": "Revised Code of Washington",
+     "url": "https://apps.leg.wa.gov/rcw/",
+     "site": "apps.leg.wa.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "West Virginia",
+   "code": "WV",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "West Virginia state website",
+     "url": "https://www.wv.gov/",
+     "site": "wv.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Licenses, permits, and renewals",
+     "url": "https://business4.wv.gov/operatemybusiness/Pages/LicPermRenewal.aspx",
+     "site": "business4.wv.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "West Virginia Secretary of State",
+     "url": "https://sos.wv.gov/",
+     "site": "sos.wv.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "labor",
+     "label": "Division of Labor",
+     "url": "https://labor.wv.gov/",
+     "site": "labor.wv.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment compensation",
+     "url": "http://workforcewv.org/unemployment.html",
+     "site": "workforcewv.org",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://www.wv-newhire.com/",
+     "site": "wv-newhire.com",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "West Virginia Purchasing Division",
+     "url": "http://www.state.wv.us/admin/purchase/default.html",
+     "site": "state.wv.us",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "West Virginia Code",
+     "url": "http://www.wvlegislature.gov/WVCODE/code.cfm",
+     "site": "wvlegislature.gov",
+     "status": "robots.txt disallows automated reading"
+    }
+   ]
+  },
+  {
+   "region": "Wisconsin",
+   "code": "WI",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Wisconsin state website",
+     "url": "https://www.wisconsin.gov/Pages/Home.aspx",
+     "site": "wisconsin.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Department of Workforce Development - Employer Resources",
+     "url": "https://dwd.wisconsin.gov/wc/employers/",
+     "site": "dwd.wisconsin.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment Insurance",
+     "url": "https://dwd.wisconsin.gov/uitax/",
+     "site": "dwd.wisconsin.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New Hire Registry",
+     "url": "https://dwd.wisconsin.gov/uinh/",
+     "site": "dwd.wisconsin.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "procurement",
+     "label": "Wisconsin Bureau of Procurement - VendorNet System",
+     "url": "https://vendornet.wi.gov/",
+     "site": "vendornet.wi.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Wisconsin Statutes",
+     "url": "https://docs.legis.wisconsin.gov/statutes",
+     "site": "docs.legis.wisconsin.gov",
+     "status": "opened"
+    }
+   ]
+  },
+  {
+   "region": "Wyoming",
+   "code": "WY",
+   "agencies": [
+    {
+     "topic": "portal",
+     "label": "Wyoming state website",
+     "url": "https://www.wyo.gov/",
+     "site": "wyo.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Business permitting",
+     "url": "https://sos.wyo.gov/Business/AdditionalInformation.aspx",
+     "site": "sos.wyo.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "business",
+     "label": "Wyoming Secretary of State - Business Center",
+     "url": "https://sos.wyo.gov/business/",
+     "site": "sos.wyo.gov",
+     "status": "opened"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Wyoming Department of Workforce Services",
+     "url": "https://dws.wyo.gov/",
+     "site": "dws.wyo.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "unemployment",
+     "label": "Unemployment insurance",
+     "url": "https://dws.wyo.gov/dws-division/unemployment-insurance/",
+     "site": "dws.wyo.gov",
+     "status": "blocks automated reading"
+    },
+    {
+     "topic": "new_hire",
+     "label": "New hire registry",
+     "url": "https://newhire-reporting.com/WY-Newhire/default.aspx",
+     "site": "newhire-reporting.com",
+     "status": "opened"
+    },
+    {
+     "topic": "statutes",
+     "label": "Wyoming state statutes & Constitution",
+     "url": "https://www.wyoleg.gov/stateStatutes/StateStatutes",
+     "site": "wyoleg.gov",
+     "status": "opened"
+    }
+   ]
+  }
+ ]
+}

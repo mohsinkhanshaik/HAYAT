@@ -299,8 +299,7 @@ class IntelligentModelRouter:
         providers = []
         candidates = [decision.primary, *decision.fallbacks]
         if self.resource_manager:
-            eligible = [model for model in candidates if self.resource_manager.can_load(model).get("allowed")]
-            candidates = eligible
+            candidates = [model for model in candidates if self._resources_allow(model)]
         for model in candidates:
             selected = copy(base); selected.model = model; providers.append(selected)
         if not providers:
@@ -314,9 +313,18 @@ class IntelligentModelRouter:
                 self._health[model] = CircuitBreaker(threshold=3, cooldown_seconds=60)
             return self._health[model]
 
+    def _resources_allow(self, model: str) -> bool:
+        """The memory estimate's verdict, except that HAYAT's own brain may always try a load that fits the machine.
+
+        2026-11-07: with free RAM briefly short of the 22 GB brain (other programs open), every reply became "HAYAT's
+        main model is currently unavailable" although Ollama could still have loaded it, partly on the GPU and the
+        rest in RAM. The brain is the one model that must answer, so only real failures (the circuit breaker) hold it
+        back; any other model keeps the estimate, and a model larger than the whole machine is still refused."""
+        decision = self.resource_manager.can_load(model)
+        return bool(decision.get("allowed")) or (model == self.identity_model and bool(decision.get("fits_machine")))
+
     def _admit(self, model: str) -> bool:
-        return self._model_health(model).allows() and (
-            self.resource_manager is None or bool(self.resource_manager.can_load(model).get("allowed")))
+        return self._model_health(model).allows() and (self.resource_manager is None or self._resources_allow(model))
 
     def _record_success(self, model: str) -> None:
         # A valid provider response is health evidence, not proof of answer

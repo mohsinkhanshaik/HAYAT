@@ -213,12 +213,13 @@ def score(job: dict[str, Any], reading: dict[str, Any], profile: dict[str, Any],
         parts["pay"] = {"value": 1.0 if top >= floor else .2, "reason": f"pays up to {top:,.0f} {pay['currency']}, your minimum is {floor:,.0f}"}
     else:
         parts["pay"] = {"value": .6, "reason": "pay or your minimum not comparable" if pay or floor else "pay not stated"}
-    try:
-        age = (now - datetime.fromisoformat(job["posted_at"])).days if job.get("posted_at") else None
-    except ValueError:
-        age = None
+    from app.jobs.outcomes import timestamp
+    posted = timestamp(job.get("posted_at"))
+    measured = timestamp(now) or datetime.now(UTC)
+    age = (measured - posted).days if posted is not None and posted <= measured else None
     parts["freshness"] = {"value": .6 if age is None else 1.0 if age <= 7 else .7 if age <= 30 else .3,
-                          "reason": "posting date unknown" if age is None else f"posted {age} day{'s' if age != 1 else ''} ago"}
+                          "reason": "future posting date; verify with the employer" if posted is not None and posted > measured else
+                                    "posting date unknown" if age is None else f"posted {age} day{'s' if age != 1 else ''} ago"}
     value = round(100 * sum(WEIGHTS[name] * part["value"] for name, part in parts.items()))
     choices = None
     if learned:
@@ -231,6 +232,10 @@ def score(job: dict[str, Any], reading: dict[str, Any], profile: dict[str, Any],
             choices = {"shift": shift, "reason": ("like jobs you pursued (" + ", ".join(liked) + ")" if liked else "")
                        + ("; " if liked and disliked else "") + ("like jobs you hid (" + ", ".join(disliked) + ")" if disliked else "")}
     blocked = eligibility(job, reading, profile, skills)
+    expiry = timestamp(job.get("expires_at"))
+    if expiry is not None and expiry <= measured:
+        from app.jobs.freshness import EXPIRY_REASON
+        blocked.append(EXPIRY_REASON)
     if blocked:
         value = min(value, 25)
     move = relocation(job, reading, profile)

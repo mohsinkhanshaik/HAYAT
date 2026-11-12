@@ -25,7 +25,16 @@ _log = logging.getLogger(__name__)
 
 
 #: Failures that repeat identically, so retrying the same call wastes the step budget.
-DETERMINISTIC_ERRORS = ("FileNotFoundError", "NotADirectoryError", "IsADirectoryError", "UnsafeUrlError")
+#: Errors the same call will raise again: retrying it only wastes time (the owner's event log, 2026-11-07:
+#: "I couldn't find a place called 'Global Technology Sector'" was tried three times running). Tools raise
+#: ValueError/TypeError/KeyError for arguments they cannot use, PermissionError for a refusal (robots.txt,
+#: authority). Network timeouts and connection errors are not here: those can pass.
+DETERMINISTIC_ERRORS = ("FileNotFoundError", "NotADirectoryError", "IsADirectoryError", "UnsafeUrlError",
+                        "ValueError", "TypeError", "KeyError", "PermissionError")
+
+
+def last_error_deterministic(result) -> bool:
+    return result is not None and str(getattr(result, "error", "") or "").startswith(DETERMINISTIC_ERRORS)
 
 
 @dataclass(slots=True)
@@ -62,6 +71,8 @@ class Agent:
         self.experience: Any = None
         self.situation_brief: Any = None
         self.executive: Any = None
+        #: Independent read-only steps of one plan run at the same time (app/agent/parallel.py).
+        self.parallel_steps = True
 
     def run(self, goal: str, intent: Any | None = None, session: Any | None = None) -> TaskOutcome:
         if not self._run_lock.acquire(blocking=False):
@@ -91,10 +102,12 @@ class Agent:
         # task rather than to whichever task the session happened to finish
         # last, which is a different task entirely while this one is running.
         task_id = datetime_task_id()
+        from app.nervous_system import BODY
+
         with execution_scope(
             task_id=task_id,
             session_id=getattr(session, "session_id", None) or UNSET,
-        ):
+        ), BODY.focus("running a task: " + goal[:80]):
             return self._run_task(task_id, goal, intent, session)
 
     def _run_task(self, task_id: str, goal: str, intent: Any | None = None, session: Any | None = None) -> TaskOutcome:
@@ -119,6 +132,8 @@ class Agent:
             self.memory.update_task(task_id, "failed", summary)
             self.memory.store_memory("episodic", summary, 0.9, "task", task_id, {"goal": goal, "complete": False}, session_id=getattr(session, "session_id", None))
             reflection = self.reflector.reflect(task_id, goal, [], False)
+            # A planning failure is the model's, not the recalled memories', so nothing is weakened.
+            self._bind_episode(task_id)
             logger.log("task_finished", complete=False, summary=summary, reflection=reflection)
             return TaskOutcome(task_id, goal, False, summary, [], [], reflection)
         self.active_plan = [step.to_dict() for step in plan]
@@ -140,7 +155,11 @@ class Agent:
         last_error = ''
 
         index = 0
-        while index < len(plan) and executed < self.max_steps:
+        # Results of independent read-only steps started together (app/agent/parallel.py), keyed by the step
+        # object so a recovery that splices new steps in before them cannot hand one step another's result.
+        prefetched: dict[int, Any] = {}
+        # A step started early already counts against the budget, so it is consumed even when the count is full.
+        while index < len(plan) and (executed < self.max_steps or id(plan[index]) in prefetched):
             if executive_frame is not None:
                 from app.executive import ExecutiveLimit
                 try:
@@ -156,8 +175,14 @@ class Agent:
             self.active_activity = "executing"
             passed = False
             last_error = ""
+            result = None
+            if self.parallel_steps and id(step) not in prefetched and not self._cancel_event.is_set():
+                # Calls started early count against the budget when they start, not when their result is used.
+                executed += self._start_together(plan, index, executed, working, prefetched, task_id, logger)
             for retry in range(step.max_retries + 1):
-                if executed >= self.max_steps:
+                pending = prefetched.pop(id(step), None) if retry == 0 else None
+                early = pending.result() if pending is not None else None
+                if early is None and executed >= self.max_steps:
                     last_error = f'Task stopped at its {self.max_steps}-call execution budget; remaining work was not executed.'
                     break
                 if self._cancel_event.is_set():
@@ -166,13 +191,14 @@ class Agent:
                 observation = self.observe_environment()
                 working.observe(observation)
                 started = time.perf_counter()
-                result = self.executor.execute(step, working.history)
+                result = early if early is not None else self.executor.execute(step, working.history)
                 verification = self.verifier.check(step.expected, result)
                 if executive_frame is not None:
                     self.executive.observe(executive_frame, 'verification', {
                         'tool': step.tool, 'passed': verification.passed, 'reason': verification.reason})
                 self.active_activity = "verifying"
-                duration_ms = int((time.perf_counter() - started) * 1000)
+                duration_ms = (int(early.duration_ms or 0) if early is not None
+                               else int((time.perf_counter() - started) * 1000))
                 event = {
                     "step": index + 1,
                     "description": step.description,
@@ -201,7 +227,8 @@ class Agent:
                     "step": index + 1, "tool": step.tool,
                     "verified": verification.passed, "retry": retry,
                 }, task_id=task_id)
-                executed += 1
+                if early is None:
+                    executed += 1
                 if isinstance(result.output, dict) and result.output.get("requires_user_choice"):
                     needs_user_input = True
                     last_error = str(result.output.get("reason") or "The action requires an explicit user choice.")
@@ -234,6 +261,12 @@ class Agent:
                     recovery = []
                     last_error = f"Replanning failed: {type(exc).__name__}: {exc}"
                     logger.log("replanning_failed", error=last_error)
+                if recovery and last_error_deterministic(result):
+                    # A recovery that repeats the very call that just failed for good is no recovery.
+                    recovery = [item for item in recovery
+                                if not (item.tool == step.tool and item.arguments == step.arguments)]
+                    if not recovery:
+                        last_error += " (re-planning only repeated the same call, so it was not run again)"
                 if recovery:
                     required = len(recovery) + len(plan) - index - 1
                     if required > self.max_steps - executed:
@@ -247,6 +280,10 @@ class Agent:
                 break
             index += 1
 
+        if prefetched:
+            # Started together with steps that ran, but the task stopped before reaching them. They only read,
+            # and the registry's event log has each call; the task log says they were not used.
+            logger.log("parallel_results_unused", tools=[step.tool for step in plan if id(step) in prefetched])
         goal_verification = self.verifier.check_goal(criteria, working.history) if criteria else Verification(True, "No separate goal criteria were supplied.", {})
         cancelled = self._cancel_event.is_set()
         complete = all_passed and index == len(plan) and goal_verification.passed and not cancelled
@@ -259,6 +296,13 @@ class Agent:
                               for event in working.history]
         self.memory.store_memory("episodic", summary, 0.8 if complete else 0.9, "task", task_id, {"goal": goal, "complete": complete, "history": persistent_history}, session_id=getattr(session, "session_id", None))
         reflection = self.reflector.reflect(task_id, PRIVATE_TEXT if private_networking else goal, persistent_history, complete)
+        self._bind_episode(task_id)
+        if not cancelled and not needs_user_input and memories:
+            # The memories the plan was made from learn from how it went (app/memory/plasticity.py).
+            from app.memory.plasticity import reinforce_quietly
+
+            reinforce_quietly(self.memory, [item["id"] for item in memories], complete,
+                              reason=("task succeeded: " if complete else "task failed: ") + goal[:80])
         if self.experience is not None and not cancelled:
             try:
                 kind = getattr(getattr(intent, "intent", None), "value", "") or ""
@@ -335,16 +379,63 @@ class Agent:
             log_swallowed(_log, "reading recorded fixes for a failed step", level=logging.WARNING)
             return []
 
+    def _start_together(self, plan: list[Any], index: int, executed: int, working: Any,
+                        prefetched: dict[int, Any], task_id: str, logger: Any) -> int:
+        """Start the run of independent read-only steps beginning here at once; returns how many were started."""
+        registry = getattr(self.executor, "registry", None)
+        if registry is None:
+            return 0
+        from app.agent.parallel import independent_run, run_together
+
+        run = independent_run(plan, index, registry, limit=self.max_steps - executed,
+                              already={id(step) for step in plan if id(step) in prefetched})
+        if not run:
+            return 0
+        steps = [plan[position] for position in run]
+        self._publish("TASK_PROGRESS", {
+            "detail": f"running {len(steps)} independent steps at the same time: " + ", ".join(step.tool for step in steps),
+            "step": index + 1, "parallel": len(steps),
+        }, task_id=task_id)
+        for step, pending in zip(steps, run_together(self.executor, steps, working.history), strict=True):
+            prefetched[id(step)] = pending
+        logger.log("parallel_steps", steps=[position + 1 for position in run], tools=[step.tool for step in steps])
+        return len(steps)
+
+    def _bind_episode(self, task_id: str) -> None:
+        """Link the task's reflection to its episode and the episode to the previous task in the session."""
+        if not hasattr(self.memory, "connect"):
+            return
+        try:
+            from app.memory.plasticity import bind_episode
+
+            bind_episode(self.memory, task_id)
+        except Exception:
+            log_swallowed(_log, "linking a finished task to its reflection", level=logging.WARNING)
+
     def _planning_memories(self, goal: str) -> list[dict[str, Any]]:
         recalled = self.memory.retrieve(goal, limit=20)
         recalled = [item for item in recalled if not (item["memory_type"] == "episodic" and item.get("metadata", {}).get("complete") is False)]
         if not recalled:
             return []
         threshold = max(0.35, recalled[0]["relevance"] - 0.20)
-        return [
+        chosen = [
             {"id": item["id"], "memory_type": item["memory_type"], "content": item["content"][:1200], "relevance": item["relevance"]}
             for item in recalled if item["relevance"] >= threshold
         ][:3]
+        # A recalled past task brings its recorded lesson along (the reflection bound to it by
+        # app/memory/plasticity.bind_episode), so the plan is made knowing what failed there before.
+        if hasattr(self.memory, "connect"):
+            try:
+                from app.memory.plasticity import lesson_for
+
+                for item in chosen:
+                    if item["memory_type"] == "episodic":
+                        lesson = lesson_for(self.memory, item["id"])
+                        if lesson:
+                            item["lesson"] = lesson
+            except Exception:
+                log_swallowed(_log, "reading the lesson linked to a recalled task", level=logging.WARNING)
+        return chosen
 
     @staticmethod
     def _summarize(goal: str, history: list[dict[str, Any]], complete: bool, goal_verification: Any | None = None) -> str:

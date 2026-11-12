@@ -26,6 +26,7 @@ from typing import Any
 
 from app.gui_icons import apply_icons
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import place_over
 from app.logging import log_swallowed
@@ -127,14 +128,14 @@ class SensingStudio(tk.Toplevel):
             label = tk.Label(lights, text="", bg=p.PANEL_2, fg=p.MUTED, font=("Segoe UI Semibold", 9), padx=10, pady=4)
             label.pack(side="left", padx=(0, 6))
             self.lights[key] = label
-        self.detail_var = StringVar(self, "")
+        self.detail_var = DisplayVar(self, "")
         tk.Label(lights, textvariable=self.detail_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9),
                  anchor="w").pack(side="left", fill="x", expand=True, padx=(6, 0))
 
         # The footer is packed before the tabs so a short screen squeezes the tabs, never the status line.
         footer = tk.Frame(self, bg=p.BLACK, padx=16, pady=6)
         footer.pack(fill="x", side="bottom")
-        self.status_var = StringVar(self, "")
+        self.status_var = DisplayVar(self, "")
         tk.Label(footer, textvariable=self.status_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9)).pack(side="left")
         self.progress = ttk.Progressbar(footer, mode="indeterminate", length=120, style="Hayat.Horizontal.TProgressbar")
 
@@ -189,7 +190,7 @@ class SensingStudio(tk.Toplevel):
         # -- live
         live = self._card(body, "Live signal")
         live.grid(row=0, column=1, sticky="nsew", pady=(0, 10))
-        self.live_caption = StringVar(self, "Nothing connected.")
+        self.live_caption = DisplayVar(self, "Nothing connected.")
         tk.Label(live, textvariable=self.live_caption, bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 9),
                  anchor="w", justify="left", wraplength=WATERFALL[0]).pack(fill="x")
         self.waterfall = tk.Canvas(live, width=WATERFALL[0], height=WATERFALL[1], bg=p.BLACK, highlightthickness=0)
@@ -200,22 +201,22 @@ class SensingStudio(tk.Toplevel):
         movement.grid(row=1, column=1, sticky="nsew", pady=(0, 10))
         top = tk.Frame(movement, bg=p.PANEL)
         top.pack(fill="x")
-        self.level_var = StringVar(self, "Waiting for a reading")
+        self.level_var = DisplayVar(self, "Waiting for a reading")
         self.level_label = tk.Label(top, textvariable=self.level_var, bg=p.PANEL, fg=p.WHITE,
                                     font=("Segoe UI Semibold", 15), anchor="w")
         self.level_label.pack(side="left")
-        self.level_detail = StringVar(self, "")
+        self.level_detail = DisplayVar(self, "")
         tk.Label(top, textvariable=self.level_detail, bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 9)).pack(side="left", padx=10)
         self.timeline = tk.Canvas(movement, width=TIMELINE[0], height=TIMELINE[1], bg=p.BLACK, highlightthickness=0)
         self.timeline.pack(fill="x", pady=(6, 4))
-        self.reading_var = StringVar(self, "")
+        self.reading_var = DisplayVar(self, "")
         tk.Label(movement, textvariable=self.reading_var, bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 9), anchor="w",
                  justify="left", wraplength=560).pack(fill="x")
 
         # -- camera
         camera = self._card(body, "Camera cross-check")
         camera.grid(row=1, column=0, sticky="nsew", padx=(0, 10), pady=(0, 10))
-        self.camera_state = StringVar(self, "")
+        self.camera_state = DisplayVar(self, "")
         tk.Label(camera, textvariable=self.camera_state, bg=p.PANEL, fg=p.MUTED, font=("Segoe UI", 9),
                  anchor="w").pack(fill="x", pady=(4, 4))
         self.confirm_var = BooleanVar(self, bool(self.monitor.camera_confirm))
@@ -224,7 +225,7 @@ class SensingStudio(tk.Toplevel):
         self.check_button = ttk.Button(camera, text="Check now: Wi-Fi + camera", style="HayatAccent.TButton",
                                        width=0, command=self.check_with_camera)
         self.check_button.pack(anchor="w", pady=(8, 6))
-        self.fused_var = StringVar(self, "No cross-check yet.")
+        self.fused_var = DisplayVar(self, "No cross-check yet.")
         tk.Label(camera, textvariable=self.fused_var, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI", 10), anchor="w",
                  justify="left", wraplength=470).pack(fill="x")
         tk.Label(camera, text="The camera opens only for a check you ask for or tick above; no frames are kept. "

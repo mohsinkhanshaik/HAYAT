@@ -130,3 +130,20 @@ def test_capture_main_layout(gui, monkeypatch, tmp_path):
             _grab(gui, name)
     finally:
         root.withdraw()
+
+
+def test_the_window_bars_stay_over_the_docked_intelligence_card(gui):
+    # The card is the root's child (so it can float) packed into the scrolling column; nothing clipped it,
+    # so its map covered the right end of the status bar (Uptime and the health line) and, scrolled, the header.
+    card = getattr(gui, "_intelligence_home", None)
+    if card is None:
+        pytest.skip("no intelligence manager in this runtime")
+    show(gui, '1536x900')
+    gui.show_view('chat')
+    card.panel_layout.dock()
+    gui.root.update()
+    order = gui.root.winfo_children()  # lowest first
+    assert card.winfo_parent() == str(gui.root)
+    for bar in gui.root.pack_slaves():
+        if bar is not gui._body:
+            assert order.index(bar) > order.index(card), bar

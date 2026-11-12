@@ -28,6 +28,11 @@ def corrected_request(text: str) -> str | None:
 
 
 def remember_correction(memory, session_id: str, text: str) -> int | None:
+    from app.owner_feedback import record_from_message
+
+    # "That's wrong" / "good answer" / "you misunderstood" are also verdicts on
+    # the previous reply, counted in the owner's right-and-wrong record.
+    record_from_message(memory, session_id, text, misunderstood=bool(CORRECTION.match(str(text).strip())))
     if not CORRECTION.match(str(text).strip()):
         return None
     history = memory.conversation_history(session_id, 6)

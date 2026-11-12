@@ -9,8 +9,9 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
+from collections import Counter
 from collections.abc import Iterator
-from contextlib import closing
+from contextlib import closing, contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -44,11 +45,20 @@ class JobStore:
                 CREATE TABLE IF NOT EXISTS source_cooldowns (name TEXT PRIMARY KEY, retry_at TEXT NOT NULL, reason TEXT NOT NULL);
                 CREATE INDEX IF NOT EXISTS matches_score ON matches(score DESC);
             """)
+            db.execute("BEGIN IMMEDIATE")
+            columns = {row[1] for row in db.execute("PRAGMA table_info(applications)")}
+            for name, kind in (("score_at_application", "INTEGER"), ("verdict_at_application", "TEXT")):
+                if name not in columns:
+                    db.execute(f"ALTER TABLE applications ADD COLUMN {name} {kind}")
 
-    def _db(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.path, timeout=15)
-        connection.row_factory = sqlite3.Row
-        return connection
+    @contextmanager
+    def _db(self) -> Iterator[sqlite3.Connection]:
+        # A sqlite connection context commits/rolls back but does not close.
+        # Closing explicitly prevents handle accumulation and Windows file locks.
+        with closing(sqlite3.connect(self.path, timeout=15)) as connection:
+            connection.row_factory = sqlite3.Row
+            with connection:
+                yield connection
 
     # ------------------------------------------------------------------ jobs
     def upsert(self, rows: list[dict[str, Any]]) -> list[int]:
@@ -89,13 +99,15 @@ class JobStore:
 
     @staticmethod
     def _row(row: sqlite3.Row) -> dict[str, Any]:
-        value = {**json.loads(row["data"]), "number": row["number"], "first_seen": row["first_seen"], "hidden": bool(row["hidden"])}
+        value = {**json.loads(row["data"]), "number": row["number"], "first_seen": row["first_seen"],
+                 "last_seen": row["last_seen"], "hidden": bool(row["hidden"])}
         keys = row.keys()
         if "score" in keys and row["score"] is not None:
             value.update(score=row["score"], verdict=row["verdict"], reading=json.loads(row["reading"]), match=json.loads(row["match"]))
         if "application" in keys:
             value["application"] = row["application"]
-        return value
+        from app.jobs.freshness import current_listing
+        return current_listing(value)
 
     def numbers(self, include_hidden: bool = False) -> list[int]:
         with self._db() as db:
@@ -128,18 +140,21 @@ class JobStore:
             sql += " AND (j.title LIKE ? OR j.company LIKE ?)"
             values += [f"%{query}%", f"%{query}%"]
         sql += " ORDER BY m.score DESC, j.posted_at DESC, j.number DESC"
-        with closing(self._db()) as db:
+        with self._db() as db:
             cursor = db.execute(sql, values)
             while batch := cursor.fetchmany(200):
                 for row in batch:
-                    yield self._row(row)
+                    current = self._row(row)
+                    if current['score'] >= min_score and (include_blocked or current['verdict'] != 'not eligible'):
+                        yield current
 
     def unnotified(self, min_score: int) -> list[dict[str, Any]]:
         with self._db() as db:
             rows = db.execute("SELECT j.*, m.score, m.verdict, m.reading, m.match FROM matches m JOIN jobs j ON j.number=m.number "
                               "WHERE m.notified=0 AND m.score>=? AND m.verdict!='not eligible' AND j.hidden=0 ORDER BY m.score DESC",
                               (int(min_score),)).fetchall()
-        return [self._row(row) for row in rows]
+        current = [self._row(row) for row in rows]
+        return [row for row in current if row['score'] >= min_score and row['verdict'] != 'not eligible']
 
     def mark_notified(self, numbers: list[int]) -> None:
         with self._lock, self._db() as db:
@@ -151,9 +166,13 @@ class JobStore:
             db.execute("UPDATE jobs SET hidden=? WHERE number=?", (int(hidden), int(number)))
 
     def counts(self) -> dict[str, int]:
+        from app.jobs.freshness import listing_evidence
+        measured = datetime.now(UTC)
         with self._db() as db:
             jobs = db.execute("SELECT COUNT(*) FROM jobs WHERE hidden=0").fetchone()[0]
-            verdicts = dict(db.execute("SELECT verdict, COUNT(*) FROM matches GROUP BY verdict").fetchall())
+            verdicts = Counter('not eligible' if listing_evidence(json.loads(row['data']), measured)['state'] == 'expired'
+                               else row['verdict'] for row in db.execute(
+                                   'SELECT m.verdict, j.data FROM matches m JOIN jobs j ON j.number=m.number'))
             applications = dict(db.execute("SELECT status, COUNT(*) FROM applications GROUP BY status").fetchall())
         return {"jobs": jobs, **{f"verdict_{key}": value for key, value in verdicts.items()},
                 **{f"applications_{key}": value for key, value in applications.items()}}
@@ -172,13 +191,19 @@ class JobStore:
     def defer_source(self, name: str, retry_at: str, reason: str) -> None:
         # ATS boards share a provider's request allowance.
         name = name.split(":", 1)[0]
+        from app.jobs.outcomes import timestamp
+        parsed = timestamp(retry_at)
+        if parsed is None:
+            raise ValueError("A valid source retry timestamp is required")
+        retry_at = parsed.isoformat()
         with self._lock, self._db() as db:
             db.execute("INSERT INTO source_cooldowns VALUES (?, ?, ?) ON CONFLICT(name) DO UPDATE SET "
-                       "retry_at=MAX(source_cooldowns.retry_at, excluded.retry_at), reason=excluded.reason", (name, retry_at, reason))
+                       "retry_at=CASE WHEN julianday(source_cooldowns.retry_at) IS NULL OR julianday(excluded.retry_at)>julianday(source_cooldowns.retry_at) "
+                       "THEN excluded.retry_at ELSE source_cooldowns.retry_at END, reason=excluded.reason", (name, retry_at, reason))
 
     def source_cooldowns(self) -> dict[str, dict[str, Any]]:
         with self._db() as db:
-            return {row["name"]: dict(row) for row in db.execute("SELECT * FROM source_cooldowns WHERE retry_at>?", (now_iso(),))}
+            return {row["name"]: dict(row) for row in db.execute("SELECT * FROM source_cooldowns WHERE julianday(retry_at)>julianday(?)", (now_iso(),))}
 
     def source_state(self) -> dict[str, dict[str, Any]]:
         with self._db() as db:
@@ -202,7 +227,7 @@ class JobStore:
     def set_status(self, number: int, status: str, note: str = "", folder: str | None = None, channel: str | None = None) -> dict[str, Any]:
         if status not in STATUSES:
             raise ValueError("Status is one of: " + ", ".join(STATUSES) + ".")
-        self.job(number)
+        job = self.job(number)
         stamp = now_iso()
         with self._lock, self._db() as db:
             found = db.execute("SELECT * FROM applications WHERE number=?", (int(number),)).fetchone()
@@ -217,6 +242,9 @@ class JobStore:
                 follow = (datetime.now(UTC) + timedelta(days=FOLLOW_UP_DAYS)).isoformat(timespec="seconds")
                 db.execute("UPDATE applications SET applied_at=COALESCE(applied_at, ?), follow_up_at=COALESCE(follow_up_at, ?) WHERE number=?",
                            (stamp, follow, int(number)))
+                if found is None or not found["applied_at"]:
+                    db.execute("UPDATE applications SET score_at_application=?,verdict_at_application=? WHERE number=?",
+                               (job.get("score"), job.get("verdict"), int(number)))
             if note:
                 db.execute("UPDATE applications SET notes=TRIM(notes || char(10) || ?) WHERE number=?", (note[:500], int(number)))
             db.execute("INSERT INTO application_events (number, at, status, note) VALUES (?, ?, ?, ?)", (int(number), stamp, status, note[:500]))
@@ -232,10 +260,14 @@ class JobStore:
         sql += " ORDER BY a.updated_at DESC"
         with self._db() as db:
             rows = db.execute(sql, values).fetchall()
+            events: dict[int, list[dict[str, Any]]] = {}
+            for item in db.execute("SELECT number,at,status FROM application_events ORDER BY id"):
+                events.setdefault(item["number"], []).append(dict(item))
         out = []
         for row in rows:
             data = json.loads(row["data"])
-            out.append({key: row[key] for key in row.keys() if key != "data"} | {"url": data.get("url"), "source_name": data.get("source_name")})
+            out.append({key: row[key] for key in row.keys() if key != "data"} | {
+                "url": data.get("url"), "source_name": data.get("source_name"), "events": events.get(row["number"], [])})
         return out
 
     def due_follow_ups(self) -> list[dict[str, Any]]:

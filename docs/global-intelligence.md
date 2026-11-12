@@ -171,6 +171,68 @@ Changing filters clears the previous event's assessment while the next matching
 record loads. Hidden layers also hide a selected marker's highlight.
 The map upgrade record documents tests and visual review.
 
+### 3D globe (2026-11-08)
+
+The Map tab opens on a 3D Earth; **3D globe / Flat map** at the start of the map
+toolbar (or **G** with the map focused) switches, keeping the place in view. The
+flat map remains the 2D alternative, and **In view** and the Events table still
+reach every observation from the keyboard.
+
+What it shows, and where it comes from:
+
+| On the globe | Source | Live? |
+| --- | --- | --- |
+| Land and ocean | NASA Blue Marble: Next Generation, cloud-free composite (public domain), via Wikimedia Commons | No: a composite, not today's weather or clouds |
+| Lights on the night side | NASA Black Marble 2012 (Suomi NPP VIIRS, public domain) | No: 2012 composite |
+| Day and night | The sun's position for the moment drawn (NOAA approximation, ~0.2°); the yellow ring marks where it is overhead | Yes: computed from the clock |
+| Country outlines, names, population, GDP, income group | Natural Earth 1:110m admin-0 (public domain), with the year of each figure | No: estimates for the year shown |
+| Markers, clusters, callout | The same observations as the flat map | As live as their feeds |
+
+The files are in `app/assets/earth/` with a manifest giving each one's source,
+licence, hash and how it was resized; nothing is downloaded at run time.
+Clouds, live weather, aircraft and borders other than Natural Earth's de facto
+lines are not drawn: no bundled source supports them.
+
+- **Turn and zoom.** Drag to turn the planet under the pointer; a quick flick
+  coasts and slows. The wheel zooms toward the pointer. Arrow keys turn,
+  **+ / -** zoom and **Home** resets. **Fit results** and **Fit region** fly to
+  the loaded observations or the chosen region; selecting an observation turns
+  it toward the middle and **Focus on map** flies close.
+- **Countries.** Pointing at a country outlines it; clicking opens its card with
+  Natural Earth's population and GDP (and their year), GDP per person, income
+  group, and how many loaded observations fall inside it, with their sources and
+  the newest one's age. **List observations** opens them; **Back** (Backspace)
+  returns to the view before; clicking the sea or space closes the card.
+- **Colour countries by** people per km², GDP per person or income group
+  (**Map options → Globe**). Numbers are split into five equal-count bands; the
+  legend gives the ranges, the years and how each figure is worked out, and says
+  "historical, not live".
+- **Go to place** (Ctrl+G, also in Map options) lists matching countries from the
+  bundled outlines and towns from the GeoNames list on this computer (installed
+  by Location privacy); nothing is looked up online. A town is pinned; a country
+  opens its card. It works on the flat map too.
+- **Filter to visible map** uses the part of the planet in view.
+- **Saved views** remember the mode, the globe camera and its options; the mode,
+  options and camera are also kept for the next time the window opens.
+
+Performance. The planet is computed with numpy on the CPU into one image and
+drawn only when the view changes; a still globe costs nothing and no graphics
+memory is used, so it never competes with a local model. A moving globe is drawn
+smaller and sharpened when it stops; distant views sample smaller copies of the
+imagery so coastlines do not shimmer. **Quality** under Map options → Globe:
+Performance, Balanced, Ultra (supersampled), or Automatic, which sizes frames
+from the time this computer actually took. **Rendering details** reports the last
+frame. Measured on the owner's screen size (1504 × 620 map): Automatic redraws a
+moving globe in 42–44 ms and a still one in 49 ms (whole planet) to about 220 ms
+(close up); Performance 24–34 ms moving. With Windows animations off, flights jump,
+nothing coasts, and **Turn slowly** stays still; the turning also pauses while the
+pointer is over the map or the window is minimized.
+
+If the imagery files are missing the globe draws Natural Earth land on a plain
+ocean and says so; if the globe cannot start at all, the flat map is shown with
+the reason. Tests: `tests/test_gui_globe.py`; screenshots on request:
+`tests/test_gui_globe_shots.py`.
+
 ### What the window shows first (2026-10-10)
 
 Reviewed on a copy of the owner's real feeds (5,901 events, 35,219 cameras):
@@ -256,7 +318,7 @@ One filtering pass serves the table, map, live feed and counts. On the October
 
 ## Public views and richer context
 
-**World atlas** opens a local, token-addressed Leaflet map. Zoom with the wheel
+**Browser atlas** in the Global Intelligence header (also **Map options → World atlas**) opens a local, token-addressed Leaflet map. Zoom with the wheel
 or controls, drag to pan, select a region/layer, and search places or events.
 Dense observations form numbered clusters; selecting one zooms closer. Selecting
 a marker opens provider facts, fetch/event times, revisions and nearby items.
@@ -308,6 +370,25 @@ Successful feed refreshes also store bounded normalized evidence in Hayat's
 research source cache, expiring at the feed interval. External text remains
 untrusted evidence; it is not promoted into independently verified claims.
 This improves source access and situational context, not literal consciousness.
+
+## Browser atlas for keyboard, screen reader and touch (2026-11-07)
+
+An audit of the real atlas page in Chromium (desktop 1536×900 and phone 390×844) found that a keyboard
+user had to Tab through every observation in the list to reach the map, one severe-event marker was
+announced only as "button", the 14 layer and filter checkboxes were 14 px, and map labels were 8–9 px at
+2.7–4.2:1 contrast. Now:
+
+- The observation list is **one Tab stop**: Arrow Up/Down, Home and End move between records and Enter
+  opens one. Tab goes straight on to the map.
+- **Skip to map** and **Skip to details** join **Skip to search** as the first Tab stops; Skip to details
+  opens the details panel if it is closed.
+- Severe-event and cluster markers carry spoken names ("12 public cameras, press Enter to zoom in";
+  "<title>, high severity flood, press Enter for evidence").
+- Checkboxes are 20 px in rows at least 24 px tall; map labels are 10–11 px and meet WCAG AA contrast.
+
+[tests/test_atlas_accessibility.py](../tests/test_atlas_accessibility.py) runs the same audit on every
+change: no unnamed controls, no text below AA contrast, no horizontal scroll, touch-sized checkboxes, Tab
+reaching the map, arrow-key movement, skip links and marker names.
 
 ## Map, evidence and front page
 
@@ -506,7 +587,15 @@ live on October 5, 2026 through HAYAT's own fetcher, robots.txt rules included:
 | [MassDOT (Mass511, CARS)](https://mass511.com/) | 308 | stills | 60 minutes |
 | [MoDOT Traveler (Missouri)](https://traveler.modot.org/) | 555 | live HLS video | 60 minutes |
 | [TxDOT, 25 districts (Texas)](https://its.txdot.gov/) | 4,371 (4,168 online) | snapshots (base64 JSON, decoded) | 60 minutes |
-| [ALDOT ALGO Traffic (Alabama)](https://algotraffic.com/) | 537 | live HLS video and stills | 60 minutes |
+| [ALDOT ALGO Traffic (Alabama)](https://algotraffic.com/) | 633 | stills (its video became DRM-encrypted in November 2026) | 60 minutes |
+| [FL511, Florida DOT](https://fl511.com/) (added 2026-11-06) | 3,790 | stills (keyed by image channel: FL511's camera numbers repeat across districts) | 60 minutes (3 pages) |
+| [Houston TranStar](https://traffic.houstontranstar.org/) (added 2026-11-06) | 1,083 | stills | 60 minutes |
+| [King County Road Services, Washington](https://kingcounty.gov/en/dept/local-services/transportation/roads/traffic-cameras) (added 2026-11-06) | 123 (82 with stills, 55 active) | stills | 60 minutes |
+| [Autostrada del Brennero (A22), Italy](https://www.autobrennero.it/) (added 2026-11-06) | 13 | stills, about once a minute | 60 minutes |
+
+The four networks added on 2026-11-06 came from the camera packs of
+[gods-eye-view](https://github.com/bilawalsidhu/gods-eye-view) (MIT) and brought 5,009 cameras
+in a live check, each with a still loaded through HAYAT's own frame path ([explore](explore.md#second-wave-2026-11-06-transit-gps-interference-airspace-perimeters-whales-street-photos)).
 
 Together with London and California that is 25,496 public cameras in a live check of
 all 41 feeds (48 seconds, none failed). The
@@ -561,6 +650,47 @@ Hong Kong's XML catalog is parsed with document-type and entity declarations
 refused. These are public publisher cameras only. HAYAT does not search for
 private or unsecured cameras, does not record continuously and does no face or
 plate recognition.
+
+### Which cameras really work (2026-11-06)
+
+A publisher marking a camera "available" does not mean it shows the road. A live audit
+of every network that day fetched real stills from six cameras per network and decoded a
+real frame from three streams per network with FFmpeg. 81 networks were connected, and most
+returned real pictures. The failures were all of these kinds:
+
+| What HAYAT saw | Where | Now |
+|---|---|---|
+| The publisher's "Temporarily Unavailable" card instead of the road | Caltrans (all six sampled in Los Angeles), Austin, Lyon, King County, MassDOT, TxDOT | Recognised and recorded as a card |
+| A web page instead of a picture | New South Wales (every camera) | Recorded; after five such answers the network counts as down |
+| A "LOADING VIDEO" slate inside a working stream | Indiana | Found by decoding a frame |
+| Video only Apple players can decrypt (FairPlay DRM) | Alabama (25 of 25 streams) | Alabama is stills only; HAYAT does not work around DRM |
+| 404s and dead streams listed as available | Iowa stills, some Caltrans streams, Missouri's servers that hour | Recorded as not answering |
+| GIF pictures labelled as JPEG | King County | Converted and shown |
+
+Every still HAYAT fetches and every stream it checks is recorded, one record for a camera's
+still and one for its video. A camera that failed is passed over for six hours when HAYAT
+picks one to show: "play a camera in …", the next still, and the nearest cameras. It is then
+tried again. A network where five checks failed and none worked counts as down.
+
+**Cards versus night scenes.** A real camera at night is mostly one dark shade, so the old
+placeholder rule refused real night pictures from Spain, Norway and Iceland. A camera
+picture always carries sensor noise, while a drawn card is flat. HAYAT now also requires at
+least 70 % of the picture to be perfectly flat. Measured on real stills from the audit, the
+night scenes were 0–62 % flat and the cards 79–95 %. None of 64 real pictures was refused,
+and all ten cards were caught. Nine of those stills are kept as test fixtures in
+[tests/fixtures/camera-stills](../tests/fixtures/camera-stills).
+
+**Test them yourself.** Say "test the public cameras", "are the cameras in Delaware working?"
+or "which cameras are broken?", or press **Cameras → Test cameras**. HAYAT samples each
+matching network, fetches real stills, checks streams for DRM and decodes one frame each.
+Every network at once takes about two minutes. The Cameras tab then shows a **Checked**
+column (✓ working, ✗ publisher card, not answering, encrypted video, stream down), and
+**Hide failed checks** leaves out what failed; unchecked cameras may remain. A loaded still says plainly whether it is a real
+picture or the publisher's card. The **Sources** tab adds a **Camera check** column with each
+network's results over the last six hours ("4/5 working", "· down"), and states feeds in plain
+words ("current", "out of date", "not read yet", "needs a free key"). On the browser atlas, a
+camera whose last check failed is drawn dim and sorted last. Code:
+[camera_health.py](../app/intelligence/camera_health.py).
 
 ### Turning on keyed camera networks
 

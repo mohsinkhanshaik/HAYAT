@@ -288,13 +288,14 @@ class SelfImprovement:
         learner = getattr(self.runtime, "learner", None)
         if learner is not None:
             try:
-                allowed, reason = learner.may_run()
+                inspect = getattr(learner, "preview_admission", None) or learner.may_run
+                allowed, reason = inspect()
                 paused = bool(getattr(learner, "paused", False))
             except Exception:
                 allowed, reason, paused = True, "ok", False
             # A pause belongs to the turn in flight and clears itself; only a
             # standing block is worth raising.
-            if not allowed and not paused:
+            if allowed is False and not paused:
                 found.append(Improvement(
                     title="background learning cannot start a cycle",
                     reason=f"may_run is refusing every cycle: {reason}",

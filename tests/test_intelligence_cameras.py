@@ -160,10 +160,10 @@ def test_nearest_search_media_filter_and_network_summary(cameras):
     assert {row['feed'] for row in cameras.cameras(media='video', limit=50)['cameras']} >= {'cameras_delaware', 'cameras_iowa', 'cameras_london'}
     assert {row['feed'] for row in cameras.cameras(media='page', limit=50)['cameras']} == {'cameras_maryland', 'cameras_quebec', 'cameras_alertca',
                                                                                    'cameras_illinois', 'cameras_michigan', 'cameras_alabama', 'cameras_luxembourg', 'cameras_valencia',
-                                                                                   'livestreams'}
+                                                                                       'livestreams', 'cameras_northern_ireland'}
     summary = cameras.cameras(limit=1)
     from app.intelligence.live import LIVESTREAMS
-    assert summary['networks']['Caltrans'] == 12 and summary['with_publisher_player'] == 8 + len(LIVESTREAMS)
+    assert summary['networks']['Caltrans'] == 12 and summary['with_publisher_player'] == 9 + len(LIVESTREAMS)
     by_event = cameras.registry.execute('intelligence_cameras', {'near_event': 'earthquakes:q5', 'radius_km': 30})
     assert by_event.success and by_event.output['cameras'][0]['feed'] == 'cameras_nyc'
     assert 'Networks:' in report([{'tool': 'intelligence_cameras', 'result': {'success': True, 'output': by_event.output},
@@ -208,7 +208,7 @@ def test_chat_routes_and_atlas_policy_cover_new_networks():
     # camera/road networks plus seven report feeds; Norway, Estonia, Tallinn added 2026-10-11; nine official hazard feeds 2026-10-14; seven more 2026-10-15
     assert 'cameras_luxembourg' in BY_KEY
     assert {'cameras_nsw', 'cameras_lyon'} <= BY_KEY.keys()
-    assert len(BY_KEY) == 131
+    assert len(BY_KEY) == 136  # TrafficWatchNI publisher viewers added 2026-11-09
 
 
 def test_second_wave_networks_keep_identity_media_and_robots_choices(cameras):
@@ -228,6 +228,32 @@ def test_second_wave_networks_keep_identity_media_and_robots_choices(cameras):
     assert not michigan['details']['image_url'] and michigan['details']['page_url'].endswith('id=1129')
     assert (michigan['latitude'], michigan['longitude']) == (42.491304, -83.04479)
     assert 'micamerasimages' not in str(michigan) and 'cctv.travelmidwest' not in str(illinois)
+
+
+def test_2026_11_networks_key_cameras_uniquely_and_admit_only_publisher_media(cameras):
+    rows = {}
+    for row in cameras.cameras(limit=1000)['cameras']:
+        rows.setdefault(row['feed'], []).append(row)
+    # FL511 gives two different cameras the same ID; keyed by image channel, both survive in their own places.
+    florida = {row['id']: row for row in rows['cameras_florida']}
+    assert set(florida) == {'cameras_florida:chan-9431', 'cameras_florida:chan-6351'}
+    assert florida['cameras_florida:chan-6351']['latitude'] == 26.22006 and florida['cameras_florida:chan-6351']['details']['county'] == 'Broward'
+    assert florida['cameras_florida:chan-9431']['details']['publisher_camera_code'] == '1220'
+    king = {row['id']: row for row in rows['cameras_kingcounty']}
+    active, retired = king['cameras_kingcounty:220'], king['cameras_kingcounty:64']
+    assert active['details']['image_url'].startswith('https://info.kingcounty.gov/') and active['details']['available']
+    assert not retired['details']['available'] and not retired['details']['image_url']
+    houston = rows['cameras_houston']
+    assert [row['id'] for row in houston] == ['cameras_houston:1002']  # id 0 is not a snapshot camera
+    assert houston[0]['details']['image_url'] == 'https://www.houstontranstar.org/snapshots/cctv/1002.jpg'
+    assert 'showWin' not in str(houston[0])
+    a22 = rows['cameras_a22'][0]
+    assert a22['details']['image_url'] == 'https://www.autobrennero.it/WebCamImg/km68.jpg' and a22['details']['country'] == 'Italy'
+    # Media from anywhere else, or a different path on the publisher's host, is refused.
+    assert not camera_url('https://example.com/DGI/chan-1_h.jpg', 'cameras_florida')
+    assert not camera_url('https://info.kingcounty.gov/other/page.jpg', 'cameras_kingcounty')
+    assert not camera_url('https://www.houstontranstar.org/snapshots/cctv/0.jpg', 'cameras_houston')
+    assert not camera_url('https://www.autobrennero.it/WebCamImg/km68.jpg?x=1', 'cameras_a22')
 
 
 def test_keyed_networks_stay_off_without_a_key_and_never_store_it(tmp_path, monkeypatch):

@@ -23,6 +23,7 @@ from pathlib import Path
 from tkinter import ttk
 
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 
 UP, DOWN = '#4ADE80', '#F05D5E'
 STATE_COLOURS = {'TESTED': UP, 'TEST_FAILED': DOWN, 'BLOCKED': DOWN, 'NEEDS_VALIDATION': '#E8C46A', 'RUNNING': '#60A5FA',
@@ -31,6 +32,9 @@ STATE_WORDS = {'TESTED': 'every frozen case passed (those cases only)', 'TEST_FA
                'NEEDS_VALIDATION': 'a proposal without numeric cases: it needs real-world tests', 'BLOCKED': 'a required input failed',
                'STOPPED': 'stopped on request; rounds kept', 'BUDGET_REACHED': 'the run reached its budget; rounds kept',
                'INTERRUPTED': 'HAYAT closed during a run; run it again to resume', 'DRAFT': 'not run yet', 'RUNNING': 'running now'}
+STATE_LABELS = {'TESTED': 'Example cases passed', 'TEST_FAILED': 'Needs improvement', 'NEEDS_VALIDATION': 'Needs real-world tests',
+                'BLOCKED': 'Needs attention', 'STOPPED': 'Stopped', 'BUDGET_REACHED': 'Run limit reached',
+                'INTERRUPTED': 'Ready to resume', 'DRAFT': 'Ready to start', 'RUNNING': 'Working on the idea'}
 
 
 class InventionPanel(tk.Frame):
@@ -41,7 +45,7 @@ class InventionPanel(tk.Frame):
         self._results, self._pending = queue.Queue(), False
         self._closed, self._poll_handle = False, None
         self.project_id, self.data, self.trial = None, None, None
-        self.status = StringVar(self, 'Create an invention goal or open a saved project.')
+        self.status = DisplayVar(self, 'Create an invention goal or open a saved project.')
         self.use_research = BooleanVar(self, True)
         self.work_out_first = BooleanVar(self, True)
         self.spread = StringVar(self, '10')
@@ -51,32 +55,39 @@ class InventionPanel(tk.Frame):
         self.case_inputs = StringVar(self, '')
         self.case_expected = StringVar(self, '')
         self.simulation_input = StringVar(self, 'All inputs')
-        self.simulation_probe = StringVar(self, 'Move over a curve to inspect a computed point.')
+        self.simulation_probe = DisplayVar(self, 'Move over a curve to inspect a computed point.')
         self._source_rows, self._sim_regions = {}, []
         self._layout_handle = None
         p = palette
-        tk.Label(self, text='Autonomous Invention Workbench', bg=p.BLACK, fg=p.WHITE,
+        tk.Label(self, text='Build and test an idea', bg=p.BLACK, fg=p.WHITE,
                  font=('Segoe UI Semibold', 13), anchor='w').pack(fill='x', pady=(8, 4))
-        self.subtitle = tk.Label(self, text='Goal → evidence → proposal → critique → measured experiments. Every round is saved.',
+        self.subtitle = tk.Label(self, text='1. Describe the goal   2. Set example tests   3. Run rounds and review the evidence.',
                                 bg=p.BLACK, fg=p.MUTED, anchor='w', justify='left')
         self.subtitle.pack(fill='x')
         from app.gui_intelligence_parts import FlowRow
         controls = FlowRow(self, p.BLACK, gap=6, height=36)
         controls.pack(fill='x', pady=8)
         self.create_button = ttk.Button(controls, text='Create project', command=self.create_project)
-        self.run_button = ttk.Button(controls, text='Run cycles', command=self.run_project)
+        self.run_button = ttk.Button(controls, text='Run rounds', command=self.run_project)
         self.stop_button = ttk.Button(controls, text='Stop', command=self.stop_project)
         self.refresh_button = ttk.Button(controls, text='Refresh', command=self.refresh)
         self.export_button = ttk.Button(controls, text='Export report', command=self.export)
-        self.work_button = ttk.Button(controls, text='Work it out', command=self.work_out)
+        self.work_button = ttk.Button(controls, text='Find a formula', command=self.work_out)
         controls.add(self.create_button)
         controls.add(self.work_button)
+        self.lab_button = controls.add(ttk.Button(controls, text='Experiment Lab', command=self.open_lab))
+        # Has it been done, what is new, how other fields do it, feasibility and risks (app/invention_prior_art.py).
+        self.prior_art_button = controls.add(ttk.Button(controls, text='Prior art', command=self.check_prior_art))
+        self.section = StringVar(self, 'Overview')
+        self.section_picker = controls.add(ttk.Combobox(controls, textvariable=self.section, width=11, state='readonly'))
         controls.add(self.run_button)
+        controls.add(tk.Label(controls, text='Rounds:', bg=p.BLACK, fg=p.MUTED))
         controls.add(ttk.Spinbox(controls, from_=1, to=8, width=3, textvariable=self.cycles, state='readonly'))
         for widget in (self.stop_button, self.refresh_button, self.export_button):
             controls.add(widget)
         controls.add(ttk.Checkbutton(controls, text='Research primary sources', variable=self.use_research))
-        controls.add(ttk.Checkbutton(controls, text='Work it out first', variable=self.work_out_first))
+        controls.add(ttk.Checkbutton(controls, text='Find a formula first', variable=self.work_out_first))
+        self.guide_button = controls.add(ttk.Button(controls, text='How to use', command=self.open_guide))
         body = self.body = tk.PanedWindow(self, orient='horizontal', bg=p.BLACK, sashwidth=7, bd=0)
         body.pack(fill='both', expand=True)
         from app.gui_panels import ScrollableColumn
@@ -93,29 +104,42 @@ class InventionPanel(tk.Frame):
                      state='readonly', width=18).pack(side='left', fill='x', expand=True)
         self.example_button = ttk.Button(examples, text='Load example', command=self.load_example)
         self.example_button.pack(side='left', padx=(4, 0))
-        self.goal = self._input(left, 'Goal', height=4)
-        self.constraints = self._input(left, 'Constraints (one per line)', height=3)
-        self.tests = self._input(left, 'Numeric acceptance cases (optional JSON)', height=4)
+        self.goal = self._input(left, 'What should your idea achieve?', height=4)
+        self.constraints = self._input(left, 'Limits and requirements (one per line)', height=3)
+        self.cases_toggle = ttk.Button(left, text='Advanced: edit case JSON', command=self.toggle_case_json)
+        self.cases_toggle.pack(fill='x', pady=(8, 2))
+        self.tests = self._input(left, 'Numeric test cases (JSON)', height=4)
         self.tests.insert('1.0', '[]')
+        self._case_json_open = False
+        self.tests._field_label.pack_forget()
+        self.tests.pack_forget()
         row = tk.Frame(left, bg=p.BLACK)
+        self._case_settings = row
         row.pack(fill='x', pady=(4, 0))
-        tk.Label(row, text='Tolerance', bg=p.BLACK, fg=p.WHITE).pack(side='left')
+        tk.Label(row, text='Allowed error', bg=p.BLACK, fg=p.WHITE).pack(side='left')
         ttk.Entry(row, textvariable=self.tolerance, width=8).pack(side='left', padx=6)
         ttk.Button(row, text='Check cases', command=self.check_cases).pack(side='right')
         builder = tk.Frame(left, bg=p.BLACK)
         builder.pack(fill='x', pady=(4, 0))
-        tk.Label(builder, text='Add a case', bg=p.BLACK, fg=p.WHITE).pack(side='left')
-        inputs = ttk.Entry(builder, textvariable=self.case_inputs, width=12)
-        inputs.pack(side='left', padx=(6, 2), fill='x', expand=True)
-        tk.Label(builder, text='→', bg=p.BLACK, fg=p.MUTED).pack(side='left')
-        expected = ttk.Entry(builder, textvariable=self.case_expected, width=7)
-        expected.pack(side='left', padx=2)
+        builder.columnconfigure(0, weight=1)
+        builder.columnconfigure(1, weight=1)
+        tk.Label(builder, text='Inputs', bg=p.BLACK, fg=p.WHITE).grid(row=0, column=0, sticky='w')
+        tk.Label(builder, text='Expected result', bg=p.BLACK, fg=p.WHITE).grid(row=0, column=1, sticky='w')
+        inputs = self.case_input_entry = ttk.Entry(builder, textvariable=self.case_inputs, width=10)
+        inputs.grid(row=1, column=0, sticky='ew', padx=(0, 4))
+        expected = self.case_expected_entry = ttk.Entry(builder, textvariable=self.case_expected, width=7)
+        expected.grid(row=1, column=1, sticky='ew', padx=(0, 4))
+        self.add_case_button = ttk.Button(builder, text='Add', command=self.add_case)
+        self.add_case_button.grid(row=1, column=2)
         expected.bind('<Return>', lambda _event: self.add_case())
-        ttk.Button(builder, text='Add', command=self.add_case).pack(side='left', padx=(2, 0))
         self.case_note = tk.Label(left, text='Add a case as  x=2, y=3 → 13,  or edit the JSON.\n'
                                   'Frozen at creation. Tolerance 0 = exact; 0.01 = within 1 %.', justify='left',
                                   bg=p.BLACK, fg=p.MUTED, anchor='w')
         self.case_note.pack(fill='x', pady=(3, 8))
+        self.case_preview = tk.Label(left, text='No numeric examples yet. You can still create a proposal.',
+                                      bg=p.PANEL, fg=p.MUTED, anchor='w', justify='left', padx=8, pady=6,
+                                      font=('Segoe UI', 9), wraplength=300)
+        self.case_preview.pack(fill='x', pady=(0, 6))
         tk.Label(left, text='Saved projects', bg=p.BLACK, fg=p.WHITE, anchor='w').pack(fill='x', pady=(8, 2))
         self.projects = self._table(left, columns=('state',), show='tree headings', height=5)
         self.projects.heading('#0', text='Saved goal')
@@ -131,29 +155,37 @@ class InventionPanel(tk.Frame):
         self.tabs.add(self._build_rounds(self.tabs), text='Rounds')
         self.tabs.add(self._build_cases(self.tabs), text='Cases')
         self.tabs.add(self._build_simulate(self.tabs), text='Simulate')
+        self.tabs.add(self._build_theory(self.tabs), text='Theory')
         self.tabs.add(self._build_research(self.tabs), text='Research')
-        evidence = tk.Frame(self.tabs, bg=p.BLACK)
+        evidence_column, evidence = self._scroll_page(self.tabs)
         ttk.Button(evidence, text='Draft next experiment in chat', command=self.draft_experiment).pack(anchor='w', pady=(6, 4))
         self.evidence_text = self._text(evidence)
         self.evidence_text.pack(fill='both', expand=True)
-        self.tabs.add(evidence, text='Evidence')
+        evidence_column.adopt(evidence)
+        self.tabs.add(evidence_column, text='Evidence')
         from app.gui_theme import DarkScrolledText
         raw = tk.Frame(self.tabs, bg=p.BLACK)
         self.report = DarkScrolledText(raw, bg=p.PANEL, fg=p.WHITE, insertbackground=p.WHITE, wrap='word', font=('Consolas', 9))
         self.report.pack(fill='both', expand=True)
         self.report.configure(state='disabled')
         self.tabs.add(raw, text='Raw')
+        self.section_picker.configure(values=[self.tabs.tab(tab, 'text') for tab in self.tabs.tabs()])
+        self.section_picker.bind('<<ComboboxSelected>>', lambda _event: self.tabs.select(
+            list(self.section_picker.cget('values')).index(self.section.get())))
+        self.tabs.bind('<<NotebookTabChanged>>', lambda _event: self.section.set(
+            self.tabs.tab(self.tabs.select(), 'text')), add='+')
         self.status_label = tk.Label(self, textvariable=self.status, bg=p.PANEL_2, fg=p.GOLD_SOFT,
                                     anchor='w', justify='left', wraplength=850, padx=10, pady=8)
-        self.status_label.pack(fill='x', pady=(8, 0))
+        self.status_label.pack(side='bottom', fill='x', pady=(8, 0), before=self.body)
         self.editor_column.adopt(left)
         self.bind('<Configure>', self._schedule_layout, add='+')
+        self.body.bind('<Configure>', self._schedule_layout, add='+')
         self.bind('<Destroy>', self._dispose, add='+')
         self._poll_handle = self.after(120, self._poll)
 
     # ------------------------------------------------------------------ layout
     def _schedule_layout(self, event):
-        if event.widget is self and self._layout_handle is None:
+        if event.widget in (self, self.body) and self._layout_handle is None:
             self._layout_handle = self.after_idle(self._responsive_layout)
 
     def _responsive_layout(self):
@@ -165,12 +197,17 @@ class InventionPanel(tk.Frame):
         orientation = 'vertical' if compact else 'horizontal'
         if str(self.body.cget('orient')) != orientation:
             self.body.configure(orient=orientation)
-            self.body.paneconfigure(self.editor_column, minsize=150 if compact else 260,
-                                    height=230 if compact else 0, width=340 if not compact else 0)
-            self.body.paneconfigure(self.workspace, minsize=180 if compact else 300)
+        signature = (orientation, self.body.winfo_height())
+        if signature != getattr(self, '_pane_size_signature', None):
+            self._pane_size_signature = signature
+            height = max(180, self.body.winfo_height())
+            self.body.paneconfigure(self.editor_column, minsize=min(150, max(70, int(height*.35))) if compact else 260,
+                                    height=min(230, int(height*.45)) if compact else 0, width=340 if not compact else 0)
+            self.body.paneconfigure(self.workspace, minsize=min(180, max(90, int(height*.5))) if compact else 300)
         for label in (self.subtitle, self.status_label):
             label.configure(wraplength=max(220, width - 24))
         self.case_note.configure(wraplength=max(200, self.editor_column.winfo_width() - 32))
+        self.case_preview.configure(wraplength=max(180, self.editor_column.winfo_width() - 48))
 
     @staticmethod
     def _table(parent, **options):
@@ -179,7 +216,10 @@ class InventionPanel(tk.Frame):
         frame.pack(fill='both', expand=True)
         frame.rowconfigure(0, weight=1)
         frame.columnconfigure(0, weight=1)
-        tree = ttk.Treeview(frame, **options)
+        from app.gui_output import SafeTreeview
+        tree = SafeTreeview(frame, **options)
+        from app.gui_motion import attach
+        attach(tree)
         vertical = ttk.Scrollbar(frame, orient='vertical', command=tree.yview)
         horizontal = ttk.Scrollbar(frame, orient='horizontal', command=tree.xview)
         tree.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
@@ -189,13 +229,43 @@ class InventionPanel(tk.Frame):
         return tree
 
     def _input(self, parent, label, height):
-        tk.Label(parent, text=label, bg=self.palette.BLACK, fg=self.palette.WHITE,
-                 anchor='w').pack(fill='x', pady=(6, 2))
+        heading = tk.Label(parent, text=label, bg=self.palette.BLACK, fg=self.palette.WHITE, anchor='w')
+        heading.pack(fill='x', pady=(6, 2))
         from app.gui_theme import DarkScrolledText
-        widget = DarkScrolledText(parent, height=height, wrap='word', bg=self.palette.PANEL,
+        widget = DarkScrolledText(parent, height=height, protect_output=False, wrap='word', bg=self.palette.PANEL,
                                   fg=self.palette.WHITE, insertbackground=self.palette.WHITE, font=('Segoe UI', 10))
         widget.pack(fill='x')
+        widget._field_label = heading
         return widget
+
+    def open_guide(self):
+        from app.gui_guidance import open_page_guide
+        return open_page_guide(self, self.palette, 'invention')
+
+    def toggle_case_json(self):
+        self._case_json_open = not self._case_json_open
+        if self._case_json_open:
+            self.tests._field_label.pack(fill='x', pady=(6, 2), before=self._case_settings)
+            self.tests.pack(fill='x', before=self._case_settings)
+            self.tests.focus_set()
+        else:
+            self.tests._field_label.pack_forget()
+            self.tests.pack_forget()
+        self.cases_toggle.configure(text='Hide advanced JSON' if self._case_json_open else 'Advanced: edit case JSON')
+
+    def _scroll_page(self, parent):
+        from app.gui_panels import ScrollableColumn
+        column = ScrollableColumn(parent, self.palette, width=600, fill_height=True)
+        return column, column.body
+
+    def open_lab(self):
+        existing = getattr(self, '_lab', None)
+        if existing is not None and existing.winfo_exists():
+            existing.deiconify()
+            existing.lift()
+            return
+        from app.gui_invention_lab import InventionLab
+        self._lab = InventionLab(self)
 
     def _text(self, parent, height=8):
         from app.gui_theme import DarkScrolledText
@@ -222,7 +292,7 @@ class InventionPanel(tk.Frame):
 
     def _build_overview(self, parent):
         p = self.palette
-        frame = tk.Frame(parent, bg=p.BLACK)
+        column, frame = self._scroll_page(parent)
         from app.gui_intelligence_parts import FlowRow
         top = FlowRow(frame, p.BLACK)
         top.pack(fill='x', pady=(6, 4))
@@ -238,11 +308,12 @@ class InventionPanel(tk.Frame):
         self.chart.bind('<Button-1>', self.chart_click)
         self.overview = self._text(frame)
         self.overview.pack(fill='both', expand=True)
-        return frame
+        column.adopt(frame)
+        return column
 
     def _build_rounds(self, parent):
         p = self.palette
-        frame = tk.Frame(parent, bg=p.BLACK)
+        column, frame = self._scroll_page(parent)
         from app.gui_intelligence_parts import FlowRow
         actions = FlowRow(frame, p.BLACK)
         actions.pack(fill='x', pady=(6, 2))
@@ -250,6 +321,8 @@ class InventionPanel(tk.Frame):
         actions.add(self.use_round_button)
         actions.add(ttk.Button(actions, text='Compare with best', command=self.compare_round))
         self.round_list = self._table(frame, columns=('passed', 'error', 'critic'), selectmode='browse', height=7)
+        # The list keeps its seven rows; the selected round's details below take the rest of the page.
+        self.round_list.master.pack_configure(expand=False)
         for key, label, width in (('#0', 'Round · candidate', 320), ('passed', 'Passed', 80), ('error', 'Closeness', 110),
                                   ('critic', 'Critic', 160)):
             self.round_list.heading(key, text=label)
@@ -258,11 +331,12 @@ class InventionPanel(tk.Frame):
         self.round_list.bind('<<TreeviewSelect>>', lambda _event: self.round_selected())
         self.round_text = self._text(frame)
         self.round_text.pack(fill='both', expand=True)
-        return frame
+        column.adopt(frame)
+        return column
 
     def _build_cases(self, parent):
         p = self.palette
-        frame = tk.Frame(parent, bg=p.BLACK)
+        column, frame = self._scroll_page(parent)
         self.cases_note = tk.Label(frame, text='Open a project to see its frozen cases.', bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 9), anchor='w')
         self.cases_note.pack(fill='x', pady=(6, 2))
         self.case_table = self._table(frame, columns=('expected', 'actual', 'error', 'result'), selectmode='none', height=8)
@@ -285,12 +359,13 @@ class InventionPanel(tk.Frame):
                              'abs, min, max. Unknown constants such as c1 in  c1 * x ** c2  are fitted to the cases. Graded on the '
                              'frozen cases; never saved as a round.', bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 8), anchor='w',
                  justify='left', wraplength=760).pack(fill='x', pady=(2, 0))
-        return frame
+        column.adopt(frame)
+        return column
 
     def _build_simulate(self, parent):
         p = self.palette
         from app.gui_panels import ScrollableColumn
-        self.simulation_column = ScrollableColumn(parent, p, width=600)
+        self.simulation_column = ScrollableColumn(parent, p, width=600, fill_height=True)
         frame = self.simulation_column.body
         from app.gui_intelligence_parts import FlowRow
         row = FlowRow(frame, p.BLACK)
@@ -323,9 +398,82 @@ class InventionPanel(tk.Frame):
         self.simulation_column.adopt(frame)
         return self.simulation_column
 
-    def _build_research(self, parent):
+    def _build_theory(self, parent):
+        """Why the formula should hold and what would prove it wrong: units, derivation, proofs, claims."""
         p = self.palette
-        frame = tk.Frame(parent, bg=p.BLACK)
+        column, frame = self._scroll_page(parent)
+        tk.Label(frame, text='Units of each input, e.g. L=m, g=m/s**2 (1 = no units)', bg=p.BLACK, fg=p.WHITE,
+                 anchor='w').pack(fill='x', pady=(6, 0))
+        self.theory_units = StringVar(self, '')
+        entries = [ttk.Entry(frame, textvariable=self.theory_units)]
+        entries[-1].pack(fill='x')
+        tk.Label(frame, text='Unit of the result, e.g. s or N', bg=p.BLACK, fg=p.WHITE, anchor='w').pack(fill='x', pady=(4, 0))
+        self.theory_output = StringVar(self, '')
+        entries.append(ttk.Entry(frame, textvariable=self.theory_output))
+        entries[-1].pack(fill='x')
+        tk.Label(frame, text='Claims to prove, separated by ; e.g. increases with L; is positive; at most 3',
+                 bg=p.BLACK, fg=p.WHITE, anchor='w').pack(fill='x', pady=(4, 0))
+        self.theory_claims = StringVar(self, '')
+        entries.append(ttk.Entry(frame, textvariable=self.theory_claims))
+        entries[-1].pack(fill='x')
+        self.theory_button = ttk.Button(frame, text='Prove and explain best formula (Enter)', command=self.theorise_best)
+        self.theory_button.pack(anchor='w', pady=(6, 4))
+        for entry in entries:  # keyboard-only use: Enter in any field runs the check
+            entry.bind('<Return>', lambda _event: (self.theorise_best(), 'break')[1])
+        tk.Label(frame, text='Proved means sympy or exact arithmetic established it; observed means sampled only. '
+                             'None of this is a physical experiment.', bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 8),
+                 anchor='w', justify='left', wraplength=700).pack(fill='x')
+        self.theory_text = self._text(frame, height=14)
+        self.theory_text.pack(fill='both', expand=True)
+        column.adopt(frame)
+        return column
+
+    def _theory_arguments(self):
+        arguments = {'project_id': self.project_id}
+        units = {}
+        for part in filter(None, (item.strip() for item in self.theory_units.get().split(','))):
+            name, sep, unit = part.partition('=')
+            if not sep or not name.strip() or not unit.strip():
+                raise ValueError('Write units as name=unit, separated by commas: L=m, g=m/s**2.')
+            units[name.strip()] = unit.strip()
+        if units:
+            arguments['units'] = units
+        if self.theory_output.get().strip():
+            arguments['output_unit'] = self.theory_output.get().strip()
+        claims = [item.strip() for item in self.theory_claims.get().split(';') if item.strip()]
+        if claims:
+            arguments['claims'] = claims[:12]
+        return arguments
+
+    def theorise_best(self):
+        if not self.project_id:
+            self.status.set('Open a project first: theory is worked out for its best formula.')
+            return
+        try:
+            arguments = self._theory_arguments()
+        except ValueError as exc:
+            self.status.set(str(exc))
+            return
+        self._call('invention_theory', arguments, mode='theory')
+
+    def show_theory(self, result):
+        if not isinstance(result, dict) or not (result.get('summary') or result.get('error')):
+            self._write(self.theory_text, [('No theory yet. Give the units (optional) and press Prove and explain best formula. '
+                                            'With units, HAYAT also derives the law from units alone.', 'muted')])
+            return
+        if result.get('error'):
+            self._write(self.theory_text, [(f"Theory could not be worked out: {result['error']}", 'bad')])
+            return
+        parts = [(line + '\n', 'bad' if 'NOT consistent' in line or ': disproved' in line else None) for line in result['summary']]
+        parts.append(('\nEvidence ladder\n', 'mono'))
+        for rung in result.get('ladder') or []:
+            # Words as well as a mark and a colour, for colour-blind readers and screen readers.
+            mark = '✓ met' if rung['met'] else '· open' if rung['met'] is None else '✗ not met'
+            parts.append((f"{mark} — {rung['rung']}: {rung['detail']}\n", 'bad' if rung['met'] is False else 'muted' if rung['met'] is None else None))
+        self._write(self.theory_text, parts)
+
+    def _build_research(self, parent):
+        column, frame = self._scroll_page(parent)
         self.source_list = self._table(frame, columns=('url',), height=5, selectmode='browse')
         self.source_list.heading('#0', text='Source read by this project')
         self.source_list.heading('url', text='Publisher URL')
@@ -338,7 +486,8 @@ class InventionPanel(tk.Frame):
         self.source_button.pack(anchor='w', pady=(4, 0))
         self.research_text = self._text(frame)
         self.research_text.pack(fill='both', expand=True, pady=(6, 0))
-        return frame
+        column.adopt(frame)
+        return column
 
     # ------------------------------------------------------------------ actions
     def _call(self, name, arguments, *, mode='report'):
@@ -369,7 +518,7 @@ class InventionPanel(tk.Frame):
 
     def _busy_buttons(self):
         return (self.create_button, self.run_button, self.refresh_button, self.try_button, self.work_button,
-                self.simulate_button, self.simulate_mine_button, self.example_button)
+                self.simulate_button, self.simulate_mine_button, self.example_button, self.theory_button)
 
     def load_example(self):
         """Only edits the draft. Existing saved projects and frozen cases stay intact."""
@@ -401,16 +550,16 @@ class InventionPanel(tk.Frame):
             table.delete(*table.get_children())
         self._source_rows.clear()
         self.source_button.state(['disabled'])
-        self.state_badge.configure(text='NEW DRAFT', fg=self.palette.MUTED)
+        self.state_badge.configure(text='Ready to create', fg=self.palette.MUTED)
         self.state_words.configure(text='Illustrative example; not a measured experiment.')
         for widget in (self.overview, self.round_text, self.research_text, self.evidence_text, self.report):
-            self._write(widget, [('Example loaded as a new draft. Create project, then Work it out. '
+            self._write(widget, [('Example loaded as a new draft. Create project, then Find a formula. '
                                   'Use independent measurements to test a real invention.', 'muted')])
         self.cases_note.configure(text='Create the draft to freeze its acceptance cases.')
         self.show_simulation(None)
         self.draw_chart()
         self.check_cases()
-        self.status.set('Editable synthetic example loaded. Create project, then Work it out for a local numeric fit. '
+        self.status.set('Editable synthetic example loaded. Create project, then Find a formula for a local numeric fit. '
                         'No model or research has run; saved projects are unchanged.')
         return True
 
@@ -477,6 +626,11 @@ class InventionPanel(tk.Frame):
         names = sorted({name for test in tests for name in test['inputs']})
         self.case_note.configure(text=f"{len(tests)} cases over {', '.join(names) or 'no inputs'} · "
                                       + ('exact' if not tolerance else f'within {tolerance:g} × the expected value'), fg=UP)
+        preview = ['Inputs: ' + ', '.join(f'{key}={value}' for key, value in case['inputs'].items())
+                   + ' → expected ' + str(case['expected']) for case in tests[:3]]
+        if len(tests) > 3:
+            preview.append(f'{len(tests) - 3} more examples. Open advanced JSON to review them all.')
+        self.case_preview.configure(text='\n'.join(preview) or 'No numeric examples yet. You can still create a proposal.')
         return True
 
     def create_project(self):
@@ -565,6 +719,11 @@ class InventionPanel(tk.Frame):
         if selection and not self._pending:
             self._call('invention_get', {'project_id': selection[0]})
 
+    def open_saved_project(self, project_id):
+        """Honor an explicit cross-workspace handoff after any pending read/run finishes."""
+        self._requested_project = str(project_id)
+        self.status.set('Opening the saved invention draft…')
+
     def try_formula(self):
         if not self.project_id:
             self.status.set('Open a project first: a formula is graded on its frozen cases.')
@@ -608,7 +767,7 @@ class InventionPanel(tk.Frame):
         self.report.insert('1.0', text)
         self.report.configure(state='disabled')
         colour = STATE_COLOURS.get(data['state'], self.palette.MUTED)
-        self.state_badge.configure(text=data['state'].replace('_', ' '), fg=colour)
+        self.state_badge.configure(text=STATE_LABELS.get(data['state'], data['state'].replace('_', ' ')), fg=colour)
         self.state_words.configure(text=STATE_WORDS.get(data['state'], '') + (f" · {data['stop_reason']}" if data.get('stop_reason') else ''))
         self.paint_overview()
         self.paint_rounds()
@@ -618,8 +777,14 @@ class InventionPanel(tk.Frame):
         self.evidence_audit = data.get('evidence_audit') or audit_project(data)
         self.paint_evidence()
         self.show_simulation(data.get('simulation'))
+        self.show_theory(data.get('theory'))
+        units = data.get('units') or {}
+        if units.get('inputs') and not self.theory_units.get().strip():
+            self.theory_units.set(', '.join(f'{name}={unit}' for name, unit in units['inputs'].items()))
+            self.theory_output.set(units.get('output') or '')
         self.draw_chart()
-        self.status.set(f"{data['state']} · Numeric tests cover supplied cases. Novelty and physical validation remain open.")
+        self.status.set(f"{STATE_LABELS.get(data['state'], data['state'])} · Numeric tests cover supplied cases. Novelty and physical validation remain open.")
+        self.check_cases()
 
     def paint_overview(self):
         data = self.data
@@ -642,7 +807,7 @@ class InventionPanel(tk.Frame):
                 if candidate[key]:
                     parts += [(label + '\n', 'label')] + [(f'• {item}\n', None) for item in candidate[key]]
         else:
-            parts.append(('\nNo rounds yet. Press Run cycles.\n', 'muted'))
+            parts.append(('\nNo rounds yet. Press Run rounds.\n', 'muted'))
         parts.append(('\nNumeric tests cover the supplied cases only. Novelty, patentability and physical validity are not verified.\n', 'muted'))
         self._write(self.overview, parts)
 
@@ -785,9 +950,11 @@ class InventionPanel(tk.Frame):
         self._source_rows.clear()
         self.source_button.state(['disabled'])
         if not research:
-            self._write(self.research_text, [('No research for this project yet (or it was switched off).', 'muted')])
+            literature = self._literature_parts()
+            self._write(self.research_text, literature or
+                        [('No research for this project yet (or it was switched off).', 'muted')])
             return
-        parts = [('Research\n', 'h')]
+        parts = self._handoff_parts(research) + [('Research\n', 'h')]
         if research.get('error'):
             parts.append((f"Research did not complete: {research['error']}\nThis stays an evidence gap.\n", 'bad'))
         for index, source in enumerate(research.get('sources') or []):
@@ -802,7 +969,62 @@ class InventionPanel(tk.Frame):
                     parts.append(((source.get('summary') or source.get('snippet'))[:400] + '\n', None))
         if research.get('answer') or research.get('summary'):
             parts += [('\nSummary\n', 'label'), (str(research.get('answer') or research.get('summary'))[:3000] + '\n', None)]
+        parts += self._literature_parts()
         self._write(self.research_text, parts)
+
+    def _handoff_parts(self, research):
+        """Where an imported draft's evidence came from (app/invention_handoff.py), and whether it is still that evidence."""
+        origin = (self.data or {}).get('research_handoff')
+        if not isinstance(origin, dict):
+            return []
+        snapshot = origin.get('snapshot') if isinstance(origin.get('snapshot'), dict) else {}
+        same = research == snapshot
+        parts = [('Imported from Searches\n', 'h'),
+                 (f"Research run {origin.get('run_id') or 'not recorded'} · imported "
+                  f"{str(origin.get('imported_at') or 'at an unrecorded time')[:16].replace('T', ' ')} UTC\n", None),
+                 (f"Evidence fingerprint {str(origin.get('evidence_hash') or '')[:16]}… · "
+                  f"{len(snapshot.get('sources') or [])} sources · {len(snapshot.get('claims') or [])} claims\n", 'mono'),
+                 ('The research below is the evidence you reviewed.\n' if same else
+                  'The research below was replaced after the import; the reviewed original is kept with this project.\n',
+                  'muted' if same else 'bad')]
+        gaps = [str(gap) for gap in snapshot.get('knowledge_gaps') or [] if isinstance(gap, str)]
+        if gaps:
+            parts += [('Open questions recorded with it\n', 'label')] + [('• ' + gap[:300] + '\n', None) for gap in gaps[:8]]
+        parts.append((str(origin.get('scope') or '') + '\n\n', 'muted'))
+        return parts
+
+    def _literature_parts(self):
+        """Published work read before proposing, and the look back when stuck (app/invention_literature.py)."""
+        parts = []
+        literature = self.data.get('literature') or {}
+        papers = literature.get('papers') or []
+        for index, paper in enumerate(papers):
+            if not index:
+                parts.append(('\nPublished work read before proposing\n', 'h'))
+            identifier = f'paper-{index}'
+            self._source_rows[identifier] = {'title': paper.get('title'), 'url': paper.get('url'),
+                                             'summary': paper.get('abstract'), 'at': literature.get('at')}
+            self.source_list.insert('', 'end', iid=identifier, text='Paper: ' + str(paper.get('title') or 'Untitled'),
+                                    values=(paper.get('url') or '(URL unavailable)',))
+            parts += [(f"{paper.get('title')} ({paper.get('year') or 'n.d.'}, cited {paper.get('citations', 0)}×)\n", 'label'),
+                      (str(paper.get('abstract') or '')[:400] + '\n', None)]
+        if literature.get('error'):
+            parts.append((f"Published work could not be read: {literature['error']}\n", 'muted'))
+        followup = self.data.get('literature_followup') or {}
+        if followup.get('question'):
+            parts += [('\nBack to the literature\n', 'h'), (str(followup.get('why') or '') + '\n', 'muted'),
+                      ('Looked up: ' + str(followup['question']) + '\n', 'label')]
+            for index, paper in enumerate(followup.get('papers') or []):
+                identifier = f'followup-{index}'
+                self._source_rows[identifier] = {'title': paper.get('title'), 'url': paper.get('url'),
+                                                 'summary': paper.get('abstract'), 'at': followup.get('at')}
+                self.source_list.insert('', 'end', iid=identifier, text='Paper: ' + str(paper.get('title') or 'Untitled'),
+                                        values=(paper.get('url') or '(URL unavailable)',))
+                parts.append((f"{paper.get('title')} ({paper.get('year') or 'n.d.'})\n", None))
+        if parts:
+            parts.append(('A paper is untrusted data, never evidence that a formula works: only the frozen cases '
+                          'measure that.\n', 'muted'))
+        return parts
 
     def source_selected(self):
         selected = self.source_list.selection()
@@ -913,7 +1135,7 @@ class InventionPanel(tk.Frame):
         if self.simulation_input.get() not in names:
             self.simulation_input.set(names[0] if names else 'All inputs')
         if not self.simulation:
-            self._write(self.sim_text, [('No simulation yet. Work it out or run the project, then press Simulate best formula.', 'muted')])
+            self._write(self.sim_text, [('No simulation yet. Use Find a formula or Run rounds, then press Simulate best formula.', 'muted')])
         elif self.simulation.get('error'):
             self._write(self.sim_text, [(f"The simulation could not run: {self.simulation['error']}", 'bad')])
         else:
@@ -1033,7 +1255,90 @@ class InventionPanel(tk.Frame):
         if self._closed:
             return
         self.drain()
+        if not self._pending and getattr(self, '_requested_project', None):
+            project_id, self._requested_project = self._requested_project, None
+            self._call('invention_get', {'project_id': project_id})
         self._poll_handle = self.after(120, self._poll)
+
+    def check_prior_art(self):
+        """The idea in the goal box, checked against patents and papers."""
+        idea = self.goal.get('1.0', 'end').strip()
+        if len(idea.split()) < 3:
+            self.status.set('Write the invention in the goal box first: what it does and how, in a sentence or two.')
+            return
+        if 'invention_prior_art' not in set(self.runtime.registry.names()):
+            self.status.set('Prior-art search needs the research service, which is not running in this session.')
+            return
+        self._call('invention_prior_art', {'idea': idea[:1500]}, mode='prior_art')
+
+    def show_prior_art(self, data):
+        """The report beside a diagram: the idea's features (known or new) and the fields working on it."""
+        from app.gui_theme import DarkScrolledText
+        from app.gui_windows import place_over
+        p = self.palette
+        window = getattr(self, '_prior_window', None)
+        if window is None or not window.winfo_exists():
+            window = tk.Toplevel(self)
+            window.title('Prior art and feasibility · HAYAT')
+            window.configure(bg=p.BLACK)
+            window.transient(self.winfo_toplevel())
+            window.diagram = tk.Canvas(window, bg=p.PANEL, highlightthickness=0, height=230)
+            window.diagram.pack(fill='x', padx=10, pady=(10, 4))
+            window.text = DarkScrolledText(window, bg=p.PANEL, fg=p.WHITE, font=('Segoe UI', 10), wrap='word', padx=12, pady=10)
+            window.text.pack(fill='both', expand=True, padx=10, pady=(0, 10))
+            window.bind('<Escape>', lambda _event: window.destroy())
+            window.diagram.bind('<Configure>', lambda _event: self._draw_prior_art(window))
+            place_over(window, self.winfo_toplevel(), (820, 640))
+            self._prior_window = window
+        window.data = data
+        window.text.configure(state='normal')
+        window.text.delete('1.0', 'end')
+        window.text.insert('1.0', data['text'])
+        window.text.configure(state='disabled')
+        self._draw_prior_art(window)
+        window.lift()
+        return window
+
+    def _draw_prior_art(self, window):
+        """Left: each feature of the idea, filled by how many prior items contain it (empty = looks new).
+        Right: the research fields working on it, bar length = papers found. Every mark comes from the report."""
+        from app.gui_depth import blend
+        canvas, data, p = window.diagram, getattr(window, 'data', None), self.palette
+        canvas.delete('all')
+        if not data:
+            return
+        width = max(400, canvas.winfo_width())
+        half = width / 2
+        canvas.create_text(12, 12, anchor='nw', text="The idea's parts · already in prior art / looks new",
+                           fill=p.WHITE, font=('Segoe UI Semibold', 9))
+        most = max([entry['found_in'] for entry in data['features']] + [1])
+        for row, entry in enumerate(data['features'][:8]):
+            y = 38 + row * 23
+            known = entry['found_in']
+            colour = p.GOLD_SOFT if known else p.OLIVE_SOFT
+            canvas.create_text(12, y + 8, anchor='w', text=entry['feature'][:26], fill=p.MUTED, font=('Segoe UI', 8))
+            left, right = 170, half - 18
+            canvas.create_rectangle(left, y + 2, right, y + 14, outline=blend(p.PANEL, p.WHITE, .25), fill='')
+            if known:
+                canvas.create_rectangle(left, y + 2, left + (right - left) * known / most, y + 14, outline='', fill=colour)
+            canvas.create_text(right - 4, y + 8, anchor='e', text=f"in {known}" if known else 'new?',
+                               fill=p.WHITE if known else colour, font=('Segoe UI Semibold', 8))
+        canvas.create_text(half + 8, 12, anchor='nw', text='Other fields working on it (papers found)', fill=p.WHITE,
+                           font=('Segoe UI Semibold', 9))
+        fields = data.get('cross_domain') or []
+        top = max([item['papers'] for item in fields] + [1])
+        for row, item in enumerate(fields[:7]):
+            y = 38 + row * 26
+            canvas.create_text(half + 8, y + 8, anchor='w', text=item['field'][:30], fill=p.MUTED, font=('Segoe UI', 8))
+            start = half + 170
+            canvas.create_rectangle(start, y + 2, start + (width - start - 40) * item['papers'] / top, y + 14,
+                                    outline='', fill=p.ROYAL_SOFT)
+            canvas.create_text(width - 12, y + 8, anchor='e', text=str(item['papers']), fill=p.WHITE, font=('Segoe UI', 8))
+        if not fields:
+            canvas.create_text(half + 8, 44, anchor='nw', width=half - 20, fill=p.MUTED, font=('Segoe UI', 8),
+                               text='No papers this time' + ('; ' + data['gaps'][0] if data.get('gaps') else '.'))
+        canvas.create_text(12, 222, anchor='sw', fill=p.MUTED, font=('Segoe UI', 8),
+                           text=f"Closest prior art shares {data['closest_share_pct']} % of the idea's wording · {data['maturity']}")
 
     def drain(self):
         if self._closed:
@@ -1061,7 +1366,7 @@ class InventionPanel(tk.Frame):
                     if children:
                         self.projects.delete(*children)
                     for project in data:
-                        self.projects.insert('', 'end', iid=project['id'], text=project['goal'][:55], values=(project['state'],),
+                        self.projects.insert('', 'end', iid=project['id'], text=project['goal'][:55], values=(STATE_LABELS.get(project['state'], project['state']),),
                                              tags=(project['state'],))
                     self.status.set(f'{len(data)} saved projects. Select one to inspect all rounds.')
                 elif mode == 'try':
@@ -1076,18 +1381,31 @@ class InventionPanel(tk.Frame):
                     self.tabs.select(3)
                     self.show_simulation(data)
                     self.status.set('Simulated ' + data['formula'] + '. This shows the formula, not the device.')
+                elif mode == 'prior_art':
+                    self.show_prior_art(data)
+                    self.status.set(f"Prior art: {data['works_found']['patents']} patents and {data['works_found']['papers']} "
+                                    f"papers read; {data['novelty']}. Never proof of novelty.")
+                elif mode == 'theory':
+                    self.tabs.select(4)
+                    self.show_theory(data)
+                    proved = sum(1 for rung in data.get('ladder') or [] if rung['met'])
+                    self.status.set(f"Theory for {data['formula']}: {proved} of {len(data.get('ladder') or [])} evidence "
+                                    'rungs met. A mathematical argument, not a physical experiment.')
                 else:
                     self._paint(data)
                     if not self.projects.exists(data['id']):
-                        self.projects.insert('', 'end', iid=data['id'], text=data['goal'][:55], values=(data['state'],), tags=(data['state'],))
+                        self.projects.insert('', 'end', iid=data['id'], text=data['goal'][:55], values=(STATE_LABELS.get(data['state'], data['state']),), tags=(data['state'],))
                     else:
-                        self.projects.item(data['id'], values=(data['state'],), tags=(data['state'],))
+                        self.projects.item(data['id'], values=(STATE_LABELS.get(data['state'], data['state']),), tags=(data['state'],))
         except queue.Empty:
             pass
 
     def _dispose(self, event):
         if event.widget is self:
             self._closed = True
+            lab = getattr(self, '_lab', None)
+            if lab is not None and lab.winfo_exists():
+                lab.destroy()
             if self._poll_handle:
                 self.after_cancel(self._poll_handle)
             if self._layout_handle:

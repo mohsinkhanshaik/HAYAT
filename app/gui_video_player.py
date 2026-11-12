@@ -7,6 +7,9 @@ matching cameras with Next camera.
 """
 from __future__ import annotations
 import json
+import base64
+import io
+import logging
 import queue
 import subprocess
 import sys
@@ -17,6 +20,7 @@ from pathlib import Path
 from tkinter import ttk
 from app.config import PROJECT_ROOT
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.video import timestamp
 from app.video_player_worker import native_player_available
 
@@ -27,6 +31,24 @@ AUTO_ADVANCE = 2
 GIVE_UP_RECONNECTS = 3
 #: Nor is one still opening after this long (a Missouri stream sat at "attempt 1" for 45 s).
 GIVE_UP_SECONDS = 20
+
+
+def kill_player_process(process):
+    """Stop this player's launcher and its recorded decoder descendants."""
+    from app.process import _descendants
+    # Windows' venv redirector can spawn the actual Python worker. Record it
+    # before killing the launcher; psutil handles reject reused process IDs.
+    descendants = _descendants(process.pid) if type(process.pid) is int else []
+    for child in reversed(descendants):
+        try:
+            child.kill()
+        except Exception:  # already exited or inaccessible; still stop the remaining owned tree
+            from app.logging import log_swallowed
+            log_swallowed(logging.getLogger(__name__), 'stopping a recorded camera decoder', level=logging.DEBUG)
+    try:
+        process.kill()
+    except OSError:
+        pass
 
 
 def create_video_preview(parent, gui, path):
@@ -55,6 +77,8 @@ def state_badge(mode, event, muted):
         return 'CLIP ENDED', muted
     if not event.get('playing'):
         return 'PAUSED', muted
+    if 'frames' in event and not (event.get('width') and event.get('frames', 0) > 0):
+        return 'BUFFERING', WAIT_COLOUR
     return MODE_BADGES.get(mode, ('', muted))
 
 
@@ -89,7 +113,11 @@ def signed_address_expired(camera):
     """True when the camera's stream address carried a token that has now run out."""
     from datetime import UTC, datetime
     expiry = (camera or {}).get('expires_at')
-    return bool(expiry) and datetime.fromisoformat(expiry) <= datetime.now(UTC)
+    try:
+        stamp = datetime.fromisoformat(expiry.replace('Z', '+00:00'))
+        return (stamp if stamp.tzinfo else stamp.replace(tzinfo=UTC)) <= datetime.now(UTC)
+    except (AttributeError, TypeError, ValueError):
+        return False
 
 
 class NativeVideoPreview(tk.Frame):
@@ -111,17 +139,21 @@ class NativeVideoPreview(tk.Frame):
         self._commands = queue.Queue(maxsize=50)
         self._updates = queue.Queue(maxsize=20)
         self._states = queue.Queue(maxsize=1)
+        self._pictures = queue.Queue(maxsize=1)
         self._timer = None
         # Each launch has a generation; a replaced player's late messages are ignored.
         self._generation = 0
+        self._retry_generation = None
         self._alternatives = list((camera or {}).get('alternatives') or [])
         self._auto_advances = 0
         self._renewed = False
         self._shown_frame = False
+        self._connecting_paused = False
         self._still_fallback = False
         self._still_timer = None
         self._still_label = None
         self._photo = None
+        self._pictures_shown = self._still_updates = 0
         heading = tk.Frame(self, bg=gui.PANEL_2)
         heading.pack(fill='x')
         # LIVE / CLIP / STILL in one word, so a still or an old clip is never taken for live video.
@@ -136,9 +168,10 @@ class NativeVideoPreview(tk.Frame):
         self.screen.pack_propagate(False)
         self._resize_binding = parent.bind('<Configure>', self._fit_screen, add='+')
         self._fit_screen()
-        self.detail = StringVar(self, value='Connecting to public publisher…' if camera else 'Preparing player with audio…')
+        self.detail = DisplayVar(self, value='Connecting to public publisher…' if camera else 'Preparing player with audio…')
         tk.Label(self, textvariable=self.detail, bg=gui.PANEL_2, fg=gui.MUTED).pack(fill='x')
-        controls = ttk.Frame(self)
+        # Card-coloured rows: a ttk.Frame takes the theme's black and left dark slots between the buttons.
+        controls = tk.Frame(self, bg=gui.PANEL_2)
         controls.pack(fill='x', pady=5)
         self.play_button = ttk.Button(controls, text='Play', command=self.toggle, state='disabled', width=9)
         self.play_button.pack(side='left')
@@ -166,7 +199,7 @@ class NativeVideoPreview(tk.Frame):
             # Wraps instead of clipping "Open publisher" off the right edge.
             actions = FlowRow(self, gui.PANEL_2, gap=5, height=34)
         else:
-            actions = ttk.Frame(self)
+            actions = tk.Frame(self, bg=gui.PANEL_2)
         actions.pack(fill='x', pady=(6, 0))
         if camera:
             for widget in controls.winfo_children():
@@ -184,7 +217,7 @@ class NativeVideoPreview(tk.Frame):
             if max_width <= 520:
                 self.large_button = button('Watch large ⤢', self.watch_large)
             button('Open publisher', lambda: gui._open_source(self.camera['source_url']))
-            self.info = StringVar(self, value=self._camera_info())
+            self.info = DisplayVar(self, value=self._camera_info())
             tk.Label(self, textvariable=self.info, bg=gui.PANEL_2, fg=gui.MUTED, anchor='w', justify='left',
                      wraplength=520).pack(fill='x', pady=(5, 0))
         else:
@@ -217,6 +250,7 @@ class NativeVideoPreview(tk.Frame):
         if camera.get('notice'):
             lines.append(camera['notice'])
         lines.append('Still images refresh at the publisher\'s pace · no recording' if camera.get('mode') == 'still'
+                     else 'Preview up to 10 fps · publisher delay possible · no recording' if sys.platform == 'win32'
                      else 'Publisher video may be delayed · no recording')
         return '\n'.join(lines)
 
@@ -225,18 +259,18 @@ class NativeVideoPreview(tk.Frame):
             return
         width = max(240, min(self.max_width, self.master.winfo_width() - 64))
         height = max(90, min(round(width * 9 / 16), self.master.winfo_height() - 190, round(self.max_width * 9 / 16)))
-        self.screen.configure(width=width, height=height)
+        changed(self.screen, width=width, height=height)
 
     def _publish(self, message, generation=None):
         if self._closed:
             return
         if generation is not None:
             message = {**message, 'generation': generation}
-        updates = self._states if message.get('kind') == 'state' else self._updates
+        updates = self._pictures if message.get('kind') == 'picture' else self._states if message.get('kind') == 'state' else self._updates
         try:
             updates.put_nowait(message)
         except queue.Full:
-            if message.get('kind') == 'state':
+            if message.get('kind') in {'state', 'picture'}:
                 try:
                     updates.get_nowait()
                 except queue.Empty:
@@ -262,7 +296,8 @@ class NativeVideoPreview(tk.Frame):
                 if tool == 'my_camera_play':  # the owner's own camera: no still, no alternatives
                     arguments = {'event_id': self.camera['event_id']}
                 else:
-                    arguments = {'event_id': self.camera['event_id'], 'live_only': False, 'refresh': False,
+                    arguments = {'event_id': self.camera['event_id'], 'live_only': False,
+                                 'refresh': generation == self._retry_generation,
                                  **({'still_only': True} if self._still_fallback else {})} if self.camera else {'path': str(self.path)}
                 result = self.gui.runtime.registry.execute(tool, arguments)
                 if not result.success:
@@ -285,15 +320,17 @@ class NativeVideoPreview(tk.Frame):
                           stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                           text=True, encoding='utf-8', creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
                 if not current():
-                    process.kill()
+                    kill_player_process(process)
                     return
                 self._process = process
                 def watchdog():
                     if not initialized.wait(35) and current() and process.poll() is None:
                         publish({'kind': 'error', 'error': 'Player startup timed out.'})
-                        process.kill()
+                        kill_player_process(process)
                 threading.Thread(target=watchdog, name='hayat-video-startup', daemon=True).start()
                 request = {'window_id': window_id, 'duration': metadata['duration_seconds']}
+                if self.camera and sys.platform == 'win32':
+                    request['picture_frames'] = True
                 request.update({'camera_url': result.output['video_url'], 'feed': result.output['feed'],
                                 'live_page': result.output.get('live_page', '')} if self.camera else {'path': result.output['path']})
                 if self.camera and result.output.get('login'):
@@ -316,7 +353,7 @@ class NativeVideoPreview(tk.Frame):
                 threading.Thread(target=write, name='hayat-video-controls', daemon=True).start()
                 error_seen = False
                 for line in process.stdout:
-                    message = json.loads(line[:64000])
+                    message = json.loads(line[:1048576])
                     error_seen = error_seen or message.get('kind') == 'error'
                     if message.get('kind') in {'ready', 'error'} or message.get('reconnecting') or message.get('paused'):
                         initialized.set()
@@ -330,7 +367,7 @@ class NativeVideoPreview(tk.Frame):
                     initialized.set()
                 if process is not None:
                     if process.poll() is None:
-                        process.kill()
+                        kill_player_process(process)
                     process.wait(timeout=5)
                     process.stdout.close()
                     process.stdin.close()
@@ -340,9 +377,14 @@ class NativeVideoPreview(tk.Frame):
 
     def _fetch_still(self, generation):
         """The publisher's latest still, through the frame tool and its cooldowns (worker thread)."""
-        frame = self.gui.runtime.registry.execute('intelligence_camera_frame', {'event_id': self.camera['event_id']})
+        frame = self.gui.runtime.registry.execute('intelligence_camera_frame', {
+            'event_id': self.camera['event_id'], **({'fresh': True} if generation == self._retry_generation else {})})
         if not frame.success:
             raise ValueError(frame.error)
+        if frame.output.get('publisher_card'):
+            raise ValueError("The publisher is showing its unavailable card; no current camera picture.")
+        if frame.output.get('stale'):  # a live player must not present an old picture as the current one
+            raise ValueError(frame.output.get('basis') or 'The camera did not answer; only an older picture exists.')
         self._publish({'kind': 'still', 'path': frame.output['path'], 'fetched_at': frame.output.get('fetched_at', ''),
                        'cached': bool(frame.output.get('cached'))}, generation)
 
@@ -369,11 +411,13 @@ class NativeVideoPreview(tk.Frame):
             self._still_label = tk.Label(self.screen, bg=self.gui.BLACK, bd=0)
             self._still_label.place(relx=.5, rely=.5, anchor='center')
         self._still_label.configure(image=self._photo)
+        self._still_updates += 1
         if not self._ready:
             self._playing = True
         self._ready = True
         self._auto_advances = 0
-        self.retry_button.configure(state='disabled')
+        self.retry_button.configure(state='normal' if self._still_fallback else 'disabled',
+                                    text='Retry video' if self._still_fallback else 'Retry connection')
         self.mute_button.configure(state='disabled')
         self.play_button.configure(state='normal', text='Pause' if self._playing else 'Resume')
         fetched = str(event.get('fetched_at') or '')[11:19]
@@ -384,9 +428,36 @@ class NativeVideoPreview(tk.Frame):
             self.after_cancel(self._still_timer)
         self._still_timer = self.after(refresh * 1000, self._refresh_still) if self._playing else None
 
+    def _show_video_picture(self, event):
+        """Paint decoded video on Tk's UI thread so GPU overlays cannot hide it."""
+        from PIL import Image, ImageTk
+        try:
+            if not isinstance(event.get('jpeg'), str) or len(event['jpeg']) > 1000000:
+                raise ValueError('Video picture exceeds the preview budget.')
+            with Image.open(io.BytesIO(base64.b64decode(event['jpeg'], validate=True))) as picture:
+                if picture.width > 960 or picture.height > 540:
+                    raise ValueError('Video picture exceeds the preview dimensions.')
+                picture.load()
+                scale = min(max(1, self.screen.winfo_width()) / picture.width,
+                            max(1, self.screen.winfo_height()) / picture.height)
+                resized = picture.resize((max(1, round(picture.width * scale)), max(1, round(picture.height * scale))),
+                                         Image.Resampling.BILINEAR)
+                self._photo = ImageTk.PhotoImage(resized.convert('RGB'), master=self)
+            if self._still_label is None:
+                self._still_label = tk.Label(self.screen, bg=self.gui.BLACK, bd=0)
+                self._still_label.place(relx=.5, rely=.5, anchor='center')
+            self._still_label.configure(image=self._photo)
+            self._pictures_shown += 1
+        except (ValueError, OSError) as exc:
+            self.detail.set('Video picture unavailable: ' + str(exc)[:160])
+
     def _send(self, action, value=None):
         if self._closed:
             return
+        if self.camera and action in {'play', 'pause'}:
+            if action == 'play' and self._connecting_paused and not self._shown_frame:
+                self._launched_at = time.monotonic()
+            self._connecting_paused = action == 'pause'
         try:
             self._commands.put_nowait({'action': action, 'value': value})
         except queue.Full:
@@ -418,7 +489,10 @@ class NativeVideoPreview(tk.Frame):
 
     def request_play(self):
         if self._ready:
-            self._send('play')
+            if self._still_mode():
+                self._set_still_refresh(True)
+            else:
+                self._send('play')
         else:
             self._autoplay = True
 
@@ -457,7 +531,6 @@ class NativeVideoPreview(tk.Frame):
             return {'event_id': chosen['id'], 'title': chosen.get('title', '')}
         if not self._ready:
             if action in ('play', 'pause') and not self._still_mode():
-                self._connecting_paused = action == 'pause'
                 self._autoplay = action == 'play'
                 self._send(action)
                 return {'connecting': True, 'paused': self._connecting_paused}
@@ -486,7 +559,10 @@ class NativeVideoPreview(tk.Frame):
                 try:
                     event = self._states.get_nowait()
                 except queue.Empty:
-                    break
+                    try:
+                        event = self._pictures.get_nowait()
+                    except queue.Empty:
+                        break
             if event.get('generation', self._generation) != self._generation:
                 continue  # From a player this card already replaced.
             kind = event.get('kind')
@@ -496,6 +572,8 @@ class NativeVideoPreview(tk.Frame):
                 self.info.set(self._camera_info())
             elif kind == 'still':
                 self._show_still(event)
+            elif kind == 'picture':
+                self._show_video_picture(event)
             elif kind == 'still_retry':
                 if self._still_label is None:
                     # No picture at all yet: not "retrying; last image retained" over a black screen.
@@ -527,9 +605,7 @@ class NativeVideoPreview(tk.Frame):
             elif kind == 'ready':
                 self._ready = True
                 if self.camera:
-                    self._auto_advances = 0
-                    self._renewed = False
-                    self._set_badge(*MODE_BADGES.get(self.camera.get('mode'), ('', self.gui.MUTED)))
+                    self._set_badge('BUFFERING', WAIT_COLOUR)
                     self.retry_button.configure(state='disabled')
                     self.mute_button.configure(state='normal' if event.get('audio') else 'disabled')
                 self.play_button.configure(state='normal')
@@ -558,10 +634,13 @@ class NativeVideoPreview(tk.Frame):
                         self._badge_shown = badge
                         self._set_badge(*badge)
                     # A picture counts once frames are really shown; a frozen stream says "Playing" with none.
-                    self._shown_frame = self._shown_frame or bool(event.get('playing') and event.get('width')
-                                                                  and event.get('frames', 1))
+                    decoded = bool(event.get('playing') and event.get('width') and event.get('frames', 0) > 0)
+                    if decoded and not self._shown_frame:
+                        self._auto_advances = 0
+                        self._renewed = False
+                    self._shown_frame = self._shown_frame or decoded
                     waited = time.monotonic() - getattr(self, '_launched_at', time.monotonic())
-                    if not self._shown_frame and self.camera.get('mode') != 'still' and (
+                    if not self._shown_frame and not (self._connecting_paused or event.get('paused')) and self.camera.get('mode') != 'still' and (
                             int(event.get('reconnecting') or 0) >= GIVE_UP_RECONNECTS or waited > GIVE_UP_SECONDS):
                         self._give_up_stream()
                         continue
@@ -575,7 +654,7 @@ class NativeVideoPreview(tk.Frame):
                 elif ended:
                     self.detail.set('Clip ended · press Replay for the publisher\'s latest clip · ' + self.camera['media_label'])
                 elif self.camera:
-                    state = 'Playing' if self._playing else 'Paused / buffering'
+                    state = 'Playing' if self._playing and decoded else 'Paused / buffering'
                     rate = event.get('fps')
                     speed = '' if rate is None or not self._playing else (
                         ' · picture not changing' if rate == 0 and event.get('frames') else f' · {rate:.0f} fps')
@@ -595,6 +674,10 @@ class NativeVideoPreview(tk.Frame):
                     self._renewed = True
                     self.retry()
                     self.detail.set('The stream address expired · fetching a fresh one from the publisher…')
+                    continue
+                if self.camera and self.camera.get('has_still') and not self._still_fallback and not self._still_mode():
+                    self._give_up_stream()
+                    self.detail.set('Video failed (' + event['error'][:100] + '); loading this camera’s latest still image…')
                     continue
                 if self.camera and self._alternatives and self._auto_advances < AUTO_ADVANCE:
                     # A publisher that stopped answering is skipped, as a person would switch channels.
@@ -632,8 +715,9 @@ class NativeVideoPreview(tk.Frame):
         """End the current player or still refresh so the card can start again."""
         self._generation += 1
         self._ready = self._playing = False
+        self._connecting_paused = self._autoplay = False
         if self._process is not None and self._process.poll() is None:
-            self._process.kill()
+            kill_player_process(self._process)
         if self._still_timer is not None:
             self.after_cancel(self._still_timer)
             self._still_timer = None
@@ -644,10 +728,12 @@ class NativeVideoPreview(tk.Frame):
             self._commands.get_nowait()
 
     def retry(self):
-        if self._closed or self._ready or self._launch_timer is not None:
+        if self._closed or (self._ready and not self._still_fallback) or self._launch_timer is not None:
             return
         self._replace_player()
-        self.retry_button.configure(state='disabled')
+        self._retry_generation = self._generation
+        self._shown_frame = self._still_fallback = False
+        self.retry_button.configure(state='disabled', text='Retry connection')
         self.detail.set('Reconnecting to public publisher…')
         self._launch_timer = self.after(60, self._launch)
 
@@ -692,4 +778,4 @@ class NativeVideoPreview(tk.Frame):
                 self.after_cancel(timer)
         self._timer = self._launch_timer = self._still_timer = None
         if self._process is not None and self._process.poll() is None:
-            self._process.kill()
+            kill_player_process(self._process)

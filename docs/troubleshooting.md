@@ -57,6 +57,27 @@ Invoke-RestMethod http://localhost:11434/api/tags
 
 Start Ollama, then use `/models`. Do not enable paid fallback. If a model is missing, inspect its size/license/RAM/VRAM fit before `ollama pull`.
 
+## "HAYAT's main model is currently unavailable"
+
+Fixed on 2026-11-07. Three causes were found, and each is now handled without you doing anything:
+
+- **The model service was not running yet, or had stopped.** HAYAT's own Ollama (port 11435) starts with HAYAT. If a
+  question finds nothing listening (connection refused, WinError 10061), HAYAT now starts that service, waits for
+  it, loads the brain and answers. Recovery runs once at a time. A first answer from cold takes about 70–90 s,
+  mostly loading the 22 GB brain from disk. Your machine's own Ollama on port 11434 is never started or stopped by
+  HAYAT.
+- **The model list looked empty.** With the service down, the brain looked "not installed", so no question ever
+  reached the recovery. Reading the model list now brings the service back first.
+- **Free memory dipped below the brain's 22 GB estimate.** Other programs were open, and the estimate refused to
+  load the brain at all. HAYAT's own brain now always tries when it fits the machine's total RAM plus video memory:
+  Ollama puts what fits on the GPU and the rest in RAM. Other models still wait for free memory.
+
+When HAYAT closes, it stops any model service it started itself, and also the brain runner (`llama-server.exe`) that
+service spawned. Before 2026-11-07 the runner could survive the close and keep 7 GB of the 8 GB GPU, so the next brain
+load (or image generation) had no room. The process tree is now recorded before the service is stopped. Two live
+close-and-check runs left nothing on the GPU, where the two runs before the fix each left a runner behind. If recovery fails, the reply says why, for example
+"the service could not be brought back: ollama exited during startup". `/provider status` shows the service's state.
+
 ## Out of VRAM or model too large
 
 **Symptoms:** slow generation, load error, GPU OOM. **Check:** `/system`, `nvidia-smi`, `/models route TEXT`. Close unrelated GPU applications, use FAST mode or a smaller installed model. Do not download a larger model as a first fix.

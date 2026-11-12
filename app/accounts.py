@@ -52,6 +52,65 @@ from app.logging import log_swallowed
 
 _log = logging.getLogger(__name__)
 SIGN_IN_SECONDS = 300
+#: A check that never got an answer about the sign-in itself. The saved sign-in is neither confirmed nor refused,
+#: so the window must not tell the owner to sign in again because the Wi-Fi dropped.
+UNTESTED_KINDS = {
+    'unreachable': 'The provider could not be reached at the last check, so the saved sign-in was not tested. '
+                   'Check again when the connection is back; there is no need to sign in again.',
+    'rate_limited': 'The provider asked for fewer requests at the last check, so the saved sign-in was not tested. '
+                    'Check again in a few minutes.',
+    'provider_error': 'The provider had a fault of its own at the last check, so the saved sign-in was not tested. '
+                      'Check again later.',
+}
+_REJECTED_WORDS = ('expired', 'refused', 'revoked', 'invalid', 'declined', 'unauthor', 'sign in again', 'not authorized')
+
+
+def check_kind(problem: str, error: BaseException | None = None) -> str:
+    """What a failed check proves about the saved sign-in, from the wording `_call` and `_json` produce.
+
+    Only an answer from the provider can prove a sign-in is bad. A dropped connection, a rate limit or a
+    provider fault leaves it untested; anything unrecognised stays a failure, as it always was.
+    """
+    text = problem.lower()
+    if not text:
+        return 'ok'
+    if 'credential manager' in text:
+        return 'lost'
+    if isinstance(error, PermissionError):
+        return 'rejected'
+    if 'could not be reached' in text:
+        return 'unreachable'
+    answered = re.search(r'answered (\d{3})\b', text)
+    code = int(answered.group(1)) if answered else 0
+    if code == 429:
+        return 'rate_limited'
+    if code >= 500:
+        return 'provider_error'
+    if code in (401, 403) or any(word in text for word in _REJECTED_WORDS):
+        return 'rejected'
+    return 'failed'
+
+
+def connection_state(record: dict[str, Any]) -> dict[str, Any]:
+    """Describe saved evidence without opening a secret lease or probing a provider."""
+    expiry = record.get('credential_expires_at')
+    expired = isinstance(expiry, (int, float)) and expiry <= time.time()
+    if not record.get('connected'):
+        state, note = 'not_connected', 'Choose a sign-in method to connect this account.'
+    elif expired and not record.get('refresh_available'):
+        state, note = 'reconnect', 'The saved access token has expired; sign in again.'
+    elif record.get('check_ok') is None and record.get('check_kind') in UNTESTED_KINDS:
+        state, note = 'unreachable', UNTESTED_KINDS[record['check_kind']]
+    elif record.get('check_ok') is False:
+        state, note = 'check_failed', 'The last provider check failed. Check again or reconnect; a network failure alone does not prove revocation.'
+    elif expired:
+        state, note = 'refresh_due', 'The access token has expired; renewal will be attempted on the next account request.'
+    elif record.get('check_ok') is True:
+        state, note = 'checked', 'Last provider check passed; this is a saved observation, not a live connectivity test.'
+    else:
+        state, note = 'saved', 'A sign-in is saved; provider access has not been checked.'
+    return {'connection_state': state, 'connection_note': note, 'credential_expires_at': expiry,
+            'refresh_available': record.get('refresh_available')}
 
 
 @dataclass(frozen=True)
@@ -332,20 +391,27 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
         self.open_browser = open_browser or webbrowser.open
         self._lock = threading.RLock()
         self._devices: dict[str, dict[str, Any]] = {}
+        self._device_generations: dict[str, int] = {}
+        #: Seconds before the one repeat of a read whose connection failed (see `_call`).
+        self.retry_pause = 0.4
         self._browsers: dict[str, dict[str, Any]] = {}  # browser sign-ins waiting: listener and link
 
     # ------------------------------------------------------------------ local records (no secrets)
     def _records(self) -> dict[str, Any]:
-        try:
-            return json.loads(self.path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return {}
+        # Under the same lock as every save: on Windows a file that is open for reading cannot be replaced, so a
+        # read racing a save (accounts are now checked side by side) could fail the save or read nothing at all.
+        with self._lock:
+            try:
+                return json.loads(self.path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                return {}
 
     def _save_records(self, records: dict[str, Any]) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(records, indent=2), encoding="utf-8")
-        temporary.replace(self.path)
+        with self._lock:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            temporary = self.path.with_suffix(".tmp")
+            temporary.write_text(json.dumps(records, indent=2), encoding="utf-8")
+            temporary.replace(self.path)
 
     @staticmethod
     def provider(key: str) -> Provider:
@@ -422,6 +488,7 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
                      or (not own and bool(builtin.get("client_id")) and bool(builtin.get("client_secret") or not provider.browser_needs_secret)),
                      "token": True, "webhook": True}
             rows.append({"key": provider.key, "name": provider.name, "what": provider.what, "connected": bool(record.get("connected")),
+                         **connection_state(record),
                          "connected_as": record.get("connected_as", ""), "method": record.get("method", ""),
                          "connected_at": record.get("connected_at", ""), "client_id_set": bool(record.get("client_id")),
                          "builtin_app": bool(builtin.get("client_id")) and not own, "dynamic_app": provider.dynamic_app,
@@ -429,7 +496,9 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
                          "redirect_address": redirect_address(provider),
                          # The last real check of the sign-in (check): when, whether it worked, and why not.
                          "checked_at": record.get("checked_at", ""), "check_ok": record.get("check_ok"),
-                         "check_error": record.get("check_error", ""), "browser_waiting": provider.key in self._browsers,
+                         "check_error": record.get("check_error", ""),
+                         "check_kind": record.get("check_kind", "") if record.get("check_ok") is not True else "ok",
+                         "browser_waiting": provider.key in self._browsers,
                          "methods": [{"key": method, "label": METHOD_LABELS[method], "ready": ready[method]} for method in provider.methods],
                          "operations": [{"key": op.key, "label": op.label, "write": op.write,
                                          "fields": [{"name": name, "label": label, "required": required} for name, label, required in op.fields]}
@@ -451,7 +520,7 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
         return rows[0] if key and rows else result
 
     # ------------------------------------------------------------------ tokens
-    def _store_token(self, key: str, token: dict[str, Any], method: str) -> dict[str, Any]:
+    def _store_token(self, key: str, token: dict[str, Any], method: str, *, _who_verified: str | None = None) -> dict[str, Any]:
         self._need_broker()
         if not token.get("access_token"):
             raise ValueError(f"{self.provider(key).name} did not return a token.")
@@ -462,7 +531,7 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
         value.update({name: token[name] for name in ("did", "handle") if token.get(name)})  # Bluesky's account and handle
         self.broker.store(f"account.{key}", json.dumps(value), scopes=[f"account:{key}"])
         try:
-            who = self._who(key, value["access_token"])
+            who = self._who(key, value["access_token"]) if _who_verified is None else _who_verified
         except Exception:
             self.broker.delete(f"account.{key}")
             raise
@@ -472,7 +541,8 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
             now = datetime.now(UTC).isoformat(timespec="seconds")
             # Reading the account just now is the first check, so the window can say "checked" straight away.
             record.update(connected=True, connected_as=who, method=method, connected_at=now, checked_at=now, check_ok=True,
-                          check_error="")
+                          check_error="", credential_expires_at=value['expires_at'],
+                          refresh_available=bool(value['refresh_token']))
             self._save_records(records)
         return self.status(key)
 
@@ -494,6 +564,7 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
             if key == "bluesky":  # Bluesky renews its session with the refresh token itself, not an OAuth form
                 value = self._bluesky_refresh(value)
                 self.broker.store(f"account.{key}", json.dumps(value), scopes=[f"account:{key}"])
+                self._remember_credential_state(key, value)
                 return value["access_token"]
             provider = self.provider(key)
             client_id, _none = self._client(key, need_secret=False)
@@ -508,13 +579,33 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
             value.update(access_token=fresh["access_token"], refresh_token=fresh.get("refresh_token") or value["refresh_token"],
                          expires_at=time.time() + float(fresh.get("expires_in") or 3600))
             self.broker.store(f"account.{key}", json.dumps(value), scopes=[f"account:{key}"])
+        self._remember_credential_state(key, value)
         return value["access_token"]
+
+    def _remember_credential_state(self, key: str, value: dict[str, Any]) -> None:
+        """Persist only lifetime metadata already read by an authorized account request."""
+        fields = {'credential_expires_at': value.get('expires_at'), 'refresh_available': bool(value.get('refresh_token'))}
+        with self._lock:
+            records = self._records()
+            record = records.get(key) or {}
+            if record.get('connected') and any(record.get(name) != item for name, item in fields.items()):
+                record.update(fields)
+                self._save_records(records)
 
     def _call(self, method: str, url: str, **kwargs: Any) -> Any:
         """One request. A failure names only the host: Telegram's token and webhook keys live in the address, and
         network errors quote the address they failed on (a ConnectError carried the whole bot token)."""
         try:
-            return self._request(method, url, timeout=30, follow_redirects=False, **kwargs)
+            try:
+                return self._request(method, url, timeout=30, follow_redirects=False, **kwargs)
+            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.RemoteProtocolError):
+                # The connection itself failed before any answer, so a read can safely be tried once more: a
+                # single dropped connection made a working sign-in look broken. Anything that sends or changes
+                # something (POST and the rest) is never repeated, and a slow answer (read timeout) is not either.
+                if method.upper() != "GET":
+                    raise
+                time.sleep(self.retry_pause)
+                return self._request(method, url, timeout=30, follow_redirects=False, **kwargs)
         except httpx.HTTPError as exc:
             raise RuntimeError(f"{urlsplit(url).netloc} could not be reached ({type(exc).__name__})") from None
 
@@ -595,7 +686,7 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
         record = self._records().get(key) or {}
         if not record.get("connected"):
             raise PermissionError(f"{provider.name} is not connected yet.")
-        who, problem, lost = record.get("connected_as", ""), "", False
+        who, problem, lost, failure = record.get("connected_as", ""), "", False, None
         stored = {row["name"] for row in self.broker.list()} if self.broker is not None else set()
         if f"account.{key}" not in stored:
             lost, problem = True, "the saved sign-in is missing from Windows Credential Manager; connect again"
@@ -603,12 +694,15 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
             try:
                 who = self._who(key, self._token(key)) or who
             except Exception as exc:  # errors from _call name only the host, never a token
-                problem = str(exc).strip().rstrip(".")[:240] or type(exc).__name__
+                problem, failure = str(exc).strip().rstrip(".")[:240] or type(exc).__name__, exc
+        kind = check_kind(problem, failure)
         with self._lock:
             records = self._records()
             record = records.setdefault(key, {})
-            record.update(checked_at=datetime.now(UTC).isoformat(timespec="seconds"), check_ok=not problem,
-                          check_error=problem)
+            # No answer about the sign-in (offline, rate limit, provider fault) is recorded as untested (None),
+            # never as "not working": only the provider refusing it, or the credential being gone, proves that.
+            record.update(checked_at=datetime.now(UTC).isoformat(timespec="seconds"),
+                          check_ok=None if kind in UNTESTED_KINDS else not problem, check_error=problem, check_kind=kind)
             if lost:
                 record.update(connected=False, connected_as="")
             elif not problem:
@@ -619,13 +713,20 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
     def check_all(self, key: str = "") -> dict[str, Any]:
         """Check one connected account, or every connected one, and report each result."""
         keys = [key] if key else [row["key"] for row in self.status()["accounts"] if row["connected"]]
-        results = []
-        for name in keys:
+
+        def one(name: str) -> dict[str, Any]:
             try:
-                results.append(self.check(name))
+                return self.check(name)
             except PermissionError:
-                results.append(self.status(name))
-        return {"check_view": True, "results": results}
+                return self.status(name)
+        if len(keys) < 2:
+            return {"check_view": True, "results": [one(name) for name in keys]}
+        # Each check is one independent read of a different provider. One after another, a single provider that
+        # does not answer held every other result back for its whole timeout; side by side the slowest one decides.
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=min(6, len(keys)), thread_name_prefix="hayat-account-check") as pool:
+            return {"check_view": True, "results": list(pool.map(one, keys))}
 
     # ------------------------------------------------------------------ way 1: a code
     def start_device(self, key: str) -> dict[str, Any]:
@@ -634,6 +735,10 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
             raise ValueError(f"{provider.name} does not offer sign-in with a code; use {', '.join(METHOD_LABELS[m] for m in provider.methods)}.")
         self._need_broker()
         client_id, _secret = self._client(key, need_secret=False)
+        with self._lock:
+            generation = self._device_generations.get(key, 0) + 1
+            self._device_generations[key] = generation
+            self._devices.pop(key, None)
         data = self._json("POST", provider.device_url, data={"client_id": client_id, "scope": " ".join(provider.scopes)},
                           headers={"Accept": "application/json"})
         if not data.get("device_code"):
@@ -645,6 +750,8 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
                         + ".")
             raise RuntimeError(f"{provider.name} did not start the sign-in: {reason.split(' Trace ID')[0]}.{hint}")
         with self._lock:
+            if self._device_generations.get(key) != generation:
+                raise PermissionError('This sign-in was cancelled or replaced. Start again when ready.')
             self._devices[key] = {"device_code": data["device_code"], "interval": int(data.get("interval") or 5),
                                   "expires": time.monotonic() + int(data.get("expires_in") or 900), "client_id": client_id}
         return {"provider": key, "user_code": data["user_code"],
@@ -660,25 +767,45 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
             pending = self._devices.get(key)
         if not pending:
             raise ValueError("No sign-in with a code is in progress; start it again.")
-        if time.monotonic() > pending["expires"]:
-            self._devices.pop(key, None)
+        if time.monotonic() >= pending["expires"]:
+            with self._lock:
+                if self._devices.get(key) is pending:
+                    self._devices.pop(key, None)
             raise TimeoutError("The code expired before it was approved; start again.")
         data = self._json("POST", provider.token_url, headers={"Accept": "application/json"},
                           data={"grant_type": "urn:ietf:params:oauth:grant-type:device_code", "device_code": pending["device_code"],
                                 "client_id": pending["client_id"]})
         error = data.get("error")
+        with self._lock:
+            if self._devices.get(key) is not pending:
+                raise PermissionError('This sign-in was cancelled or replaced; its response was discarded.')
         if error in ("authorization_pending", "slow_down"):
             if error == "slow_down":
                 pending["interval"] += 5
             return {"state": "waiting", "interval": pending["interval"]}
-        self._devices.pop(key, None)
         if error:
+            with self._lock:
+                if self._devices.get(key) is pending:
+                    self._devices.pop(key, None)
             raise PermissionError({"access_denied": "You declined the sign-in.", "expired_token": "The code expired; start again."}
                                   .get(error, f"{provider.name} ended the sign-in: {data.get('error_description') or error}."))
-        return {"state": "connected", **self._store_token(key, {**data, "method": "device"}, "device")}
+        if not data.get('access_token'):
+            raise PermissionError(f'{provider.name} did not issue an access token; start again.')
+        # Verify the identity before committing any credential, outside the
+        # lock so Cancel stays responsive while the provider is slow.
+        who = self._who(key, data['access_token'])
+        with self._lock:
+            if self._devices.get(key) is not pending:
+                raise PermissionError('This sign-in was cancelled or replaced; its response was discarded.')
+            if time.monotonic() >= pending['expires']:
+                self._devices.pop(key, None)
+                raise TimeoutError('The code expired before sign-in completed; start again.')
+            self._devices.pop(key, None)
+            return {"state": "connected", **self._store_token(key, {**data, "method": "device"}, "device", _who_verified=who)}
 
     def cancel_device(self, key: str) -> None:
         with self._lock:
+            self._device_generations[key] = self._device_generations.get(key, 0) + 1
             self._devices.pop(key, None)
 
     # ------------------------------------------------------------------ way 2: the browser
@@ -936,6 +1063,8 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
 
     # ------------------------------------------------------------------ sign out
     def sign_out(self, key: str) -> dict[str, Any]:
+        self.cancel_device(key)
+        self.cancel_browser(key)
         provider = self.provider(key)
         if provider.revoke_url and self.broker is not None:
             try:
@@ -949,7 +1078,8 @@ class AccountManager(SocialAccounts, MailAccounts, AtprotoAccounts):
         with self._lock:
             records = self._records()
             record = records.get(key) or {}
-            for name in ("connected", "connected_as", "method", "connected_at", "checked_at", "check_ok", "check_error"):
+            for name in ("connected", "connected_as", "method", "connected_at", "checked_at", "check_ok", "check_error", "check_kind",
+                         "credential_expires_at", "refresh_available"):
                 record.pop(name, None)
             records[key] = record
             self._save_records(records)

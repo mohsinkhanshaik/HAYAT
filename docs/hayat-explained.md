@@ -92,7 +92,9 @@ independently. A step that fails is re-planned with bounded retries, using what 
   never give instructions or change permissions.
 - **Measured routing:** benchmark results decide which model handles which kind of task.
 - **Colibri (optional):** an alternative local inference engine for side-by-side comparison
-  (`app/models/colibri.py`). Off by default; starts only on request from **Models**.
+  (`app/models/colibri.py`). Off by default; starts only on request from **Models**. Since 2026-11-11 it can serve
+  HAYAT's own brain weights in place, in about half the memory but about four times slower than Ollama
+  (measurements).
 - **HAYAT Open 4B:** a small model fine-tuned locally on public data, for lighter machines (experimental).
 
 ## Chat and understanding
@@ -201,7 +203,7 @@ no order button, no wallet and no exchange account; requests to trade are refuse
 ## Global intelligence, cameras and the world map
 
 Public feeds — earthquakes, weather and alerts, wildfires, rocket launches, satellites and ISS passes, news — on a
-live world map, with about 37,200 public camera feeds (traffic, city and landmark cameras from official
+live world map, with about 42,200 public camera feeds (traffic, city and landmark cameras from official
 publishers), watches and alerts, a hazard radar for your area, "explore" and "deep look" around any place, a video
 wall, and AI-written briefs that separate confirmed reports from single-source claims. Unknown locations are never
 plotted as if known.

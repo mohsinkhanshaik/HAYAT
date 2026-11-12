@@ -608,6 +608,10 @@ def register_market_event_tools(registry: Any, manager: Any, markets: MarketData
                       "Rules with reasons; not a claim that events caused the moves.",
                       obj({"hours": {"type": "number", "minimum": 1, "maximum": 168}, "limit": {"type": "integer", "minimum": 1, "maximum": 30}}),
                       "low", "public_api_get", lambda hours=48, limit=12: events_and_markets(manager, markets, hours, limit))
+    from app.market_intelligence import ForecastLedger, apply_track_record
+    ledger = ForecastLedger(Path(markets.path).parent / "market-forecasts.db") if getattr(markets, "path", None) else None
+    markets.ledger = ledger
+
     def scenarios(symbol: str, asset: str = "auto") -> dict[str, Any]:
         from app.market_scenarios import scenarios as compute
         try:
@@ -615,7 +619,16 @@ def register_market_event_tools(registry: Any, manager: Any, markets: MarketData
         except Exception:  # scenarios stand without the world events
             log_swallowed(_log, "reading world events for scenarios")
             events = None
-        return compute(markets, symbol, asset, events)
+        value = compute(markets, symbol, asset, events)
+        if ledger is not None:
+            # Every scenario is recorded and later scored; a model the record says is worse than the usual rate is replaced.
+            try:
+                ledger.resolve(markets)
+                ledger.record_scenarios(value)
+                value = apply_track_record(value, ledger)
+            except Exception:
+                log_swallowed(_log, "recording the scenario forecast")
+        return value
     registry.register("market_scenarios", "Scenarios for a coin or stock from live data: how often it was higher a day and a week "
                       "later in past situations like now (trend, volatility, RSI), with sample sizes and 95 % intervals next to its "
                       "usual odds; weak, middle and strong prices for the coming week; and the factors that might matter (momentum, "
@@ -667,6 +680,48 @@ def register_market_event_tools(registry: Any, manager: Any, markets: MarketData
                       "funds and shares moved since it was reported, next to the whole market (S&P 500).",
                       obj({"event_id": {"type": "string", "maxLength": 220}}, ["event_id"]),
                       "low", "public_api_get", lambda event_id: event_impact(manager, markets, event_id))
+    register_market_intelligence_tools(registry, manager, markets, ledger)
+
+
+def register_market_intelligence_tools(registry: Any, manager: Any, markets: Any, ledger: Any) -> None:
+    """Forecast scorecard, event impact, institutional positioning, news tone and the brief (app/market_intelligence.py)."""
+    from app.market_intelligence import CONTRACTS, brief, event_study, positioning, sentiment
+    from app.intelligence.classify import CATEGORIES
+    obj = lambda properties, required=(): {"type": "object", "properties": properties, "required": list(required),
+                                           "additionalProperties": False}
+    symbol = {"type": "string", "minLength": 1, "maxLength": 40}
+    if ledger is not None:
+        def track_record(symbol: str = "") -> dict[str, Any]:
+            ledger.resolve(markets)
+            return {"markets": True, "track_record_view": True, **ledger.record_card(symbol.strip().upper())}
+        registry.register("market_track_record", "How good HAYAT's own market odds have really been: every scenario it gave is "
+                          "recorded and scored when its day or week is up (Brier score against simply quoting the usual rate, "
+                          "how often the price landed in the 80 % range). A model worse than the usual rate is replaced by it.",
+                          obj({"symbol": {"type": "string", "maxLength": 40}}), "low", "public_api_get", track_record)
+    if manager is not None:
+        registry.register("market_event_study", "How a coin or stock moved after past world events of one kind recorded by Global "
+                          "Intelligence (earthquakes, conflict, cyber attacks, storms, …) over 1, 3 or 7 days, against all days, "
+                          "with a permutation test: 'no measurable effect' unless chance rarely gives such a gap.",
+                          obj({"symbol": symbol, "category": {"enum": sorted(CATEGORIES)},
+                               "horizon_days": {"enum": [1, 3, 7]}, "asset": {"enum": ["auto", "crypto", "stock"]}},
+                              ["symbol", "category"]), "low", "public_api_get",
+                          lambda symbol, category, horizon_days=1, asset="auto": event_study(manager, markets, symbol, category,
+                                                                                            horizon_days, asset))
+    registry.register("market_positioning", "Institutional positioning from the CFTC's weekly Commitments of Traders: how asset "
+                      "managers, leveraged funds and dealers hold " + ", ".join(CONTRACTS) + " futures, where that stands against "
+                      "three years (crowded or not), and whether past changes preceded the next week's move.",
+                      obj({"market": {"type": "string", "minLength": 2, "maxLength": 20}}, ["market"]), "low",
+                      "public_api_get", lambda market: positioning(markets.fetcher, market, markets))
+    registry.register("market_sentiment", "The tone of worldwide news about a market (GDELT, three months, by day): the last "
+                      "week against usual, and whether changes in tone ever preceded the next day's move.",
+                      obj({"symbol": symbol, "subject": {"type": "string", "maxLength": 80}}, ["symbol"]), "low",
+                      "public_api_get", lambda symbol, subject="": sentiment(markets.fetcher, markets, symbol, subject))
+    if ledger is not None:
+        registry.register("market_brief", "Everything HAYAT can say about one market in plain words: the situation, what could "
+                          "happen this week with odds and a weak/middle/strong range, what moves it, big players' positioning, "
+                          "news tone, how good its odds have been, and the risks. Possibilities, never promises or advice.",
+                          obj({"symbol": symbol, "asset": {"enum": ["auto", "crypto", "stock"]}}, ["symbol"]), "low",
+                          "public_api_get", lambda symbol, asset="auto": brief(markets, manager, ledger, symbol, asset))
 
 
 # ---------------------------------------------------------------------- chat routing

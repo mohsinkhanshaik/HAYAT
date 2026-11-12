@@ -205,6 +205,8 @@ class Space3DPanel:
             ttk.Radiobutton(self.options, text=label, value=value, variable=self.depth, style='Segment.Toolbutton',
                             command=self._redraw_space).pack(side='left', padx=(0, 4))
         self.scene = OrbitScene(self.frame, p, on_select=self._selected, on_open=self._open, empty='Placing markets in 3D…', hint=False)
+        from app.gui_3d_controls import camera_menu
+        camera_menu(self.views, self.scene).pack(side='left', padx=(6, 0))
         self.scene.pack(fill='both', expand=True, pady=(6, 0))
         self.scene.bind('<<SpinChanged>>', lambda _event: self.spin_button.configure(text='Stop' if self.scene.spinning else 'Spin'))
         self.info = tk.Label(self.frame, text=IDLE, bg=p.PANEL, fg=p.MUTED,

@@ -12,7 +12,9 @@ from app.gui_intelligence_parts import (MAP_COAST, MAP_GRID, MAP_LAND, MAP_OCEAN
                                         blend, category_glyph, clip, draw_globe, glyph, round_rect)
 from app.gui_intelligence_resources import IntelligenceResourceViews
 from app.gui_intelligence_map import IntelligenceMapViews
+from app.gui_globe import IntelligenceGlobeViews
 from app.gui_resources import BooleanVar, StringVar
+from app.gui_output import DisplayVar
 from app.gui_theme import DarkScrolledText
 from app.gui_windows import MARGIN, place_over, placement, work_area
 from app.intelligence.classify import CATEGORIES, SEVERITY_COLOURS, SEVERITY_LABEL
@@ -115,6 +117,11 @@ def alert_title(event):
     return title
 
 
+#: Feed states in plain words for the Sources tab (the store keeps the codes).
+SOURCE_STATES = {'ok': 'current', 'failed': 'failed', 'not_fetched': 'not read yet', 'needs_key': 'needs a free key',
+                 'skipped_offline': 'waiting (offline)'}
+
+
 def source_order(source):
     return (0 if source['status'] == 'failed' else 1 if source['status'] == 'needs_key' else 2 if source['stale'] else 3,
             str(source.get('title') or source['key']).casefold())
@@ -170,7 +177,7 @@ def nice_distance(km):
     return max(step * power for step in (1, 2, 5) if step * power <= km)
 
 
-class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Toplevel):
+class IntelligenceWindow(IntelligenceGlobeViews, IntelligenceMapViews, IntelligenceResourceViews, tk.Toplevel):
     def __init__(self, gui):
         tk.Toplevel.__init__(self, gui.root)
         self.withdraw()
@@ -197,6 +204,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         saved = self.manager.preferences()['preferences']
         self.viewport = MapViewport(saved['zoom'], saved['center_lon'], saved['center_lat'])
         self.viewport.clamp()
+        self.build_globe_state(saved)
         self.query = StringVar(self, saved['query'])
         self.layer = StringVar(self, saved['layer'] or 'All layers')
         self.region = StringVar(self, saved['region'])
@@ -206,8 +214,8 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.time_range = StringVar(self, saved['time_range'])
         self.layer_vars = {key: BooleanVar(self, key not in saved['hidden_layers']) for key in CATEGORIES}
         self.assessment_view = StringVar(self, 'summary')
-        self.feedback = StringVar(self, 'Direct source observations · unknown locations are not plotted · Natural Earth public-domain basemap')
-        self.status = StringVar(self)
+        self.feedback = DisplayVar(self, 'Direct source observations · unknown locations are not plotted · Natural Earth public-domain basemap')
+        self.status = DisplayVar(self)
         self.title('HAYAT · Global intelligence')
         self.configure(bg=p.BLACK)
         # A workspace needs normal minimize/maximize and taskbar controls;
@@ -322,7 +330,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
              'Full evidence': 'code', 'Copy location': 'copy', 'Add watch': 'eye', 'Analyze with HAYAT': 'brain',
              'Refresh feeds': 'refresh', 'Pause monitor': 'stop', 'Start monitor': 'play', 'Load cameras': 'refresh',
              'Load snapshot': 'image', 'Open in atlas': 'globe', 'Open publisher page': 'link', 'Near selected event': 'pin',
-             'Watch video': 'play', 'Find streams': 'eye',
+             'Watch video': 'play', 'Find streams': 'eye', 'Browser atlas': 'globe',
              'Previous': 'history', 'Next': 'play', 'Previous 200': 'history', 'Next 200': 'play',
              'View all events →': 'grid', 'Use selected point': 'pin', 'Use map center': 'globe',
              'Get point weather': 'cloud', 'Recall observations': 'history', 'Analyze current filters': 'brain',
@@ -390,15 +398,19 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.updated_label.pack(fill='x')
         self.refresh_button = ttk.Button(controls, text='Refresh feeds', command=self.fetch, style='HayatAccent.TButton')
         self.refresh_button.pack(side='left', padx=3)
+        self.atlas_button = ttk.Button(controls, text='Browser atlas', command=self.world_atlas, style='Hayat.TButton')
+        self.atlas_button.pack(side='left', padx=3)
         add = ttk.Button(controls, text='Add watch', command=self.add_watch, style='Hayat.TButton')
         add.pack(side='left', padx=3)
         self.control = ttk.Button(controls, text='Pause monitor', command=self.toggle, style='Hayat.TButton')
         self.control.pack(side='left', padx=3)
-        self.header_buttons = (self.refresh_button, add, self.control)
+        self.header_buttons = (self.refresh_button, self.atlas_button, add, self.control)
         self.window_button = ttk.Menubutton(controls, text='Window ▾', style='Compact.Hayat.TButton')
         self.window_button.pack(side='left', padx=(6, 0))
         menu = tk.Menu(self.window_button, tearoff=False, bg=p.PANEL, fg=p.WHITE,
                        activebackground=p.GOLD, activeforeground=p.BLACK)
+        menu.add_command(label='How to use this page (F1)', command=self.open_page_guide)
+        menu.add_separator()
         menu.add_command(label='Fit window to screen', command=self.fit_window)
         menu.add_command(label='Maximize / restore', command=self.toggle_window_size)
         menu.add_command(label='Minimize', command=self.iconify)
@@ -409,6 +421,9 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         menu.add_command(label='Close', command=self.close)
         self.window_button.configure(menu=menu)
         from app.gui_help import Tooltip
+        self.atlas_button._intel_tip = Tooltip(self.atlas_button, 'Open the browser atlas with street maps, live layers and camera media (Ctrl+Shift+A)', p)
+        self.bind('<Control-Shift-A>', lambda _event: (self.world_atlas(), 'break')[1], add='+')
+        self.bind('<F1>', lambda _event: (self.open_page_guide(), 'break')[1], add='+')
         for widget in (header, globe, words, self.title_label, self.subtitle):
             widget.configure(cursor='fleur')
             widget.bind('<ButtonPress-1>', self._start_window_drag)
@@ -418,11 +433,17 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.title_label._intel_tip = Tooltip(self.title_label,
             'Drag this header to move the window. Double-click to maximize or restore. Resize from an edge or bottom corner.', p)
 
+    def open_page_guide(self):
+        from app.gui_guidance import open_page_guide
+        cameras = self.notebook.select() == str(self.tabs.get('cameras'))
+        return open_page_guide(self, self.palette, 'cameras' if cameras else 'world')
+
     def _build_filters(self):
         p = self.palette
         self.filter_row = FlowRow(self, p.BLACK, gap=8, height=56, padx=0)
         self.filter_row.pack(fill='x', padx=16, pady=(0, 6))
         self.filter_captions = []
+        self.filter_fields = {}
         def field(label, widget_factory):
             box = tk.Frame(self.filter_row, bg=p.BLACK)
             caption = tk.Label(box, text=label, bg=p.BLACK, fg=p.MUTED, font=('Segoe UI', 8), anchor='w')
@@ -431,6 +452,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
             widget = widget_factory(box)
             widget.pack(fill='x')
             self.filter_row.add(box)
+            self.filter_fields[label] = box
             return widget
         self.search_entry = field('Search', lambda box: ttk.Entry(box, textvariable=self.query, width=26))
         field('Category', lambda box: ttk.Combobox(box, textvariable=self.category, values=list(CATEGORY_FILTERS), state='readonly', width=15))
@@ -441,6 +463,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
                                                       state='readonly', width=19))
         self.clear_filters_button = self.filter_row.add(ttk.Button(self.filter_row, text='Clear filters',
             command=self.clear_map_filters, style='Compact.Hayat.TButton'))
+        self._filter_all_items = tuple(self.filter_row.items)
         from app.gui_help import Tooltip
         self.search_entry._intel_tip = Tooltip(self.search_entry, 'Search observations (Ctrl+F)', p)
 
@@ -508,6 +531,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.map.pack(fill='both', expand=True)
         self._build_legend()
         self._bind_map()
+        self.build_globe_tools()
         self.cards_frame = cards
         actions = FlowRow(cards, p.BLACK, height=34)
         actions.pack(fill='x', pady=(4, 4))
@@ -581,6 +605,14 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.legend_toggle = ttk.Button(top, text='+', width=2, command=self.toggle_legend, style='Compact.Hayat.TButton')
         self.legend_toggle.pack(side='right', padx=(10, 0))
         self.legend_body = tk.Frame(legend, bg=legend['bg'])
+        shortcuts = tk.Frame(self.legend_body, bg=legend['bg'])
+        shortcuts.pack(fill='x')
+        self.layer_buttons = {}
+        for title, enabled in (('Show all', True), ('Hide all', False)):
+            button = ttk.Button(shortcuts, text=title, style='Compact.Hayat.TButton',
+                                command=lambda value=enabled: self.set_map_layers(value))
+            button.pack(side='left', fill='x', expand=True)
+            self.layer_buttons[title] = button
         self.legend_canvas = tk.Canvas(self.legend_body, width=175, height=240, bg=legend['bg'], highlightthickness=0)
         scroll = ttk.Scrollbar(self.legend_body, command=self.legend_canvas.yview)
         scroll.pack(side='right', fill='y')
@@ -619,7 +651,10 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
     def fit_legend(self, height, width=None):
         # Start folded so the controls do not obscure Asia. If opened, the list
         # scrolls inside the available map height, including compact windows.
-        self.legend_canvas.configure(height=max(60, min(330, height - 100)))
+        chrome = max(100, self.legend.winfo_reqheight() - self.legend_canvas.winfo_reqheight())
+        canvas_height = max(1, min(330, height - 20 - chrome))
+        if int(self.legend_canvas.cget('height')) != canvas_height:
+            self.legend_canvas.configure(height=canvas_height)
 
     def toggle_legend(self, chosen=True):
         self._legend_chosen = self._legend_chosen or chosen
@@ -649,7 +684,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.severity_badge.pack_forget()
         self.next_button = ttk.Button(head, text='›', width=2, command=lambda: self.step_event(1), style='Compact.Hayat.TButton')
         self.next_button.pack(side='right')
-        self.position = StringVar(self, '')
+        self.position = DisplayVar(self, '')
         tk.Label(head, textvariable=self.position, bg=p.PANEL, fg=p.MUTED, font=('Segoe UI', 9)).pack(side='right', padx=4)
         self.prev_button = ttk.Button(head, text='‹', width=2, command=lambda: self.step_event(-1), style='Compact.Hayat.TButton')
         self.prev_button.pack(side='right')
@@ -660,8 +695,8 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.event_icon.pack(side='left', padx=(0, 8))
         words = tk.Frame(title_row, bg=p.PANEL)
         words.pack(side='left', fill='x', expand=True)
-        self.detail_title = StringVar(self, 'Select an observation')
-        self.detail_subtitle = StringVar(self, 'Click a marker, a feed card or an event row.')
+        self.detail_title = DisplayVar(self, 'Select an observation')
+        self.detail_subtitle = DisplayVar(self, 'Click a marker, a feed card or an event row.')
         self.detail_title_label = tk.Label(words, textvariable=self.detail_title, bg=p.PANEL, fg=p.WHITE, anchor='w', justify='left',
                                            font=('Segoe UI Semibold', 13))
         self.detail_title_label.pack(fill='x')
@@ -746,7 +781,7 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.next_page_button = ttk.Button(pages, text='Next 200', command=lambda: self.page(1))
         self.previous_button.pack(side='left')
         self.next_page_button.pack(side='left', padx=6)
-        self.page_label = StringVar(self)
+        self.page_label = DisplayVar(self)
         ttk.Label(pages, textvariable=self.page_label).pack(side='left')
         ttk.Label(self.tabs['alerts'], text='Local watch alerts · up to 1,000 retained · an alert can describe a past event',
                   foreground=p.MUTED).pack(fill='x', pady=(6, 0))
@@ -760,8 +795,9 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         source_actions = tk.Frame(self.tabs['sources'], bg=p.BLACK)
         source_actions.pack(side='bottom', fill='x')
         self.source_text = text_box(source_actions, p, 6)
-        self.source_tree = self.new_table('sources', [('status', 'State', 120), ('count', 'Items', 70), ('time', 'Last success', 120),
-                                                      ('next', 'Next check', 120), ('every', 'Interval', 80)])
+        self.source_tree = self.new_table('sources', [('status', 'State', 130), ('count', 'Items', 70), ('time', 'Last success', 110),
+                                                      ('cameras', 'Camera check', 150), ('next', 'Next check', 90), ('every', 'Interval', 70)])
+        self.source_tree.heading('#0', text='Source')
         self.source_tree.tag_configure('ok', foreground='#4ADE80')
         self.source_tree.tag_configure('failed', foreground=SEVERITY_COLOURS['high'])
         self.source_tree.tag_configure('stale', foreground=SEVERITY_COLOURS['medium'])
@@ -912,6 +948,8 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         return TIME_RANGES.get(self.time_range.get())
 
     def bounds(self):
+        if self.only_viewport.get() and self.globe_on():
+            return [round(value, 3) for value in self.globe_camera.bounds(*self.size())]
         return self.viewport.bounds() if self.only_viewport.get() else (REGIONS[self.region.get()] if self.region.get() != 'World' else None)
 
     def map_categories(self):
@@ -947,10 +985,18 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         if getattr(self, '_resetting_filters', False):
             return
         self.viewport.fit(REGIONS[self.region.get()])
+        if self.globe_on():
+            self.globe_fit_bbox(REGIONS[self.region.get()])
         self.filter_changed()
 
     def layer_toggled(self):
         self.render(force=True)
+
+    def set_map_layers(self, enabled):
+        for variable in self.layer_vars.values():
+            variable.set(enabled)
+        self.layer_toggled()
+        self.feedback.set('All map layers shown.' if enabled else 'All map layers hidden. Use Show all or select a layer to restore markers.')
 
     # ----- rendering ----------------------------------------------------
     def render(self, force=False):
@@ -983,7 +1029,11 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.map_rows = {row['id']: row for row in value['mapped']}
         self.rows = {**self.map_rows, **{row['id']: row for row in value['live']}, **{row['id']: row for row in value['events']}}
         stable_sources = [{name: item for name, item in source.items() if name != 'age_seconds'} for source in value['sources']]
-        signature = json.dumps([value['events'], value['alerts'], value['watches'], stable_sources], sort_keys=True, default=str)
+        try:  # new camera checks change the Sources tab's Camera check column
+            checked = self.manager.store.camera_health_stamp()
+        except Exception:  # a manager without a local store (or an old one) simply has no checks
+            checked = None
+        signature = json.dumps([value['events'], value['alerts'], value['watches'], stable_sources, checked], sort_keys=True, default=str)
         if signature != self._data_signature:
             self._data_signature = signature
             self._render_tables(value)
@@ -1033,12 +1083,23 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
                 or 'Worldwide'))
         self.source_tree.delete(*self.source_tree.get_children())
         self.sources = {source['key']: source for source in value['sources']}
+        # What HAYAT's own checks found in each camera network over the last six hours (camera_health.py).
+        from app.intelligence.camera_health import network_states
+        try:
+            checked = network_states(self.manager.store)
+        except Exception:  # a store without the health table (an old copy) shows no camera column
+            checked = {}
         # Problems first: a failing feed was row 60 of 89, below every healthy camera catalog.
         for source in sorted(value['sources'], key=source_order):
             tag = 'failed' if source['status'] == 'failed' else 'stale' if source['stale'] else 'ok'
+            health = checked.get(source['key'])
+            cameras = ('' if not source['key'].startswith('cameras_') else 'not tested' if not health else
+                       f"{health['working']}/{health['working'] + health['failing']} working" + (' · down' if health['down'] else ''))
             self.source_tree.insert('', 'end', iid=source['key'], text=source['title'], tags=(tag,), values=(
-                source['status'] + (' · stale' if source['stale'] else ''), source.get('count', 0),
-                relative_time(source.get('last_success_at')) or 'Never',
+                # A feed read fine but past its interval is "out of date", not the contradictory "current · stale".
+                'out of date' if source['stale'] and source['status'] == 'ok' else
+                SOURCE_STATES.get(source['status'], str(source['status']).replace('_', ' ')) + (' · stale' if source['stale'] else ''),
+                source.get('count', 0), relative_time(source.get('last_success_at')) or 'Never', cameras,
                 (source.get('next_attempt_at') or '')[11:16] + (' UTC' if source.get('next_attempt_at') else ''),
                 f"{source['interval_seconds'] // 60} min"))
         for tree, selection, position in saved:
@@ -1112,8 +1173,12 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
     def draw(self):
         if self._closed:
             return
+        if self.globe_on():
+            return self.draw_globe()
         canvas = self.map
         canvas.delete('all')
+        if str(canvas.cget('bg')) != MAP_OCEAN:
+            canvas.configure(bg=MAP_OCEAN, highlightbackground=MAP_OCEAN)
         width, height = self.size()
         project = lambda lon, lat, wrap=True: self.viewport.project(lon, lat, width, height, wrap=wrap)
         step = 30 if self.viewport.zoom < 3 else 10 if self.viewport.zoom < 10 else 2
@@ -1138,7 +1203,30 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
             x, y = project(row['longitude'], row['latitude'])
             if -12 <= x <= width + 12 and -12 <= y <= height + 12:
                 visible.append((row, x, y))
-        singles, self._clusters = cluster_markers(visible, self.viewport.zoom, selected_id)
+        self._draw_markers(visible, self.viewport.zoom)
+        if selected_id in self.map_rows:
+            self._draw_callout(project, width, height)
+        if self._globe_pin:
+            x, y = project(self._globe_pin[0], self._globe_pin[1])
+            canvas.create_oval(x - 9, y - 9, x + 9, y + 9, outline=self.palette.GOLD, width=2, tags=('pin',))
+            canvas.create_text(x + 12, y - 12, text=self._globe_pin[2], anchor='w', fill=self.palette.GOLD,
+                               font=('Segoe UI Semibold', 9), tags=('pin',))
+        in_view = [row for row, x, y in visible if 0 <= x <= width and 0 <= y <= height]
+        self.update_map_summary(in_view)
+        self.draw_map_empty(in_view)
+        heading = f'{self.region.get()} · {self.viewport.zoom:.1f}×'
+        if width > 620:
+            heading += f' · {len(self._clusters)} clusters' if self._clusters else ' · Select an observation'
+        canvas.create_text(12, 12, text=heading,
+                           fill=MAP_TEXT, anchor='nw', font=('Segoe UI', 9))
+        self._draw_scale(width, height)
+        self._draw_hint()
+
+    def _draw_markers(self, visible, zoom):
+        """Markers and clusters for (row, x, y) points; shared by the flat map and the globe."""
+        canvas = self.map
+        selected_id = self.selected_record['event']['id'] if self.selected_record else None
+        singles, self._clusters = cluster_markers(visible, zoom, selected_id)
         # Low and medium markers, then clusters (their counts must stay readable), then
         # high-severity and selected markers on top.
         ordered = sorted(singles, key=lambda item: (item[0]['severity'] == 'high' or item[0]['id'] == selected_id,
@@ -1158,18 +1246,6 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
                   outline=self.palette.WHITE if row['id'] == selected_id else '')
         if clusters_at == len(ordered):
             self._draw_clusters()
-        if selected_id in self.map_rows:
-            self._draw_callout(project, width, height)
-        in_view = [row for row, x, y in visible if 0 <= x <= width and 0 <= y <= height]
-        self.update_map_summary(in_view)
-        self.draw_map_empty(in_view)
-        heading = f'{self.region.get()} · {self.viewport.zoom:.1f}×'
-        if width > 620:
-            heading += f' · {len(self._clusters)} clusters' if self._clusters else ' · Select an observation'
-        canvas.create_text(12, 12, text=heading,
-                           fill=MAP_TEXT, anchor='nw', font=('Segoe UI', 9))
-        self._draw_scale(width, height)
-        self._draw_hint()
 
     def _draw_clusters(self):
         for index, (x, y, members) in enumerate(self._clusters):
@@ -1253,16 +1329,23 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
 
     def wheel(self, event, direction=None):
         direction = direction if direction is not None else (1 if event.delta > 0 else -1)
+        if self.globe_on():
+            self.globe_wheel(1.2 if direction > 0 else 1 / 1.2, event.x, event.y)
+            return 'break'
         self.viewport.zoom_at(1.2 if direction > 0 else 1 / 1.2, event.x, event.y, *self.size())
         self.view_changed()
         return 'break'
 
     def zoom(self, factor):
+        if self.globe_on():
+            return self.globe_zoom(factor)
         width, height = self.size()
         self.viewport.zoom_at(factor, width / 2, height / 2, width, height)
         self.view_changed()
 
     def move_map(self, dx, dy):
+        if self.globe_on():
+            return self.globe_turn(dx, dy)
         self.viewport.pan(dx, dy, *self.size())
         self.view_changed()
 
@@ -1270,11 +1353,16 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self.map.focus_set()
         self._drag = [event.x, event.y, event.x, event.y, False]
         self.map.configure(cursor='fleur')
+        if self.globe_on():
+            self.globe_drag_start(event)
 
     def drag(self, event):
         if self._drag:
             x, y, start_x, start_y, moved = self._drag
-            self.viewport.pan(event.x - x, event.y - y, *self.size())
+            if self.globe_on():
+                self.globe_drag(event.x - x, event.y - y, event)
+            else:
+                self.viewport.pan(event.x - x, event.y - y, *self.size())
             self._drag = [event.x, event.y, start_x, start_y, moved or abs(event.x - start_x) + abs(event.y - start_y) > 4]
             self.request_draw()
 
@@ -1282,13 +1370,25 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         moved = self._drag and self._drag[4]
         self._drag = None
         self.map.configure(cursor='')
+        if self.globe_on():
+            self.globe_drag_end(moved)
+            if not moved:
+                self.globe_click(event)
+            return
         self.view_changed() if moved else self.select_marker(event)
 
     def reset_map(self):
+        if self.globe_on():
+            from app.earth_globe import GlobeCamera
+
+            self.clear_country()
+            return self.globe_fly(GlobeCamera(), remember=True)
         self.viewport = MapViewport()
         self.view_changed()
 
     def fit_region(self):
+        if self.globe_on():
+            return self.globe_fit_bbox(REGIONS[self.region.get()])
         self.viewport.fit(REGIONS[self.region.get()])
         self.view_changed()
 
@@ -1300,6 +1400,8 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         return None
 
     def hover(self, event):
+        if self.globe_on():
+            return self.globe_hover(event)
         lon, lat = self.viewport.unproject(event.x, event.y, *self.size())
         identifier = self.marker_at(event.x, event.y)
         cluster = None if identifier else self.cluster_at(event.x, event.y)
@@ -1334,6 +1436,8 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
             self.tree.see(identifier)
         self.load_event(identifier)
         self.notebook.select(self.tabs['map'])
+        if identifier in self.map_rows and self.globe_on():
+            self.globe_follow_selection(self.map_rows[identifier])
 
     def event_selected(self):
         selected = self.tree.selection()
@@ -1552,6 +1656,9 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
     def focus_selected(self):
         if self.selected_record and self.selected_record['event'].get('latitude') is not None:
             row = self.selected_record['event']
+            if self.globe_on():
+                self.notebook.select(self.tabs['map'])
+                return self.globe_focus(row['longitude'], row['latitude'], max(self.globe_camera.zoom, 12.0))
             self.viewport.longitude, self.viewport.latitude = row['longitude'], row['latitude']
             self.viewport.zoom = max(8, self.viewport.zoom)
             self.viewport.clamp()
@@ -1645,7 +1752,8 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         return {'region': self.region.get(), 'layer': self.feed_key(), 'query': self.query.get(), 'zoom': self.viewport.zoom,
                 'center_lon': self.viewport.longitude, 'center_lat': self.viewport.latitude, 'only_viewport': self.only_viewport.get(),
                 'category': self.category_key(), 'min_severity': self.severity_key(), 'time_range': self.time_range.get(),
-                'hidden_layers': [key for key, variable in self.layer_vars.items() if not variable.get()]}
+                'hidden_layers': [key for key, variable in self.layer_vars.items() if not variable.get()],
+                'map_mode': self.map_mode.get(), 'globe': self.globe_settings()}
 
     def apply_view_options(self, options):
         """Show a saved view: the inverse of view_options()."""
@@ -1663,6 +1771,8 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
             variable.set(key not in hidden)
         self.viewport = MapViewport(options.get('zoom', 1.0), options.get('center_lon', 0.0), options.get('center_lat', 0.0))
         self.viewport.clamp()
+        self.globe_stop()
+        self.apply_globe_options(options)
         self.offset = 0
         self.view_changed()
 
@@ -1874,6 +1984,9 @@ class IntelligenceWindow(IntelligenceMapViews, IntelligenceResourceViews, tk.Top
         self._poll_id = self.after(1000, self.poll)
 
     def close(self):
+        if not self._closed:
+            self.globe_stop()
+            self.save_globe_preferences()
         self._closed = True
         self._window_drag = None
         self.stop_camera_refresh()

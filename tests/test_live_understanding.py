@@ -57,3 +57,38 @@ def test_hayat_model_preserves_context_choices_and_constraints():
         assert report['passed'], rows
     finally:
         runtime.close()
+
+
+def test_actual_model_review_preserves_attached_decision_evidence(tmp_path):
+    from types import SimpleNamespace
+    from app.runtime import build_runtime
+    from app.agent.conversation import ConversationService
+    from app.executive import ExecutiveCortex
+    from app.dual_brain import DualBrain
+    from app.agent.response_guidance import exceeds_brief_request
+    runtime = build_runtime(use_model=True, start_background_services=False)
+    try:
+        assert runtime.model is not None
+        chat = ConversationService(runtime.model, runtime.memory, 'live-source-decision')
+        chat.executive = ExecutiveCortex()
+        chat.dual_brain = DualBrain(chat.executive, enabled=True)
+        chat.standing_instruction = 'Answer in at most two sentences using only the supplied note and conditional reasoning.'
+        chat.attachments = SimpleNamespace(recall=lambda *_args, **_kwargs: [{
+            'content': 'Fictional maintenance note: sensor A failed at a load of 17 units. Sensor B has not been tested. No cost data is available.',
+            'metadata': {'name': 'fictional-note.txt', 'path': 'fictional-note.txt'}}])
+        question = 'Should we deploy sensor B just because sensor A failed? Use the attached note, mention the measured load, and identify the needed next check.'
+        answer = chat.reply(question, modes=['DEEP'])
+        review = chat.last_dual_review or {}
+        checks = {'load_preserved': '17' in answer or 'seventeen' in answer.lower(),
+                  'next_check': any(word in answer.lower() for word in ('test', 'validat')),
+                  'short_format': not exceeds_brief_request(answer, 'Reply in two sentences.'),
+                  'review_ran_with_sources': review.get('state') == 'reviewed' and review.get('reference_items', 0) >= 1}
+        report = {'model': getattr(runtime.model, 'model', None), 'question': question, 'answer': answer,
+                  'checks': checks, 'review': review, 'passed': all(checks.values()),
+                  'scope': 'One fictional decision with supplied evidence; no physical test or deployment is performed.'}
+        (tmp_path / 'live-source-decision.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+        (Path('.test-runs') / 'live-source-decision.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+        print(json.dumps(report), flush=True)
+        assert report['passed'], report
+    finally:
+        runtime.close()

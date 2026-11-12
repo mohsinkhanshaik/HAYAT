@@ -5,7 +5,7 @@ import time
 import tkinter as tk
 from tkinter import ttk
 
-from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.intelligence.view import MapViewport, REGIONS
 
 
@@ -24,7 +24,7 @@ class IntelligenceHomeCard(tk.Frame):
         self.alerts = []
         header = self.header = tk.Frame(self, bg=gui.PANEL)
         header.pack(fill='x')
-        self.headline = StringVar(self, 'Global intelligence · reading local snapshots…')
+        self.headline = DisplayVar(self, 'Global intelligence · reading local snapshots…')
         # Equal shares that wrap when the column is narrow (in the main window's right column "Deep look" was cut).
         from app.gui_panels import ButtonRow
         controls = self.header_controls = ButtonRow(header, gui)
@@ -56,7 +56,7 @@ class IntelligenceHomeCard(tk.Frame):
         else:
             header.bind('<Configure>', arrange)
         body = self.panel_layout.content if movable else self
-        self.summary = StringVar(self)
+        self.summary = DisplayVar(self)
         self.summary_label = tk.Label(body, textvariable=self.summary, bg=gui.PANEL, fg=gui.MUTED,
                                      anchor='w', justify='left', font=('Segoe UI', 9), wraplength=700)
         self.summary_label.pack(fill='x')

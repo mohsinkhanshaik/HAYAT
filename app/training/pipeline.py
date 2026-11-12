@@ -101,8 +101,10 @@ class TrainingDataPipeline:
             if not self.private_local_only or self.private_cloud_export_allowed:
                 raise PermissionError("Private training is restricted to local-only storage and execution.")
         redacted, count = self._redact(sample); canonical = json.dumps(redacted, sort_keys=True, default=str)
+        from app.evaluation.bounce import is_bounce_prompt
         from app.evaluation.holdout import is_holdout
-        if is_holdout(json.dumps(sample, ensure_ascii=False, default=str)):
+        serialised = json.dumps(sample, ensure_ascii=False, default=str)
+        if is_holdout(serialised) or is_bounce_prompt(serialised):
             raise ValueError("This example contains a held-out evaluation question; it is never used for training.")
         clean_provenance, provenance_redactions = self._redact(provenance)
         count += provenance_redactions

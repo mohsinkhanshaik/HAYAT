@@ -200,3 +200,19 @@ def test_make_a_word_doc_plan(tmp_path):
     assert [step.tool for step in plan] == ["write_docx", "file_exists"]
     assert plan[0].arguments["path"] == "data/artifacts/notes.docx"
     assert plan[1].arguments["path"] == "data/artifacts/notes.docx"
+
+
+def test_writing_tools_are_offered_only_when_the_request_says_where_to_write(tmp_path):
+    # "Write a numbered packing list" was offered write_file on the word "write" alone and the
+    # model wrote rainy_day_packing_list.txt into the project.
+    planner = Planner(registry(tmp_path))
+    chat_only = set(planner._candidate_tools("Write a numbered packing list for a rainy day"))
+    assert "write_file" not in chat_only and "append_file" not in chat_only
+    assert "read_file" in chat_only  # reading is still on offer
+    to_file = set(planner._candidate_tools("Write a packing list and save it to notes.txt"))
+    assert "write_file" in to_file
+    assert "write_pdf" in set(planner._candidate_tools("Write a report on solar panels as a PDF"))
+    # The tool index and capability areas also match "write": the bounce suite's slogan became slogan.txt.
+    slogan = set(planner._candidate_tools("Write a one-line slogan for a bakery. Only the slogan."))
+    assert not slogan & Planner._FILE_WRITES
+    assert not set(planner._candidate_tools("Make it funnier. Only the slogan.")) & Planner._FILE_WRITES

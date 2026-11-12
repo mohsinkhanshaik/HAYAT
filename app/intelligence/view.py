@@ -22,7 +22,9 @@ DEFAULT_VIEW = {'show_home': True, 'home_alert_limit': 3, 'home_detail': 'compac
                 'region': 'World', 'layer': '', 'query': '', 'zoom': 1.0,
                 'center_lon': 0.0, 'center_lat': 0.0, 'show_alerts': True,
                 'only_viewport': False, 'category': '', 'min_severity': '', 'time_range': 'Any time',
-                'hidden_layers': ['cameras']}
+                'hidden_layers': ['cameras'], 'atlas': None,
+                # The native map's 3D globe (app/gui_globe.py); 'flat' keeps the 2D map.
+                'map_mode': 'globe', 'globe': None}
 
 
 def relative_time(value, moment=None):
@@ -43,6 +45,10 @@ def relative_time(value, moment=None):
 
 def format_point(latitude, longitude):
     return f"{abs(latitude):.3f}°{'N' if latitude >= 0 else 'S'}, {abs(longitude):.3f}°{'E' if longitude >= 0 else 'W'}"
+
+
+#: The browser atlas's optional map layers (OPTIONAL_LAYERS in app/assets/intelligence-map/map.js).
+ATLAS_LAYERS = ('streets', 'satellite', 'radar', 'aircraft', 'vessels', 'transit', 'iss', 'fires', 'gnss', 'trade')
 
 
 def validate_view(data):
@@ -72,11 +78,57 @@ def validate_view(data):
     if 'query' in data and (not isinstance(data['query'], str) or len(data['query']) > 500):
         raise ValueError('Search text must be at most 500 characters.')
     result = dict(data)
+    if data.get('atlas') is not None:
+        atlas = data['atlas']
+        flags = ('cameras', 'events', 'fresh_only', 'hide_failed')
+        if not isinstance(atlas, dict) or set(atlas) - {'zoom', 'media', 'layers', *flags}:
+            raise ValueError('Use only registered browser atlas view options.')
+        if 'layers' in atlas and (not isinstance(atlas['layers'], list) or len(atlas['layers']) > len(ATLAS_LAYERS)
+                                  or any(layer not in ATLAS_LAYERS for layer in atlas['layers'])):
+            raise ValueError('Atlas layers must be registered map layer names.')
+        if 'zoom' in atlas and (finite(atlas['zoom']) is None or not 1 <= finite(atlas['zoom']) <= 19):
+            raise ValueError('Atlas zoom must be between 1 and 19.')
+        if 'media' in atlas and atlas['media'] not in ('', 'stream', 'video', 'image', 'page'):
+            raise ValueError('Choose a registered atlas media filter.')
+        if any(key in atlas and type(atlas[key]) is not bool for key in flags):
+            raise ValueError('Atlas visibility options must be true or false.')
+        result['atlas'] = dict(atlas)
+        if 'zoom' in atlas:
+            result['atlas']['zoom'] = finite(atlas['zoom'])
     for key, low, high in (('zoom', 1, 32), ('center_lon', -180, 180), ('center_lat', -90, 90)):
         if key in data:
             number = finite(data[key])
             if number is None or not low <= number <= high:
                 raise ValueError(f'{key} must be a finite number between {low} and {high}.')
+            result[key] = number
+    if 'map_mode' in data and data['map_mode'] not in ('globe', 'flat'):
+        raise ValueError('Choose the globe or the flat map.')
+    if data.get('globe') is not None:
+        result['globe'] = validate_globe(data['globe'])
+    return result
+
+
+GLOBE_QUALITIES = ('auto', 'performance', 'balanced', 'ultra')
+GLOBE_LAYERS = ('', 'density', 'gdp_per_person', 'income')
+
+
+def validate_globe(globe):
+    """The 3D globe's options (app/gui_globe.py): rendering preset, lighting, borders, colouring and camera."""
+    if not isinstance(globe, dict) or set(globe) - {'quality', 'lighting', 'borders', 'layer', 'spin',
+                                                    'longitude', 'latitude', 'zoom'}:
+        raise ValueError('Use only registered globe options.')
+    if 'quality' in globe and globe['quality'] not in GLOBE_QUALITIES:
+        raise ValueError('Choose a registered globe quality.')
+    if 'layer' in globe and globe['layer'] not in GLOBE_LAYERS:
+        raise ValueError('Choose a registered country layer.')
+    if any(key in globe and type(globe[key]) is not bool for key in ('lighting', 'borders', 'spin')):
+        raise ValueError('Globe switches must be true or false.')
+    result = dict(globe)
+    for key, low, high in (('longitude', -180, 180), ('latitude', -90, 90), ('zoom', .5, 64)):
+        if key in globe:
+            number = finite(globe[key])
+            if number is None or not low <= number <= high:
+                raise ValueError(f'Globe {key} must be a finite number between {low} and {high}.')
             result[key] = number
     return result
 

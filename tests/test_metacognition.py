@@ -47,3 +47,24 @@ def test_delegation_map_reports_verified_router_choices():
     assert report["available"] is True
     assert len(report["routes"]) == len(AdaptiveControlPlane.CAPABILITIES)
     assert report["routes"][0]["primary"].startswith("local-")
+
+
+def test_privacy_mode_does_not_enqueue_public_learning():
+    learner = Learner()
+    control = AdaptiveControlPlane(SimpleNamespace(authority=SimpleNamespace(privacy_mode=True), learner=learner))
+    assert control.queue_curriculum()["queued"] == 0
+    assert learner.items == []
+
+
+def test_broken_measurements_are_visible_instead_of_healthy_empty_state():
+    def broken():
+        raise OSError("private local path must not be exposed")
+    control = AdaptiveControlPlane(SimpleNamespace(
+        research=SimpleNamespace(knowledge=SimpleNamespace(connect=broken, stats=broken)),
+        learning=SimpleNamespace(weaknesses=broken), camera=SimpleNamespace(status=broken)))
+    report = control.status()
+    assert report["knowledge_health"]["available"] is False
+    assert report["observation_errors"] == {"knowledge": "OSError", "learning": "OSError", "knowledge_health": "OSError"}
+    assert report["senses"]["camera"]["available"] is False
+    assert report["senses"]["camera"]["method"] == "not_observed"
+    assert "private local path" not in str(report)

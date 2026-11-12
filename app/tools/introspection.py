@@ -48,8 +48,19 @@ _ABILITY_NOISE = frozenset({
     "what", "which", "how", "when", "why", "where", "who", "there", "them",
     "into", "out", "get", "got", "use", "using", "used", "make", "made",
     "tell", "give", "show", "know", "like", "just", "also", "still", "yet",
-    "through", "about", "over", "under", "live", "own", "one", "all", "more",
+    "through", "about", "over", "under", "live", "own", "one", "all", "more", "us", "me", "an",
 })
+
+
+def ability_words(text: str) -> set[str]:
+    """Whole words, with conservative plural matching; never call → recall."""
+    return {word[:-1] if len(word) > 3 and word.endswith('s') and not word.endswith('ss') else word
+            for word in re.findall(r"[a-z]{2,}", text.lower()) if word not in _ABILITY_NOISE}
+
+
+def word_forms(text: str) -> set[str]:
+    return {word[:-1] if len(word) > 3 and word.endswith('s') and not word.endswith('ss') else word
+            for word in re.findall(r"[a-z]{2,}", text.lower())}
 
 #: His vocabulary, mapped onto the words the tools were registered with.
 #: Deliberately small: it exists because a real question missed by a real
@@ -102,6 +113,11 @@ def tool_reference(registry: Any, understanding: Any, text: str) -> str:
              if re.search(rf"\b{re.escape(name)}\b", value, re.IGNORECASE)]
     if named:
         return "\n\n".join(_one(registry, understanding, name) for name in named[:3])
+    if _ASKING_ABOUT_TOOLS.search(value):
+        try:
+            return understanding.overview(registry)
+        except Exception:
+            return ""
 
     # "Can you scrape websites?" never contains the word "tool", so nothing
     # was put in front of the model and it answered from a general model's
@@ -117,6 +133,9 @@ def tool_reference(registry: Any, understanding: Any, text: str) -> str:
             return ("These are the real tools on this machine for what he is asking about. "
                     "They are registered capabilities. Use the recorded outcomes below to assess reliability; "
                     "registration alone does not prove that the current device, service or permission is ready:\n\n" + listed)
+        return ("No tool matches the complete capability request. Interpret its actual subject, including fictional "
+                "or impossible premises, and answer naturally. Similar words in tool names are not evidence that "
+                "you can perform it. Do not substitute an account/connector menu or claim any action ran.")
 
     if _ASKING_ABOUT_TOOLS.search(value) or _ASKING_ABOUT_ABILITY.search(value):
         try:
@@ -133,8 +152,8 @@ def _tools_for_ability(registry: Any, names: list[str], text: str) -> list[str]:
     rather than a hand-kept map of capability to tool, so a tool registered
     later is found without anyone remembering to list it here.
     """
-    words = {word.rstrip("s") for word in re.findall(r"[a-z]{3,}", text.lower())
-             if word not in _ABILITY_NOISE}
+    original_words = ability_words(text)
+    words = set(original_words)
     if not words:
         return []
     # The word he uses is not always the word the tool was registered with.
@@ -151,17 +170,22 @@ def _tools_for_ability(registry: Any, names: list[str], text: str) -> list[str]:
             description = str(registry.get(name).description or "")
         except Exception:
             description = ""
-        lowered_name = name.lower().replace("_", " ")
-        lowered_description = description.lower()
+        name_words = word_forms(name.replace('_', ' '))
+        description_words = word_forms(description)
+        # Require coverage of the actual subject, not a single incidental verb.
+        # Synonyms can cover a request word, but cannot introduce new targets.
+        if any(not ({word, *_ABILITY_SYNONYMS.get(word, ())} & (name_words | description_words))
+               for word in original_words):
+            continue
         # A name match is the strong signal. Description matches alone let
         # "see through the camera" select a browser scroll tool, because the
         # word "through" happened to appear in its description.
-        hits = 3 * sum(1 for word in words if word in lowered_name)
+        hits = 3 * len(words & name_words)
         # A general invoice/quote request favors that tool family over a
         # customer-specific wrapper. Explicit customer wording still matches
         # both words and ranks the scoped workflow first.
         hits += int(name.lower().split('_', 1)[0] in words)
-        hits += sum(1 for word in words if word in lowered_description)
+        hits += len(words & description_words)
         if hits:
             scored.append((hits, name))
     if not scored:

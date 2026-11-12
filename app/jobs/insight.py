@@ -92,7 +92,7 @@ PRACTICE = {
     "Mobile": "build a two-screen app with it",
     "Data & AI": "analyse a public dataset with it and write up three findings",
     "Databases": "model a small schema and answer five business questions with queries",
-    "Cloud & DevOps": "deploy a small app with it on a free tier, then tear it down",
+    "Cloud & DevOps": "build a local deployment demo; document platform configuration, monitoring, failure recovery and cleanup",
     "Security": "work through a free lab on it and write what you learned",
     "Testing & quality": "add tests with it to one of your own projects",
     "Product & design": "redesign one screen of an app you use and explain the choices",
@@ -203,15 +203,18 @@ def alignment(duties: list[str], cv_lines: list[str], skills: list[str]) -> dict
     frequency = Counter(term for document in documents for term in document)
     idf = {term: math.log(1 + len(documents) / count) for term, count in frequency.items()}
     mine = {skill.lower() for skill in skills}
+    # CV lines are the same for every duty. Parsing their entire skill
+    # vocabulary inside the duty/line loop multiplied work by up to 12.
+    cv_skills = [{name.lower() for name in skills_in(line)} for line in cv_lines]
     rows = []
     for duty in duties:
         wanted = tokens(duty)
-        duty_skills = {name.lower() for name in skills_in(duty)}
+        named_skills = skills_in(duty)
+        duty_skills = {name.lower() for name in named_skills}
         weight = sum(idf.get(term, 1.0) for term in wanted) or 1.0
         best, best_line = 0.0, ""
-        for line, have in zip(cv_lines, documents):
+        for line, have, line_skills in zip(cv_lines, documents, cv_skills):
             shared = sum(idf.get(term, 1.0) for term in wanted & have) / weight
-            line_skills = {name.lower() for name in skills_in(line)}
             shared += .25 * len(duty_skills & line_skills) / max(1, len(duty_skills)) if duty_skills else 0
             if shared > best:
                 best, best_line = shared, line
@@ -219,7 +222,7 @@ def alignment(duties: list[str], cv_lines: list[str], skills: list[str]) -> dict
         value = max(best, .5 * skill_cover if skill_cover is not None else 0)
         status = "aligned" if value >= .38 else "partly" if value >= .18 else "gap"
         rows.append({"duty": duty, "status": status, "score": round(min(1.0, value), 2),
-                     "evidence": best_line if status != "gap" else "", "skills": sorted(name for name in skills_in(duty))})
+                     "evidence": best_line if status != "gap" else "", "skills": sorted(named_skills)})
     points = {"aligned": 1.0, "partly": .5, "gap": 0.0}
     percent = round(sum(points[row["status"]] for row in rows) / len(rows) * 100)
     return {"available": True, "percent": percent, "rows": rows,
@@ -283,14 +286,18 @@ def history(store: Any, row: dict[str, Any]) -> dict[str, Any]:
     """The owner's own record with similar roles: applied, interviews, offers, rejections, hidden."""
     core = _core(row["title"])
     counts: Counter = Counter()
+    similar_applications = []
     for application in store.applications():
         theirs = _core(application["title"])
         if application["number"] != row["number"] and core and theirs and len(core & theirs) / len(core | theirs) >= .5:
             counts[application["status"]] += 1
+            similar_applications.append(application)
     hidden = sum(1 for other in store.matches(limit=500, include_blocked=True, include_hidden=True)
                  if other["hidden"] and core and _core(other["title"]) and len(core & _core(other["title"])) / len(core | _core(other["title"])) >= .5)
-    applied = sum(counts[name] for name in ("applied", "interview", "offer", "rejected"))
-    replies = counts["interview"] + counts["offer"]
+    from app.jobs.outcomes import observations
+    sent = observations(similar_applications)
+    applied = len(sent)
+    replies = sum(item["interview_reached"] for item in sent)
     note = ("You have not applied to a similar role yet." if not applied else
             f"Of {applied} similar applications, {replies} led to an interview or offer." if applied >= 3 else
             f"{applied} similar application{'s' if applied != 1 else ''} so far: too few to see a pattern.")
@@ -303,20 +310,22 @@ def prospects(store: Any, now: datetime | None = None) -> dict[str, Any]:
     and split by match strength, with a plain projection. Only their own history — never a guess about whether a
     particular employer will reply, and never invented odds of an offer."""
     now = now or datetime.now(UTC)
-    sent_states = {"applied", "interview", "offer", "rejected"}
-    sent = [row for row in store.applications() if row.get("status") in sent_states]
-    replies = sum(1 for row in sent if row["status"] in ("interview", "offer"))
-    offers = sum(1 for row in sent if row["status"] == "offer")
+    from app.jobs.outcomes import observations, outcome_summary
+    applications = store.applications()
+    sent = observations(applications)
+    cohort = outcome_summary(applications, now)
+    replies = sum(row["interview_reached"] for row in sent)
+    offers = sum(row["offer_reached"] for row in sent)
     waiting = sum(1 for row in sent if row["status"] == "applied")
 
     def band(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
         if not rows:
             return None
-        got = sum(1 for row in rows if row["status"] in ("interview", "offer"))
+        got = sum(row["interview_reached"] for row in rows)
         return {"sent": len(rows), "replies": got, "reply_rate": round(got / len(rows), 2)}
 
-    strong = band([row for row in sent if (row.get("score") or 0) >= 60])
-    rest = band([row for row in sent if (row.get("score") or 0) < 60])
+    strong = band([row for row in sent if row.get("score_at_application") is not None and row["score_at_application"] >= 60])
+    rest = band([row for row in sent if row.get("score_at_application") is not None and row["score_at_application"] < 60])
     rate = replies / len(sent) if sent else None
     # Laplace-smoothed estimate, so a tiny record is not read as 0% or 100%.
     estimate = (replies + 1) / (len(sent) + 2) if sent else None
@@ -327,18 +336,20 @@ def prospects(store: Any, now: datetime | None = None) -> dict[str, Any]:
         note = (f"{len(sent)} application{'s' if len(sent) != 1 else ''} sent, {replies} with a reply: too few to read a "
                 "rate from yet. Keep going and this sharpens.")
     else:
-        note = (f"Of {len(sent)} applications you sent, {replies} drew an interview or offer — about "
-                f"{round(rate * 100)}% ({round(estimate * 100)}% allowing for the small sample).")
+        note = (f"Of {len(sent)} recorded applications, {replies} have reached an interview or offer as of now "
+                f"({round(rate * 100)}% of the current record). This lifetime snapshot is not a forecast.")
     projection = None
-    if enough and estimate:
-        per = max(1, round(1 / estimate))
+    if cohort["forecast"]:
+        per = max(1, round((cohort["matured"] + 2) / (cohort["within_window"] + 1)))
         projection = {"applications_per_reply": per,
-                      "text": f"At your rate, about one reply for every {per} similar applications."}
+                      "text": f"Conditional on similar future applications: about one interview-reaching response per {per}, "
+                              f"within {cohort['window_days']} days. Inspect the predictive range and assumptions."}
     return {"prospects": True, "sent": len(sent), "replies": replies, "offers": offers, "waiting": waiting,
             "reply_rate": round(rate, 2) if rate is not None else None,
             "estimate": round(estimate, 2) if estimate is not None else None,
             "by_strength": {"strong_fit": strong, "weaker_fit": rest}, "enough": enough,
-            "projection": projection, "note": note,
+            "projection": projection, "note": note, "observation_window": cohort,
+            "unclassified_strength": sum(row.get("score_at_application") is None for row in sent),
             "basis": "Only your own application record. Nobody publishes who was hired, so HAYAT never predicts a "
                      "particular employer's decision or invents odds of an offer."}
 
@@ -347,7 +358,7 @@ def prospects_lines(value: dict[str, Any]) -> list[str]:
     lines = ["Your prospects, from your own record:", value["note"]]
     bands = value.get("by_strength") or {}
     if value["enough"]:
-        for key, label in (("strong_fit", "strong-fit roles (score ≥ 60)"), ("weaker_fit", "weaker-fit roles")):
+        for key, label in (("strong_fit", "good/strong fit at application (score ≥ 60)"), ("weaker_fit", "weaker fit at application")):
             band = bands.get(key)
             if band and band["sent"]:
                 lines.append(f"  {label}: {band['replies']} of {band['sent']} replied ({round(band['reply_rate'] * 100)}%).")
@@ -355,12 +366,26 @@ def prospects_lines(value: dict[str, Any]) -> list[str]:
         lines.append(f"  {value['waiting']} still waiting for a reply.")
     if value.get("projection"):
         lines.append(value["projection"]["text"])
+    cohort = value.get("observation_window") or {}
+    if cohort:
+        lines += [f"Observed {cohort['window_days']}-day windows: {cohort['matured']} complete; "
+                  f"{cohort['recent_excluded']} recent and {cohort['unknown_timing_excluded']} with unknown timing excluded."]
+        forecast = cohort.get("forecast")
+        if forecast:
+            low, high = forecast["predictive_interval"]
+            lines.append(f"Conditional next {forecast['applications']} applications: {forecast['expected_interview_reaching']:g} "
+                         f"expected to reach an interview in {cohort['window_days']} days; 90% model range {low}–{high}.")
+        else:
+            lines.append(cohort["reason"] + ".")
+        lines.append(cohort["assumptions"])
+    if value.get("unclassified_strength"):
+        lines.append(f"{value['unclassified_strength']} applications lack a saved match score at submission; excluded from strength comparisons.")
     lines.append(value["basis"])
     return lines
 
 
 def learning_plan(store: Any, profile: dict[str, Any], skills: list[str], now: datetime | None = None,
-                  limit: int = 60) -> dict[str, Any]:
+                  limit: int = 500) -> dict[str, Any]:
     """Across the owner's current matches, the skills worth learning first.
 
     For each skill the owner's profile is missing, this counts how many matched jobs ask for it, how many it
@@ -403,7 +428,7 @@ def learning_plan(store: Any, profile: dict[str, Any], skills: list[str], now: d
         plan.append({"skill": name, "category": entry["category"], "needed_by": len(entry["jobs"]),
                      "required_by": len(entry["required_in"]), "unlocks": sole_blocker.get(name, 0),
                      "median_pay": round(statistics.median(pays)) if pays else None,
-                     "pay_currency": currency if pays else None, "learn": DOCS.get(name), "how": PRACTICE.get(name)})
+                     "pay_currency": currency if pays else None, "learn": DOCS.get(name), "how": PRACTICE.get(CATEGORY.get(name, ""))})
     # Rank by the jobs a skill alone unlocks, then how many ask for it, then the pay it opens, then total demand.
     plan.sort(key=lambda item: (item["unlocks"], item["required_by"], item["median_pay"] or 0, item["needed_by"]),
               reverse=True)
@@ -411,12 +436,14 @@ def learning_plan(store: Any, profile: dict[str, Any], skills: list[str], now: d
     def still_missing(row: dict[str, Any]) -> list[str]:
         return [name for name in row["match"].get("missing_required", []) if name.lower() not in have]
 
-    strong_now = sum(1 for row in rows if row.get("verdict") in ("strong", "good") or not still_missing(row))
+    strong_now = sum(1 for row in rows if row.get("verdict") in ("strong", "good") and not row["match"].get("blocked"))
     one_away = sum(1 for row in rows if len(still_missing(row)) == 1)
     top = [item["skill"] for item in plan[:3] if item["unlocks"]]
     learn_set = {name.lower() for name in top}
-    would_make_strong = sum(1 for row in rows if still_missing(row)
-                            and all(name.lower() in learn_set for name in still_missing(row)))
+    from app.jobs.match import score
+    would_make_strong = sum(1 for row in rows if still_missing(row) and learn_set
+                            and not row["match"].get("blocked") and row.get("verdict") not in {"strong", "good"}
+                            and score(row, row["reading"], profile, list(dict.fromkeys([*skills, *top])), now=now)["score"] >= 60)
     return {"learning_plan": True, "jobs_considered": len(rows), "currency": currency, "skills": plan[:12],
             "readiness": {"strong_now": strong_now, "one_skill_away": one_away},
             "projection": {"learn": top, "would_make_strong": would_make_strong} if top else None,
@@ -430,7 +457,7 @@ def learning_lines(plan: dict[str, Any]) -> list[str]:
         return ["No scored matches yet. Run a job search first, then ask what to learn."]
     ready = plan["readiness"]
     lines = [f"What to learn, from {plan['jobs_considered']} of your matches "
-             f"({ready['strong_now']} already a strong/good fit, {ready['one_skill_away']} one skill away):"]
+             f"({ready['strong_now']} already a strong/good fit, {ready['one_skill_away']} missing one recognised required skill):"]
     for item in plan["skills"][:8]:
         pay = (f" · ~{item['median_pay']:,} {item['pay_currency']}/yr" if item.get("median_pay") else "")
         unlocks = f" · unlocks {item['unlocks']} job{'s' if item['unlocks'] != 1 else ''}" if item["unlocks"] else ""
@@ -439,8 +466,9 @@ def learning_lines(plan: dict[str, Any]) -> list[str]:
                      + (f"\n    learn: {item['learn']}" if item.get("learn") else ""))
     projection = plan.get("projection")
     if projection and projection["learn"]:
-        lines.append(f"Learning {', '.join(projection['learn'])} would make you a strong fit for "
-                     f"{projection['would_make_strong']} of them.")
+        lines.append(f"If you could demonstrate {', '.join(projection['learn'])}, the scoring model would move "
+                     f"{projection['would_make_strong']} additional roles into its good/strong band. "
+                     "This scenario does not change your profile or establish experience.")
     lines.append(plan["basis"])
     return lines
 

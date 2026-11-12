@@ -133,11 +133,15 @@ class Fusion:
                 return self.resolve(place, float(match[1]), float(match[2]))
             geocoded = self.live.geocode(place)
             if not geocoded:
-                raise ValueError(f"I couldn't find a place called {place!r}.")
+                # The planner once sent a topic here ("Global Technology Sector" for "look deep in tech"): say what
+                # this tool is for, so re-planning moves to research instead of trying the same words again.
+                raise ValueError(f"I couldn't find a place called {place!r}. A deep look examines a place on Earth "
+                                 "(a city, region, landmark or coordinates); for a subject or a field, research it instead.")
             found = {"name": ", ".join(part for part in (geocoded["name"], geocoded.get("region"), geocoded.get("country")) if part),
                      "latitude": geocoded["latitude"], "longitude": geocoded["longitude"],
                      "country_code": geocoded.get("country_code"), "region": geocoded.get("region")}
-        if "country_code" not in found and self.reverse is not None:
+        # A landmark from Wikidata arrives without a country: reverse geocoding supplies it, as for a clicked point.
+        if not found.get("country_code") and self.reverse is not None:
             details = safe(lambda: self.reverse(found["latitude"], found["longitude"]), "reverse geocoding")[0] or {}
             found.update({"country_code": details.get("country_code"), "region": details.get("region")})
             # A clicked spot is named by where it is, not by its coordinates, when that is known.
@@ -315,7 +319,8 @@ class Fusion:
         if "vessels" in parts and results.get("vessels") == [] and "vessels" not in gaps:
             notes.append("Ships: the only keyless AIS feed covers the Baltic; none here.")
         if "transit" in parts and results.get("transit") == [] and "transit" not in gaps:
-            notes.append("Transit: no keyless live vehicle feed covers this place yet (connected: Boston, Finland).")
+            from app.intelligence.transit import COVERAGE_SHORT
+            notes.append(f"Transit: no live vehicle feed covers this place yet (connected: {COVERAGE_SHORT}).")
         if not us and "stations" in parts:
             notes.append("Weather stations and river gauges: US networks only so far.")
         if "cameras" in parts and results.get("cameras") == []:

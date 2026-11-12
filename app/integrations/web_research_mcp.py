@@ -21,13 +21,9 @@ from app.research.extractor import ContentExtractor
 from app.research.fetcher import PublicFetcher
 from app.research.search import build_search_provider
 from app.research.text import token_set
+from app.integrations.web_research_names import READ_ONLY_TOOLS, SERVER_ID
 
-
-SERVER_ID = "zero-cost-web-research"
-READ_ONLY_TOOLS = [
-    "search_web", "deep_web_research", "fetch_public_page",
-    "inspect_google_snapshot", "google_search_status",
-]
+__all__ = ["READ_ONLY_TOOLS", "SERVER_ID", "server"]
 
 server = MCPServer(
     name=SERVER_ID,

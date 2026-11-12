@@ -180,6 +180,10 @@ def report(history: list[dict[str, Any]]) -> str | None:
                     lines.append(f"{row['name']}: not connected" + (f" ({row['check_error']})" if row.get("check_error") else "") + ".")
                 elif row.get("check_ok"):
                     lines.append(f"{row['name']}: working, signed in as {row['connected_as']} (checked just now{', ' + when + ' UTC' if when else ''}).")
+                elif row.get("connection_state") == "unreachable":
+                    # No answer about the sign-in itself: say so, and do not send the owner to sign in again.
+                    lines.append(f"{row['name']}: not tested ({row.get('check_error') or 'no answer'}). "
+                                 f"{row.get('connection_note', '')}".rstrip())
                 else:
                     lines.append(f"{row['name']}: saved, but the check failed: {row.get('check_error') or 'no answer'}. "
                                  f"Sign in again from Studios → Accounts & sign-in.")

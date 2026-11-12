@@ -85,6 +85,14 @@ choose a file or folder, and inspect results without blocking the chat. Try
 with Node.js; native pseudocode needs a compatible Ghidra, Hopper or IDA engine.
 See [the REA guide](reverse-engineering.md) for setup and verification limits.
 
+## Robustness, code security and model discovery
+
+Open **Studios → Research lab** for four laboratories. Try **How robust are you?** in chat to measure topic
+routing under misspellings, the injection guard and the last discovered model under attack. **Scan your code for
+security problems** reviews HAYAT's own code, and a patch can be tested on an isolated copy; it is never applied
+for you. **Predict revenue from D:/data/sales.csv** compares models against a baseline and says so when nothing
+predictable is found. See the research lab.
+
 ## Invention and executive reasoning
 
 Open **Invention** to develop a goal through saved research, proposals, skeptical

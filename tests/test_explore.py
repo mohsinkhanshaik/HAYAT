@@ -9,8 +9,8 @@ from types import SimpleNamespace
 import pytest
 
 from app.intelligence import explore as module
-from app.intelligence.explore import (EXPLORE_TOOLS, Explore, explore_report, explore_request, look_angles, observer_ecef,
-                                      register_explore_tools, sun_eci, sunlit)
+from app.intelligence.explore import (EXPLORE_TOOLS, NEIGHBOUR_TOOLS, OWN_TOOLS, Explore, explore_report, explore_request, look_angles, observer_ecef,
+                                      WAVE3_TOOLS, register_explore_tools, sun_eci, sunlit)
 
 ISS = {"OBJECT_NAME": "ISS (ZARYA)", "OBJECT_ID": "1998-067A", "EPOCH": "2026-10-10T18:56:31.282080", "MEAN_MOTION": 15.48817123,
        "ECCENTRICITY": 0.00067205, "INCLINATION": 51.6307, "RA_OF_ASC_NODE": 88.0087, "ARG_OF_PERICENTER": 246.7167,
@@ -393,7 +393,7 @@ def test_tools_register_and_report_through_the_intelligence_report(explore, tmp_
     from app.tools.registry import ToolRegistry
     registry = ToolRegistry(PermissionManager({"default": "ALLOW"}, tmp_path))
     register_explore_tools(registry, explore)
-    assert set(EXPLORE_TOOLS) <= set(registry.names())
+    assert set(OWN_TOOLS) <= set(registry.names()) and set(EXPLORE_TOOLS) == set(OWN_TOOLS) | set(NEIGHBOUR_TOOLS) | set(WAVE3_TOOLS)
     result = registry.execute("route_directions", {"origin": "here", "destination": "ann arbor"})
     assert result.success, result.error
     text = report([{"tool": "route_directions", "result": {"success": True, "output": result.output}, "verification": {"passed": True}}])
@@ -500,7 +500,9 @@ def test_the_atlas_search_box_can_take_the_map_to_a_place():
         assert server.place('21.4225, 39.8262')['latitude'] == 21.4225 and asked == ['Denver']  # coordinates need no lookup
         assert server.place('nowhere') == {'found': False} and server.place('  ') == {'found': False}
         assert server.place('here')['found'] and asked[-1] == 'here'  # "My location"
-        assert server.place('95, 200')['found'] and asked[-1] == '95, 200'  # out of range: not taken as coordinates
+        invalid = server.place('95, 200')
+        assert not invalid['found'] and 'Latitude' in invalid['error']
+        assert asked[-1] == 'here'  # invalid coordinates must not become an unrelated geocoded place
     finally:
         server.close()
     without = IntelligenceMapServer(SimpleNamespace())

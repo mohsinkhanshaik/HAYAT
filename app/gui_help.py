@@ -9,6 +9,7 @@ window's buttons a one-line explanation on hover, so no button is a mystery.
 from __future__ import annotations
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 
 import tkinter as tk
 from tkinter import ttk
@@ -23,6 +24,12 @@ from app.gui_fonts import DISPLAY
 #: What each button does, in a sentence a beginner understands. Keyed by the
 #: button's visible text.
 BUTTON_HELP: dict[str, str] = {
+    'Home': 'Return to the task home screen. Your current conversation and unsent draft stay available.',
+    'Getting started': 'Read three simple steps for asking questions, attaching files and checking results.',
+    'How to use': 'Read instructions for the current page, including what its results do and do not establish.',
+    'How to use Jobs': 'Learn the profile, search, review, preparation and application-tracking workflow.',
+    'Add image': 'Attach an existing image for HAYAT to inspect. To create a new image, describe it in chat.',
+    'Video tools': 'Open video playback, clipping, analysis and generation controls.',
     'Other research tools': 'Open a related local or public research workspace. Entered fields are prepared; no search starts automatically.',
     'Report actions': 'Save or export a report, open authorized records, or request an owner-presence check.',
     'Operation view': 'Watch local desktop samples and real tool events. Open manually to move or pause the viewer.',
@@ -287,7 +294,7 @@ class CapabilityGuide(tk.Toplevel):
         entry = ttk.Entry(search, textvariable=self.query, width=40)
         entry.pack(side="left", padx=8)
         entry.bind("<KeyRelease>", lambda _event: self.refresh())
-        self.count_var = StringVar(self, "")
+        self.count_var = DisplayVar(self, "")
         tk.Label(search, textvariable=self.count_var, bg=p.BLACK, fg=p.MUTED, font=("Segoe UI", 9)).pack(side="left")
 
         body = tk.Frame(self, bg=p.BLACK, padx=18, pady=10)
@@ -308,26 +315,27 @@ class CapabilityGuide(tk.Toplevel):
 
         detail = tk.Frame(body, bg=p.PANEL, padx=18, pady=14, highlightthickness=1, highlightbackground=p.LINE)
         detail.pack(side="left", fill="both", expand=True, padx=(12, 0))
-        self.title_var = StringVar(self, "")
+        self.title_var = DisplayVar(self, "")
         tk.Label(detail, textvariable=self.title_var, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI Semibold", 15),
                  anchor="w").pack(fill="x")
-        self.state_var = StringVar(self, "")
+        self.state_var = DisplayVar(self, "")
         self.state_label = tk.Label(detail, textvariable=self.state_var, bg=p.PANEL, fg=p.OLIVE_SOFT,
                                     font=("Segoe UI Semibold", 10), anchor="w", justify="left", wraplength=480)
         self.state_label.pack(fill="x", pady=(2, 8))
-        self.summary_var = StringVar(self, "")
+        self.summary_var = DisplayVar(self, "")
         tk.Label(detail, textvariable=self.summary_var, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI", 11), anchor="w",
                  justify="left", wraplength=480).pack(fill="x")
         tk.Label(detail, text="How to start", bg=p.PANEL, fg=p.GOLD_SOFT, font=("Segoe UI Semibold", 10),
                  anchor="w").pack(fill="x", pady=(12, 0))
-        self.how_var = StringVar(self, "")
+        self.how_var = DisplayVar(self, "")
         tk.Label(detail, textvariable=self.how_var, bg=p.PANEL, fg=p.WHITE, font=("Segoe UI", 10), anchor="w",
                  justify="left", wraplength=480).pack(fill="x")
         tk.Label(detail, text="Try saying", bg=p.PANEL, fg=p.GOLD_SOFT, font=("Segoe UI Semibold", 10),
                  anchor="w").pack(fill="x", pady=(12, 2))
         self.examples = tk.Frame(detail, bg=p.PANEL)
         self.examples.pack(fill="x")
-        self.open_button = ttk.Button(detail, text="", style="Hayat.TButton", command=self.open_window)
+        # Gold is the one main action here (open the area); the examples beside it are equal choices.
+        self.open_button = ttk.Button(detail, text="", style="HayatAccent.TButton", command=self.open_window)
         self.behind_label = tk.Label(detail, text="Behind the scenes", bg=p.PANEL, fg=p.MUTED,
                                      font=("Segoe UI Semibold", 9), anchor="w")
         self.behind_label.pack(fill="x", pady=(14, 0))
@@ -385,7 +393,7 @@ class CapabilityGuide(tk.Toplevel):
         for example in capability.examples:
             row = tk.Frame(self.examples, bg=p.PANEL)
             row.pack(fill="x", pady=2)
-            ttk.Button(row, text="Try", style="HayatAccent.TButton",
+            ttk.Button(row, text="Try", style="Hayat.TButton",
                        command=lambda text=example: self.try_example(text)).pack(side="left")
             tk.Label(row, text=f"“{example}”", bg=p.PANEL, fg=p.WHITE, font=("Segoe UI", 10), anchor="w",
                      justify="left", wraplength=420).pack(side="left", padx=8, fill="x")

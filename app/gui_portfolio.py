@@ -19,6 +19,7 @@ from tkinter import ttk
 from typing import Any, Callable
 
 from app.gui_resources import StringVar
+from app.gui_output import DisplayVar
 from app.portfolio import KINDS, usd
 from app.gui_fonts import DISPLAY
 
@@ -72,7 +73,7 @@ class PortfolioWindow(tk.Toplevel):
         self.tree.tag_configure("loss", foreground=LOSS)
         self.tree.pack(fill="both", expand=True, padx=16, pady=(8, 0))
         self._build_form()
-        self.message = StringVar(self, "")
+        self.message = DisplayVar(self, "")
         tk.Label(self, textvariable=self.message, bg=p.BLACK, fg=p.GOLD_SOFT, font=("Segoe UI", 9), anchor="w", justify="left",
                  wraplength=1100).pack(fill="x", padx=16, pady=(4, 10))
         threading.Thread(target=self._work, name="hayat-portfolio-window", daemon=True).start()

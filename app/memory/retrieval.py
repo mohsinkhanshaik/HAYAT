@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import sqlite3
 import time
@@ -103,6 +104,10 @@ class RetrievalIndex:
     def upsert(self, object_type: str, source_id: str, title: str, content: str, *, project: str | None = None, confidence: float = .5, importance: float = .5, metadata: dict[str, Any] | None = None) -> bool:
         clean = normalized_content(content)
         if not self._eligible(clean):
+            # An updated source that is no longer eligible must not leave its
+            # previous, now obsolete version available for recall.
+            with self.database.connect() as db:
+                db.execute("DELETE FROM retrieval_objects WHERE object_type=? AND source_id=?", (object_type, source_id))
             return False
         digest = content_hash(clean)
         now = datetime.now(UTC).isoformat()
@@ -171,27 +176,43 @@ class RetrievalIndex:
 
     def search(self, query: str, limit: int = 8, *, strategy: str = "hybrid", project: str | None = None) -> list[dict[str, Any]]:
         started = time.perf_counter()
+        if strategy not in {"hybrid", "lexical", "semantic"}:
+            raise ValueError(f"Unknown retrieval strategy: {strategy}")
+        if limit <= 0 or not query.strip():
+            return []
         expansion = expand_query(query)
         query_tokens = set(tokenize(expansion.text)); query_vector = text_vector(expansion.text)
         candidate_limit = max(
             100, int(load_settings().get("memory_retrieval", {}).get("candidate_limit", 500))
         )
         rows = self._candidates(query_tokens, candidate_limit)
-        neural_query = optional_embedding(lambda: self.provider.embed_query(query)) if self.provider and self.provider.available else None
+        neural_query = optional_embedding(lambda: self.provider.embed_query(query)) if strategy != "lexical" and self.provider and self.provider.available else None
         ranked = []
         for row in rows:
             tokens = set(tokenize(expand_query(row["content"] + " " + row["title"]).text))
             lexical = len(query_tokens & tokens) / max(1, len(query_tokens))
             hashed = cosine_similarity(query_vector, text_vector(row["content"]))
-            neural = cosine_similarity(neural_query, json.loads(row["vector_json"])) if neural_query is not None and row["vector_json"] else hashed
+            compatible = (neural_query is not None and bool(row["vector_json"])
+                          and row["vector_provider"] == self.provider.name and row["vector_model"] == self.provider.model
+                          and row["vector_version"] == self.provider.version and row["vector_hash"] == row["content_hash"]
+                          and row["vector_dimension"] == len(neural_query))
+            vector = None
+            if compatible:
+                try:
+                    vector = json.loads(row["vector_json"])
+                    compatible = (isinstance(vector, list) and len(vector) == len(neural_query)
+                                  and all(type(v) in (int, float) and math.isfinite(v) for v in vector))
+                except (ValueError, TypeError, OverflowError):
+                    compatible = False
+            neural = cosine_similarity(neural_query, vector) if compatible else hashed
             project_score = 1.0 if project and str(row["project"] or "").lower() == project.lower() else 0.0
             usage = (row["successful_uses"] + 1) / (row["successful_uses"] + row["failed_uses"] + 2)
             if strategy == "lexical": score = lexical
             elif strategy == "semantic": score = neural
             else: score = neural * .45 + lexical * .25 + hashed * .08 + project_score * .08 + row["confidence"] * .06 + row["importance"] * .05 + usage * .03
-            item = dict(row); item.pop("vector_json", None)
+            item = {key: row[key] for key in row.keys() if not key.startswith("vector_")}
             item["relevance"] = round(float(score), 6)
-            item["retrieval"] = {"strategy": strategy, "neural": round(float(neural), 4), "lexical": round(lexical, 4), "hashed": round(hashed, 4), "project": project_score, "query_concepts": list(expansion.concepts)}
+            item["retrieval"] = {"strategy": strategy, "neural_available": bool(compatible), "neural": round(float(neural), 4), "lexical": round(lexical, 4), "hashed": round(hashed, 4), "project": project_score, "query_concepts": list(expansion.concepts)}
             ranked.append(item)
         result = sorted(ranked, key=lambda item: (item["relevance"], item["updated_at"]), reverse=True)[:limit]
         elapsed_ms = round((time.perf_counter() - started) * 1000, 3)
@@ -206,8 +227,10 @@ class RetrievalIndex:
         documents and skills. Scanning the newest 1,000 rows made an older
         document disappear and made recall slower as the store grew.
         """
+        columns = ("SELECT o.*,v.vector_json,v.provider vector_provider,v.model vector_model,"
+                   "v.embedding_version vector_version,v.content_hash vector_hash,v.dimension vector_dimension ")
         select = (
-            "SELECT o.*,v.vector_json FROM retrieval_objects o "
+            columns + "FROM retrieval_objects o "
             "LEFT JOIN retrieval_object_vectors v ON v.object_id=o.id"
         )
         collected: dict[int, sqlite3.Row] = {}
@@ -226,7 +249,7 @@ class RetrievalIndex:
                 match = " OR ".join(f'"{term}"' for term in terms)
                 try:
                     absorb(db.execute(
-                        "SELECT o.*,v.vector_json FROM retrieval_objects o "
+                        columns + "FROM retrieval_objects o "
                         "JOIN retrieval_objects_fts f ON f.rowid=o.id "
                         "LEFT JOIN retrieval_object_vectors v ON v.object_id=o.id "
                         "WHERE retrieval_objects_fts MATCH ? "

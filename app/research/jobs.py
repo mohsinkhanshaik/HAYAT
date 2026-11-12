@@ -36,7 +36,8 @@ _SOURCE_NAMES = {"duckduckgo_html": "DuckDuckGo", "duckduckgo": "DuckDuckGo", "b
                  # Job boards (app/jobs/sources.py)
                  "remoteok": "RemoteOK", "jobicy": "Jobicy", "himalayas": "Himalayas", "workingnomads": "Working Nomads",
                  "themuse": "The Muse", "arbeitnow": "Arbeitnow", "greenhouse": "Greenhouse", "lever": "Lever",
-                 "ashby": "Ashby", "workday": "Workday"}
+                 "ashby": "Ashby", "workday": "Workday", "workable": "Workable", "hnhiring": "Hacker News: Who is hiring?",
+                 "company_boards": "Company career boards", "jobtech": "Arbetsförmedlingen JobTech"}
 
 
 def plain_errors(error: str) -> str:
@@ -219,6 +220,13 @@ class ResearchJobs:
         return job
 
     def _run(self, job: ResearchJob) -> None:
+        from app.execution import execution_scope
+
+        # Every page and search this job makes is tagged with it, so its report can say what was sent out.
+        with execution_scope(task_id=job.job_id):
+            self._run_job(job)
+
+    def _run_job(self, job: ResearchJob) -> None:
         try:
             manager = self.research()
             if job.tor_web:
@@ -235,6 +243,11 @@ class ResearchJobs:
                 return
             job.result = result
             job.answer = compose_answer(job.query, job.asked, result)
+            from app.outbound import describe as outbound_lines, summary as outbound_summary
+
+            sent = outbound_lines(outbound_summary(task_id=job.job_id))
+            if sent and job.answer:
+                job.answer = job.answer.rstrip() + "\n\n" + " ".join(sent)
             job.confidence = float(getattr(result, "confidence", 0.0) or 0.0)
             job.sources = len(getattr(result, "sources", []) or [])
             complete = getattr(result, 'complete', None)
