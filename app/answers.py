@@ -403,6 +403,23 @@ def required_topics(text: str) -> list[str]:
     # Completeness here checks termination; it does not verify the arithmetic.
     if is_self_contained_calculation(text):
         return []
+    # Talk is not a list of deliverables. "nah I'm not actually quitting, just annoyed" was split into topics, the reply
+    # was sent back twice for "never addressed: nah I'm not ..." and ended "I could not properly cover: ...", and "but
+    # finally weekend hai" came back as the same reply three times (live, 2026-11-12). A statement, or a short
+    # conversational turn, has nothing to cover; only an actual question or request does.
+    from app.reply_speed import REFLEX, pace
+
+    value = " ".join(str(text or "").split())
+    asks = "?" in value or re.match(
+        r"(?i)^\s*(?:(?:so|and|but|ok(?:ay)?|also|then|please)[,\s]+)*(?:what|which|who|whom|whose|when|where|why|how|is|"
+        r"are|was|were|do|does|did|can|could|would|should|will|tell|explain|describe|list|give|show|write|compare|find|"
+        r"make|create|help|summari[sz]e|translate|plan)\b", value)
+    two_part = re.search(r"(?i)\b(?:and|also|then)\s+(?:why|how|what|when|where|who|which)\b|\?.+\?", value)
+    # A request ("give a short explanation of taxation and tax evasion and tax returns") always lists what it wants.
+    request = re.match(r"(?i)^\s*(?:(?:so|and|but|ok(?:ay)?|also|then|please)[,\s]+)*(?:tell|explain|describe|list|"
+                       r"give|show|write|compare|find|make|create|summari[sz]e|translate|plan|outline)\b", value)
+    if not asks or (pace(value) == REFLEX and not two_part and not request):
+        return []
     # An exact output format is the whole contract. "Return only a JSON object
     # with keys name and age" split on "and" into two fake topics, and the
     # reply grew a second JSON object and "I could not properly cover".

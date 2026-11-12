@@ -255,6 +255,15 @@ _JOINING = re.compile(
 _UPDATE = re.compile(
     r"(?i)^\s*(?:actually|correction|update|no\s+wait|wait|oh\s+and|scratch\s+that|change\s+of\s+plans?)[,:\s-]+"
     r"(?:now\s+|i\s+mean\s+)?(?:i|i['’]m|i['’]ve|we|we['’]re|we['’]ve|my|our)\b")
+#: A refinement of the last answer: "keep it under 50 dollars", "make it shorter", "something cheaper", "under $50".
+#: Live, 2026-11-12: after gift ideas for a sister who paints, "keep it under 50 dollars" became a new topic, the
+#: gift talk was set aside, and the reply asked "What are we buying?".
+_REFINES = re.compile(
+    r"(?i)^\s*(?:(?:ok(?:ay)?|and|but|also|hmm+|actually)[,\s]+)*(?:(?:keep|make)\s+(?:it|them|that|this)\b|"
+    r"(?:under|below|less\s+than|no\s+more\s+than|max(?:imum)?|within)\s+[$€£₹]?\s?\d|"
+    r"(?:something|anything|one|ones)\s+(?:cheaper|smaller|bigger|shorter|longer|simpler|faster|better|else|different)|"
+    r"(?:cheaper|smaller|bigger|shorter|longer|simpler)\s+(?:one|ones|please|options?)|"
+    r"(?:only|just)\s+(?:the\s+)?(?:top|first|best|cheapest)\b|in\s+(?:a\s+)?(?:list|table|bullets?)\b)")
 #: A message that carries its own calendar or arithmetic subject never leans on a topic: "What date will it be 45
 #: days from today?" was read as pointing at "it", and "What day of the week was 1 January 2000?" as asking about a
 #: year of the subject; both were re-read as "…, about the exactly five words describing the ocean" and searched.
@@ -334,7 +343,11 @@ def leans_on_topic(text: str) -> str:
             or _about_the_last_answer(text)):
         return ""
     own = own_subject_words(value)
-    if _LEANING_START.match(value) and len(own) <= 3:
+    # Only a question leans this way ("and for 2028?", "what about china"). "but finally weekend hai" is a statement;
+    # re-read as "..., about the bro aaj office mein bahut kaam tha" it was answered three times (live, 2026-11-12).
+    if (_LEANING_START.match(value) and len(own) <= 3
+            and (_QUESTION.search(value) or re.match(r"(?i)^\s*(?:(?:and|but|so|ok(?:ay)?)[,\s]+)?(?:(?:what|how)\s+about|"
+                                                       r"(?:and|same)\s+(?:for|in|with)|for\s+(?:19|20)\d\d)\b", value))):
         return "starts from the previous subject"
     if _SLICE.search(value) and len(own) <= 1:
         return "asks for a time or view of the subject without naming it"
@@ -626,6 +639,10 @@ class ConversationTopics:
                 else:
                     relation, confidence = "small_talk", 0.9
                 reasons.append("a few words of conversation")
+            if (not relation and active is not None and not fresh and gap is not None and gap <= ANCHOR_WINDOW
+                    and _REFINES.match(value)):
+                relation, topic, confidence = "continue", active, 0.8
+                reasons.append("refines the last answer")
             if (not relation and active is not None and not fresh and gap is not None and gap <= ANCHOR_WINDOW
                     and _UPDATE.match(value)):
                 # "Actually I moved to Austin last week" updates what was just said. Filed as a new topic, it was set

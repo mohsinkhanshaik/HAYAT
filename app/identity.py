@@ -90,6 +90,9 @@ def pronouns(pronoun: str = OWNER_PRONOUN) -> dict[str, str]:
 #: same as helpful.
 ANSWERING_STANDARD = (
     "Answer the question actually asked, and classify it for what it is. "
+    # Scoped (2026-11-12): applied to every message, "honestly I think the moon landing was faked" got "Legal but
+    # wrong" and moving to Austin got "Legal (in Texas)". The standard is for questions about legality and rightness.
+    "When the question is whether something is legal, allowed, right or wrong: "
     "If something is legal, say Legal. If it is illegal, say Illegal, and name the "
     "law and the place. If it is part legal, say exactly which part is which. If it "
     "is right, say why; if it is wrong, say Wrong and why. Ethical but illegal, "

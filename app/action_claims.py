@@ -183,6 +183,19 @@ def _sentences(text: str) -> list[str]:
     return [part for part in re.split(r"(?<=[.!?])\s+|\n+", text or "") if part.strip()]
 
 
+#: Words HAYAT suggests he say or send are his script, not HAYAT's claims: advice for a landlord dispute ended with
+#: the roommate line "Say: 'Hey, don't sweat it! I messaged [Landlord] today ...'" and the whole reply was replaced by
+#: "Not done ... sent a message" (live, 2026-11-12). Drafted messages in a blockquote are the same.
+_SCRIPT = re.compile(
+    r"(?i)\b(?:say|says|tell\s+(?:him|her|them|your\s+\w+)|write|text\s+(?:him|her|them)|reply|try\s+saying|"
+    r"something\s+like|for\s+example|e\.g\.)\s*[:,-]?\s*(?:\"[^\"\n]{8,}\"|“[^”\n]{8,}”)")
+
+
+def _without_scripts(text: str) -> str:
+    kept = [line for line in str(text or "").splitlines() if not line.lstrip().startswith(">")]
+    return _SCRIPT.sub(" ", "\n".join(kept))
+
+
 def unbacked_claims(text: str, *, exists: Callable[[str], bool] = os.path.exists) -> list[str]:
     """Plain-language list of actions a model-written reply claims, without evidence.
 
@@ -192,7 +205,7 @@ def unbacked_claims(text: str, *, exists: Callable[[str], bool] = os.path.exists
     found: list[str] = []
     seen: set[str] = set()
     # The model writes curly apostrophes ("I’ll"), which the patterns spell straight.
-    for sentence in _sentences(str(text or "").replace("’", "'").replace("‘", "'")):
+    for sentence in _sentences(_without_scripts(str(text or "").replace("’", "'").replace("‘", "'"))):
         clause = " ".join(sentence.split())
         if _PROMISE.search(clause) and not _OFFER.search(clause) and not clause.rstrip("*_ )\"'").endswith("?"):
             quote = clause if len(clause) <= 140 else clause[:137].rstrip() + "..."

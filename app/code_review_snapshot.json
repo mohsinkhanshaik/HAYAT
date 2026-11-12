@@ -26,7 +26,7 @@
     "app/runtime.py": "e698f837353e8f7d4f66b46ac8e2f9ca4f47611c020bd386ace959a6e921f244",
     "app/safety/container_sandbox.py": "af24a9dd1ddabfadaf25bd193a953dae1bac061b326972cfe0c24d46f21d6761",
     "app/tools/terminal.py": "f20996918d38349f11419df67da1f6471e6562c0876d18b6f5e67b81d36fcc00",
-    "app/topics.py": "56f98184723b56469df60943f98226f6c796d94bfa06dfe65819917aa7229072",
+    "app/topics.py": "45afa712f7b36869f686515a5fc90b307f644abb38564283ce15daf18cd88b5d",
     "app/training/pipeline.py": "1dede24cd34c495a49716d2619e4349952fe67308390f5edd8d956ef891c57ec",
     "app/web/server.py": "591a2f4cde2be60f61392674c7c546a2a3b4f9bffde54448ab61cec2a8317267",
     "scripts/evaluate_hayat_open.py": "4b6eb5f4254c35c060fde7f5731e6e3dac87631cb5278d4954d0a78dd3e66335",
@@ -60,12 +60,20 @@
       "path": "app/invention_sim.py",
       "rule": "B307"
     },
+    "0aef77726d5002f628ddd8c220b07c20ab1c4c9e9a531e8084a4e0ecc43d7e64": {
+      "path": "app/topics.py",
+      "rule": "B608"
+    },
     "0ba865a7594657830bafe982c242c8a7aa160da01cc41294df6e4e42e6340682": {
       "path": "app/anpr/store.py",
       "rule": "B608"
     },
     "0c9dc08ddaaa11202e79e14f8f678e5821a77aba38b30078de739c7505d17ee4": {
       "path": "app/training/pipeline.py",
+      "rule": "B608"
+    },
+    "113e56b7e7282c9bef802d5ac22a8401eae3b7b12a615c75e24c3a90c441986f": {
+      "path": "app/topics.py",
       "rule": "B608"
     },
     "17318a6db952abf2a25af5ff030925646c1a4c29d4ba5e85ec39ec7a4b6544ee": {
@@ -84,7 +92,7 @@
       "path": "app/research/knowledge.py",
       "rule": "B608"
     },
-    "2016897355415a5a7ae05852ee037979f5d40ab902b4a56573b8e5624aac900e": {
+    "222d81480c63c9e235deae0c879bccecd453dbee4ad6c91ad5c96382680c1e43": {
       "path": "app/topics.py",
       "rule": "B608"
     },
@@ -124,10 +132,6 @@
       "path": "app/memory/plasticity.py",
       "rule": "B608"
     },
-    "47e2acb29bb6e4409abdfb923f4ffede9285a49234414478e558be22d541bb69": {
-      "path": "app/topics.py",
-      "rule": "B608"
-    },
     "47f41a61982463753917f972b3832cfb4d478d4032898d13b2457ba390ddcfc8": {
       "path": "app/memory/database.py",
       "rule": "B608"
@@ -164,13 +168,13 @@
       "path": "app/csi.py",
       "rule": "B104"
     },
-    "7d0eadfd0f124d3e4aaf38f2b07435d3d3e18702ef7ef4ebeba971236adb0f8d": {
-      "path": "app/topics.py",
-      "rule": "B608"
-    },
     "7f86ddd1aa6e4bfa256521f6f09241fd79897839846d695b4482cb63963a88e4": {
       "path": "scripts/evaluate_hayat_open.py",
       "rule": "B615"
+    },
+    "7f9e5744d5d83674ce298bb73f2253cb6bc5e3098f81e3a6d658c3c2223a6491": {
+      "path": "app/topics.py",
+      "rule": "B608"
     },
     "829117d104889d764528ede77acc55b4f4c54b6793f1eb7a9acd9ad12a4314d7": {
       "path": "scripts/train_hayat_adapter.py",
@@ -179,6 +183,10 @@
     "869905208686d420674ca700ba3161b7872b8bc707909142f822dc636ec1c90c": {
       "path": "scripts/train_hayat_adapter.py",
       "rule": "B615"
+    },
+    "86f3a66147cbb675893b7be511869ed5dc2eee45b303c982c552256b92a413ef": {
+      "path": "app/topics.py",
+      "rule": "B608"
     },
     "8bf77fd87c4918dd6db4b30629c1825d3e931cc40b4e66d984c53e803c39049e": {
       "path": "app/anpr/store.py",
@@ -202,6 +210,10 @@
     },
     "9895230d9677c49a525ef1f8af4b87a265a050d81481c96bb33d42294a137cb9": {
       "path": "app/research/knowledge.py",
+      "rule": "B608"
+    },
+    "9b0a7c50c12f4c54f9d4d14a96a20d0f77b3543dade5fdfd8a0b76046b33f8e9": {
+      "path": "app/topics.py",
       "rule": "B608"
     },
     "a34abb82c92df44a859b33494fefe9abd9f28f90a3340df337e1134293cd8a28": {
@@ -260,10 +272,6 @@
       "path": "app/memory/database.py",
       "rule": "B608"
     },
-    "cd08486d9f42384512887685dd5e451b7551351388d2004c371c88e8b08891a5": {
-      "path": "app/topics.py",
-      "rule": "B608"
-    },
     "cfee281194c9d020754e52aeb1b7cffe0f700c54c2acd8a4d0b2ef19c57aae32": {
       "path": "app/research/knowledge.py",
       "rule": "B608"
@@ -304,10 +312,6 @@
       "path": "app/anpr/store.py",
       "rule": "B608"
     },
-    "e8c2b146d730a6db342539b9b68645c4fe7762c13ebbaf5261602b27c1df17da": {
-      "path": "app/topics.py",
-      "rule": "B608"
-    },
     "e976b4312d242554c65464d2967162c1504bb0d04771961defc818d4a8cb7903": {
       "path": "scripts/probe_hayat_open_offload.py",
       "rule": "B615"
@@ -339,10 +343,6 @@
     "fe44b646dd8c785c6ce64a574bb0683e67fb6f4f1c0a8fac38f1d5fbf31ecaf6": {
       "path": "app/tools/terminal.py",
       "rule": "B604"
-    },
-    "fef26c7bf27dcc05319324a0baffac17efc7e448d18e3b9a11b7f6106f0b5329": {
-      "path": "app/topics.py",
-      "rule": "B608"
     }
   },
   "scope": "Applicability snapshot of the existing November 10 recorded reviews. Not a new review or proof of security.",

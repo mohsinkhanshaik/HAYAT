@@ -46,9 +46,15 @@ _REFLEX = re.compile(
     r"kinda\s+|very\s+)?(?:tired|bored|happy|sad|excited|stressed|hungry|sleepy|done|back|here|fine|good|ok(?:ay)?)|"
     r"i\s+(?:feel|felt|think|guess|love|like|hate|miss|wish)\b|that(?:'s|\s+is|\s+was)\s+\w+|"
     r"(?:and\s+)?then\s+what|what\s+happened|really\??|seriously\??|no\s+way|kya\b|kaise\b|kaisa\b|kaisi\b|"
+    # Casual picks: "any good songs 2 listen 2?" took 53 s in Deep (live, 2026-11-12).
+    r"(?:same\W+)?any\s+good\s+\w+|recommend\s+(?:me\s+)?(?:a|an|some|one)\b|suggest\s+(?:me\s+)?(?:a|an|some|one)\b|"
+    r"what\s+(?:should|can|do)\s+i\s+(?:watch|listen\s+to|eat|read|play|cook|order)\b|"
+    r"what'?s\s+your\s+fav(?:ou?rite)?\b|wat\b|wht\b|r\s+u\b|"
     r"aap\b|tum\b|mai(?:n)?\b|mera\b|meri\b|haal\b|chal\b|bhai\b|yaar\b|shukriya|dhanyavaad|ennadi|emiti|ela\s+unnav)")
 _CONSIDERED = re.compile(
-    r"(?i)^(?:(?:so|ok(?:ay)?|and|but|hey|hayat|jarvis)[,\s]+)*(?:explain|describe|teach\s+me|how\s+(?:does|do|did|can|could|"
+    r"(?i)^(?:(?:so|ok(?:ay)?|and|but|hey|hayat|jarvis)[,\s]+)*(?:explain|describe|teach\s+me|"
+    r"(?:give|write)\s+(?:me\s+)?(?:a|an)\s+(?:\w+\s+)?(?:explanation|summary|overview|breakdown|comparison)|"
+    r"summari[sz]e|outline|how\s+(?:does|do|did|can|could|"
     r"should|would|to)\b|why\b|what\s+(?:causes|makes|happens\s+when)|"
     r"should\s+(?:i|we)\b|which\s+(?:one\s+)?(?:should|is\s+better)|is\s+it\s+(?:worth|better|wise|safe|a\s+good\s+idea)|"
     r"would\s+you\s+recommend|help\s+me\s+(?:decide|choose|understand))")
@@ -75,7 +81,8 @@ def pace(text: str, intent: Any = None) -> str:
         return REFLEX  # "open notepad", "mute", "what's my battery" act; they need no essay
     if _CONSIDERED.search(value):
         return MEDIUM  # an explanation or a decision of his own deserves a considered answer, however short
-    if words <= 25 and (_REFLEX.search(value) or (kind == "CONVERSATION" and words <= 12)):
+    # No routed kind means the conversation service is asking, which only ever handles talk and questions.
+    if words <= 25 and (_REFLEX.search(value) or (kind in {"CONVERSATION", ""} and words <= 12)):
         return REFLEX
     if words <= 14 and _LOOKUP.search(value):
         return REFLEX

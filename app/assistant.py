@@ -1854,7 +1854,12 @@ class AssistantService:
     def _incoming_language(self, text: str):
         """Name the language of Mohsin's message when it clearly is not the reply language."""
         from app.languages import detect
+        from app.multilingual import detect as his_languages
 
+        # Romanized Hinglish or Telugu is how he talks, not text to explain back: "kya plan karna chahiye weekend ke
+        # liye?" was read as Indonesian, answered "That means ..." and offered "install Indonesian" (live, 2026-11-12).
+        if his_languages(text) in {"hi", "ur", "te"} and not re.search(r"[^\x00-\x7F]", text):
+            return None
         detection = detect(text)
         session = self.runtime.session
         if detection is None or not detection.reliable or detection.code in {"en", session.reply_language}:

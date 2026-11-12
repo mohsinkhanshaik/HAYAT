@@ -137,7 +137,8 @@ _VOLATILE_SUBJECT = re.compile(
     r"score|scores|standings|fixtures?|who\s+won|who\s+is\s+winning|"
     r"news|headlines?|"
     r"release\s+date|released\s+yet|out\s+yet|changelog|release\s+notes|"
-    r"is\s+\S+\s+(?:down|up|offline)|outage|status\s+page|"
+    # "is github down?" asks about a service; "the rent is going up" (inside a story) does not (live, 2026-11-12).
+    r"(?:^|[.!?]\s+)is\s+[\w.-]+\s+(?:down|offline|up\s+(?:right\s+now|now|again))\b|outage|status\s+page|"
     r"trending|top\s+stories"
     r")\b"
 )
@@ -482,9 +483,18 @@ def needs_live_web(text: str) -> LiveWebNeed | None:
     if (_CHANGING_RECORD.search(value) and (_WORLD_QUESTION.match(value) or value.endswith("?"))
             and not re.search(r"(?i)\b(?:should|do|can|must|could)\s+i\b|\bmy\b", value)):
         return LiveWebNeed("changing_record", clean_query(value))
+    # Advice on his own situation is not a question about the world. A long message about a landlord, a roommate and
+    # rent, ending "what would you do first?", was searched because it said "right now" (live, 2026-11-12).
+    if _PERSONAL_ADVICE.search(value) and len(re.findall(r"(?i)\b(?:i|i'?m|i'?ve|my|me|mine)\b", value)) >= 2:
+        return None
     if _PRESENT_MARKER.search(value) and (_WORLD_QUESTION.match(value) or value.endswith("?")):
         return LiveWebNeed("present_tense_world_question", clean_query(value))
     return None
+
+
+_PERSONAL_ADVICE = re.compile(
+    r"(?i)\b(?:what\s+would\s+you\s+do|what\s+should\s+i\s+do|should\s+i\b|any\s+advice|what\s+do\s+you\s+(?:think|suggest|"
+    r"recommend)|help\s+me\s+(?:decide|figure)|what\s+(?:would|do)\s+you\s+(?:recommend|suggest)|where\s+do\s+i\s+start)")
 
 
 def local_clock_answer(now=None) -> str:

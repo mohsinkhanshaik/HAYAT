@@ -233,3 +233,15 @@ def test_calendar_and_arithmetic_questions_never_lean_on_the_previous_topic(tmp_
     assert not any(decision.anchored for decision in decisions)
     # A message that really leans on its topic is still read through it.
     assert leans_on_topic("and for 2028?") and leans_on_topic("what about china?")
+
+
+def test_a_refinement_stays_with_the_answer_it_refines(tmp_path):
+    """Live 2026-11-12: "keep it under 50 dollars" after gift ideas became a new topic and the reply asked "What are
+    we buying?"."""
+    store = ConversationTopics(tmp_path / "t.db")
+    first, ask, refine = _talk(store, ["my sister's birthday is on Saturday and she loves painting",
+                                       "what should I get her?", "keep it under 50 dollars"])
+    assert refine.relation == "continue" and refine.topic_id == first.topic_id and not refine.set_aside
+    other = ConversationTopics(tmp_path / "o.db")
+    _plan, cheaper = _talk(other, ["Find me a laptop for coding", "something cheaper"])
+    assert cheaper.relation == "continue"
